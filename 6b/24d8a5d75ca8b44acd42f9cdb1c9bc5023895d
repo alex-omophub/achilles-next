@@ -1,0 +1,52 @@
+tests/fixtures/postgresql/ddl/5.3-primary-keys.sql
+  s_895f6ebe145fd3::t_89a40355c97063 1-27
+tests/fixtures/postgresql/ddl/5.4-primary-keys.sql
+  s_895f6ebe145fd3::t_b83da7bdab45ef 1-28
+tests/fixtures/postgresql/ddl/5.5-primary-keys.sql
+  s_895f6ebe145fd3::t_edda7ed66c4181 1-29
+tests/fixtures/postgresql/README.md
+  s_895f6ebe145fd3::t_9d81dacc0a193b 21-22,103-109,111-112
+  s_895f6ebe145fd3::t_51a12fbb73930f 1-20,23-102,110,113-114
+tools/postgresql_fixtures.py
+  s_895f6ebe145fd3::t_51a12fbb73930f 239
+  s_895f6ebe145fd3::t_9d81dacc0a193b 116-118,123-124,131-132,139
+  s_895f6ebe145fd3::t_46f8a3d9a12213 1-5,7-115,119-122,125-130,133-138,140-163,173-236,241-352,356-362,365-401,416-420,429-442,469-477,479-488,490-517,519-520,523-538,548-555
+  s_895f6ebe145fd3::t_29c61887bb2ace 6,402-415,421-428,444,447,467-468,518,521-522,539-547
+  s_895f6ebe145fd3::t_b40288aad5730f 353-355,363-364,443,445-446,448-466,478,489
+  s_895f6ebe145fd3::t_1dc8b1c96ca72d 237-238,240
+  s_895f6ebe145fd3::t_31396af9696647 164-172
+README.md
+  s_895f6ebe145fd3::t_51a12fbb73930f 22-23
+tests/fixtures/postgresql/ddl/5.5.sql
+  s_895f6ebe145fd3::t_05451afa1ba0d3 1-499
+tests/fixtures/postgresql/ddl/5.3.sql
+  s_895f6ebe145fd3::t_39799870cbf0b6 1-434
+tests/fixtures/postgresql/ddl/5.4.sql
+  s_895f6ebe145fd3::t_f3d4c5af272704 1-472
+THIRD_PARTY_NOTICES.md
+  s_895f6ebe145fd3::t_51a12fbb73930f 1-13
+tests/test_postgresql_fixtures.py
+  s_895f6ebe145fd3::t_db960e88b92b5d 1-109
+tests/fixtures/postgresql/expected.json
+  s_895f6ebe145fd3::t_dbdb49f1aa72c2 1-64
+tests/fixtures/postgresql/lock.json
+  s_895f6ebe145fd3::t_cd7dd18ba72650 1-121
+tests/fixtures/postgresql/tiny.json
+  s_895f6ebe145fd3::t_96001115d3b839 1-810
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6b24d8a5d75ca8b44acd42f9cdb1c9bc5023895d",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
