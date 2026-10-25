@@ -1,0 +1,64 @@
+{
+  "tiny_a": {
+    "persons": 4,
+    "observation_periods": 5,
+    "raw_observation_days": 30,
+    "union_observation_days": 24,
+    "measurements": 13,
+    "numeric_values": 11,
+    "measured_people": 3,
+    "events_outside_observation": 2,
+    "unknown_nonzero_concepts": 1,
+    "primary_numeric_values_sorted": [
+      "-5",
+      "1",
+      "1",
+      "1",
+      "2.5",
+      "100"
+    ],
+    "primary_numeric_summary": {
+      "n": 6,
+      "sum": "100.5",
+      "mean": "16.75",
+      "p25_discrete": "1",
+      "p50_discrete": "1",
+      "p75_discrete": "2.5",
+      "p90_discrete": "100"
+    },
+    "measurement_frequency_by_person": {
+      "1": 7,
+      "2": 4,
+      "3": 2,
+      "4": 0
+    }
+  },
+  "tiny_b": {
+    "persons": 2,
+    "observation_periods": 1,
+    "raw_observation_days": 2,
+    "union_observation_days": 2,
+    "measurements": 2,
+    "numeric_values": 2,
+    "measured_people": 1,
+    "events_outside_observation": 0,
+    "unknown_nonzero_concepts": 0,
+    "primary_numeric_values_sorted": [
+      "42",
+      "42"
+    ],
+    "primary_numeric_summary": {
+      "n": 2,
+      "sum": "84",
+      "mean": "42",
+      "p25_discrete": "42",
+      "p50_discrete": "42",
+      "p75_discrete": "42",
+      "p90_discrete": "42"
+    },
+    "measurement_frequency_by_person": {
+      "1": 2,
+      "2": 0
+    }
+  }
+}
