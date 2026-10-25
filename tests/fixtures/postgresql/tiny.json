@@ -1,0 +1,810 @@
+{
+  "common": {
+    "concept": [
+      {
+        "concept_id": 0,
+        "concept_name": "No matching concept",
+        "domain_id": "Metadata",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": null,
+        "concept_code": "0",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000001,
+        "concept_name": "Toy laboratory A",
+        "domain_id": "Measurement",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000001",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000002,
+        "concept_name": "Toy precision laboratory",
+        "domain_id": "Measurement",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000002",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000101,
+        "concept_name": "Toy unit A",
+        "domain_id": "Unit",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000101",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000102,
+        "concept_name": "Toy unit B",
+        "domain_id": "Unit",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000102",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000201,
+        "concept_name": "Toy less-than operator",
+        "domain_id": "Meas Value Operator",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000201",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000301,
+        "concept_name": "Toy coded result",
+        "domain_id": "Meas Value",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000301",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000401,
+        "concept_name": "Toy specimen identifier field",
+        "domain_id": "Metadata",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000401",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000402,
+        "concept_name": "Toy measurement identifier field",
+        "domain_id": "Metadata",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000402",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000501,
+        "concept_name": "Toy record type",
+        "domain_id": "Type Concept",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000501",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000701,
+        "concept_name": "Toy condition",
+        "domain_id": "Condition",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000701",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000801,
+        "concept_name": "Toy specimen",
+        "domain_id": "Specimen",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": "S",
+        "concept_code": "900000801",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      },
+      {
+        "concept_id": 900000901,
+        "concept_name": "Toy local laboratory code",
+        "domain_id": "Measurement",
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "concept_class_id": "Fixture",
+        "standard_concept": null,
+        "concept_code": "900000901",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      }
+    ],
+    "vocabulary": [
+      {
+        "vocabulary_id": "ACHILLES_FIXTURE",
+        "vocabulary_name": "Handwritten synthetic fixture vocabulary",
+        "vocabulary_reference": "Synthetic; not an Athena vocabulary",
+        "vocabulary_version": "fixture-1",
+        "vocabulary_concept_id": 0
+      }
+    ],
+    "concept_class": [
+      {
+        "concept_class_id": "Fixture",
+        "concept_class_name": "Synthetic fixture",
+        "concept_class_concept_id": 0
+      }
+    ],
+    "domain": [
+      {
+        "domain_id": "Condition",
+        "domain_name": "Condition",
+        "domain_concept_id": 0
+      },
+      {
+        "domain_id": "Meas Value",
+        "domain_name": "Meas Value",
+        "domain_concept_id": 0
+      },
+      {
+        "domain_id": "Meas Value Operator",
+        "domain_name": "Meas Value Operator",
+        "domain_concept_id": 0
+      },
+      {
+        "domain_id": "Measurement",
+        "domain_name": "Measurement",
+        "domain_concept_id": 0
+      },
+      {
+        "domain_id": "Metadata",
+        "domain_name": "Metadata",
+        "domain_concept_id": 0
+      },
+      {
+        "domain_id": "Specimen",
+        "domain_name": "Specimen",
+        "domain_concept_id": 0
+      },
+      {
+        "domain_id": "Type Concept",
+        "domain_name": "Type Concept",
+        "domain_concept_id": 0
+      },
+      {
+        "domain_id": "Unit",
+        "domain_name": "Unit",
+        "domain_concept_id": 0
+      }
+    ],
+    "relationship": [
+      {
+        "relationship_id": "Maps to",
+        "relationship_name": "Toy source to standard map",
+        "is_hierarchical": "0",
+        "defines_ancestry": "0",
+        "reverse_relationship_id": "Mapped from",
+        "relationship_concept_id": 0
+      }
+    ],
+    "concept_relationship": [
+      {
+        "concept_id_1": 900000901,
+        "concept_id_2": 900000001,
+        "relationship_id": "Maps to",
+        "valid_start_date": "1970-01-01",
+        "valid_end_date": "2099-12-31"
+      }
+    ]
+  },
+  "sources": {
+    "tiny_a": {
+      "person": [
+        {
+          "person_id": 1,
+          "gender_concept_id": 0,
+          "year_of_birth": 1971,
+          "race_concept_id": 0,
+          "ethnicity_concept_id": 0,
+          "person_source_value": "fixture-person-1"
+        },
+        {
+          "person_id": 2,
+          "gender_concept_id": 0,
+          "year_of_birth": 1972,
+          "race_concept_id": 0,
+          "ethnicity_concept_id": 0,
+          "person_source_value": "fixture-person-2"
+        },
+        {
+          "person_id": 3,
+          "gender_concept_id": 0,
+          "year_of_birth": 1973,
+          "race_concept_id": 0,
+          "ethnicity_concept_id": 0,
+          "person_source_value": "fixture-person-3"
+        },
+        {
+          "person_id": 4,
+          "gender_concept_id": 0,
+          "year_of_birth": 1974,
+          "race_concept_id": 0,
+          "ethnicity_concept_id": 0,
+          "person_source_value": "fixture-person-4"
+        }
+      ],
+      "observation_period": [
+        {
+          "observation_period_id": 1,
+          "person_id": 1,
+          "observation_period_start_date": "2020-01-01",
+          "observation_period_end_date": "2020-01-10",
+          "period_type_concept_id": 900000501
+        },
+        {
+          "observation_period_id": 2,
+          "person_id": 1,
+          "observation_period_start_date": "2020-01-05",
+          "observation_period_end_date": "2020-01-15",
+          "period_type_concept_id": 900000501
+        },
+        {
+          "observation_period_id": 3,
+          "person_id": 1,
+          "observation_period_start_date": "2020-01-16",
+          "observation_period_end_date": "2020-01-20",
+          "period_type_concept_id": 900000501
+        },
+        {
+          "observation_period_id": 4,
+          "person_id": 2,
+          "observation_period_start_date": "2020-02-28",
+          "observation_period_end_date": "2020-03-01",
+          "period_type_concept_id": 900000501
+        },
+        {
+          "observation_period_id": 5,
+          "person_id": 3,
+          "observation_period_start_date": "2020-12-31",
+          "observation_period_end_date": "2020-12-31",
+          "period_type_concept_id": 900000501
+        }
+      ],
+      "measurement": [
+        {
+          "measurement_id": 1,
+          "person_id": 1,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2020-01-01",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "-5",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 2,
+          "person_id": 1,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2020-01-05",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "1",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 3,
+          "person_id": 1,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2020-01-05",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "1",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 4,
+          "person_id": 2,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2020-02-28",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "1",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 5,
+          "person_id": 2,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2020-02-29",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "2.5",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 6,
+          "person_id": 3,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2020-12-31",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "100",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 7,
+          "person_id": 1,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2020-01-20",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": null,
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 8,
+          "person_id": 1,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2020-01-21",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "7",
+          "unit_concept_id": 900000102,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-B"
+        },
+        {
+          "measurement_id": 9,
+          "person_id": 1,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2019-12-31",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "10",
+          "unit_concept_id": 0,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-B"
+        },
+        {
+          "measurement_id": 10,
+          "person_id": 1,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2020-01-10",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 900000201,
+          "value_as_number": "5",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 11,
+          "person_id": 2,
+          "measurement_concept_id": 900000002,
+          "measurement_date": "2020-03-01",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "9007199254740993.125",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 12,
+          "person_id": 2,
+          "measurement_concept_id": 0,
+          "measurement_date": "2020-02-28",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "0",
+          "unit_concept_id": null,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": null
+        },
+        {
+          "measurement_id": 13,
+          "person_id": 3,
+          "measurement_concept_id": 999999999,
+          "measurement_date": "2020-12-31",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": null,
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A",
+          "value_as_concept_id": 900000301
+        }
+      ],
+      "observation": [
+        {
+          "observation_id": 1,
+          "person_id": 2,
+          "observation_concept_id": 900000701,
+          "observation_date": "2020-03-01",
+          "observation_type_concept_id": 900000501,
+          "value_as_string": "follow-up",
+          "observation_source_value": ""
+        }
+      ],
+      "specimen": [
+        {
+          "specimen_id": 1,
+          "person_id": 1,
+          "specimen_concept_id": 900000801,
+          "specimen_type_concept_id": 900000501,
+          "specimen_date": "2020-01-01"
+        }
+      ],
+      "condition_occurrence": [
+        {
+          "condition_occurrence_id": 1,
+          "person_id": 1,
+          "condition_concept_id": 900000701,
+          "condition_start_date": "2020-01-01",
+          "condition_type_concept_id": 900000501
+        },
+        {
+          "condition_occurrence_id": 2,
+          "person_id": 1,
+          "condition_concept_id": 900000701,
+          "condition_start_date": "2020-01-01",
+          "condition_type_concept_id": 900000501
+        }
+      ]
+    },
+    "tiny_b": {
+      "person": [
+        {
+          "person_id": 1,
+          "gender_concept_id": 0,
+          "year_of_birth": 2000,
+          "race_concept_id": 0,
+          "ethnicity_concept_id": 0,
+          "person_source_value": "fixture-person-1"
+        },
+        {
+          "person_id": 2,
+          "gender_concept_id": 0,
+          "year_of_birth": 2001,
+          "race_concept_id": 0,
+          "ethnicity_concept_id": 0,
+          "person_source_value": "fixture-person-2"
+        }
+      ],
+      "observation_period": [
+        {
+          "observation_period_id": 1,
+          "person_id": 1,
+          "observation_period_start_date": "2021-01-01",
+          "observation_period_end_date": "2021-01-02",
+          "period_type_concept_id": 900000501
+        }
+      ],
+      "measurement": [
+        {
+          "measurement_id": 1,
+          "person_id": 1,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2021-01-01",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "42",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        },
+        {
+          "measurement_id": 2,
+          "person_id": 1,
+          "measurement_concept_id": 900000001,
+          "measurement_date": "2021-01-02",
+          "measurement_type_concept_id": 900000501,
+          "operator_concept_id": 0,
+          "value_as_number": "42",
+          "unit_concept_id": 900000101,
+          "measurement_source_value": "TOY_A",
+          "measurement_source_concept_id": 900000901,
+          "unit_source_value": "toy-A"
+        }
+      ]
+    }
+  },
+  "additions": {
+    "5.4": {
+      "tiny_a": {
+        "episode": [
+          {
+            "episode_id": 1,
+            "person_id": 1,
+            "episode_concept_id": 0,
+            "episode_start_date": "2020-01-01",
+            "episode_end_date": "2020-01-20",
+            "episode_object_concept_id": 900000701,
+            "episode_type_concept_id": 900000501
+          }
+        ],
+        "episode_event": [
+          {
+            "episode_id": 1,
+            "event_id": 1,
+            "episode_event_field_concept_id": 900000402
+          }
+        ],
+        "metadata": [
+          {
+            "metadata_id": 1,
+            "metadata_concept_id": 0,
+            "metadata_type_concept_id": 900000501,
+            "name": "synthetic-fixture-version",
+            "value_as_string": "fixture-1"
+          }
+        ]
+      },
+      "tiny_b": {}
+    },
+    "5.5": {
+      "tiny_a": {
+        "observation": [
+          {
+            "observation_id": 1,
+            "person_id": 2,
+            "observation_concept_id": 900000701,
+            "observation_date": "2020-03-01",
+            "observation_type_concept_id": 900000501,
+            "value_as_string": null,
+            "observation_source_value": "",
+            "value_as_date": "2020-02-29"
+          }
+        ],
+        "measurement": [
+          {
+            "measurement_id": 1,
+            "person_id": 1,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2020-01-01",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "-5",
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A",
+            "measurement_event_id": 1,
+            "meas_event_field_concept_id": 900000401
+          },
+          {
+            "measurement_id": 2,
+            "person_id": 1,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2020-01-05",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "1",
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A"
+          },
+          {
+            "measurement_id": 3,
+            "person_id": 1,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2020-01-05",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "1",
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A"
+          },
+          {
+            "measurement_id": 4,
+            "person_id": 2,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2020-02-28",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "1",
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A"
+          },
+          {
+            "measurement_id": 5,
+            "person_id": 2,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2020-02-29",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "2.5",
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A"
+          },
+          {
+            "measurement_id": 6,
+            "person_id": 3,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2020-12-31",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "100",
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A"
+          },
+          {
+            "measurement_id": 7,
+            "person_id": 1,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2020-01-20",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": null,
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A"
+          },
+          {
+            "measurement_id": 8,
+            "person_id": 1,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2020-01-21",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "7",
+            "unit_concept_id": 900000102,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-B"
+          },
+          {
+            "measurement_id": 9,
+            "person_id": 1,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2019-12-31",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "10",
+            "unit_concept_id": 0,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-B"
+          },
+          {
+            "measurement_id": 10,
+            "person_id": 1,
+            "measurement_concept_id": 900000001,
+            "measurement_date": "2020-01-10",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 900000201,
+            "value_as_number": "5",
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A"
+          },
+          {
+            "measurement_id": 11,
+            "person_id": 2,
+            "measurement_concept_id": 900000002,
+            "measurement_date": "2020-03-01",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "9007199254740993.125",
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A"
+          },
+          {
+            "measurement_id": 12,
+            "person_id": 2,
+            "measurement_concept_id": 0,
+            "measurement_date": "2020-02-28",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": "0",
+            "unit_concept_id": null,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": null
+          },
+          {
+            "measurement_id": 13,
+            "person_id": 3,
+            "measurement_concept_id": 999999999,
+            "measurement_date": "2020-12-31",
+            "measurement_type_concept_id": 900000501,
+            "operator_concept_id": 0,
+            "value_as_number": null,
+            "unit_concept_id": 900000101,
+            "measurement_source_value": "TOY_A",
+            "measurement_source_concept_id": 900000901,
+            "unit_source_value": "toy-A",
+            "value_as_concept_id": 900000301
+          }
+        ],
+        "concept_metadata": [
+          {
+            "concept_id": 900000001,
+            "concept_category": "Fixture",
+            "reuse_status": "Fixture"
+          }
+        ],
+        "concept_relationship_metadata": [
+          {
+            "concept_id_1": 900000901,
+            "concept_id_2": 900000001,
+            "relationship_id": "Maps to",
+            "mapping_source": "Synthetic fixture",
+            "confidence": "0.5",
+            "mapping_tool": "handwritten",
+            "mapper": "fixture",
+            "reviewer": null
+          }
+        ]
+      },
+      "tiny_b": {}
+    }
+  }
+}
