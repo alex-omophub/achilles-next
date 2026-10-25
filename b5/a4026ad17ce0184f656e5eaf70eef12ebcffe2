@@ -1,0 +1,37 @@
+.gitattributes
+  s_3e206b4a2cf4c3::t_50ac8908c577bc 1-2
+.gitignore
+  s_3e206b4a2cf4c3::t_8231bb59c60d83 51-94
+AGENTS.md
+  s_3e206b4a2cf4c3::t_8ae206bd4d1f98 1-22
+CONTRIBUTING.md
+  s_3e206b4a2cf4c3::t_8bc181ed650d93 1-26
+README.md
+  s_3e206b4a2cf4c3::t_1ad13da2c31be5 1-28
+.github/CODEOWNERS
+  s_895f6ebe145fd3::t_d7488549f769ba 1-2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b5a4026ad17ce0184f656e5eaf70eef12ebcffe2",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
