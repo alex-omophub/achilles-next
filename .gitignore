@@ -48,3 +48,47 @@ po/*~
 
 # RStudio Connect folder
 rsconnect/
+
+# AchillesNext source documentation is tracked; generated sites are separate.
+!docs/
+docs/site/
+
+# Local configuration, secrets, runtime/build outputs and private artifacts.
+.env.*
+!.env.example
+.Renviron.*
+*.pem
+*.key
+*.p12
+*.pfx
+.DS_Store
+.local/
+.venv/
+__pycache__/
+*.pyc
+node_modules/
+dist/
+build/
+coverage/
+scratch/
+artifacts/
+data/private/
+
+# Internal working material stays outside the package checkout.
+.private/
+private/
+planning/
+research/
+delivery/
+decisions/
+adr/
+docs/adr/
+docs/decisions/
+docs/delivery/
+docs/planning/
+docs/product/
+docs/research/
+docs/references/
+project.json
+GOVERNANCE.md
+CONTEXT.md
