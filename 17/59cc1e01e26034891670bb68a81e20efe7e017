@@ -1,0 +1,37 @@
+docs/contracts/v1.md
+  s_895f6ebe145fd3::t_8395fa792d9ebd 3,90-91,134
+docs/integration/atlas3.md
+  s_895f6ebe145fd3::t_8395fa792d9ebd 1-54
+packages/contracts/src/index.d.mts
+  s_895f6ebe145fd3::t_35370367bca08c 107,109-115
+  s_895f6ebe145fd3::t_acf2e8a43fea66 108
+packages/contracts/src/index.mjs
+  s_895f6ebe145fd3::t_35370367bca08c 2
+  s_895f6ebe145fd3::t_acf2e8a43fea66 1
+packages/contracts/tests/types.ts
+  s_895f6ebe145fd3::t_b2033811ec15bd 2,27-29
+packages/contracts/tests/http-provider.test.mjs
+  s_895f6ebe145fd3::t_b2033811ec15bd 48-55
+  s_895f6ebe145fd3::t_35370367bca08c 1-47
+README.md
+  s_895f6ebe145fd3::t_8395fa792d9ebd 30-31
+packages/contracts/src/http-provider.mjs
+  s_895f6ebe145fd3::t_acf2e8a43fea66 24-26,39-40
+  s_895f6ebe145fd3::t_35370367bca08c 1-23,27-38,41-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1759cc1e01e26034891670bb68a81e20efe7e017",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
