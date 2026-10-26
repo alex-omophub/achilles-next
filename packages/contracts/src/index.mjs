@@ -1,4 +1,5 @@
-// Portable contract primitives. No React, router, HTTP client or credentials.
+// Portable contract primitives and transport. No React, router or stored credentials.
+export {createFetchResultProvider, ResultAccessError} from './http-provider.mjs';
 export const CONTRACT_VERSION = '1.0.0';
 export const canonical = value => {
   if (value === null || typeof value !== 'object') return JSON.stringify(value);

@@ -1,5 +1,5 @@
 import type {AccessContext, BundleManifest, MountAchilles, ResultDocument, ResultProvider, UpdateOptions, Values} from '../src/index.mjs';
-import {inputReuseIdentity, toSafeCountNumber} from '../src/index.mjs';
+import {inputReuseIdentity, toSafeCountNumber,createFetchResultProvider} from '../src/index.mjs';
 const count:Values['person.count']={count:'9007199254740993'};
 // @ts-expect-error Numeric values cannot replace exact count strings.
 const unsafe:Values['person.count']={count:9007199254740993};
@@ -24,3 +24,6 @@ function displayedCount(result:ResultDocument):string|null {
   return null;
 }
 void [count,unsafe,identity,safe,incomplete,badRead,displayedCount];
+const http:ResultProvider=createFetchResultProvider({baseUrl:'https://example.test/results/v1/',
+  getHeaders:async(context,options)=>({'X-Access-Context':context.access_scope_id,'X-Request-Id':options.requestId})});
+void http;
