@@ -1,0 +1,112 @@
+packages/contracts/package.json
+  s_895f6ebe145fd3::t_605ff20c0c4a2f 1-14
+  s_895f6ebe145fd3::t_0e1153597e3eb0 15-26
+README.md
+  s_895f6ebe145fd3::t_176abae2d5c515 26-27
+packages/contracts/src/validator.mjs
+  s_895f6ebe145fd3::t_733a3f55da29d7 1-12,15-49,51-70,75-103,105-110,112-120,126,135-139,141-171,181-203
+  s_895f6ebe145fd3::t_58a9bbed62069e 50,121-125,127-134,140,172-180
+  s_895f6ebe145fd3::t_6a363ff16c3e66 13-14,111
+  s_895f6ebe145fd3::t_791a6d10f16992 71-74,104
+packages/contracts/tools/validate.mjs
+  s_895f6ebe145fd3::t_176abae2d5c515 2,4
+  s_895f6ebe145fd3::t_733a3f55da29d7 1,3,5-7
+packages/contracts/src/index.mjs
+  s_895f6ebe145fd3::t_733a3f55da29d7 1-8,10-19,21-37
+  s_895f6ebe145fd3::t_791a6d10f16992 20
+  s_895f6ebe145fd3::t_58a9bbed62069e 9
+packages/contracts/tests/support/host.mjs
+  s_895f6ebe145fd3::t_b467dad45b766c 1-50,55-57
+  s_895f6ebe145fd3::t_176abae2d5c515 51-54
+packages/contracts/tests/contracts.test.mjs
+  s_895f6ebe145fd3::t_176abae2d5c515 148-153
+  s_895f6ebe145fd3::t_6a363ff16c3e66 51,141-146
+  s_895f6ebe145fd3::t_791a6d10f16992 69-82
+  s_895f6ebe145fd3::t_b467dad45b766c 1-50,52-68,83-140,147
+packages/contracts/tests/types.ts
+  s_895f6ebe145fd3::t_b467dad45b766c 1-21
+  s_895f6ebe145fd3::t_ae61f8ecb61e7d 22-24
+packages/contracts/tools/make-fixtures.py
+  s_895f6ebe145fd3::t_605ff20c0c4a2f 1-87,89-175
+  s_895f6ebe145fd3::t_58a9bbed62069e 88
+docs/contracts/v1.md
+  s_895f6ebe145fd3::t_176abae2d5c515 1-132
+inst/contracts/v1/bundle.schema.json
+  s_895f6ebe145fd3::t_2c662cbfc37d92 1-5
+inst/contracts/v1/context.schema.json
+  s_895f6ebe145fd3::t_f1d27193282146 1-5
+inst/contracts/v1/contract.schema.json
+  s_895f6ebe145fd3::t_c3911b5ed199f6 1-4016
+inst/contracts/v1/event.schema.json
+  s_895f6ebe145fd3::t_a35e3706f666e7 1-5
+inst/contracts/v1/provider_request.schema.json
+  s_895f6ebe145fd3::t_93c342be9a5c32 1-5
+inst/contracts/v1/result.schema.json
+  s_895f6ebe145fd3::t_5650f94dd4d903 1-5
+inst/contracts/v1/schema-lock.json
+  s_895f6ebe145fd3::t_5cb936d420f002 1-12
+inst/contracts/v1/terminology.schema.json
+  s_895f6ebe145fd3::t_357d657bf401fa 1-5
+packages/contracts/package-lock.json
+  s_895f6ebe145fd3::t_bdfb903882d49c 1-92
+tests/fixtures/contracts/complete/manifest.json
+  s_895f6ebe145fd3::t_6eea7682af814c 1-233
+tests/fixtures/contracts/complete/results/execution.output_status.json
+  s_895f6ebe145fd3::t_20f65058d17961 1-238
+tests/fixtures/contracts/complete/results/execution.timing.json
+  s_895f6ebe145fd3::t_d2a785a79d49f2 1-853
+tests/fixtures/contracts/complete/results/measurement.numeric_eligibility_count.json
+  s_895f6ebe145fd3::t_cc50303858020e 1-363
+tests/fixtures/contracts/complete/results/measurement.numeric_summary.json
+  s_895f6ebe145fd3::t_4f44147d58be83 1-45
+tests/fixtures/contracts/complete/results/measurement.operator_count.json
+  s_895f6ebe145fd3::t_dc4fcb1cb6e8f8 1-113
+tests/fixtures/contracts/complete/results/measurement.person_count.json
+  s_895f6ebe145fd3::t_56e0db48a9601f 1-53
+tests/fixtures/contracts/complete/results/measurement.record_count.json
+  s_895f6ebe145fd3::t_74310eabd7f458 1-41
+tests/fixtures/contracts/complete/results/measurement.representation_count.json
+  s_895f6ebe145fd3::t_15f121bc5df39f 1-445
+tests/fixtures/contracts/complete/results/measurement.unit_count.json
+  s_895f6ebe145fd3::t_e415a4599175ba 1-63
+tests/fixtures/contracts/complete/results/observation.monthly_person_count.json
+  s_895f6ebe145fd3::t_dcc6dbf9d11ab2 1-29
+tests/fixtures/contracts/complete/results/observation.person_count.json
+  s_895f6ebe145fd3::t_96ee13e68fb255 1-27
+tests/fixtures/contracts/complete/results/observation.person_days.json
+  s_895f6ebe145fd3::t_8dd78cfe07f503 1-22
+tests/fixtures/contracts/complete/results/person.count.json
+  s_895f6ebe145fd3::t_72e5b192549a6c 1-22
+tests/fixtures/contracts/complete/results/source.capabilities.json
+  s_895f6ebe145fd3::t_f5d60cda213b67 1-893
+tests/fixtures/contracts/complete/results/source.passport.json
+  s_895f6ebe145fd3::t_6b50edb0ef753c 1-51
+tests/fixtures/contracts/complete/terminology.json
+  s_895f6ebe145fd3::t_969d28f21174e3 1-34
+tests/fixtures/contracts/context.json
+  s_895f6ebe145fd3::t_e3e688501400f3 1-7
+tests/fixtures/contracts/event.json
+  s_895f6ebe145fd3::t_5a5ae917453cb7 1-19
+tests/fixtures/contracts/invalid-cases.json
+  s_895f6ebe145fd3::t_fe84848cae84f7 1-254
+tests/fixtures/contracts/provider-request.json
+  s_895f6ebe145fd3::t_0fd629ac45c28b 1-15
+tests/fixtures/contracts/result-states.json
+  s_895f6ebe145fd3::t_726cc8d3d3e240 1-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7e0013b9c01cbbf7a2e9e64ba7cbc327926d6a3a",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
