@@ -104,3 +104,12 @@ export declare function toSafeCountNumber(value:CountString):number;
 export declare function inputReuseIdentity(manifest:BundleManifest):string|null;
 export declare function viewCacheKey(manifest:BundleManifest,context:AccessContext,metricId:MetricId,instanceId:string):string|null;
 export declare function assertContext(document:BundleManifest|ResultDocument,context:AccessContext):void;
+export declare class ResultAccessError extends Error {
+  constructor(code:'UNAUTHENTICATED'|'INACCESSIBLE'|'NOT_FOUND'|'PROVIDER_FAILURE',status?:number|null);
+  readonly code:'UNAUTHENTICATED'|'INACCESSIBLE'|'NOT_FOUND'|'PROVIDER_FAILURE';
+  readonly status:number|null;
+}
+/** Experimental transport; the host owns its gateway, authentication and authorization. */
+export declare function createFetchResultProvider(options:{baseUrl:string;
+  getHeaders?:(context:Readonly<AccessContext>,options:ReadOptions)=>HeadersInit|Promise<HeadersInit>;
+  fetch?:typeof globalThis.fetch}):ResultProvider;
