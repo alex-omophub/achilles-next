@@ -1,0 +1,44 @@
+docs/analysis/alpha-profile.md
+  s_895f6ebe145fd3::t_710b848c278898 1-124
+tests/fixtures/analysis/reference.sql
+  s_895f6ebe145fd3::t_ee4aa669a726ac 1-73
+tests/test_analysis_scope.py
+  s_895f6ebe145fd3::t_8fa559bdd68386 1-90
+README.md
+  s_895f6ebe145fd3::t_710b848c278898 24-25
+THIRD_PARTY_NOTICES.md
+  s_895f6ebe145fd3::t_710b848c278898 3-6
+tools/check_analysis_scope.py
+  s_895f6ebe145fd3::t_1c3307b3f505c8 1-6,8-27,29-102,146-148,150-154,157-158,160-166
+  s_895f6ebe145fd3::t_8fa559bdd68386 7,28,103-145,149,155-156,159
+tests/fixtures/analysis/numeric-edge-reference.sql
+  s_895f6ebe145fd3::t_ee4aa669a726ac 1-25
+inst/analysis/alpha-measurement-v1.json
+  s_895f6ebe145fd3::t_5fe1fe4ce5d3a0 1-836
+inst/analysis/legacy-baselines.json
+  s_895f6ebe145fd3::t_82c3282e652a2c 1-75
+inst/analysis/manifest-lock.json
+  s_895f6ebe145fd3::t_6c3bfce80e609b 1-7
+tests/fixtures/analysis/alpha-oracle.json
+  s_895f6ebe145fd3::t_bbb99e218a37d8 1-378
+tests/fixtures/analysis/numeric-edge-oracle.json
+  s_895f6ebe145fd3::t_e39fa61bd6fcc4 1-150
+tests/fixtures/analysis/valid-request.json
+  s_895f6ebe145fd3::t_2dc88ac022ef72 1-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b22b8d7e1a050918c1f6f2c4c9ba608f0f5ae50a",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
