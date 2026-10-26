@@ -1,0 +1,893 @@
+{
+  "contract_version": "1.0.0",
+  "bundle_id": "contract-fixture-january-v1",
+  "source_id": "fixture:tiny_a",
+  "run_id": "contract-fixture-run-1",
+  "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+  "metric_id": "source.capabilities",
+  "metric_version": "1.0.0",
+  "state": "computed",
+  "reason": null,
+  "rows": [
+    {
+      "dimensions": {
+        "probe_id": "person.person_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "observation_period.person_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "observation_period.observation_period_start_date"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "observation_period.observation_period_end_date"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.person_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.measurement_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.measurement_date"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.value_as_number"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.value_as_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.value_source_value"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.unit_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.operator_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "concept.concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "concept.domain_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "concept.concept_name"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [
+          "source.passport",
+          "source.capabilities",
+          "person.count",
+          "observation.person_count",
+          "observation.monthly_person_count",
+          "observation.person_days",
+          "measurement.record_count",
+          "measurement.person_count",
+          "measurement.representation_count",
+          "measurement.unit_count",
+          "measurement.operator_count",
+          "measurement.numeric_eligibility_count",
+          "measurement.numeric_summary",
+          "execution.output_status",
+          "execution.timing"
+        ],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "cdm_source.cdm_source_name"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "cdm_source.cdm_version"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "cdm_source.cdm_version_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "cdm_source.cdm_release_identifier"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "cdm_source.source_release_date"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "cdm_source.cdm_release_date"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "cdm_source.vocabulary_version"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "vocabulary.vocabulary_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "vocabulary.vocabulary_version"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "episode.episode_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "episode_event.episode_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "episode_event.event_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "episode_event.episode_event_field_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "observation.value_as_date"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "observation.value_as_source_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "observation.unit_source_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "specimen.visit_occurrence_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "specimen.visit_detail_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.measurement_event_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.meas_event_field_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.unit_source_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "measurement.value_as_source_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "pack_content.pack_concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "concept_metadata.concept_id"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "probe_id": "concept_relationship_metadata.concept_id_1"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "table_present": true,
+        "column_present": true,
+        "readable": true,
+        "required_for": [],
+        "availability": "available",
+        "reason": null
+      },
+      "denominator": null
+    }
+  ]
+}

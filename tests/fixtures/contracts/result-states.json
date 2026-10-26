@@ -1,0 +1,167 @@
+[
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "computed",
+    "reason": null,
+    "rows": [
+      {
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "state": "computed",
+        "reason": null,
+        "values": {
+          "count": "0"
+        },
+        "denominator": null
+      }
+    ]
+  },
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "empty_source",
+    "reason": "fixture_empty_source",
+    "rows": [
+      {
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "state": "empty_source",
+        "reason": "fixture_empty_source",
+        "values": {
+          "count": "0"
+        },
+        "denominator": null
+      }
+    ]
+  },
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "empty_population",
+    "reason": "fixture_empty_population",
+    "rows": [
+      {
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "state": "empty_population",
+        "reason": "fixture_empty_population",
+        "values": {
+          "count": "0"
+        },
+        "denominator": null
+      }
+    ]
+  },
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "unavailable",
+    "reason": "fixture_unavailable",
+    "rows": null
+  },
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "unsupported",
+    "reason": "fixture_unsupported",
+    "rows": null
+  },
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "inaccessible",
+    "reason": "fixture_inaccessible",
+    "rows": null
+  },
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "not_requested",
+    "reason": "fixture_not_requested",
+    "rows": null
+  },
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "failed",
+    "reason": "fixture_failed",
+    "rows": null
+  },
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "suppressed",
+    "reason": "fixture_suppressed",
+    "rows": null
+  },
+  {
+    "contract_version": "1.0.0",
+    "bundle_id": "contract-fixture-january-v1",
+    "source_id": "fixture:tiny_a",
+    "run_id": "contract-fixture-run-1",
+    "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+    "metric_id": "measurement.record_count",
+    "metric_version": "1.0.0",
+    "state": "stale",
+    "reason": "fixture_stale",
+    "rows": null
+  }
+]

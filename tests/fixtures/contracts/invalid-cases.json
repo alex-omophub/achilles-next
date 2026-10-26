@@ -1,0 +1,254 @@
+[
+  {
+    "id": "unsupported-result-version",
+    "document": "result",
+    "base": "complete/results/person.count.json",
+    "path": [
+      "contract_version"
+    ],
+    "value": "2.0.0"
+  },
+  {
+    "id": "unsafe-json-number",
+    "document": "result",
+    "base": "complete/results/person.count.json",
+    "path": [
+      "rows",
+      0,
+      "values",
+      "count"
+    ],
+    "value": 9007199254740992
+  },
+  {
+    "id": "computed-without-rows",
+    "document": "result",
+    "base": "complete/results/person.count.json",
+    "path": [
+      "rows"
+    ],
+    "value": null
+  },
+  {
+    "id": "failed-with-values",
+    "document": "result",
+    "base": "complete/results/person.count.json",
+    "path": [
+      "state"
+    ],
+    "value": "failed"
+  },
+  {
+    "id": "negative-count",
+    "document": "result",
+    "base": "complete/results/person.count.json",
+    "path": [
+      "rows",
+      0,
+      "values",
+      "count"
+    ],
+    "value": "-1"
+  },
+  {
+    "id": "wrong-value-type",
+    "document": "result",
+    "base": "complete/results/measurement.numeric_summary.json",
+    "path": [
+      "rows",
+      0,
+      "values",
+      "p50"
+    ],
+    "value": 1
+  },
+  {
+    "id": "unknown-context-field",
+    "document": "context",
+    "base": "context.json",
+    "path": [
+      "token"
+    ],
+    "value": "must-not-be-serialized"
+  },
+  {
+    "id": "arbitrary-provider-filter",
+    "document": "provider_request",
+    "base": "provider-request.json",
+    "path": [
+      "parameters",
+      "cohort_filter"
+    ],
+    "value": "unsupported"
+  },
+  {
+    "id": "missing-requested-output",
+    "document": "bundle",
+    "base": "complete/manifest.json",
+    "path": [
+      "outputs"
+    ],
+    "value": [
+      {
+        "metric_id": "source.passport",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/source.passport.json",
+        "sha256": "9fda3426301f1772eb5e5a5a106a41ddcb218b36413ef8b334442571baed82dc",
+        "bytes": "1786",
+        "rows": "1"
+      },
+      {
+        "metric_id": "source.capabilities",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/source.capabilities.json",
+        "sha256": "65239b6ffac5ca6dcf1f3dc4494fd3383f59b17864230f3efc6408822f4295a1",
+        "bytes": "23985",
+        "rows": "40"
+      },
+      {
+        "metric_id": "person.count",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/person.count.json",
+        "sha256": "1d48d14f379681d099bf04cb0eb2f0825b6b58f4199c2a4090d2eec307d6965f",
+        "bytes": "516",
+        "rows": "1"
+      },
+      {
+        "metric_id": "observation.person_count",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/observation.person_count.json",
+        "sha256": "7a0c740d0f3ce21121857bb376787dcfc064ed1e19cd9740f9a902695edc4ba0",
+        "bytes": "643",
+        "rows": "1"
+      },
+      {
+        "metric_id": "observation.monthly_person_count",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/observation.monthly_person_count.json",
+        "sha256": "c13c66fe62f79f29e8a1821c9cd37338c792c1146f6e653940cbc5f0dde6c473",
+        "bytes": "688",
+        "rows": "1"
+      },
+      {
+        "metric_id": "observation.person_days",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/observation.person_days.json",
+        "sha256": "4c8f8165fa533097850fffce2970638f24e89f75a87ea67bf70cb07596b84724",
+        "bytes": "528",
+        "rows": "1"
+      },
+      {
+        "metric_id": "measurement.record_count",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/measurement.record_count.json",
+        "sha256": "da1159cea4917eee5d2160a767abfb0d612db1ccfc0c83741aa1e61073b59fd1",
+        "bytes": "1003",
+        "rows": "2"
+      },
+      {
+        "metric_id": "measurement.person_count",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/measurement.person_count.json",
+        "sha256": "0b5ba2b4beed8a3e0bd386031bf33ca204029d65a216c87bc6fea6d35e9eb4a5",
+        "bytes": "1306",
+        "rows": "2"
+      },
+      {
+        "metric_id": "measurement.representation_count",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/measurement.representation_count.json",
+        "sha256": "ee872447d29c326765e3a11cada043a990916fe64fdbd64dbf06164fb2db0c56",
+        "bytes": "11808",
+        "rows": "16"
+      },
+      {
+        "metric_id": "measurement.unit_count",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/measurement.unit_count.json",
+        "sha256": "c148e959603820d7eb68bef88a15a10fe9b98d4e810b20a1289f20046b8f982f",
+        "bytes": "1670",
+        "rows": "2"
+      },
+      {
+        "metric_id": "measurement.operator_count",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/measurement.operator_count.json",
+        "sha256": "510c8e164ad5230058e43c4f4e5e3049e6e3687972559a9de01c098b9dfe8764",
+        "bytes": "2978",
+        "rows": "4"
+      },
+      {
+        "metric_id": "measurement.numeric_eligibility_count",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/measurement.numeric_eligibility_count.json",
+        "sha256": "4128906ce693bcd212d918a9c25c24b4a781f8d668410bfbc1dda6697c33a331",
+        "bytes": "9637",
+        "rows": "14"
+      },
+      {
+        "metric_id": "measurement.numeric_summary",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/measurement.numeric_summary.json",
+        "sha256": "2df533ed80032b0a632edc1cdc15cc9e14dfe7a2f1a472e2a26875f8ddcfe382",
+        "bytes": "1140",
+        "rows": "1"
+      },
+      {
+        "metric_id": "execution.output_status",
+        "metric_version": "1.0.0",
+        "state": "computed",
+        "reason": null,
+        "path": "results/execution.output_status.json",
+        "sha256": "ff1baec67af0b5bdfa568a7ed72e610502c19c9f770d9368f1cb0747e73fd254",
+        "bytes": "5568",
+        "rows": "15"
+      }
+    ]
+  },
+  {
+    "id": "traversal-path",
+    "document": "bundle",
+    "base": "complete/manifest.json",
+    "path": [
+      "outputs",
+      0,
+      "path"
+    ],
+    "value": "../private.json"
+  },
+  {
+    "id": "unsupported-embed-version",
+    "document": "event",
+    "base": "event.json",
+    "path": [
+      "contract_version"
+    ],
+    "value": "9.0.0"
+  }
+]

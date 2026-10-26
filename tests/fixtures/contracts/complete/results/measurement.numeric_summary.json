@@ -1,0 +1,45 @@
+{
+  "contract_version": "1.0.0",
+  "bundle_id": "contract-fixture-january-v1",
+  "source_id": "fixture:tiny_a",
+  "run_id": "contract-fixture-run-1",
+  "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+  "metric_id": "measurement.numeric_summary",
+  "metric_version": "1.0.0",
+  "state": "computed",
+  "reason": null,
+  "rows": [
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "unit_concept_id": 900000101,
+        "raw_operator_tag": "zero"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "n": "3",
+        "sum": "-3",
+        "min": "-5",
+        "max": "1",
+        "mean_numerator": "-3",
+        "mean_denominator": "3",
+        "p10": "-5",
+        "p25": "-5",
+        "p50": "1",
+        "p75": "1",
+        "p90": "1"
+      },
+      "denominator": {
+        "metric_id": "measurement.numeric_summary",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "unit_concept_id": 900000101,
+          "raw_operator_tag": "zero"
+        },
+        "field": "n",
+        "value": "3"
+      }
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:achilles-next:contracts:1:context",
+  "$ref": "urn:achilles-next:contracts:1#/$defs/context"
+}

@@ -1,0 +1,53 @@
+{
+  "contract_version": "1.0.0",
+  "bundle_id": "contract-fixture-january-v1",
+  "source_id": "fixture:tiny_a",
+  "run_id": "contract-fixture-run-1",
+  "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+  "metric_id": "measurement.person_count",
+  "metric_version": "1.0.0",
+  "state": "computed",
+  "reason": null,
+  "rows": [
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "window",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "1"
+      },
+      "denominator": {
+        "metric_id": "observation.person_count",
+        "dimensions": {},
+        "field": "count",
+        "value": "1"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "month",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "1"
+      },
+      "denominator": {
+        "metric_id": "observation.monthly_person_count",
+        "dimensions": {
+          "month": "2020-01-01"
+        },
+        "field": "count",
+        "value": "1"
+      }
+    }
+  ]
+}

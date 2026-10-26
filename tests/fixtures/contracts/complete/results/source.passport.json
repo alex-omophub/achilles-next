@@ -1,0 +1,51 @@
+{
+  "contract_version": "1.0.0",
+  "bundle_id": "contract-fixture-january-v1",
+  "source_id": "fixture:tiny_a",
+  "run_id": "contract-fixture-run-1",
+  "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+  "metric_id": "source.passport",
+  "metric_version": "1.0.0",
+  "state": "computed",
+  "reason": null,
+  "rows": [
+    {
+      "dimensions": {},
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "source_id": "fixture:tiny_a",
+        "source_snapshot_id": "fixture-1:tiny-a:55",
+        "data_release_id": "fixture-release-1",
+        "declared_cdm_version": "5.5",
+        "observed_schema_evidence": {
+          "state": "known",
+          "id": "e48cc7ea9d560cd1b7200f1ab8e2a728984927215adb2caf029839e34bf254f3",
+          "reason": null
+        },
+        "vocabulary_release_id": "fixture-vocabulary-1",
+        "profile_id": "alpha-measurement-v1",
+        "profile_revision": "1.0.0",
+        "metric_versions": {
+          "source.passport": "1.0.0",
+          "source.capabilities": "1.0.0",
+          "person.count": "1.0.0",
+          "observation.person_count": "1.0.0",
+          "observation.monthly_person_count": "1.0.0",
+          "observation.person_days": "1.0.0",
+          "measurement.record_count": "1.0.0",
+          "measurement.person_count": "1.0.0",
+          "measurement.representation_count": "1.0.0",
+          "measurement.unit_count": "1.0.0",
+          "measurement.operator_count": "1.0.0",
+          "measurement.numeric_eligibility_count": "1.0.0",
+          "measurement.numeric_summary": "1.0.0",
+          "execution.output_status": "1.0.0",
+          "execution.timing": "1.0.0"
+        },
+        "run_id": "contract-fixture-run-1"
+      },
+      "denominator": null
+    }
+  ]
+}

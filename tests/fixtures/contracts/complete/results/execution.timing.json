@@ -1,0 +1,853 @@
+{
+  "contract_version": "1.0.0",
+  "bundle_id": "contract-fixture-january-v1",
+  "source_id": "fixture:tiny_a",
+  "run_id": "contract-fixture-run-1",
+  "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+  "metric_id": "execution.timing",
+  "metric_version": "1.0.0",
+  "state": "computed",
+  "reason": null,
+  "rows": [
+    {
+      "dimensions": {
+        "metric_id": "source.passport",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "source.passport",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "source.passport",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "source.passport",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "source.capabilities",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "source.capabilities",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "source.capabilities",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "source.capabilities",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "person.count",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "person.count",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "person.count",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "person.count",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.person_count",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.person_count",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.person_count",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.person_count",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.monthly_person_count",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.monthly_person_count",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.monthly_person_count",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.monthly_person_count",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.person_days",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.person_days",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.person_days",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "observation.person_days",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.record_count",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.record_count",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.record_count",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.record_count",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.person_count",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.person_count",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.person_count",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.person_count",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.representation_count",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.representation_count",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.representation_count",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.representation_count",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.unit_count",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.unit_count",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.unit_count",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.unit_count",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.operator_count",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.operator_count",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.operator_count",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.operator_count",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.numeric_eligibility_count",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.numeric_eligibility_count",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.numeric_eligibility_count",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.numeric_eligibility_count",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.numeric_summary",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.numeric_summary",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.numeric_summary",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "measurement.numeric_summary",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "execution.output_status",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "execution.output_status",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "execution.output_status",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "execution.output_status",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "execution.timing",
+        "phase": "compute"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "execution.timing",
+        "phase": "materialize"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "execution.timing",
+        "phase": "validate"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    },
+    {
+      "dimensions": {
+        "metric_id": "execution.timing",
+        "phase": "export"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "duration_ms": null,
+        "availability": "unavailable",
+        "reason": "contract_fixture_no_execution"
+      },
+      "denominator": null
+    }
+  ]
+}

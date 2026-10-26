@@ -1,0 +1,12 @@
+{
+  "contract_version": "1.0.0",
+  "sha256": {
+    "bundle.schema.json": "bd04702e97d6bdc205b1bee6d16213303487346357a3a411642c70c278119c57",
+    "context.schema.json": "f21a99f28db86006da0e346efa8b4e132af77bff89b53a762a198f5778e71809",
+    "contract.schema.json": "5b340b0f9774b523a5895056ca5ebfdd8f32d6cfc9634a96ec55f6cf71082805",
+    "event.schema.json": "617a02dcb53558351d587099416ca430f86de704850d9477ab0b1dc6bcaf397a",
+    "provider_request.schema.json": "3b296eb6483830d881a29acd6f12f23c7d02e67302a889b9fd1904cc5ed4566e",
+    "result.schema.json": "0803b5d470df917cb2ec45f4fa3ea65bc6a8b6b0f1b90d790b8432f82dd8fcc9",
+    "terminology.schema.json": "9e870e641b63f47876de5082f2064be29aabfd2e5d9e21b0eddd8ae4e833528b"
+  }
+}
