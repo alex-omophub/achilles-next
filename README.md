@@ -21,6 +21,8 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution and Git workflow. S
 
 The [PostgreSQL fixture environment](tests/fixtures/postgresql/README.md) provides reproducible synthetic CDM 5.3/5.4/5.5 sources, optional pinned GiBleed 5.3/5.5 datasets, and separate empty schemas for later SynPUF loading. This is developer test infrastructure; the R package and analysis engine are still under development.
 
+The [alpha measurement profile](docs/analysis/alpha-profile.md) specifies 15 bounded outputs with explicit observation, representation and exact-distribution semantics. Its manifests and read-only fixture references can be checked now; the production analysis engine is not implemented yet.
+
 ## Relationship to OHDSI
 
 AchillesNext is an independent successor project. OHDSI Achilles and other ecosystem projects retain their own identities and attribution. Existing functionality is not claimed as implemented or certified here.

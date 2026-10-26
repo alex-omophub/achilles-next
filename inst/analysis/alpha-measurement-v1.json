@@ -1,0 +1,836 @@
+{
+  "format_version": 1,
+  "profile_id": "alpha-measurement-v1",
+  "revision": "1.0.0",
+  "implementation_status": "specified_not_implemented",
+  "engine_target": "PostgreSQL",
+  "schema_fixture_versions": [
+    "5.3",
+    "5.4",
+    "5.5"
+  ],
+  "support_claim": "Bounded specified profile on canonical fixtures; no executable analysis engine or full CDM certification yet.",
+  "request_contract": {
+    "required_keys": [
+      "profile_id",
+      "source_id",
+      "window",
+      "measurement_concept_ids",
+      "output_scope",
+      "disclosure_policy_id"
+    ],
+    "allowed_keys": [
+      "profile_id",
+      "source_id",
+      "window",
+      "measurement_concept_ids",
+      "output_scope",
+      "disclosure_policy_id"
+    ],
+    "concept_min": 1,
+    "concept_max": 10,
+    "concept_ids": "unique exact nonnegative integers <= 2147483647; 0 only by explicit selection; no descendants or implicit concept expansion",
+    "window": "explicit inclusive ISO dates; start <= end; at most 120 touched calendar months; DATE columns only",
+    "output_scope": [
+      "restricted"
+    ],
+    "disclosure_policy_id": "nonempty versioned institutional policy ID; synthetic-unsuppressed-v1 is fixture-only"
+  },
+  "populations": {
+    "source_context": "Exactly one selected source/schema snapshot; never join sources by person ID.",
+    "person_table": "Accessible PERSON with unique non-null person_id; count all-source people independently of request window.",
+    "valid_observation_people": "PERSON members with valid inclusive observation intervals. Merge overlap/adjacency per person, then clip to the request window.",
+    "observed_measurement_rows": "Selected concept/date in inclusive request window, linked to PERSON, whose measurement_date belongs to at least one valid person observation period. Membership never multiplies rows.",
+    "requested_outputs": "The fixed required_outputs list for one request/run."
+  },
+  "temporal_policy": {
+    "date_column": "measurement_date",
+    "timezone": "not_applied_to_DATE",
+    "endpoints": "inclusive",
+    "month_key": "YYYY-MM-01; period_start/end clipped to request window; partial edge months retained",
+    "calendar": "proleptic Gregorian, ISO years 0001..9999; no 1900..2099 fixed calendar"
+  },
+  "preflight_policy": {
+    "person_ids": "Null/duplicate person IDs fail PERSON-dependent outputs.",
+    "observation_rows": "Null endpoints, end<start, or orphan person IDs fail observation-dependent outputs; do not silently drop malformed intervals.",
+    "measurement_rows": "Selected in-window null/orphan person IDs fail measurement-dependent outputs; duplicate record IDs do not collapse physical rows.",
+    "concept_rows": "Conflicting duplicate concept IDs fail terminology-dependent outputs; no matching positive unit ID is unknown, not a compatible unit.",
+    "access": "Missing/inaccessible prerequisites produce unavailable reasons; never replace them with zero."
+  },
+  "availability_semantics": {
+    "precedence": "Failed/inaccessible/unsupported prerequisites have no numeric value. Otherwise empty_source context (PERSON count 0) takes precedence over empty_population context (source people exist but a metric-specific eligible set is empty).",
+    "zero": "A computed count can be exactly 0 when the relevant observed population exists but no selected event matches.",
+    "numeric_empty": "An observed summary stratum with n=0 has empty_population and all statistic fields NULL; an unobserved stratum is not fabricated.",
+    "completeness": "Every fixed requested output must be accounted for and validated. Failed/inaccessible/unsupported required computation prevents complete-alpha publication. Known empty results and verified policy-approved suppression can be complete; missing optional metadata remains explicitly unknown.",
+    "wire_contract": "Exact status/value serialization and publication contracts are separate; retain these semantic distinctions."
+  },
+  "numeric_eligibility": [
+    {
+      "reason": "missing_numeric",
+      "when": "value_as_number IS NULL"
+    },
+    {
+      "reason": "non_finite_numeric",
+      "when": "value_as_number is NaN or +/-Infinity"
+    },
+    {
+      "reason": "explicit_operator",
+      "when": "operator_concept_id is non-null and not 0; includes equality and all censored/unknown operators"
+    },
+    {
+      "reason": "missing_unit",
+      "when": "unit_concept_id IS NULL"
+    },
+    {
+      "reason": "unmapped_unit",
+      "when": "unit_concept_id = 0"
+    },
+    {
+      "reason": "unknown_or_invalid_unit",
+      "when": "unit_concept_id does not resolve uniquely to a positive Unit-domain concept"
+    },
+    {
+      "reason": "eligible",
+      "when": "all previous tests false"
+    }
+  ],
+  "quantile_probabilities": [
+    {
+      "name": "p10",
+      "numerator": 1,
+      "denominator": 10
+    },
+    {
+      "name": "p25",
+      "numerator": 1,
+      "denominator": 4
+    },
+    {
+      "name": "p50",
+      "numerator": 1,
+      "denominator": 2
+    },
+    {
+      "name": "p75",
+      "numerator": 3,
+      "denominator": 4
+    },
+    {
+      "name": "p90",
+      "numerator": 9,
+      "denominator": 10
+    }
+  ],
+  "precision_policy": {
+    "exact_count_strings": "Arbitrary-precision nonnegative integer strings at interchange; no JavaScript Number coercion.",
+    "exact_decimal_strings_and_rational_mean": "Finite PostgreSQL NUMERIC values, exact decimal strings for sum/order statistics, rational mean sum/n; no rounding or FLOAT cast. Non-finite values excluded with counts. Standard deviation and interpolated/approximate quantiles excluded.",
+    "display": "Approximate chart coordinates, if needed, must be labelled and backed by exact table values; no rounded display value may replace metric values."
+  },
+  "disclosure_policy": {
+    "id": "restricted-output-v1",
+    "scope": "Authorized institutional use only; no automatic distributable export.",
+    "synthetic": "synthetic-unsuppressed-v1 permits only synthetic fixture verification.",
+    "live": "An institutional versioned policy is required. No default small-cell threshold is invented here.",
+    "suppressed": "Hide all numeric payload, counts/extrema/quantiles included, with a policy reason. Retained raw frequency inputs remain restricted scratch, never viewer outputs.",
+    "guarantee": "Suppression is not an anonymity guarantee; provider/bundle wire rules are a separate contract."
+  },
+  "dimensions": {
+    "raw_tag": "Tagged null, zero or exact ID; NULL and 0 never conflate. Sparse raw tags use source values, not terminology-driven rewriting.",
+    "periods": "One requested-window row plus every touched calendar month for window_and_month outputs. They are separate grains, not additive partitions of people."
+  },
+  "prerequisite_probes": [
+    {
+      "id": "person.person_id",
+      "table": "person",
+      "column": "person_id",
+      "required": true
+    },
+    {
+      "id": "observation_period.person_id",
+      "table": "observation_period",
+      "column": "person_id",
+      "required": true
+    },
+    {
+      "id": "observation_period.observation_period_start_date",
+      "table": "observation_period",
+      "column": "observation_period_start_date",
+      "required": true
+    },
+    {
+      "id": "observation_period.observation_period_end_date",
+      "table": "observation_period",
+      "column": "observation_period_end_date",
+      "required": true
+    },
+    {
+      "id": "measurement.person_id",
+      "table": "measurement",
+      "column": "person_id",
+      "required": true
+    },
+    {
+      "id": "measurement.measurement_concept_id",
+      "table": "measurement",
+      "column": "measurement_concept_id",
+      "required": true
+    },
+    {
+      "id": "measurement.measurement_date",
+      "table": "measurement",
+      "column": "measurement_date",
+      "required": true
+    },
+    {
+      "id": "measurement.value_as_number",
+      "table": "measurement",
+      "column": "value_as_number",
+      "required": true
+    },
+    {
+      "id": "measurement.value_as_concept_id",
+      "table": "measurement",
+      "column": "value_as_concept_id",
+      "required": true
+    },
+    {
+      "id": "measurement.value_source_value",
+      "table": "measurement",
+      "column": "value_source_value",
+      "required": true
+    },
+    {
+      "id": "measurement.unit_concept_id",
+      "table": "measurement",
+      "column": "unit_concept_id",
+      "required": true
+    },
+    {
+      "id": "measurement.operator_concept_id",
+      "table": "measurement",
+      "column": "operator_concept_id",
+      "required": true
+    },
+    {
+      "id": "concept.concept_id",
+      "table": "concept",
+      "column": "concept_id",
+      "required": true
+    },
+    {
+      "id": "concept.domain_id",
+      "table": "concept",
+      "column": "domain_id",
+      "required": true
+    },
+    {
+      "id": "concept.concept_name",
+      "table": "concept",
+      "column": "concept_name",
+      "required": true
+    },
+    {
+      "id": "cdm_source.cdm_source_name",
+      "table": "cdm_source",
+      "column": "cdm_source_name",
+      "required": false
+    },
+    {
+      "id": "cdm_source.cdm_version",
+      "table": "cdm_source",
+      "column": "cdm_version",
+      "required": false
+    },
+    {
+      "id": "cdm_source.cdm_version_concept_id",
+      "table": "cdm_source",
+      "column": "cdm_version_concept_id",
+      "required": false
+    },
+    {
+      "id": "cdm_source.cdm_release_identifier",
+      "table": "cdm_source",
+      "column": "cdm_release_identifier",
+      "required": false
+    },
+    {
+      "id": "cdm_source.source_release_date",
+      "table": "cdm_source",
+      "column": "source_release_date",
+      "required": false
+    },
+    {
+      "id": "cdm_source.cdm_release_date",
+      "table": "cdm_source",
+      "column": "cdm_release_date",
+      "required": false
+    },
+    {
+      "id": "cdm_source.vocabulary_version",
+      "table": "cdm_source",
+      "column": "vocabulary_version",
+      "required": false
+    },
+    {
+      "id": "vocabulary.vocabulary_id",
+      "table": "vocabulary",
+      "column": "vocabulary_id",
+      "required": false
+    },
+    {
+      "id": "vocabulary.vocabulary_version",
+      "table": "vocabulary",
+      "column": "vocabulary_version",
+      "required": false
+    },
+    {
+      "id": "episode.episode_id",
+      "table": "episode",
+      "column": "episode_id",
+      "required": false
+    },
+    {
+      "id": "episode_event.episode_id",
+      "table": "episode_event",
+      "column": "episode_id",
+      "required": false
+    },
+    {
+      "id": "episode_event.event_id",
+      "table": "episode_event",
+      "column": "event_id",
+      "required": false
+    },
+    {
+      "id": "episode_event.episode_event_field_concept_id",
+      "table": "episode_event",
+      "column": "episode_event_field_concept_id",
+      "required": false
+    },
+    {
+      "id": "observation.value_as_date",
+      "table": "observation",
+      "column": "value_as_date",
+      "required": false
+    },
+    {
+      "id": "observation.value_as_source_concept_id",
+      "table": "observation",
+      "column": "value_as_source_concept_id",
+      "required": false
+    },
+    {
+      "id": "observation.unit_source_concept_id",
+      "table": "observation",
+      "column": "unit_source_concept_id",
+      "required": false
+    },
+    {
+      "id": "specimen.visit_occurrence_id",
+      "table": "specimen",
+      "column": "visit_occurrence_id",
+      "required": false
+    },
+    {
+      "id": "specimen.visit_detail_id",
+      "table": "specimen",
+      "column": "visit_detail_id",
+      "required": false
+    },
+    {
+      "id": "measurement.measurement_event_id",
+      "table": "measurement",
+      "column": "measurement_event_id",
+      "required": false
+    },
+    {
+      "id": "measurement.meas_event_field_concept_id",
+      "table": "measurement",
+      "column": "meas_event_field_concept_id",
+      "required": false
+    },
+    {
+      "id": "measurement.unit_source_concept_id",
+      "table": "measurement",
+      "column": "unit_source_concept_id",
+      "required": false
+    },
+    {
+      "id": "measurement.value_as_source_concept_id",
+      "table": "measurement",
+      "column": "value_as_source_concept_id",
+      "required": false
+    },
+    {
+      "id": "pack_content.pack_concept_id",
+      "table": "pack_content",
+      "column": "pack_concept_id",
+      "required": false
+    },
+    {
+      "id": "concept_metadata.concept_id",
+      "table": "concept_metadata",
+      "column": "concept_id",
+      "required": false
+    },
+    {
+      "id": "concept_relationship_metadata.concept_id_1",
+      "table": "concept_relationship_metadata",
+      "column": "concept_id_1",
+      "required": false
+    }
+  ],
+  "required_outputs": [
+    "source.passport",
+    "source.capabilities",
+    "person.count",
+    "observation.person_count",
+    "observation.monthly_person_count",
+    "observation.person_days",
+    "measurement.record_count",
+    "measurement.person_count",
+    "measurement.representation_count",
+    "measurement.unit_count",
+    "measurement.operator_count",
+    "measurement.numeric_eligibility_count",
+    "measurement.numeric_summary",
+    "execution.output_status",
+    "execution.timing"
+  ],
+  "metrics": [
+    {
+      "id": "source.passport",
+      "version": "1.0.0",
+      "title": "Source and definition identity",
+      "implementation_status": "specified_not_implemented",
+      "grain": "one row per source/run",
+      "population": "source_context",
+      "window": "not_applicable",
+      "dimensions": [],
+      "fields": [
+        "source_id",
+        "source_snapshot_id",
+        "data_release_id",
+        "declared_cdm_version",
+        "observed_schema_evidence",
+        "vocabulary_release_id",
+        "profile_id",
+        "profile_revision",
+        "metric_versions",
+        "run_id"
+      ],
+      "denominator": null,
+      "aggregation": "Read metadata and supplied immutable identity assertions; retain origin and unknown reasons. Do not infer snapshot identity from max event date.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "Missing metadata is unknown, never an empty string, zero or inferred current release.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "typed_metadata_no_numeric_coercion",
+      "dependencies": []
+    },
+    {
+      "id": "source.capabilities",
+      "version": "1.0.0",
+      "title": "Declared dependency capabilities",
+      "implementation_status": "specified_not_implemented",
+      "grain": "one row per declared probe",
+      "population": "source_context",
+      "window": "not_applicable",
+      "dimensions": [
+        "probe_id"
+      ],
+      "fields": [
+        "table_present",
+        "column_present",
+        "readable",
+        "required_for",
+        "availability",
+        "reason"
+      ],
+      "denominator": null,
+      "aggregation": "Probe only the finite dependency list; distinguish absent from inaccessible. Optional feature presence never means clinical analysis support.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "An empty table is present/readable with zero rows; permission denial is inaccessible.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "typed_metadata_no_numeric_coercion",
+      "dependencies": []
+    },
+    {
+      "id": "person.count",
+      "version": "1.0.0",
+      "title": "All-source people",
+      "implementation_status": "specified_not_implemented",
+      "grain": "one count per source",
+      "population": "person_table",
+      "window": "all_source",
+      "dimensions": [],
+      "fields": [
+        "count"
+      ],
+      "denominator": null,
+      "aggregation": "COUNT(DISTINCT person_id). Require unique non-null person IDs; fail this prerequisite when ambiguous.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "0 with empty_source when an accessible PERSON table is empty; missing/inaccessible table has no numeric value.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": []
+    },
+    {
+      "id": "observation.person_count",
+      "version": "1.0.0",
+      "title": "People with observation in the window",
+      "implementation_status": "specified_not_implemented",
+      "grain": "distinct person in window",
+      "population": "valid_observation_people",
+      "window": "requested_window",
+      "dimensions": [],
+      "fields": [
+        "count"
+      ],
+      "denominator": "person.count",
+      "aggregation": "Count each PERSON member whose valid observation union intersects the inclusive request window once.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "0 with empty_population if no person has observation in the window.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": [
+        "person.count"
+      ]
+    },
+    {
+      "id": "observation.monthly_person_count",
+      "version": "1.0.0",
+      "title": "Monthly observed people",
+      "implementation_status": "specified_not_implemented",
+      "grain": "distinct person per calendar month",
+      "population": "valid_observation_people",
+      "window": "calendar_month_clipped_to_window",
+      "dimensions": [
+        "month"
+      ],
+      "fields": [
+        "count"
+      ],
+      "denominator": "person.count",
+      "aggregation": "Clip merged person intervals to window/month; count a person once if any eligible day remains. Emit every requested month.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "Dense zero rows for months with no observed people; mark empty_population. Never sum monthly people to obtain window people.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": [
+        "observation.person_count"
+      ]
+    },
+    {
+      "id": "observation.person_days",
+      "version": "1.0.0",
+      "title": "Unique observed person-days",
+      "implementation_status": "specified_not_implemented",
+      "grain": "person/date in window",
+      "population": "valid_observation_people",
+      "window": "requested_window",
+      "dimensions": [],
+      "fields": [
+        "count"
+      ],
+      "denominator": null,
+      "aggregation": "Inclusive union of person/date days. Merge overlapping and adjacent intervals, then clip. Count one person-day once.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "0 with empty_population when the eligible day set is empty.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": [
+        "observation.person_count"
+      ]
+    },
+    {
+      "id": "measurement.record_count",
+      "version": "1.0.0",
+      "title": "Eligible measurement records",
+      "implementation_status": "specified_not_implemented",
+      "grain": "physical measurement row",
+      "population": "observed_measurement_rows",
+      "window": "window_and_month",
+      "dimensions": [
+        "measurement_concept_id",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "count"
+      ],
+      "denominator": null,
+      "aggregation": "Count each selected source row once using observation membership, never one row per matching observation period. Preserve physical duplicate rows, even repeated measurement IDs.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "Emit every selected concept × requested period; known empty counts are 0. Empty observation denominator is empty_population; unavailable/failed/suppressed is never numeric 0.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": [
+        "observation.person_count",
+        "observation.monthly_person_count"
+      ]
+    },
+    {
+      "id": "measurement.person_count",
+      "version": "1.0.0",
+      "title": "Distinct tested people",
+      "implementation_status": "specified_not_implemented",
+      "grain": "person/concept/period",
+      "population": "observed_measurement_rows",
+      "window": "window_and_month",
+      "dimensions": [
+        "measurement_concept_id",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "count"
+      ],
+      "denominator": "observation.person_count for window; observation.monthly_person_count for month",
+      "aggregation": "Count distinct PERSON members per concept/period. Ratios, if displayed, use that same-period observed-person denominator and are not prevalence estimates.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "Emit every selected concept × requested period; known empty counts are 0. Empty observation denominator is empty_population; unavailable/failed/suppressed is never numeric 0.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": [
+        "measurement.record_count"
+      ]
+    },
+    {
+      "id": "measurement.representation_count",
+      "version": "1.0.0",
+      "title": "Result representation cells",
+      "implementation_status": "specified_not_implemented",
+      "grain": "record in one of eight flag combinations",
+      "population": "observed_measurement_rows",
+      "window": "window_and_month",
+      "dimensions": [
+        "measurement_concept_id",
+        "period_kind",
+        "period_start",
+        "period_end",
+        "numeric_present",
+        "coded_present",
+        "source_text_present"
+      ],
+      "fields": [
+        "count"
+      ],
+      "denominator": "measurement.record_count in same concept/period",
+      "aggregation": "Numeric-present means value_as_number IS NOT NULL (non-finite values are still present). Coded-present means non-null/nonzero value_as_concept_id, even if unmapped. Source-text-present means value_source_value after trimming U+0020 spaces is nonempty. Emit all 2×2×2 combinations.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "Emit every selected concept × requested period; known empty counts are 0. Empty observation denominator is empty_population; unavailable/failed/suppressed is never numeric 0. Never equate source text with a standardized value.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": [
+        "measurement.record_count"
+      ]
+    },
+    {
+      "id": "measurement.unit_count",
+      "version": "1.0.0",
+      "title": "Unit representation",
+      "implementation_status": "specified_not_implemented",
+      "grain": "record by raw unit",
+      "population": "observed_measurement_rows",
+      "window": "window_and_month",
+      "dimensions": [
+        "measurement_concept_id",
+        "period_kind",
+        "period_start",
+        "period_end",
+        "raw_unit_tag"
+      ],
+      "fields": [
+        "count"
+      ],
+      "denominator": "measurement.record_count in same concept/period",
+      "aggregation": "Sparse counts of each observed raw unit tag. Missing, unmapped, known Unit-domain IDs and unknown/wrong-domain IDs retain distinct labels.",
+      "unit_rule": "raw_tag:null_vs_zero_vs_id; never pool or convert units",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "No row means an unobserved unit tag only when the parent output is complete; never infer values for undeclared unit strata.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": [
+        "measurement.record_count"
+      ]
+    },
+    {
+      "id": "measurement.operator_count",
+      "version": "1.0.0",
+      "title": "Operator representation",
+      "implementation_status": "specified_not_implemented",
+      "grain": "record by raw operator",
+      "population": "observed_measurement_rows",
+      "window": "window_and_month",
+      "dimensions": [
+        "measurement_concept_id",
+        "period_kind",
+        "period_start",
+        "period_end",
+        "raw_operator_tag"
+      ],
+      "fields": [
+        "count"
+      ],
+      "denominator": "measurement.record_count in same concept/period",
+      "aggregation": "Sparse counts by exact raw operator. NULL and 0 remain different tags; local terminology supplies labels without changing values.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "raw_tag:null_vs_zero_vs_id; never pool operators",
+      "zero_and_null_rule": "No row means an unobserved operator tag only when the parent output is complete.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": [
+        "measurement.record_count"
+      ]
+    },
+    {
+      "id": "measurement.numeric_eligibility_count",
+      "version": "1.0.0",
+      "title": "Numeric inclusion and exclusion reasons",
+      "implementation_status": "specified_not_implemented",
+      "grain": "record in exactly one eligibility category",
+      "population": "observed_measurement_rows",
+      "window": "window_and_month",
+      "dimensions": [
+        "measurement_concept_id",
+        "period_kind",
+        "period_start",
+        "period_end",
+        "eligibility_reason"
+      ],
+      "fields": [
+        "count"
+      ],
+      "denominator": "measurement.record_count in same concept/period",
+      "aggregation": "Apply ordered numeric_eligibility rules once per row. Emit every reason including zero cells; totals reconcile to record_count.",
+      "unit_rule": "policy:numeric_eligibility",
+      "operator_rule": "policy:numeric_eligibility",
+      "zero_and_null_rule": "Emit every selected concept × requested period; known empty counts are 0. Empty observation denominator is empty_population; unavailable/failed/suppressed is never numeric 0.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_count_strings",
+      "dependencies": [
+        "measurement.record_count",
+        "source.capabilities"
+      ]
+    },
+    {
+      "id": "measurement.numeric_summary",
+      "version": "1.0.0",
+      "title": "Exact numeric summary",
+      "implementation_status": "specified_not_implemented",
+      "grain": "numeric record within concept/known unit/raw operator",
+      "population": "observed_measurement_rows",
+      "window": "requested_window",
+      "dimensions": [
+        "measurement_concept_id",
+        "unit_concept_id",
+        "raw_operator_tag"
+      ],
+      "fields": [
+        "n",
+        "sum",
+        "min",
+        "max",
+        "mean_numerator",
+        "mean_denominator",
+        "p10",
+        "p25",
+        "p50",
+        "p75",
+        "p90"
+      ],
+      "denominator": "n = eligible finite numeric records in that exact stratum; never people or all observed people",
+      "aggregation": "Finite exact NUMERIC values only, in mapped Unit-domain strata with raw operator NULL or 0, kept separate. Preserve frequency weights and duplicate multiplicity. Quantile p is x[ceil(p*n)] in the sorted empirical sample. Mean is exact sum/n, not a binary float.",
+      "unit_rule": "known Unit-domain positive concept ID; no conversion; validity date not used to rewrite historical values",
+      "operator_rule": "NULL or 0 only, separate raw strata; label no explicit comparator, not proven uncensored; all nonzero operators excluded in this profile",
+      "zero_and_null_rule": "Emit a zero-n/empty_population summary for an observed mapped-unit/allowed-operator group with no eligible numeric values; all statistics including sum/mean are NULL. Groups with excluded units/operators are explained by eligibility counts, not fabricated summaries.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "exact_decimal_strings_and_rational_mean",
+      "dependencies": [
+        "measurement.numeric_eligibility_count"
+      ]
+    },
+    {
+      "id": "execution.output_status",
+      "version": "1.0.0",
+      "title": "Requested output availability",
+      "implementation_status": "specified_not_implemented",
+      "grain": "one status per requested metric and source",
+      "population": "requested_outputs",
+      "window": "run",
+      "dimensions": [
+        "metric_id"
+      ],
+      "fields": [
+        "state",
+        "reason",
+        "requested",
+        "metric_version",
+        "source_id"
+      ],
+      "denominator": null,
+      "aggregation": "Account for every requested output. Complete publication requires all outputs validated or explicitly policy-approved suppressed; zero/empty is not failure. A changed request creates a new recorded request.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "States preserve empty source/population, missing prerequisites, unsupported, inaccessible, not requested, failed, suppressed and stale reasons. Wire schema follows separately.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "typed_metadata_no_numeric_coercion",
+      "dependencies": []
+    },
+    {
+      "id": "execution.timing",
+      "version": "1.0.0",
+      "title": "Measured execution timing",
+      "implementation_status": "specified_not_implemented",
+      "grain": "one declared phase per run/metric",
+      "population": "requested_outputs",
+      "window": "run",
+      "dimensions": [
+        "metric_id",
+        "phase"
+      ],
+      "fields": [
+        "duration_ms",
+        "availability",
+        "reason"
+      ],
+      "denominator": null,
+      "aggregation": "Monotonic wall-clock duration rounded to nearest millisecond, half-up, for declared phases. Driver/warehouse telemetry is optional and not inferred from duration.",
+      "unit_rule": "not_applicable",
+      "operator_rule": "not_applicable",
+      "zero_and_null_rule": "A measured sub-millisecond duration can be 0; missing telemetry is NULL with an unavailable reason.",
+      "suppression_rule": "policy:restricted-output-v1",
+      "precision": "nonnegative_integer_strings",
+      "dependencies": []
+    }
+  ],
+  "out_of_scope": [
+    "other_database_engines",
+    "cohort_or_joint_filters",
+    "implicit_descendant_expansion",
+    "age_sex_stratified_measurement_profiles",
+    "numeric_monthly_distributions",
+    "unit_conversion",
+    "nonzero_operator_numeric_distributions",
+    "frequency_table_export",
+    "all_legacy_analysis_execution",
+    "legacy_or_dqd_import",
+    "release_comparison",
+    "clinical_episode_or_specimen_analysis",
+    "full_5_4_or_5_5_clinical_coverage",
+    "external_terminology_enrichment",
+    "patient_level_drillthrough",
+    "unrestricted_export"
+  ]
+}
