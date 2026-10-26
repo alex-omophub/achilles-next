@@ -1,0 +1,19 @@
+{
+  "contract_version": "1.0.0",
+  "event_id": "fixture-event-1",
+  "instance_id": "fixture-instance-1",
+  "generation": 1,
+  "correlation_id": "fixture-update-1",
+  "origin": "user",
+  "context": {
+    "source_id": "fixture:tiny_a",
+    "bundle_id": "contract-fixture-january-v1",
+    "manifest_sha256": "b47a69de85809999cf4baf36cdd7b2f8abe12759a79ff4cd6becb519a6b919dc",
+    "access_scope_id": "fixture-access-scope",
+    "authorization_epoch": "fixture-auth-1"
+  },
+  "type": "concept_selected",
+  "payload": {
+    "concept_id": 900000001
+  }
+}

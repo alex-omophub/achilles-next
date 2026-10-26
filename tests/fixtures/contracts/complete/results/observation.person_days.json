@@ -1,0 +1,22 @@
+{
+  "contract_version": "1.0.0",
+  "bundle_id": "contract-fixture-january-v1",
+  "source_id": "fixture:tiny_a",
+  "run_id": "contract-fixture-run-1",
+  "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+  "metric_id": "observation.person_days",
+  "metric_version": "1.0.0",
+  "state": "computed",
+  "reason": null,
+  "rows": [
+    {
+      "dimensions": {},
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "20"
+      },
+      "denominator": null
+    }
+  ]
+}

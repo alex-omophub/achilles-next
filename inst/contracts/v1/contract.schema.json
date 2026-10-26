@@ -1,0 +1,4016 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:achilles-next:contracts:1",
+  "$defs": {
+    "identity": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "const": null
+            }
+          },
+          "required": [
+            "state",
+            "id",
+            "reason"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "unknown"
+            },
+            "id": {
+              "const": null
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "state",
+            "id",
+            "reason"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "snapshot": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "known"
+            },
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "reason": {
+              "const": null
+            },
+            "basis": {
+              "enum": [
+                "database_snapshot",
+                "institution_assertion",
+                "synthetic_fixture"
+              ]
+            },
+            "assertion_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "immutable": {
+              "const": true
+            }
+          },
+          "required": [
+            "state",
+            "id",
+            "reason",
+            "basis",
+            "assertion_id",
+            "immutable"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "state": {
+              "const": "unknown"
+            },
+            "id": {
+              "const": null
+            },
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "basis": {
+              "const": null
+            },
+            "assertion_id": {
+              "const": null
+            },
+            "immutable": {
+              "const": false
+            }
+          },
+          "required": [
+            "state",
+            "id",
+            "reason",
+            "basis",
+            "assertion_id",
+            "immutable"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "snapshot": {
+          "$ref": "urn:achilles-next:contracts:1#/$defs/snapshot"
+        },
+        "data_release": {
+          "$ref": "urn:achilles-next:contracts:1#/$defs/identity"
+        },
+        "vocabulary_release": {
+          "$ref": "urn:achilles-next:contracts:1#/$defs/identity"
+        },
+        "schema_fingerprint": {
+          "$ref": "urn:achilles-next:contracts:1#/$defs/identity"
+        },
+        "declared_cdm_version": {
+          "anyOf": [
+            {
+              "enum": [
+                "5.3",
+                "5.4",
+                "5.5"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "source_id",
+        "snapshot",
+        "data_release",
+        "vocabulary_release",
+        "schema_fingerprint",
+        "declared_cdm_version"
+      ],
+      "additionalProperties": false
+    },
+    "context": {
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "bundle_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "access_scope_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authorization_epoch": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "source_id",
+        "bundle_id",
+        "manifest_sha256",
+        "access_scope_id",
+        "authorization_epoch"
+      ],
+      "additionalProperties": false
+    },
+    "denominator": {
+      "type": "object",
+      "properties": {
+        "metric_id": {
+          "enum": [
+            "source.passport",
+            "source.capabilities",
+            "person.count",
+            "observation.person_count",
+            "observation.monthly_person_count",
+            "observation.person_days",
+            "measurement.record_count",
+            "measurement.person_count",
+            "measurement.representation_count",
+            "measurement.unit_count",
+            "measurement.operator_count",
+            "measurement.numeric_eligibility_count",
+            "measurement.numeric_summary",
+            "execution.output_status",
+            "execution.timing"
+          ]
+        },
+        "dimensions": {
+          "type": "object"
+        },
+        "field": {
+          "enum": [
+            "count",
+            "n"
+          ]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "metric_id",
+        "dimensions",
+        "field",
+        "value"
+      ],
+      "additionalProperties": false
+    },
+    "request": {
+      "type": "object",
+      "properties": {
+        "profile_id": {
+          "const": "alpha-measurement-v1"
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "window": {
+          "type": "object",
+          "properties": {
+            "start": {
+              "type": "string",
+              "format": "date"
+            },
+            "end": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          "required": [
+            "start",
+            "end"
+          ],
+          "additionalProperties": false
+        },
+        "measurement_concept_ids": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2147483647
+          },
+          "minItems": 1,
+          "maxItems": 10,
+          "uniqueItems": true
+        },
+        "output_scope": {
+          "const": "restricted"
+        },
+        "disclosure_policy_id": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "profile_id",
+        "source_id",
+        "window",
+        "measurement_concept_ids",
+        "output_scope",
+        "disclosure_policy_id"
+      ],
+      "additionalProperties": false
+    },
+    "partition": {
+      "type": "object",
+      "properties": {
+        "metric_id": {
+          "enum": [
+            "source.passport",
+            "source.capabilities",
+            "person.count",
+            "observation.person_count",
+            "observation.monthly_person_count",
+            "observation.person_days",
+            "measurement.record_count",
+            "measurement.person_count",
+            "measurement.representation_count",
+            "measurement.unit_count",
+            "measurement.operator_count",
+            "measurement.numeric_eligibility_count",
+            "measurement.numeric_summary",
+            "execution.output_status",
+            "execution.timing"
+          ]
+        },
+        "metric_version": {
+          "const": "1.0.0"
+        },
+        "state": {
+          "enum": [
+            "computed",
+            "empty_source",
+            "empty_population",
+            "unavailable",
+            "unsupported",
+            "inaccessible",
+            "not_requested",
+            "failed",
+            "suppressed",
+            "stale"
+          ]
+        },
+        "reason": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "path": {
+          "type": "string",
+          "pattern": "^results/[a-z][a-z0-9]*(?:[._-][a-z0-9]+)*\\.json$"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "bytes": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$"
+        },
+        "rows": {
+          "type": "string",
+          "pattern": "^(0|[1-9][0-9]*)$"
+        }
+      },
+      "required": [
+        "metric_id",
+        "metric_version",
+        "state",
+        "reason",
+        "path",
+        "sha256",
+        "bytes",
+        "rows"
+      ],
+      "additionalProperties": false
+    },
+    "result": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "source.passport"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "source_id": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "source_snapshot_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "data_release_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "declared_cdm_version": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "observed_schema_evidence": {
+                                "$ref": "urn:achilles-next:contracts:1#/$defs/identity"
+                              },
+                              "vocabulary_release_id": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "profile_id": {
+                                "const": "alpha-measurement-v1"
+                              },
+                              "profile_revision": {
+                                "const": "1.0.0"
+                              },
+                              "metric_versions": {
+                                "type": "object",
+                                "properties": {
+                                  "source.passport": {
+                                    "const": "1.0.0"
+                                  },
+                                  "source.capabilities": {
+                                    "const": "1.0.0"
+                                  },
+                                  "person.count": {
+                                    "const": "1.0.0"
+                                  },
+                                  "observation.person_count": {
+                                    "const": "1.0.0"
+                                  },
+                                  "observation.monthly_person_count": {
+                                    "const": "1.0.0"
+                                  },
+                                  "observation.person_days": {
+                                    "const": "1.0.0"
+                                  },
+                                  "measurement.record_count": {
+                                    "const": "1.0.0"
+                                  },
+                                  "measurement.person_count": {
+                                    "const": "1.0.0"
+                                  },
+                                  "measurement.representation_count": {
+                                    "const": "1.0.0"
+                                  },
+                                  "measurement.unit_count": {
+                                    "const": "1.0.0"
+                                  },
+                                  "measurement.operator_count": {
+                                    "const": "1.0.0"
+                                  },
+                                  "measurement.numeric_eligibility_count": {
+                                    "const": "1.0.0"
+                                  },
+                                  "measurement.numeric_summary": {
+                                    "const": "1.0.0"
+                                  },
+                                  "execution.output_status": {
+                                    "const": "1.0.0"
+                                  },
+                                  "execution.timing": {
+                                    "const": "1.0.0"
+                                  }
+                                },
+                                "required": [
+                                  "source.passport",
+                                  "source.capabilities",
+                                  "person.count",
+                                  "observation.person_count",
+                                  "observation.monthly_person_count",
+                                  "observation.person_days",
+                                  "measurement.record_count",
+                                  "measurement.person_count",
+                                  "measurement.representation_count",
+                                  "measurement.unit_count",
+                                  "measurement.operator_count",
+                                  "measurement.numeric_eligibility_count",
+                                  "measurement.numeric_summary",
+                                  "execution.output_status",
+                                  "execution.timing"
+                                ],
+                                "additionalProperties": false
+                              },
+                              "run_id": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "source_id",
+                              "source_snapshot_id",
+                              "data_release_id",
+                              "declared_cdm_version",
+                              "observed_schema_evidence",
+                              "vocabulary_release_id",
+                              "profile_id",
+                              "profile_revision",
+                              "metric_versions",
+                              "run_id"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "source.capabilities"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "probe_id": {
+                            "enum": [
+                              "person.person_id",
+                              "observation_period.person_id",
+                              "observation_period.observation_period_start_date",
+                              "observation_period.observation_period_end_date",
+                              "measurement.person_id",
+                              "measurement.measurement_concept_id",
+                              "measurement.measurement_date",
+                              "measurement.value_as_number",
+                              "measurement.value_as_concept_id",
+                              "measurement.value_source_value",
+                              "measurement.unit_concept_id",
+                              "measurement.operator_concept_id",
+                              "concept.concept_id",
+                              "concept.domain_id",
+                              "concept.concept_name",
+                              "cdm_source.cdm_source_name",
+                              "cdm_source.cdm_version",
+                              "cdm_source.cdm_version_concept_id",
+                              "cdm_source.cdm_release_identifier",
+                              "cdm_source.source_release_date",
+                              "cdm_source.cdm_release_date",
+                              "cdm_source.vocabulary_version",
+                              "vocabulary.vocabulary_id",
+                              "vocabulary.vocabulary_version",
+                              "episode.episode_id",
+                              "episode_event.episode_id",
+                              "episode_event.event_id",
+                              "episode_event.episode_event_field_concept_id",
+                              "observation.value_as_date",
+                              "observation.value_as_source_concept_id",
+                              "observation.unit_source_concept_id",
+                              "specimen.visit_occurrence_id",
+                              "specimen.visit_detail_id",
+                              "measurement.measurement_event_id",
+                              "measurement.meas_event_field_concept_id",
+                              "measurement.unit_source_concept_id",
+                              "measurement.value_as_source_concept_id",
+                              "pack_content.pack_concept_id",
+                              "concept_metadata.concept_id",
+                              "concept_relationship_metadata.concept_id_1"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "probe_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "table_present": {
+                                "anyOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "column_present": {
+                                "anyOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "readable": {
+                                "anyOf": [
+                                  {
+                                    "type": "boolean"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "required_for": {
+                                "type": "array",
+                                "items": {
+                                  "enum": [
+                                    "source.passport",
+                                    "source.capabilities",
+                                    "person.count",
+                                    "observation.person_count",
+                                    "observation.monthly_person_count",
+                                    "observation.person_days",
+                                    "measurement.record_count",
+                                    "measurement.person_count",
+                                    "measurement.representation_count",
+                                    "measurement.unit_count",
+                                    "measurement.operator_count",
+                                    "measurement.numeric_eligibility_count",
+                                    "measurement.numeric_summary",
+                                    "execution.output_status",
+                                    "execution.timing"
+                                  ]
+                                }
+                              },
+                              "availability": {
+                                "enum": [
+                                  "available",
+                                  "absent",
+                                  "inaccessible",
+                                  "unknown"
+                                ]
+                              },
+                              "reason": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "table_present",
+                              "column_present",
+                              "readable",
+                              "required_for",
+                              "availability",
+                              "reason"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "person.count"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "observation.person_count"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "observation.monthly_person_count"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "month": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        },
+                        "required": [
+                          "month"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "observation.person_days"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {},
+                        "required": [],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "measurement.record_count"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "measurement_concept_id": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "period_kind": {
+                            "enum": [
+                              "window",
+                              "month"
+                            ]
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        },
+                        "required": [
+                          "measurement_concept_id",
+                          "period_kind",
+                          "period_start",
+                          "period_end"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "measurement.person_count"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "measurement_concept_id": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "period_kind": {
+                            "enum": [
+                              "window",
+                              "month"
+                            ]
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          }
+                        },
+                        "required": [
+                          "measurement_concept_id",
+                          "period_kind",
+                          "period_start",
+                          "period_end"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "measurement.representation_count"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "measurement_concept_id": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "period_kind": {
+                            "enum": [
+                              "window",
+                              "month"
+                            ]
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "numeric_present": {
+                            "type": "boolean"
+                          },
+                          "coded_present": {
+                            "type": "boolean"
+                          },
+                          "source_text_present": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "measurement_concept_id",
+                          "period_kind",
+                          "period_start",
+                          "period_end",
+                          "numeric_present",
+                          "coded_present",
+                          "source_text_present"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "measurement.unit_count"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "measurement_concept_id": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "period_kind": {
+                            "enum": [
+                              "window",
+                              "month"
+                            ]
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "raw_unit_tag": {
+                            "type": "string",
+                            "pattern": "^(null|zero|id:-?[1-9][0-9]*)$"
+                          }
+                        },
+                        "required": [
+                          "measurement_concept_id",
+                          "period_kind",
+                          "period_start",
+                          "period_end",
+                          "raw_unit_tag"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "measurement.operator_count"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "measurement_concept_id": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "period_kind": {
+                            "enum": [
+                              "window",
+                              "month"
+                            ]
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "raw_operator_tag": {
+                            "type": "string",
+                            "pattern": "^(null|zero|id:-?[1-9][0-9]*)$"
+                          }
+                        },
+                        "required": [
+                          "measurement_concept_id",
+                          "period_kind",
+                          "period_start",
+                          "period_end",
+                          "raw_operator_tag"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "measurement.numeric_eligibility_count"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "measurement_concept_id": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "period_kind": {
+                            "enum": [
+                              "window",
+                              "month"
+                            ]
+                          },
+                          "period_start": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "period_end": {
+                            "type": "string",
+                            "format": "date"
+                          },
+                          "eligibility_reason": {
+                            "enum": [
+                              "missing_numeric",
+                              "non_finite_numeric",
+                              "explicit_operator",
+                              "missing_unit",
+                              "unmapped_unit",
+                              "unknown_or_invalid_unit",
+                              "eligible"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "measurement_concept_id",
+                          "period_kind",
+                          "period_start",
+                          "period_end",
+                          "eligibility_reason"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "count": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              }
+                            },
+                            "required": [
+                              "count"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "measurement.numeric_summary"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "measurement_concept_id": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 2147483647
+                          },
+                          "unit_concept_id": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 2147483647
+                          },
+                          "raw_operator_tag": {
+                            "type": "string",
+                            "pattern": "^(null|zero|id:-?[1-9][0-9]*)$"
+                          }
+                        },
+                        "required": [
+                          "measurement_concept_id",
+                          "unit_concept_id",
+                          "raw_operator_tag"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "n": {
+                                "type": "string",
+                                "pattern": "^(0|[1-9][0-9]*)$"
+                              },
+                              "sum": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "min": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "max": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "mean_numerator": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "mean_denominator": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "p10": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "p25": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "p50": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "p75": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "p90": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^-?(0|[1-9][0-9]*)(\\.[0-9]+)?$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "n",
+                              "sum",
+                              "min",
+                              "max",
+                              "mean_numerator",
+                              "mean_denominator",
+                              "p10",
+                              "p25",
+                              "p50",
+                              "p75",
+                              "p90"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "execution.output_status"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "metric_id": {
+                            "enum": [
+                              "source.passport",
+                              "source.capabilities",
+                              "person.count",
+                              "observation.person_count",
+                              "observation.monthly_person_count",
+                              "observation.person_days",
+                              "measurement.record_count",
+                              "measurement.person_count",
+                              "measurement.representation_count",
+                              "measurement.unit_count",
+                              "measurement.operator_count",
+                              "measurement.numeric_eligibility_count",
+                              "measurement.numeric_summary",
+                              "execution.output_status",
+                              "execution.timing"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "metric_id"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "state": {
+                                "enum": [
+                                  "computed",
+                                  "empty_source",
+                                  "empty_population",
+                                  "unavailable",
+                                  "unsupported",
+                                  "inaccessible",
+                                  "not_requested",
+                                  "failed",
+                                  "suppressed",
+                                  "stale"
+                                ]
+                              },
+                              "reason": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "requested": {
+                                "type": "boolean"
+                              },
+                              "metric_version": {
+                                "const": "1.0.0"
+                              },
+                              "source_id": {
+                                "type": "string",
+                                "minLength": 1
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "reason",
+                              "requested",
+                              "metric_version",
+                              "source_id"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "bundle_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "source_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "run_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "request_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "metric_id": {
+              "const": "execution.timing"
+            },
+            "metric_version": {
+              "const": "1.0.0"
+            },
+            "state": {
+              "enum": [
+                "computed",
+                "empty_source",
+                "empty_population",
+                "unavailable",
+                "unsupported",
+                "inaccessible",
+                "not_requested",
+                "failed",
+                "suppressed",
+                "stale"
+              ]
+            },
+            "reason": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "rows": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "dimensions": {
+                        "type": "object",
+                        "properties": {
+                          "metric_id": {
+                            "enum": [
+                              "source.passport",
+                              "source.capabilities",
+                              "person.count",
+                              "observation.person_count",
+                              "observation.monthly_person_count",
+                              "observation.person_days",
+                              "measurement.record_count",
+                              "measurement.person_count",
+                              "measurement.representation_count",
+                              "measurement.unit_count",
+                              "measurement.operator_count",
+                              "measurement.numeric_eligibility_count",
+                              "measurement.numeric_summary",
+                              "execution.output_status",
+                              "execution.timing"
+                            ]
+                          },
+                          "phase": {
+                            "enum": [
+                              "compute",
+                              "materialize",
+                              "validate",
+                              "export"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "metric_id",
+                          "phase"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "state": {
+                        "enum": [
+                          "computed",
+                          "empty_source",
+                          "empty_population",
+                          "suppressed"
+                        ]
+                      },
+                      "reason": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "values": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "duration_ms": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "pattern": "^(0|[1-9][0-9]*)$"
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "availability": {
+                                "enum": [
+                                  "measured",
+                                  "unavailable"
+                                ]
+                              },
+                              "reason": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "minLength": 1
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "duration_ms",
+                              "availability",
+                              "reason"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "denominator": {
+                        "anyOf": [
+                          {
+                            "$ref": "urn:achilles-next:contracts:1#/$defs/denominator"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "dimensions",
+                      "state",
+                      "reason",
+                      "values",
+                      "denominator"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "contract_version",
+            "bundle_id",
+            "source_id",
+            "run_id",
+            "request_sha256",
+            "metric_id",
+            "metric_version",
+            "state",
+            "reason",
+            "rows"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "bundle": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0.0"
+        },
+        "bundle_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "generator": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "name",
+            "version"
+          ],
+          "additionalProperties": false
+        },
+        "profile": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "const": "alpha-measurement-v1"
+            },
+            "revision": {
+              "const": "1.0.0"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "id",
+            "revision",
+            "sha256"
+          ],
+          "additionalProperties": false
+        },
+        "source": {
+          "$ref": "urn:achilles-next:contracts:1#/$defs/source"
+        },
+        "request": {
+          "$ref": "urn:achilles-next:contracts:1#/$defs/request"
+        },
+        "request_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "publication": {
+          "enum": [
+            "complete",
+            "partial",
+            "failed"
+          ]
+        },
+        "eligible_for_current_pointer": {
+          "type": "boolean"
+        },
+        "disclosure": {
+          "type": "object",
+          "properties": {
+            "policy_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "applied": {
+              "type": "boolean"
+            },
+            "approval_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "scope": {
+              "const": "restricted"
+            }
+          },
+          "required": [
+            "policy_id",
+            "applied",
+            "approval_id",
+            "scope"
+          ],
+          "additionalProperties": false
+        },
+        "reproducibility": {
+          "type": "object",
+          "properties": {
+            "consistent_snapshot": {
+              "type": "boolean"
+            },
+            "execution_start": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "execution_end": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "limitation": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "consistent_snapshot",
+            "execution_start",
+            "execution_end",
+            "limitation"
+          ],
+          "additionalProperties": false
+        },
+        "outputs": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:achilles-next:contracts:1#/$defs/partition"
+          },
+          "minItems": 15,
+          "maxItems": 15
+        },
+        "terminology": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "const": "terminology.json"
+            },
+            "sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            },
+            "bytes": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]*)$"
+            }
+          },
+          "required": [
+            "path",
+            "sha256",
+            "bytes"
+          ],
+          "additionalProperties": false
+        },
+        "timing_phases": {
+          "const": [
+            "compute",
+            "materialize",
+            "validate",
+            "export"
+          ]
+        }
+      },
+      "required": [
+        "contract_version",
+        "bundle_id",
+        "run_id",
+        "created_at",
+        "generator",
+        "profile",
+        "source",
+        "request",
+        "request_sha256",
+        "publication",
+        "eligible_for_current_pointer",
+        "disclosure",
+        "reproducibility",
+        "outputs",
+        "terminology",
+        "timing_phases"
+      ],
+      "additionalProperties": false
+    },
+    "terminology": {
+      "type": "object",
+      "properties": {
+        "contract_version": {
+          "const": "1.0.0"
+        },
+        "provider_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "provider_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "vocabulary_release": {
+          "$ref": "urn:achilles-next:contracts:1#/$defs/identity"
+        },
+        "concepts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "concept_id": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 2147483647
+              },
+              "state": {
+                "enum": [
+                  "available",
+                  "unknown",
+                  "unavailable"
+                ]
+              },
+              "concept_name": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "domain_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reason": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "concept_id",
+              "state",
+              "concept_name",
+              "domain_id",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "contract_version",
+        "provider_id",
+        "provider_version",
+        "source_id",
+        "vocabulary_release",
+        "concepts"
+      ],
+      "additionalProperties": false
+    },
+    "provider_request": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "request_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "operation": {
+              "const": "manifest"
+            },
+            "context": {
+              "$ref": "urn:achilles-next:contracts:1#/$defs/context"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "contract_version",
+            "request_id",
+            "operation",
+            "context",
+            "parameters"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "request_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "operation": {
+              "const": "result"
+            },
+            "context": {
+              "$ref": "urn:achilles-next:contracts:1#/$defs/context"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {
+                "metric_id": {
+                  "enum": [
+                    "source.passport",
+                    "source.capabilities",
+                    "person.count",
+                    "observation.person_count",
+                    "observation.monthly_person_count",
+                    "observation.person_days",
+                    "measurement.record_count",
+                    "measurement.person_count",
+                    "measurement.representation_count",
+                    "measurement.unit_count",
+                    "measurement.operator_count",
+                    "measurement.numeric_eligibility_count",
+                    "measurement.numeric_summary",
+                    "execution.output_status",
+                    "execution.timing"
+                  ]
+                }
+              },
+              "required": [
+                "metric_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "contract_version",
+            "request_id",
+            "operation",
+            "context",
+            "parameters"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "request_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "operation": {
+              "const": "terminology"
+            },
+            "context": {
+              "$ref": "urn:achilles-next:contracts:1#/$defs/context"
+            },
+            "parameters": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "contract_version",
+            "request_id",
+            "operation",
+            "context",
+            "parameters"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "event": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "event_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "instance_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "correlation_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "origin": {
+              "enum": [
+                "user",
+                "host",
+                "system"
+              ]
+            },
+            "context": {
+              "$ref": "urn:achilles-next:contracts:1#/$defs/context"
+            },
+            "type": {
+              "const": "ready"
+            },
+            "payload": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "contract_version",
+            "event_id",
+            "instance_id",
+            "generation",
+            "correlation_id",
+            "origin",
+            "context",
+            "type",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "event_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "instance_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "correlation_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "origin": {
+              "enum": [
+                "user",
+                "host",
+                "system"
+              ]
+            },
+            "context": {
+              "$ref": "urn:achilles-next:contracts:1#/$defs/context"
+            },
+            "type": {
+              "const": "concept_selected"
+            },
+            "payload": {
+              "type": "object",
+              "properties": {
+                "concept_id": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "concept_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "contract_version",
+            "event_id",
+            "instance_id",
+            "generation",
+            "correlation_id",
+            "origin",
+            "context",
+            "type",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "event_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "instance_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "correlation_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "origin": {
+              "enum": [
+                "user",
+                "host",
+                "system"
+              ]
+            },
+            "context": {
+              "$ref": "urn:achilles-next:contracts:1#/$defs/context"
+            },
+            "type": {
+              "const": "navigation_requested"
+            },
+            "payload": {
+              "type": "object",
+              "properties": {
+                "target": {
+                  "const": "concept"
+                },
+                "concept_id": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 2147483647
+                }
+              },
+              "required": [
+                "target",
+                "concept_id"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "contract_version",
+            "event_id",
+            "instance_id",
+            "generation",
+            "correlation_id",
+            "origin",
+            "context",
+            "type",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "event_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "instance_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "correlation_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "origin": {
+              "enum": [
+                "user",
+                "host",
+                "system"
+              ]
+            },
+            "context": {
+              "$ref": "urn:achilles-next:contracts:1#/$defs/context"
+            },
+            "type": {
+              "const": "error"
+            },
+            "payload": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "message": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": [
+                "code",
+                "message"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "contract_version",
+            "event_id",
+            "instance_id",
+            "generation",
+            "correlation_id",
+            "origin",
+            "context",
+            "type",
+            "payload"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "contract_version": {
+              "const": "1.0.0"
+            },
+            "event_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "instance_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "generation": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            },
+            "correlation_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "origin": {
+              "enum": [
+                "user",
+                "host",
+                "system"
+              ]
+            },
+            "context": {
+              "$ref": "urn:achilles-next:contracts:1#/$defs/context"
+            },
+            "type": {
+              "const": "destroyed"
+            },
+            "payload": {
+              "type": "object",
+              "properties": {},
+              "required": [],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "contract_version",
+            "event_id",
+            "instance_id",
+            "generation",
+            "correlation_id",
+            "origin",
+            "context",
+            "type",
+            "payload"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    }
+  }
+}

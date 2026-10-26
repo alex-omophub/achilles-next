@@ -1,0 +1,363 @@
+{
+  "contract_version": "1.0.0",
+  "bundle_id": "contract-fixture-january-v1",
+  "source_id": "fixture:tiny_a",
+  "run_id": "contract-fixture-run-1",
+  "request_sha256": "8e9edda41ed57d15fb936569d6a80530537c8f6670a3985e6eb0173a571a61fa",
+  "metric_id": "measurement.numeric_eligibility_count",
+  "metric_version": "1.0.0",
+  "state": "computed",
+  "reason": null,
+  "rows": [
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "window",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "missing_numeric"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "1"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "window",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "non_finite_numeric"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "0"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "window",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "explicit_operator"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "1"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "window",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "missing_unit"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "0"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "window",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "unmapped_unit"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "0"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "window",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "unknown_or_invalid_unit"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "0"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "window",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "eligible"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "3"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "window",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "month",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "missing_numeric"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "1"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "month",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "month",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "non_finite_numeric"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "0"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "month",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "month",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "explicit_operator"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "1"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "month",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "month",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "missing_unit"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "0"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "month",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "month",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "unmapped_unit"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "0"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "month",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "month",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "unknown_or_invalid_unit"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "0"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "month",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    },
+    {
+      "dimensions": {
+        "measurement_concept_id": 900000001,
+        "period_kind": "month",
+        "period_start": "2020-01-01",
+        "period_end": "2020-01-20",
+        "eligibility_reason": "eligible"
+      },
+      "state": "computed",
+      "reason": null,
+      "values": {
+        "count": "3"
+      },
+      "denominator": {
+        "metric_id": "measurement.record_count",
+        "dimensions": {
+          "measurement_concept_id": 900000001,
+          "period_kind": "month",
+          "period_start": "2020-01-01",
+          "period_end": "2020-01-20"
+        },
+        "field": "count",
+        "value": "5"
+      }
+    }
+  ]
+}

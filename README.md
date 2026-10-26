@@ -23,6 +23,8 @@ The [PostgreSQL fixture environment](tests/fixtures/postgresql/README.md) provid
 
 The [alpha measurement profile](docs/analysis/alpha-profile.md) specifies 15 bounded outputs with explicit observation, representation and exact-distribution semantics. Its manifests and read-only fixture references can be checked now; the production analysis engine is not implemented yet.
 
+The [v1 result/provider/embed contracts](docs/contracts/v1.md) add versioned schemas, a complete synthetic bundle, TypeScript interfaces and executable conformance checks for Generation → View and host embedding.
+
 ## Relationship to OHDSI
 
 AchillesNext is an independent successor project. OHDSI Achilles and other ecosystem projects retain their own identities and attribution. Existing functionality is not claimed as implemented or certified here.

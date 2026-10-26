@@ -1,0 +1,26 @@
+{
+  "name": "achilles-next-contracts",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit --strict --module nodenext --moduleResolution nodenext --target es2022 --lib es2022,dom tests/types.ts",
+    "test": "node --test tests/*.test.mjs",
+    "check": "npm run typecheck && npm test && node tools/validate.mjs ../../tests/fixtures/contracts/complete"
+  },
+  "devDependencies": {
+    "ajv": "8.17.1",
+    "typescript": "5.9.3"
+  },
+  "types": "./src/index.d.mts",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.mts",
+      "import": "./src/index.mjs"
+    }
+  }
+}
