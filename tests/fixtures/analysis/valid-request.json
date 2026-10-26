@@ -1,0 +1,16 @@
+{
+  "profile_id": "alpha-measurement-v1",
+  "source_id": "fixture:tiny_a",
+  "window": {
+    "start": "2020-01-01",
+    "end": "2020-12-31"
+  },
+  "measurement_concept_ids": [
+    0,
+    900000001,
+    900000002,
+    999999999
+  ],
+  "output_scope": "restricted",
+  "disclosure_policy_id": "synthetic-unsuppressed-v1"
+}

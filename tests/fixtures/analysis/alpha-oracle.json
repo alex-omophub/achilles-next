@@ -1,0 +1,378 @@
+{
+  "format_version": 1,
+  "profile_id": "alpha-measurement-v1",
+  "meaning": "Hand-calculated reference answers over the small PostgreSQL fixture pack; not analysis-engine results. Representation bit order: numeric_present, coded_present, source_text_present. Nonzero maps omit dense zero cells only to keep the reference readable.",
+  "cases": [
+    {
+      "id": "tiny_a_2020",
+      "fixture_source": "tiny_a",
+      "schema_versions": [
+        "5.3",
+        "5.4",
+        "5.5"
+      ],
+      "request": {
+        "profile_id": "alpha-measurement-v1",
+        "source_id": "fixture:tiny_a",
+        "window": {
+          "start": "2020-01-01",
+          "end": "2020-12-31"
+        },
+        "measurement_concept_ids": [
+          0,
+          900000001,
+          900000002,
+          999999999
+        ],
+        "output_scope": "restricted",
+        "disclosure_policy_id": "synthetic-unsuppressed-v1"
+      },
+      "expected": {
+        "person_count": "4",
+        "observed_people": "3",
+        "person_days": "24",
+        "observed_people_by_month": {
+          "2020-01-01": "1",
+          "2020-02-01": "1",
+          "2020-03-01": "1",
+          "2020-04-01": "0",
+          "2020-05-01": "0",
+          "2020-06-01": "0",
+          "2020-07-01": "0",
+          "2020-08-01": "0",
+          "2020-09-01": "0",
+          "2020-10-01": "0",
+          "2020-11-01": "0",
+          "2020-12-01": "1"
+        },
+        "records_by_concept": {
+          "0": "1",
+          "900000001": "8",
+          "900000002": "1",
+          "999999999": "1"
+        },
+        "people_by_concept": {
+          "0": "1",
+          "900000001": "3",
+          "900000002": "1",
+          "999999999": "1"
+        },
+        "primary_eligibility_nonzero": {
+          "eligible": "6",
+          "missing_numeric": "1",
+          "explicit_operator": "1"
+        },
+        "primary_representation_nonzero": {
+          "100": "7",
+          "000": "1"
+        },
+        "primary_unit_nonzero": {
+          "id:900000101": "8"
+        },
+        "primary_operator_nonzero": {
+          "zero": "7",
+          "id:900000201": "1"
+        },
+        "primary_numeric_sorted": [
+          "-5",
+          "1",
+          "1",
+          "1",
+          "2.5",
+          "100"
+        ],
+        "primary_numeric_summary": {
+          "n": "6",
+          "sum": "100.5",
+          "min": "-5",
+          "max": "100",
+          "mean_numerator": "100.5",
+          "mean_denominator": "6",
+          "p10": "-5",
+          "p25": "1",
+          "p50": "1",
+          "p75": "2.5",
+          "p90": "100"
+        },
+        "legacy_overlap_join_primary_records": "11"
+      }
+    },
+    {
+      "id": "tiny_a_january_partial",
+      "fixture_source": "tiny_a",
+      "schema_versions": [
+        "5.3",
+        "5.4",
+        "5.5"
+      ],
+      "request": {
+        "profile_id": "alpha-measurement-v1",
+        "source_id": "fixture:tiny_a",
+        "window": {
+          "start": "2020-01-01",
+          "end": "2020-01-20"
+        },
+        "measurement_concept_ids": [
+          0,
+          900000001,
+          900000002,
+          999999999
+        ],
+        "output_scope": "restricted",
+        "disclosure_policy_id": "synthetic-unsuppressed-v1"
+      },
+      "expected": {
+        "person_count": "4",
+        "observed_people": "1",
+        "person_days": "20",
+        "observed_people_by_month": {
+          "2020-01-01": "1"
+        },
+        "records_by_concept": {
+          "0": "0",
+          "900000001": "5",
+          "900000002": "0",
+          "999999999": "0"
+        },
+        "people_by_concept": {
+          "0": "0",
+          "900000001": "1",
+          "900000002": "0",
+          "999999999": "0"
+        },
+        "primary_eligibility_nonzero": {
+          "eligible": "3",
+          "missing_numeric": "1",
+          "explicit_operator": "1"
+        },
+        "primary_representation_nonzero": {
+          "100": "4",
+          "000": "1"
+        },
+        "primary_unit_nonzero": {
+          "id:900000101": "5"
+        },
+        "primary_operator_nonzero": {
+          "zero": "4",
+          "id:900000201": "1"
+        },
+        "primary_numeric_sorted": [
+          "-5",
+          "1",
+          "1"
+        ],
+        "primary_numeric_summary": {
+          "n": "3",
+          "sum": "-3",
+          "min": "-5",
+          "max": "1",
+          "mean_numerator": "-3",
+          "mean_denominator": "3",
+          "p10": "-5",
+          "p25": "-5",
+          "p50": "1",
+          "p75": "1",
+          "p90": "1"
+        },
+        "legacy_overlap_join_primary_records": "8"
+      }
+    },
+    {
+      "id": "tiny_b_2021",
+      "fixture_source": "tiny_b",
+      "schema_versions": [
+        "5.3",
+        "5.4",
+        "5.5"
+      ],
+      "request": {
+        "profile_id": "alpha-measurement-v1",
+        "source_id": "fixture:tiny_b",
+        "window": {
+          "start": "2021-01-01",
+          "end": "2021-12-31"
+        },
+        "measurement_concept_ids": [
+          900000001
+        ],
+        "output_scope": "restricted",
+        "disclosure_policy_id": "synthetic-unsuppressed-v1"
+      },
+      "expected": {
+        "person_count": "2",
+        "observed_people": "1",
+        "person_days": "2",
+        "observed_people_by_month": {
+          "2021-01-01": "1",
+          "2021-02-01": "0",
+          "2021-03-01": "0",
+          "2021-04-01": "0",
+          "2021-05-01": "0",
+          "2021-06-01": "0",
+          "2021-07-01": "0",
+          "2021-08-01": "0",
+          "2021-09-01": "0",
+          "2021-10-01": "0",
+          "2021-11-01": "0",
+          "2021-12-01": "0"
+        },
+        "records_by_concept": {
+          "900000001": "2"
+        },
+        "people_by_concept": {
+          "900000001": "1"
+        },
+        "primary_eligibility_nonzero": {
+          "eligible": "2"
+        },
+        "primary_representation_nonzero": {
+          "100": "2"
+        },
+        "primary_unit_nonzero": {
+          "id:900000101": "2"
+        },
+        "primary_operator_nonzero": {
+          "zero": "2"
+        },
+        "primary_numeric_sorted": [
+          "42",
+          "42"
+        ],
+        "primary_numeric_summary": {
+          "n": "2",
+          "sum": "84",
+          "min": "42",
+          "max": "42",
+          "mean_numerator": "84",
+          "mean_denominator": "2",
+          "p10": "42",
+          "p25": "42",
+          "p50": "42",
+          "p75": "42",
+          "p90": "42"
+        },
+        "legacy_overlap_join_primary_records": "2"
+      }
+    },
+    {
+      "id": "tiny_a_empty_observation",
+      "fixture_source": "tiny_a",
+      "schema_versions": [
+        "5.3",
+        "5.4",
+        "5.5"
+      ],
+      "request": {
+        "profile_id": "alpha-measurement-v1",
+        "source_id": "fixture:tiny_a",
+        "window": {
+          "start": "2021-01-01",
+          "end": "2021-12-31"
+        },
+        "measurement_concept_ids": [
+          900000001
+        ],
+        "output_scope": "restricted",
+        "disclosure_policy_id": "synthetic-unsuppressed-v1"
+      },
+      "expected": {
+        "person_count": "4",
+        "observed_people": "0",
+        "person_days": "0",
+        "observed_people_by_month": {
+          "2021-01-01": "0",
+          "2021-02-01": "0",
+          "2021-03-01": "0",
+          "2021-04-01": "0",
+          "2021-05-01": "0",
+          "2021-06-01": "0",
+          "2021-07-01": "0",
+          "2021-08-01": "0",
+          "2021-09-01": "0",
+          "2021-10-01": "0",
+          "2021-11-01": "0",
+          "2021-12-01": "0"
+        },
+        "records_by_concept": {
+          "900000001": "0"
+        },
+        "people_by_concept": {
+          "900000001": "0"
+        },
+        "primary_eligibility_nonzero": {},
+        "primary_representation_nonzero": {},
+        "primary_unit_nonzero": {},
+        "primary_operator_nonzero": {},
+        "primary_numeric_sorted": [],
+        "primary_numeric_summary": null,
+        "legacy_overlap_join_primary_records": "0"
+      }
+    },
+    {
+      "id": "tiny_a_year_boundary",
+      "fixture_source": "tiny_a",
+      "schema_versions": [
+        "5.3",
+        "5.4",
+        "5.5"
+      ],
+      "request": {
+        "profile_id": "alpha-measurement-v1",
+        "source_id": "fixture:tiny_a",
+        "window": {
+          "start": "2019-12-31",
+          "end": "2020-01-01"
+        },
+        "measurement_concept_ids": [
+          900000001
+        ],
+        "output_scope": "restricted",
+        "disclosure_policy_id": "synthetic-unsuppressed-v1"
+      },
+      "expected": {
+        "person_count": "4",
+        "observed_people": "1",
+        "person_days": "1",
+        "observed_people_by_month": {
+          "2019-12-01": "0",
+          "2020-01-01": "1"
+        },
+        "records_by_concept": {
+          "900000001": "1"
+        },
+        "people_by_concept": {
+          "900000001": "1"
+        },
+        "primary_eligibility_nonzero": {
+          "eligible": "1"
+        },
+        "primary_representation_nonzero": {
+          "100": "1"
+        },
+        "primary_unit_nonzero": {
+          "id:900000101": "1"
+        },
+        "primary_operator_nonzero": {
+          "zero": "1"
+        },
+        "primary_numeric_sorted": [
+          "-5"
+        ],
+        "primary_numeric_summary": {
+          "n": "1",
+          "sum": "-5",
+          "min": "-5",
+          "max": "-5",
+          "mean_numerator": "-5",
+          "mean_denominator": "1",
+          "p10": "-5",
+          "p25": "-5",
+          "p50": "-5",
+          "p75": "-5",
+          "p90": "-5"
+        },
+        "legacy_overlap_join_primary_records": "1"
+      }
+    }
+  ]
+}

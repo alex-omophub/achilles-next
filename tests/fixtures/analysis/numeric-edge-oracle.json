@@ -1,0 +1,150 @@
+{
+  "meaning": "Handwritten numeric gating/precision cases, evaluated in a read-only VALUES-style SQL reference. Unit IDs 900000101/102 are declared known synthetic Unit-domain concepts.",
+  "rows": [
+    {
+      "id": 1,
+      "value_as_number": "1",
+      "unit_concept_id": 900000101,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 2,
+      "value_as_number": "100",
+      "unit_concept_id": 900000102,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 3,
+      "value_as_number": "3",
+      "unit_concept_id": 900000101,
+      "operator_concept_id": null
+    },
+    {
+      "id": 4,
+      "value_as_number": "5",
+      "unit_concept_id": 900000101,
+      "operator_concept_id": 900000201
+    },
+    {
+      "id": 5,
+      "value_as_number": "7",
+      "unit_concept_id": null,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 6,
+      "value_as_number": "8",
+      "unit_concept_id": 0,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 7,
+      "value_as_number": "9",
+      "unit_concept_id": 999999999,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 8,
+      "value_as_number": null,
+      "unit_concept_id": 900000101,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 9,
+      "value_as_number": "NaN",
+      "unit_concept_id": 900000101,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 10,
+      "value_as_number": "Infinity",
+      "unit_concept_id": 900000101,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 11,
+      "value_as_number": "-Infinity",
+      "unit_concept_id": 900000101,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 12,
+      "value_as_number": null,
+      "unit_concept_id": null,
+      "operator_concept_id": 900000201
+    },
+    {
+      "id": 13,
+      "value_as_number": "9007199254740993.125",
+      "unit_concept_id": 900000101,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 14,
+      "value_as_number": "0",
+      "unit_concept_id": 900000101,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 15,
+      "value_as_number": "1",
+      "unit_concept_id": 900000101,
+      "operator_concept_id": 0
+    },
+    {
+      "id": 16,
+      "value_as_number": "2",
+      "unit_concept_id": -1,
+      "operator_concept_id": 0
+    }
+  ],
+  "expected": {
+    "eligibility_by_record": {
+      "1": "eligible",
+      "2": "eligible",
+      "3": "eligible",
+      "4": "explicit_operator",
+      "5": "missing_unit",
+      "6": "unmapped_unit",
+      "7": "unknown_or_invalid_unit",
+      "8": "missing_numeric",
+      "9": "non_finite_numeric",
+      "10": "non_finite_numeric",
+      "11": "non_finite_numeric",
+      "12": "missing_numeric",
+      "13": "eligible",
+      "14": "eligible",
+      "15": "eligible",
+      "16": "unknown_or_invalid_unit"
+    },
+    "strata": {
+      "id:900000101|zero": {
+        "n": "4",
+        "sum": "9007199254740995.125",
+        "sorted_values": [
+          "0",
+          "1",
+          "1",
+          "9007199254740993.125"
+        ],
+        "p50": "1"
+      },
+      "id:900000102|zero": {
+        "n": "1",
+        "sum": "100",
+        "sorted_values": [
+          "100"
+        ],
+        "p50": "100"
+      },
+      "id:900000101|null": {
+        "n": "1",
+        "sum": "3",
+        "sorted_values": [
+          "3"
+        ],
+        "p50": "3"
+      }
+    }
+  }
+}
