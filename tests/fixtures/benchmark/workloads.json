@@ -1,0 +1,47 @@
+{
+  "format_version": 1,
+  "achilles_version": "1.7.2",
+  "sqlrender_version": "1.19.0",
+  "analysis_ids": [
+    1,
+    1800,
+    1801,
+    1815
+  ],
+  "export_template": "sql/sql_server/export/measurement/sqlMeasurementValueDistribution.sql",
+  "export_git_blob": "345c61f54be86c8a96884553f5199eb9f7b026a3",
+  "settings": {
+    "work_mem": "64MB",
+    "max_parallel_workers_per_gather": 0,
+    "jit": "off",
+    "statement_timeout": "30s",
+    "lock_timeout": "2s"
+  },
+  "fixtures": [
+    "cdm_tiny_a_53",
+    "cdm_tiny_a_54",
+    "cdm_tiny_a_55",
+    "cdm_gibleed_53",
+    "cdm_gibleed_55"
+  ],
+  "scales": [
+    {
+      "id": "repeated_100k",
+      "records": 100000,
+      "distinct_values": 32,
+      "people": 10000,
+      "overlap_every": 5
+    },
+    {
+      "id": "distinct_100k",
+      "records": 100000,
+      "distinct_values": 4096,
+      "people": 10000,
+      "overlap_every": 5
+    }
+  ],
+  "warmups": 1,
+  "trials": 5,
+  "source_policy": "Synthetic fixture database only; session-local copies; all writes rolled back",
+  "cache_policy": "Correctness preflight and input capture warm data; no cold-cache claim"
+}
