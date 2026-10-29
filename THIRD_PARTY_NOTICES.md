@@ -1,5 +1,15 @@
 # Third-party material
 
+## Installed runtime and development dependencies
+
+The count tracer uses OHDSI DatabaseConnector, jsonlite and digest through their
+R interfaces, plus React, React DOM and Ajv in the development viewer. Vite,
+TypeScript and Vitest are development tools. These dependencies retain their
+own licenses and notices in their installed distributions; their source and the
+PostgreSQL JDBC binary are not vendored here. The npm lockfiles and synthetic
+runtime tuple record the selected versions. Preserve dependency notices when
+distributing future built viewer assets.
+
 ## OHDSI Achilles definition references
 
 The alpha specification and compatibility metadata refer to [OHDSI/Achilles v1.7.2](https://github.com/OHDSI/Achilles/tree/86741da9c8ad74a5be7785d7b9da24aacfa4c09e) and [development 1.8.0](https://github.com/OHDSI/Achilles/tree/2ee9d46cb4effc952f78a67f52da95627c9e7a01). Attribution: OHDSI Achilles contributors; upstream declares Apache License 2.0. The separate commit/registry/template pins preserve the definition references. Legacy SQL implementation is not vendored here; fixture reference queries and request validation are AchillesNext test/tooling code. These references do not imply executed numerical parity or official endorsement.
