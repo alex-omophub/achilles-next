@@ -4,6 +4,10 @@ The [synthetic PostgreSQL-to-React count tracer](docs/development/count-tracer.m
 provides an R entry point, a validated partial aggregate bundle and an exact-count
 React view. It is development functionality, not a complete alpha report.
 
+After installing the R package, open an existing count-tracer bundle with
+`AchillesNext::viewResults("path/to/bundle")`. The installed [local viewer](docs/viewing/local-viewer.md)
+opens automatically with prebuilt React assets; viewing needs no Node, npm or Shiny.
+
 Open-source OMOP data characterization and exploration with reproducible aggregate results and an embeddable analytical UI.
 
 **R package name:** `AchillesNext` · **Repository:** `achilles-next` · **License:** Apache-2.0
@@ -11,8 +15,8 @@ Open-source OMOP data characterization and exploration with reproducible aggrega
 ## Development status
 
 AchillesNext is in early development. The R package installs from source and
-computes a synthetic PostgreSQL person-count tracer, with a React development
-view. The complete analytical profile, prebuilt end-user viewer and production
+computes a synthetic PostgreSQL person-count tracer, with an installed local
+React viewer. The complete analytical profile and production
 host integration remain under development. See the count-tracer guide for the
 tested fixture scope, installation and limitations.
 

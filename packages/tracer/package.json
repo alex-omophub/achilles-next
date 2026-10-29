@@ -6,9 +6,10 @@
   "license": "Apache-2.0",
   "engines": {"node": ">=22.12"},
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
-    "test": "vitest run",
+    "dev": "node tools/build-validators.mjs && vite --host 127.0.0.1",
+    "build": "node tools/build-validators.mjs && tsc --noEmit && vite build",
+    "test": "node tools/build-validators.mjs && vitest run",
+    "package-viewer": "npm run build && node tools/package-viewer.mjs",
     "check": "npm run build && npm test"
   },
   "dependencies": {

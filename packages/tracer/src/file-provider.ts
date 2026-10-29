@@ -1,19 +1,11 @@
-import Ajv2020 from 'ajv/dist/2020';
-import schema from '../../../inst/contracts/v1/contract.schema.json';
+import {bundle, result, terminology} from './generated-validation.mjs';
 import profileText from '../../../inst/analysis/alpha-measurement-v1.json?raw';
 import {assertContext, canonical, sha256} from '../../contracts/src/index.mjs';
 import type {AccessContext, BundleManifest, MetricId, ReadOptions, ResultProvider,
   ResultDocument, TerminologyDocument} from '../../contracts/src/index.mjs';
 
 const profile = JSON.parse(profileText) as {required_outputs: MetricId[]};
-const ajv = new Ajv2020({allErrors: true, strict: true});
-ajv.addFormat('date', value => /^\d{4}-\d{2}-\d{2}$/.test(value) && !value.startsWith('0000') &&
-  !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value);
-ajv.addFormat('date-time', value => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
-  !Number.isNaN(Date.parse(value)) && new Date(value).toISOString() === value);
-ajv.addSchema(schema);
-const validators = Object.fromEntries(['bundle', 'result', 'terminology'].map(name =>
-  [name, ajv.compile({$ref: `${schema.$id}#/$defs/${name}`})]));
+const validators: Record<string, (doc: unknown) => boolean> = {bundle, result, terminology};
 function requireValid(test: unknown, message: string): asserts test {
   if (!test) throw new Error(message);
 }
@@ -24,6 +16,10 @@ function decode(name: string, bytes: Uint8Array): any {
 }
 export interface BundleFile {size: number; arrayBuffer(): Promise<ArrayBuffer>}
 export interface SelectedFile extends BundleFile {name: string; webkitRelativePath: string}
+export type OpenErrorState = 'missing' | 'invalid' | 'incompatible' | 'unavailable';
+export class BundleOpenError extends Error {
+  constructor(public readonly state: OpenErrorState, message: string) {super(message);}
+}
 export interface VerifiedCount {
   manifest: BundleManifest;
   count: string;
@@ -45,6 +41,55 @@ export function selectedBundleFiles(files: Iterable<SelectedFile>): Map<string, 
     result.set(path, file);
   }
   return result;
+}
+
+/** Same verifier as file selection, with only declared files from an R-selected
+ * loopback snapshot. The base URL is relative to the current non-root page. */
+export async function openServedCountBundle(base: URL, signal: AbortSignal,
+  fetchImpl: typeof fetch = globalThis.fetch): Promise<VerifiedCount> {
+  const read = async (path: string) => {
+    signal.throwIfAborted();
+    let response: Response;
+    try {response = await fetchImpl(new URL(path, base), {signal, cache: 'no-store', redirect: 'error'});}
+    catch {signal.throwIfAborted(); throw new BundleOpenError('unavailable', 'The local results server could not be reached. Reopen the viewer from R.');}
+    if (!response.ok) throw new BundleOpenError(response.status === 404 ? 'missing' : 'unavailable',
+      response.status === 404 ? 'A declared result file is missing. Reopen the selected bundle.' : 'The local results server is unavailable. Reopen the viewer from R.');
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    if (bytes.length > 10 * 1024 * 1024) throw new BundleOpenError('invalid', 'A result file exceeds the viewer limit.');
+    return bytes;
+  };
+  try {
+    const status = JSON.parse(new TextDecoder().decode(await read('status.json')));
+    if (status.state !== 'ready') {
+      const state: OpenErrorState = ['missing', 'invalid', 'incompatible'].includes(status.state) ? status.state : 'unavailable';
+      throw new BundleOpenError(state, typeof status.message === 'string' ? status.message : 'Reopen a supported count-tracer bundle.');
+    }
+    const manifestBytes = await read('manifest.json');
+    const manifest = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(manifestBytes));
+    if (manifest.contract_version !== '1.0.0' || manifest.profile?.id !== 'alpha-measurement-v1' ||
+      manifest.generator?.name !== 'AchillesNext-count-tracer' || manifest.publication !== 'partial') {
+      throw new BundleOpenError('incompatible', 'This viewer supports partial count-tracer bundles using contract 1.0.0.');
+    }
+    requireValid(validators.bundle(manifest), 'Invalid manifest: incompatible typed fields.');
+    requireValid(new Set(manifest.outputs.map((p: {path: string}) => p.path)).size === 15, 'Duplicate output path.');
+    const paths: string[] = manifest.outputs.map((p: {path: string}) => p.path);
+    requireValid(paths.every(path => /^results\/[a-z][a-z0-9._-]*\.json$/.test(path) && !path.includes('..')), 'Invalid result path.');
+    const files = new Map<string, BundleFile>();
+    const put = (path: string, bytes: Uint8Array) => files.set(path, {size: bytes.length,
+      arrayBuffer: async () => bytes.slice().buffer as ArrayBuffer});
+    put('manifest.json', manifestBytes);
+    let total = manifestBytes.length;
+    await Promise.all([...paths, 'terminology.json'].map(async path => {
+      const bytes = await read(path); total += bytes.length;
+      requireValid(total <= 64 * 1024 * 1024, 'Bundle exceeds the viewer size limit.');
+      put(path, bytes);
+    }));
+    return await openCountBundle(files, signal);
+  } catch (error) {
+    signal.throwIfAborted();
+    if (error instanceof BundleOpenError) throw error;
+    throw new BundleOpenError('invalid', error instanceof Error ? (error.message || error.name) : 'The result bundle is invalid.');
+  }
 }
 /** Strict count-tracer projection: full frozen schemas and byte integrity, followed by
  * count/passport and partial-tracer semantic checks. Other profile calculations

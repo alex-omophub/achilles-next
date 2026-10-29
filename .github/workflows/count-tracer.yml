@@ -26,12 +26,18 @@ jobs:
       ACHILLES_NEXT_FIXTURE_STATE: ${{ github.workspace }}/.local/postgresql
       R_LIBS: ${{ github.workspace }}/.local/R-library
       TRACER_TEST_BUNDLES: ${{ github.workspace }}/.local/tracer-integration
+      ACHILLES_NEXT_VIEWER_TEST_LIBRARY: ${{ github.workspace }}/.local/R-library
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24.11.1'
+          cache: npm
+          cache-dependency-path: |
+            packages/contracts/package-lock.json
+            packages/tracer/package-lock.json
       - uses: actions/setup-java@v4
+        id: java
         with:
           distribution: temurin
           java-version: '11'
@@ -46,22 +52,50 @@ jobs:
           sudo apt-get install -y --no-install-recommends libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev libtirpc-dev
           # setup-java changes JAVA_HOME, but R keeps its build-time JNI paths.
           sudo env JAVA_HOME="$JAVA_HOME" "$(command -v R)" CMD javareconf
-      - name: Install R development dependencies and pinned JDBC driver
+      - name: Restore compiled R dependencies
+        id: r-deps-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: ${{ env.R_LIBS }}
+          # Exact matches only: rJava embeds JDK paths in its compiled library.
+          # Bump v1 to refresh dependencies without changing their declarations.
+          key: tracer-r-deps-v1-${{ runner.os }}-${{ runner.arch }}-ubuntu22.04-temurin-${{ steps.java.outputs.version }}-${{ hashFiles('DESCRIPTION', 'tests/tracer/runtime-lock.json', '.github/workflows/count-tracer.yml') }}
+      - name: Restore pinned JDBC driver
+        uses: actions/cache@v5
+        with:
+          path: ${{ env.DATABASECONNECTOR_JAR_FOLDER }}
+          key: tracer-jdbc-v1-${{ hashFiles('tests/tracer/runtime-lock.json') }}
+      - name: Install R dependencies on a cache miss
+        if: steps.r-deps-cache.outputs.cache-hit != 'true'
         shell: Rscript {0}
         run: |
-          dir.create(Sys.getenv('R_LIBS'), recursive=TRUE)
+          dir.create(Sys.getenv('R_LIBS'), recursive=TRUE, showWarnings=FALSE)
           .libPaths(c(Sys.getenv('R_LIBS'), .libPaths()))
-          install.packages(c('remotes', 'jsonlite', 'digest'), repos='https://cloud.r-project.org')
+          install.packages(c('remotes', 'jsonlite', 'digest', 'httpuv'), repos='https://cloud.r-project.org')
           remotes::install_version('DatabaseConnector', version='6.3.2', upgrade='never', repos='https://cloud.r-project.org')
-          stopifnot(requireNamespace('DatabaseConnector', quietly=TRUE))
+      - name: Verify R dependencies, JNI and JDBC on every run
+        shell: Rscript {0}
+        run: |
+          .libPaths(c(Sys.getenv('R_LIBS'), .libPaths()))
+          required <- c('remotes', 'jsonlite', 'digest', 'httpuv', 'DatabaseConnector')
+          stopifnot(all(vapply(required, requireNamespace, logical(1), quietly=TRUE)))
+          lock <- jsonlite::fromJSON('tests/tracer/runtime-lock.json')
+          stopifnot(identical(as.character(getRversion()), lock$r))
+          stopifnot(identical(as.character(utils::packageVersion('DatabaseConnector')), lock$DatabaseConnector))
           rJava::.jinit()
           javaVersion <- rJava::.jcall('java/lang/System', 'S', 'getProperty', 'java.version')
           stopifnot(startsWith(javaVersion, '11.'))
           cat('R JNI smoke check passed with Java', javaVersion, '\n')
-          dir.create(Sys.getenv('DATABASECONNECTOR_JAR_FOLDER'), recursive=TRUE)
-          DatabaseConnector::downloadJdbcDrivers('postgresql')
-          lock <- jsonlite::fromJSON('tests/tracer/runtime-lock.json')
-          stopifnot(identical(digest::digest(file=file.path(Sys.getenv('DATABASECONNECTOR_JAR_FOLDER'),lock$jdbc_file),algo='sha256'),lock$jdbc_sha256))
+          dir.create(Sys.getenv('DATABASECONNECTOR_JAR_FOLDER'), recursive=TRUE, showWarnings=FALSE)
+          driver <- file.path(Sys.getenv('DATABASECONNECTOR_JAR_FOLDER'), lock$jdbc_file)
+          if (!file.exists(driver)) DatabaseConnector::downloadJdbcDrivers('postgresql')
+          stopifnot(identical(digest::digest(file=driver,algo='sha256'),lock$jdbc_sha256))
+      - name: Save verified R dependencies before installing AchillesNext
+        if: steps.r-deps-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: ${{ env.R_LIBS }}
+          key: ${{ steps.r-deps-cache.outputs.cache-primary-key }}
       - name: Use the pinned psql client with the pinned server
         run: |
           mkdir -p .local/bin
@@ -82,6 +116,12 @@ jobs:
         env:
           PGPASSFILE: ${{ github.workspace }}/.local/admin.pgpass
         run: python3 tools/postgresql_fixtures.py setup --host 127.0.0.1 --admin-user postgres
+      - name: Rebuild and verify the shipped viewer before R installation
+        run: |
+          npm ci --prefix packages/tracer --ignore-scripts --no-audit --no-fund
+          npm run package-viewer --prefix packages/tracer
+          python3 tools/check_viewer_assets.py
+          git diff --exit-code -- inst/viewer
       - name: Install package and build real count bundles
         run: |
           R CMD INSTALL --library="$R_LIBS" .
@@ -93,8 +133,7 @@ jobs:
           for bundle in "$TRACER_TEST_BUNDLES"/*; do
             node packages/contracts/tools/validate.mjs "$bundle"
           done
-      - name: Build React and check the generated results through its file provider
+      - name: Check generated results and the installed local viewer
         run: |
-          npm ci --prefix packages/tracer --ignore-scripts --no-audit --no-fund
-          npm run check --prefix packages/tracer
+          npm test --prefix packages/tracer
           python3 -m unittest discover -s tests -p 'test_*.py'
