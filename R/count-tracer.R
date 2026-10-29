@@ -33,8 +33,16 @@
       !identical(request$disclosure_policy_id, "synthetic-unsuppressed-v1")) stop("Invalid synthetic tracer request", call. = FALSE)
   window <- request$window
   if (!is.list(window) || !setequal(names(window), c("start", "end")) || anyDuplicated(names(window))) stop("Invalid date window", call. = FALSE)
-  validDate <- function(x) .string(x) && grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", x) && substr(x, 1, 4) != "0000" &&
-    !is.na(as.Date(x, format = "%Y-%m-%d")) && identical(format(as.Date(x), "%Y-%m-%d"), x)
+  validDate <- function(x) {
+    if (!.string(x) || nchar(x, type = "bytes") != 10L || !grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", x)) return(FALSE)
+    # %Y padding for years below 1000 differs between Linux and macOS.
+    # Validate the frozen proleptic Gregorian DATE rules without OS formatting.
+    year <- as.integer(substr(x, 1, 4)); month <- as.integer(substr(x, 6, 7)); day <- as.integer(substr(x, 9, 10))
+    if (year == 0L || month < 1L || month > 12L) return(FALSE)
+    leap <- year %% 4L == 0L && (year %% 100L != 0L || year %% 400L == 0L)
+    days <- c(31L, if (leap) 29L else 28L, 31L, 30L, 31L, 30L, 31L, 31L, 30L, 31L, 30L, 31L)
+    day >= 1L && day <= days[month]
+  }
   if (!validDate(window$start) || !validDate(window$end) || window$start > window$end) stop("Invalid date window", call. = FALSE)
   month <- function(x) as.integer(substr(x, 1, 4)) * 12L + as.integer(substr(x, 6, 7))
   if (month(window$end) - month(window$start) + 1L > 120L) stop("Window exceeds 120 months", call. = FALSE)
@@ -52,6 +60,10 @@
 #' @export
 generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDir,
                                 request, declaredCdmVersion) {
+  .generate_tracer(connectionDetails, cdmSchema, sourceId, outputDir, request, declaredCdmVersion, observation = FALSE)
+}
+.generate_tracer <- function(connectionDetails, cdmSchema, sourceId, outputDir,
+                             request, declaredCdmVersion, observation) {
   if (!inherits(connectionDetails, "ConnectionDetails") || !identical(connectionDetails$dbms, "postgresql")) stop("PostgreSQL connection details required", call. = FALSE)
   if (!.string(cdmSchema) || !grepl("^cdm_tiny_[a-z0-9_]+_(53|54|55)$", cdmSchema)) stop("A marked tiny fixture schema is required", call. = FALSE)
   if (!.string(sourceId) || !.string(outputDir) || !.string(declaredCdmVersion) || !declaredCdmVersion %in% c("5.3", "5.4", "5.5") ||
@@ -64,14 +76,10 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   started <- .stamp()
   connection <- tryCatch(DatabaseConnector::connect(connectionDetails), error = function(e) stop("TRACER_CONNECTION_FAILED: check local configuration and driver", call. = FALSE))
   on.exit(try(DatabaseConnector::disconnect(connection), silent = TRUE), add = TRUE)
-  errorFile <- tempfile("achilles-next-sql-", fileext = ".txt")
-  on.exit(unlink(errorFile), add = TRUE)
-  query <- function(sql) tryCatch(DatabaseConnector::querySql(connection, sql, errorReportFile = errorFile,
-      integerAsNumeric = FALSE, integer64AsNumeric = FALSE), error = function(e) stop("TRACER_QUERY_FAILED: source is unavailable or inaccessible", call. = FALSE))
-  execute <- function(sql) tryCatch(DatabaseConnector::executeSql(connection, sql, progressBar = FALSE,
-      reportOverallTime = FALSE, errorReportFile = errorFile), error = function(e) stop("TRACER_TRANSACTION_FAILED", call. = FALSE))
-  execute("BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ READ ONLY")
-  on.exit(try(execute("ROLLBACK"), silent = TRUE), add = TRUE, after = FALSE)
+  session <- .tracer_session(connection)
+  query <- session$query
+  execute <- session$execute
+  on.exit(try(session$rollback(), silent = TRUE), add = TRUE, after = FALSE)
   # Fixed identifiers and a validated schema prevent SQL interpolation of input.
   guard <- query(paste0("SELECT current_database() AS database_name, current_setting('transaction_read_only') AS read_only, ",
     "shobj_description(d.oid, 'pg_database') AS database_marker, obj_description(n.oid, 'pg_namespace') AS schema_marker ",
@@ -85,21 +93,23 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   if (nrow(counts) != 1L || !all(vapply(counts, function(x) is.character(x) && length(x) == 1L && !is.na(x) && grepl("^(0|[1-9][0-9]*)$", x), TRUE))) stop("TRACER_INVALID_COUNT: driver must preserve exact count text", call. = FALSE)
   if (!identical(counts[["RECORDS"]], counts[["NONNULL_IDS"]]) || !identical(counts[["RECORDS"]], counts[["PEOPLE"]])) stop("TRACER_PERSON_INTEGRITY: null or duplicate person IDs", call. = FALSE)
   count <- counts[["PEOPLE"]]
+  observed <- if (observation) .observation_compute(query, execute, cdmSchema, request$window) else NULL
   ended <- .stamp()
   profilePath <- system.file("analysis", "alpha-measurement-v1.json", package = "AchillesNext", mustWork = TRUE)
   profile <- jsonlite::fromJSON(profilePath, simplifyVector = FALSE)
   profileHash <- digest::digest(file = profilePath, algo = "sha256")
   if (profileHash != "2e106f260cbcfcaccab23c55846384886dc5c0b2d7178b48e62c7f82cbe18951") stop("Frozen profile mismatch", call. = FALSE)
   ids <- unlist(profile$required_outputs, use.names = FALSE)
-  runId <- paste0("count-", .hash(paste(started, sourceId, tempfile(), sep = ":")))
+  generator <- if (observation) "AchillesNext-observation-tracer" else "AchillesNext-count-tracer"
+  runId <- paste0(if (observation) "observation-" else "count-", .hash(paste(started, sourceId, tempfile(), sep = ":")))
   bundleId <- runId
-  unknown <- .unknown("Not established by the count tracer")
+  unknown <- .unknown("Not established by this development tracer")
   snapshot <- c(unknown, .object(immutable = FALSE, assertion_id = NULL, basis = NULL))
   source <- .object(source_id = sourceId, snapshot = snapshot, data_release = unknown,
-    vocabulary_release = unknown, schema_fingerprint = .unknown("Only PERSON prerequisites were probed"), declared_cdm_version = declaredCdmVersion)
+    vocabulary_release = unknown, schema_fingerprint = .unknown("A full schema fingerprint was not established"), declared_cdm_version = declaredCdmVersion)
   requestHash <- .hash(.json(request))
   common <- .object(contract_version = "1.0.0", bundle_id = bundleId, source_id = sourceId, run_id = runId, request_sha256 = requestHash)
-  unsupported <- "Not implemented by the count-only development tracer"
+  unsupported <- if (observation) "Not implemented by the observation development tracer" else "Not implemented by the count-only development tracer"
   documents <- lapply(ids, function(id) c(common, .object(metric_id = id, metric_version = "1.0.0", state = "unsupported", reason = unsupported, rows = NULL)))
   names(documents) <- ids
   computed <- function(id, values, state = "computed", reason = NULL) c(common, .object(metric_id = id, metric_version = "1.0.0", state = state, reason = reason,
@@ -111,6 +121,34 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     metric_versions = stats::setNames(as.list(rep("1.0.0", length(ids))), ids), run_id = runId))
   documents[["person.count"]] <- computed("person.count", .object(count = count),
     if (count == "0") "empty_source" else "computed", if (count == "0") "Accessible PERSON is empty" else NULL)
+  if (observation) {
+    observationIds <- c("observation.person_count", "observation.monthly_person_count", "observation.person_days")
+    if (observed$state != "computed") {
+      for (id in observationIds) documents[[id]] <- c(common, .object(metric_id = id, metric_version = "1.0.0",
+        state = observed$state, reason = observed$reason, rows = NULL))
+    } else {
+      values <- observed$rows
+      people <- values$COUNT[values$METRIC == "people"]
+      stateFor <- function(value) if (count == "0") "empty_source" else if (value == "0") "empty_population" else "computed"
+      reasonFor <- function(state) if (state == "empty_source") "Accessible PERSON is empty" else
+        if (state == "empty_population") "No observed person-days in this period" else NULL
+      denominator <- .object(metric_id = "person.count", dimensions = .object(), field = "count", value = count)
+      row <- function(value, dimensions, denominator) {
+        state <- stateFor(value)
+        .object(dimensions = dimensions, denominator = denominator, state = state, reason = reasonFor(state), values = .object(count = value))
+      }
+      document <- function(id, rows) {
+        state <- stateFor(people)
+        c(common, .object(metric_id = id, metric_version = "1.0.0", state = state, reason = reasonFor(state), rows = rows))
+      }
+      documents[["observation.person_count"]] <- document("observation.person_count", list(row(people, .object(), denominator)))
+      days <- values$COUNT[values$METRIC == "days"]
+      documents[["observation.person_days"]] <- document("observation.person_days", list(row(days, .object(), NULL)))
+      monthly <- values[values$METRIC == "month", , drop = FALSE]
+      rows <- lapply(seq_len(nrow(monthly)), function(i) row(monthly$COUNT[i], .object(month = monthly$MONTH[i]), denominator))
+      documents[["observation.monthly_person_count"]] <- document("observation.monthly_person_count", rows)
+    }
+  }
   if (!dir.create(outputDir, mode = "0700")) stop("Cannot create new output directory", call. = FALSE)
   success <- FALSE
   on.exit(if (!success) unlink(outputDir, recursive = TRUE), add = TRUE)
@@ -126,7 +164,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     source_id = sourceId, vocabulary_release = unknown, concepts = list())
   termIntegrity <- .write_json(terminology, file.path(outputDir, "terminology.json"))
   manifest <- .object(contract_version = "1.0.0", bundle_id = bundleId, run_id = runId, created_at = ended,
-    generator = .object(name = "AchillesNext-count-tracer", version = "0.0.0.9000"),
+    generator = .object(name = generator, version = "0.0.0.9000"),
     profile = .object(id = profile$profile_id, revision = profile$revision, sha256 = profileHash), source = source,
     request = request, request_sha256 = requestHash, publication = "partial", eligible_for_current_pointer = FALSE,
     disclosure = .object(policy_id = request$disclosure_policy_id, applied = FALSE, approval_id = NULL, scope = "restricted"),

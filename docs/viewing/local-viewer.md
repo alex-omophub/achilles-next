@@ -1,7 +1,7 @@
 # Open generated results locally
 
 The installed R package contains a prebuilt React viewer for partial synthetic
-count-tracer bundles. Opening a bundle requires R, the installed package and a
+count/observation-tracer bundles. Opening a bundle requires R, the installed package and a
 modern browser. It does not invoke Node, npm or Shiny, contact an external account,
 or build frontend assets. Installing R dependencies may require network access;
 this is not yet a verified offline distribution.
@@ -17,8 +17,10 @@ AchillesNext::viewResults(".local/count-bundle")
 
 The helper selects a loopback port and opens the selected results automatically.
 The URL includes `/achilles-next/`; selecting the folder again is unnecessary.
-Only `person.count` and the source passport are implemented. The other 13
-partitions remain explicitly unsupported, publication stays partial, and no
+Count-only bundles implement `person.count` and the passport, leaving 13 outputs
+unsupported. The [observation tracer](../development/observation-tracer.md) adds
+three observation metrics with a Recharts monthly view and exact table, leaving
+ten outputs unsupported. Publication stays partial, and no
 disclosure policy or institutional authorization is inferred.
 
 For interactive R, keep the session alive and its event loop available:
@@ -53,7 +55,7 @@ The R server binds only to `127.0.0.1`. It snapshots the manifest and declared
 aggregate/terminology files into memory after path, size, identity and hash
 checks. Unrelated files, symbolic links, path traversal, foreign Host/Origin
 headers and write methods are refused. The browser uses the frozen schemas and
-the same count-tracer semantic verifier as local folder selection. No count is
+the same partial-tracer semantic verifier as local folder selection. No count is
 shown until those checks pass. Limits are 10 MiB per file and 64 MiB per bundle.
 
 The viewer distinguishes missing files, invalid results, incompatible versions

@@ -26,6 +26,7 @@ jobs:
       ACHILLES_NEXT_FIXTURE_STATE: ${{ github.workspace }}/.local/postgresql
       R_LIBS: ${{ github.workspace }}/.local/R-library
       TRACER_TEST_BUNDLES: ${{ github.workspace }}/.local/tracer-integration
+      OBSERVATION_TEST_BUNDLES: ${{ github.workspace }}/.local/observation-integration
       ACHILLES_NEXT_VIEWER_TEST_LIBRARY: ${{ github.workspace }}/.local/R-library
     steps:
       - uses: actions/checkout@v4
@@ -45,6 +46,8 @@ jobs:
         with:
           r-version: '4.2.3'
           use-public-rspm: true
+      - name: Check portable Gregorian request dates
+        run: Rscript --vanilla tests/tracer/request.R
       - name: Register the selected JDK with R
         run: |
           # rJava's JRI component links against R's system development libraries.
@@ -126,11 +129,12 @@ jobs:
         run: |
           R CMD INSTALL --library="$R_LIBS" .
           Rscript tests/tracer/postgresql.R tools/tracer_fixture_config.R "$TRACER_TEST_BUNDLES"
+          Rscript tests/tracer/observation.R tools/tracer_fixture_config.R "$OBSERVATION_TEST_BUNDLES"
       - name: Validate every generated bundle against the frozen contracts
         run: |
           npm ci --prefix packages/contracts --ignore-scripts --no-audit --no-fund
           npm run check --prefix packages/contracts
-          for bundle in "$TRACER_TEST_BUNDLES"/*; do
+          for bundle in "$TRACER_TEST_BUNDLES"/* "$OBSERVATION_TEST_BUNDLES"/*; do
             node packages/contracts/tools/validate.mjs "$bundle"
           done
       - name: Check generated results and the installed local viewer

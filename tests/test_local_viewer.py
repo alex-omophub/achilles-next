@@ -115,6 +115,16 @@ v$stop(); v$stop()
             (self.bundle / 'results/person.count.json').write_text('changed after opening')
             self.assertEqual(self.get(url + 'api/results/person.count.json')[2], before)
 
+    @unittest.skipUnless(os.environ.get('OBSERVATION_TEST_BUNDLES'), 'Set OBSERVATION_TEST_BUNDLES for the observation viewer')
+    def test_observation_bundle_is_available_under_nested_base(self):
+        folder = Path(os.environ['OBSERVATION_TEST_BUNDLES']) / 'tiny_a_2020-5.5'
+        with self.serving(folder) as url:
+            self.assertEqual(self.status(url), 'ready')
+            for metric, expected in [('person.count', '4'), ('observation.person_count', '3'), ('observation.person_days', '24')]:
+                code, _, body = self.get(url + 'api/results/' + metric + '.json')
+                self.assertEqual(code, 200)
+                self.assertEqual(json.loads(body)['rows'][0]['values']['count'], expected)
+
     def test_missing_invalid_incompatible_have_no_analytical_payload(self):
         cases = [('missing-folder', self.root / 'absent', 'missing'),
                  ('bad-json', self.bundle, 'invalid'), ('wrong-version', self.bundle, 'incompatible')]

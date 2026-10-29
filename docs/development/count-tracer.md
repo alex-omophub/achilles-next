@@ -2,13 +2,13 @@
 
 This development slice computes `person.count` from marked synthetic PostgreSQL fixtures. Its R package is **AchillesNext**, in the **achilles-next** repository. It is an independent development project; upstream OHDSI Achilles references retain their original name.
 
-The tracer implements the count and a source/passport seed. All 15 frozen output partitions are declared, with the other 13 explicitly `unsupported`. The manifest is `partial`, cannot become the current complete bundle, and applies no disclosure policy. The [installed local viewer](../viewing/local-viewer.md) opens these results without a frontend build. There is no production analysis runner, complete alpha report, safe-publication/recovery implementation or institutional result service yet. React displays the exact count as a string; a chart library is unnecessary for this single value. Recharts remains the planned report chart library.
+The tracer implements the count and a source/passport seed. All 15 frozen output partitions are declared, with the other 13 explicitly `unsupported`. The manifest is `partial`, cannot become the current complete bundle, and applies no disclosure policy. The [installed local viewer](../viewing/local-viewer.md) opens these results without a frontend build. There is no production analysis runner, complete alpha report, safe-publication/recovery implementation or institutional result service yet. React displays the exact count as a string; a chart library is unnecessary for this single value. The separate [observation tracer](observation-tracer.md) uses Recharts for monthly counts.
 
 ## Developer setup
 
 Use the [PostgreSQL fixture guide](../../tests/fixtures/postgresql/README.md) to prepare the isolated local sandbox. Existing fixtures do not need a reset. The tracer accepts only the marked `achilles_next_fixtures` database and marked `cdm_tiny_*_53/54/55` schemas. It refuses other sources before reading PERSON. CDM version recognition here is not full clinical support.
 
-Requirements: R 4.2+, DatabaseConnector 6.3.2+, jsonlite, digest, httpuv, Java and a PostgreSQL JDBC driver. Contributor building/testing uses Node 22.12+ and npm; the tested reference tuple is in [runtime-lock.json](../../tests/tracer/runtime-lock.json). This is a synthetic test tuple, not a production driver recommendation. [DatabaseConnector's connection documentation](https://ohdsi.github.io/DatabaseConnector/articles/Connecting.html) describes driver and connection configuration.
+Requirements: R 4.2+, DatabaseConnector 6.3.2+, jsonlite, digest, rJava, httpuv, Java and a PostgreSQL JDBC driver. Contributor building/testing uses Node 22.12+ and npm; the tested reference tuple is in [runtime-lock.json](../../tests/tracer/runtime-lock.json). This is a synthetic test tuple, not a production driver recommendation. [DatabaseConnector's connection documentation](https://ohdsi.github.io/DatabaseConnector/articles/Connecting.html) describes driver and connection configuration.
 
 ```sh
 npm ci --prefix packages/contracts --ignore-scripts --no-audit --no-fund

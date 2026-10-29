@@ -34,15 +34,17 @@ for (const path of await walk(resolve(project, 'dist'))) {
   await mkdir(resolve(target, '..'), {recursive: true});
   await writeFile(target, await readFile(path));
 }
-const installed = execFileSync('npm', ['ls', '--omit=dev', '--parseable'], {cwd: project, encoding: 'utf8'}).trim().split('\n').slice(1);
+const installed = execFileSync('npm', ['ls', '--omit=dev', '--all', '--parseable'], {cwd: project, encoding: 'utf8'}).trim().split('\n').slice(1);
 const notices = [];
 for (const dir of installed) {
   const pkg = JSON.parse(await readFile(join(dir, 'package.json'), 'utf8'));
   const name = (await readdir(dir)).find(n => /^licen[cs]e(\.(txt|md))?$/i.test(n));
   if (!name) throw new Error(`Missing distribution license for ${pkg.name}`);
-  notices.push(`${pkg.name}@${pkg.version}\n${await readFile(join(dir, name), 'utf8')}`);
+  const extra = (await readdir(dir)).filter(n => /^notice(\.(txt|md))?$/i.test(n)).sort();
+  const texts = await Promise.all([name, ...extra].map(n => readFile(join(dir, n), 'utf8')));
+  notices.push(`${pkg.name}@${pkg.version}\n${texts.join('\n').replace(/\r\n?/g, '\n').replace(/[ \t]+$/gm, '').trimEnd()}`);
 }
-await writeFile(join(out, 'DEPENDENCY-LICENSES.txt'), notices.sort().join('\n\n---\n\n'));
+await writeFile(join(out, 'DEPENDENCY-LICENSES.txt'), notices.sort().join('\n\n---\n\n') + '\n');
 const inputs = [
   ...(await walk(resolve(project, 'src'))).filter(p => !p.endsWith('generated-validation.mjs')),
   ...await walk(resolve(project, 'tools')),
@@ -55,5 +57,5 @@ for (const path of inputs.sort()) source_sha256[relative(root, path)] = hash(awa
 const files = {};
 for (const path of await walk(out)) files[relative(out, path)] = hash(await readFile(path));
 await writeFile(join(out, 'viewer-lock.json'), JSON.stringify({format_version: 1,
-  generated_by: 'achilles-next-package-viewer', scope: 'partial-count-tracer', source_sha256, files}, null, 2) + '\n');
+  generated_by: 'achilles-next-package-viewer', scope: 'partial-count-observation-tracer', source_sha256, files}, null, 2) + '\n');
 console.log(`Packaged ${Object.keys(files).length} prebuilt viewer files with source and asset hashes.`);
