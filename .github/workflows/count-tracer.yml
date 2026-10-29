@@ -1,7 +1,11 @@
 name: Synthetic PostgreSQL count tracer
 on:
   push:
+    branches: [main]
   pull_request:
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
