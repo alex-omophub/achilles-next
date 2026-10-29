@@ -48,7 +48,7 @@ export function ViewerApp({servedBase}: {servedBase?: URL}) {
   }
   return <main><header><a className="wordmark" href="#">Achilles<span>Next</span></a><span className="development">Local results · development</span></header>
     <section className="intro"><h1>Trace the count.<br/>Keep the context.</h1>
-      <p>Inspect an exact PostgreSQL count with its source identity and computation limits.</p></section>
+      <p>Inspect exact PostgreSQL counts, observation opportunity and computation limits.</p></section>
     {servedBase ? <section className="selection"><div><h2>Selected results</h2>
       <p>Opening the bundle selected in R. Results stay on this computer.</p></div></section> :
       <section className="selection" aria-labelledby="open-title"><div><h2 id="open-title">Open a count bundle</h2>
@@ -58,6 +58,6 @@ export function ViewerApp({servedBase}: {servedBase?: URL}) {
     <div aria-live="polite">{busy ? <p role="status">Checking result identity and file integrity…</p> : null}</div>
     {error ? <ResultError {...error}/> : null}
     {result ? <CountView result={result}/> : null}
-    <footer>AchillesNext · Synthetic count tracer · Contract 1.0.0</footer>
+    <footer>AchillesNext · Synthetic development tracer · Contract 1.0.0</footer>
   </main>;
 }

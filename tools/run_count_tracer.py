@@ -26,7 +26,7 @@ def main():
         subprocess.run(['node', 'packages/contracts/tools/validate.mjs', str(output)], cwd=ROOT, check=True)
         subprocess.run(['npm', 'run', 'build', '--prefix', 'packages/tracer'], cwd=ROOT, check=True)
     print(f'Validated partial tracer bundle: {output}', flush=True)
-    print('In the React tracer, choose this bundle folder. Prebuilt end-user opening is a later feature.', flush=True)
+    print('In the React tracer, choose this bundle folder. Alternatively open the installed viewer with AchillesNext::viewResults().', flush=True)
     if args.serve:
         subprocess.run(['npm', 'run', 'dev', '--prefix', 'packages/tracer'], cwd=ROOT, check=True)
 

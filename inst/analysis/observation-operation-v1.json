@@ -1,0 +1,14 @@
+{
+  "id": "postgresql-observation-opportunity-v1",
+  "metric_version": "1.0.0",
+  "scope": "Marked synthetic PostgreSQL fixtures only",
+  "inputs": ["validated cdmSchema", "validated inclusive request.window", "unique non-null PERSON membership", "valid accessible observation_period person/date columns"],
+  "outputs": ["observation.person_count", "observation.monthly_person_count", "observation.person_days"],
+  "sql": "sql/postgresql/observed-intervals.sql",
+  "internal_cte_builder": ".observation_cte",
+  "internal_membership_builder": ".observation_membership",
+  "normalized_relation": "observed_intervals(person_id, start_date, end_date)",
+  "membership": "EXISTS over observed_intervals for the physical measurement row's person_id and measurement_date; never join raw observation rows",
+  "semantics": "Per-person running-maximum interval union including adjacency, clipped after merging; dense touched calendar months; exact integer text; no timezone conversion",
+  "prerequisite_failure": "No numeric observation rows; preserve valid all-source count; never treat missing, inaccessible or malformed observation data as empty"
+}

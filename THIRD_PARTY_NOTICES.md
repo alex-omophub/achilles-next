@@ -2,8 +2,8 @@
 
 ## Installed runtime and development dependencies
 
-The count tracer uses OHDSI DatabaseConnector, jsonlite, digest and httpuv through
-R interfaces. The installed local viewer includes built React/React DOM and
+The count tracer uses OHDSI DatabaseConnector, jsonlite, digest, rJava and httpuv through
+R interfaces. The installed local viewer includes built React/React DOM, Recharts, react-is and
 Ajv validation helpers; their dependency license texts are distributed in
 [inst/viewer/DEPENDENCY-LICENSES.txt](inst/viewer/DEPENDENCY-LICENSES.txt) and in the
 installed package's `viewer` directory. Full Ajv schema compilation, Vite,

@@ -1,6 +1,6 @@
 # Alpha measurement profile
 
-[alpha-measurement-v1.json](../../inst/analysis/alpha-measurement-v1.json), revision `1.0.0`, specifies a finite PostgreSQL profile over canonical CDM 5.3/5.4/5.5 fixtures. The production analysis engine, result bundle, viewer and embed runtime are not implemented yet. The manifest describes the behavior those implementations must satisfy.
+[alpha-measurement-v1.json](../../inst/analysis/alpha-measurement-v1.json), revision `1.0.0`, specifies a finite PostgreSQL profile over canonical CDM 5.3/5.4/5.5 fixtures. The frozen manifest specifies the complete analytical behavior. The partial [count](../development/count-tracer.md) and [observation](../development/observation-tracer.md) development tracers implement five outputs on marked synthetic fixtures and have an installed local viewer. The complete analysis engine and embed runtime remain under development; implementation-status fields in this frozen semantic specification are historical, not a runtime capability report.
 
 ## Request boundary
 
