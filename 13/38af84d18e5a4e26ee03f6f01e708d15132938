@@ -1,0 +1,39 @@
+docs/development/observation-tracer.md
+  s_3e206b4a2cf4c3::t_176a0c6783e697 98-99,109-111
+inst/viewer/assets/ObservationChart-DFLt6sAl.js
+  s_3e206b4a2cf4c3::t_1ca12ffb5527ce 1
+inst/viewer/assets/index-BqudRp2U.js
+  s_3e206b4a2cf4c3::t_efa2014e189ebf 9,845,1681
+inst/viewer/index.html
+  s_3e206b4a2cf4c3::t_8e47952bcbbb07 3
+inst/viewer/viewer-lock.json
+  s_3e206b4a2cf4c3::t_024c0ef71319f7 15-17,28,30-31
+packages/tracer/src/ObservationView.tsx
+  s_3e206b4a2cf4c3::t_639cec3599331f 20
+packages/tracer/src/ViewerApp.tsx
+  s_3e206b4a2cf4c3::t_0a354d93f423e6 9
+packages/tracer/src/file-provider.ts
+  s_3e206b4a2cf4c3::t_755785484507e2 67,119
+packages/tracer/tests/count.test.tsx
+  s_3e206b4a2cf4c3::t_c1231654057e56 62
+tests/tracer/observation.R
+  s_3e206b4a2cf4c3::t_b1d6a8e8a268bb 52-69
+tools/run_count_tracer.py
+  s_3e206b4a2cf4c3::t_0a0c28e7d4ac21 4,30-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1338af84d18e5a4e26ee03f6f01e708d15132938",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
