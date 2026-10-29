@@ -95,6 +95,8 @@ population prevalence.
 ## Verification
 
 ```sh
+R_LIBS=.local/R-library Rscript tests/tracer/postgresql.R \
+  tools/tracer_fixture_config.R .local/tracer-integration
 R_LIBS=.local/R-library Rscript tests/tracer/observation.R \
   tools/tracer_fixture_config.R .local/observation-integration
 for bundle in .local/observation-integration/*; do
@@ -104,7 +106,9 @@ OBSERVATION_TEST_BUNDLES="$PWD/.local/observation-integration" \
 TRACER_TEST_BUNDLES="$PWD/.local/tracer-integration" npm test --prefix packages/tracer
 ```
 
-The integration artifact parent must be new. Fifteen canonical source/version/
+Both integration artifact parents must be new. The first command generates the
+count bundles required by `TRACER_TEST_BUNDLES`; the second generates the
+observation bundles. Fifteen canonical source/version/
 window cases match the independent hand-calculated oracle. The disposable test
 schema adds nested/duplicate/adjacent intervals, partial month boundaries, exact
 physical-event membership, empty states, missing/denied/malformed prerequisites,

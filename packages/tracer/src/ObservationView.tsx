@@ -17,7 +17,7 @@ export function ObservationView({observation, start, end}: {observation: Verifie
       <div><dt>Unique observed person-days</dt><dd>{observation.personDays}</dd></div></dl>
     <h3>Monthly observed people</h3>
     <p>Distinct people with at least one observed day in each clipped calendar month.</p>
-    {chartable ? <div className="observation-chart" aria-label="Monthly observed people; exact values in the following table">
+    {chartable ? <div className="observation-chart" role="group" aria-label="Monthly observed people; exact values in the following table">
       <Suspense fallback={<p role="status">Loading monthly chart. Exact values are available below.</p>}><ObservationChart data={data}/></Suspense>
     </div> : <p>Counts exceed safe chart coordinates. Exact values remain available in the table.</p>}
     <details><summary>Exact monthly values ({observation.months.length} months)</summary>

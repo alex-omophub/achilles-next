@@ -6,7 +6,7 @@ import {BundleOpenError, openCountBundle, openServedCountBundle, selectedBundleF
 const errorText = {
   missing: ['Results not found', 'Check that the folder contains manifest.json and all declared files, then reopen the viewer.'],
   invalid: ['Invalid results', 'Regenerate or restore an unchanged bundle, then reopen the viewer.'],
-  incompatible: ['Unsupported results version', 'Use a compatible count-tracer bundle or update AchillesNext.'],
+  incompatible: ['Unsupported results version', 'Use a compatible count-tracer or observation-tracer bundle, or update AchillesNext.'],
   unavailable: ['Local viewer unavailable', 'Keep the R viewer process running, then reopen the viewer.'],
 };
 export function ResultError({state, message}: {state: OpenErrorState; message: string}) {

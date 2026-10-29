@@ -64,7 +64,7 @@ export async function openServedCountBundle(base: URL, signal: AbortSignal,
     const status = JSON.parse(new TextDecoder().decode(await read('status.json')));
     if (status.state !== 'ready') {
       const state: OpenErrorState = ['missing', 'invalid', 'incompatible'].includes(status.state) ? status.state : 'unavailable';
-      throw new BundleOpenError(state, typeof status.message === 'string' ? status.message : 'Reopen a supported count-tracer bundle.');
+      throw new BundleOpenError(state, typeof status.message === 'string' ? status.message : 'Reopen a supported count-tracer or observation-tracer bundle.');
     }
     const manifestBytes = await read('manifest.json');
     const manifest = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(manifestBytes));
@@ -116,7 +116,7 @@ export async function openCountBundle(files: ReadonlyMap<string, BundleFile>, si
   const manifestBytes = await read('manifest.json');
   const manifest = decode('bundle', manifestBytes) as BundleManifest;
   requireValid(manifest.publication === 'partial' && manifest.eligible_for_current_pointer === false &&
-    ['AchillesNext-count-tracer', 'AchillesNext-observation-tracer'].includes(manifest.generator.name), 'Choose a partial count-tracer bundle, not a complete alpha report.');
+    ['AchillesNext-count-tracer', 'AchillesNext-observation-tracer'].includes(manifest.generator.name), 'Choose a partial count-tracer or observation-tracer bundle, not a complete alpha report.');
   requireValid(manifest.profile.sha256 === await sha256(profileText) &&
     manifest.request_sha256 === await sha256(canonical(manifest.request)) &&
     manifest.request.source_id === manifest.source.source_id, 'Request, profile or source identity mismatch.');

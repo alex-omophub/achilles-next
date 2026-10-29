@@ -49,16 +49,24 @@ main <- function() {
     identical(vapply(read("nested-and-adjacent", "observation.monthly_person_count")$rows, function(r) r$values$count, ""), c("2", "2")))
   # Two queries must share one repeatable-read snapshot despite concurrent writes.
   execute(paste0('GRANT INSERT ON ', table("person"), ' TO achilles_next_runner'))
-  runner <- DatabaseConnector::connect(cfg$connectionDetails)
-  session <- AchillesNext:::.tracer_session(runner)
-  before <- session$query(paste0("SELECT COUNT(*)::text AS n, txid_current()::text AS xid, current_setting('transaction_read_only') AS ro, current_setting('transaction_isolation') AS isolation FROM ", table("person")))
-  execute(paste0('INSERT INTO ', table("person"), ' VALUES (3)'))
-  after <- session$query(paste0("SELECT COUNT(*)::text AS n, txid_current()::text AS xid, current_setting('transaction_read_only') AS ro, current_setting('transaction_isolation') AS isolation FROM ", table("person")))
-  stopifnot(identical(before, after), before$N == "2", before$RO == "on", before$ISOLATION == "repeatable read")
-  session$execute("SAVEPOINT write_probe")
-  denied <- tryCatch({session$execute(paste0('INSERT INTO ', table("person"), ' VALUES (4)')); FALSE}, error = function(e) TRUE)
-  stopifnot(denied)
-  session$execute("ROLLBACK TO SAVEPOINT write_probe"); session$rollback(); DatabaseConnector::disconnect(runner)
+  # Unwind the runner before main's DROP SCHEMA, including assertion failures.
+  (function() {
+    runner <- DatabaseConnector::connect(cfg$connectionDetails)
+    session <- NULL
+    on.exit({
+      if (!is.null(session)) try(session$rollback(), silent = TRUE)
+      DatabaseConnector::disconnect(runner)
+    }, add = TRUE)
+    session <- AchillesNext:::.tracer_session(runner)
+    before <- session$query(paste0("SELECT COUNT(*)::text AS n, txid_current()::text AS xid, current_setting('transaction_read_only') AS ro, current_setting('transaction_isolation') AS isolation FROM ", table("person")))
+    execute(paste0('INSERT INTO ', table("person"), ' VALUES (3)'))
+    after <- session$query(paste0("SELECT COUNT(*)::text AS n, txid_current()::text AS xid, current_setting('transaction_read_only') AS ro, current_setting('transaction_isolation') AS isolation FROM ", table("person")))
+    stopifnot(identical(before, after), before$N == "2", before$RO == "on", before$ISOLATION == "repeatable read")
+    session$execute("SAVEPOINT write_probe")
+    denied <- tryCatch({session$execute(paste0('INSERT INTO ', table("person"), ' VALUES (4)')); FALSE}, error = function(e) TRUE)
+    stopifnot(denied)
+    session$execute("ROLLBACK TO SAVEPOINT write_probe")
+  })()
   execute(paste0('DELETE FROM ', table("person"), ' WHERE person_id=3'))
   # Execute the registered interval/membership operation, not a raw OP join.
   cte <- AchillesNext:::.observation_cte(schema, cfg$request$window)

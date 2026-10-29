@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Developer-only R -> validated partial bundle -> React build command."""
 import argparse
+import json
 import os
 from pathlib import Path
 import subprocess
@@ -26,7 +27,9 @@ def main():
         subprocess.run(['node', 'packages/contracts/tools/validate.mjs', str(output)], cwd=ROOT, check=True)
         subprocess.run(['npm', 'run', 'build', '--prefix', 'packages/tracer'], cwd=ROOT, check=True)
     print(f'Validated partial tracer bundle: {output}', flush=True)
-    print('In the React tracer, choose this bundle folder. Alternatively open the installed viewer with AchillesNext::viewResults().', flush=True)
+    print('In the React tracer, choose this bundle folder.', flush=True)
+    viewer_call = f'AchillesNext::viewResults({json.dumps(str(output), ensure_ascii=False)})'
+    print(f'With AchillesNext installed in your R library, open it with {viewer_call}.', flush=True)
     if args.serve:
         subprocess.run(['npm', 'run', 'dev', '--prefix', 'packages/tracer'], cwd=ROOT, check=True)
 
