@@ -1,0 +1,78 @@
+packages/tracer/src/ViewerApp.tsx
+  s_895f6ebe145fd3::t_906c4c85fda5bd 1-63
+tests/test_local_viewer.py
+  s_895f6ebe145fd3::t_d51b9b4ca2ad90 74-75
+  s_895f6ebe145fd3::t_7637fde20ed4a8 1-73,76-146
+tools/check_viewer_assets.py
+  s_895f6ebe145fd3::t_9ea79df1071da3 1-28
+man/viewResults.Rd
+  s_895f6ebe145fd3::t_3f3e49f5b50162 1-17
+packages/tracer/.gitignore
+  s_895f6ebe145fd3::t_82fa8fca5d97e1 1
+docs/viewing/local-viewer.md
+  s_895f6ebe145fd3::t_6d52bf5757659c 1-102
+README.md
+  s_895f6ebe145fd3::t_d51b9b4ca2ad90 7-10,18-19
+packages/tracer/tools/build-validators.mjs
+  s_895f6ebe145fd3::t_97e553269dcf1d 4,8
+  s_895f6ebe145fd3::t_3f3e49f5b50162 13
+  s_895f6ebe145fd3::t_82fa8fca5d97e1 1-3,5-7,9-12,14-31
+  s_895f6ebe145fd3::t_f4af89fa553d2b 32-36
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_d51b9b4ca2ad90 29,55,86-91,103,105
+exec/view-results.R
+  s_895f6ebe145fd3::t_3f3e49f5b50162 1-6
+packages/tracer/tests/served.test.tsx
+  s_895f6ebe145fd3::t_d51b9b4ca2ad90 6
+  s_895f6ebe145fd3::t_7637fde20ed4a8 1-5,7-51
+packages/tracer/tools/package-viewer.mjs
+  s_895f6ebe145fd3::t_9ea79df1071da3 1-23,30-59
+  s_895f6ebe145fd3::t_d51b9b4ca2ad90 24-29
+packages/tracer/package.json
+  s_895f6ebe145fd3::t_82fa8fca5d97e1 9-11
+  s_895f6ebe145fd3::t_9ea79df1071da3 12
+packages/tracer/src/file-provider.ts
+  s_895f6ebe145fd3::t_7ff32e4fcb6822 52-54
+  s_895f6ebe145fd3::t_ae0b886f492364 1,8,19-22,45-51,55-93
+DESCRIPTION
+  s_895f6ebe145fd3::t_9ea79df1071da3 13
+R/local-viewer.R
+  s_895f6ebe145fd3::t_3f3e49f5b50162 1-11,13-119,121,123-139
+  s_895f6ebe145fd3::t_9c59192b721047 12,120,122
+NAMESPACE
+  s_895f6ebe145fd3::t_9ea79df1071da3 2
+packages/tracer/index.html
+  s_895f6ebe145fd3::t_906c4c85fda5bd 3
+THIRD_PARTY_NOTICES.md
+  s_895f6ebe145fd3::t_01315d1dc2eda8 5-12
+docs/development/count-tracer.md
+  s_895f6ebe145fd3::t_c52da1fdac9605 5,11,29,45,67
+inst/viewer/DEPENDENCY-LICENSES.txt
+  s_895f6ebe145fd3::t_433e9326497dcf 1-75
+inst/viewer/assets/index-AZI-IVuB.css
+  s_895f6ebe145fd3::t_e12618795989e2 1
+inst/viewer/assets/index-CTilQwmG.js
+  s_895f6ebe145fd3::t_a6eb9a651beb02 1-1681
+inst/viewer/index.html
+  s_895f6ebe145fd3::t_3b08b9c30a2840 1-7
+inst/viewer/viewer-lock.json
+  s_895f6ebe145fd3::t_78219e028af6cc 1-29
+packages/tracer/src/main.tsx
+  s_895f6ebe145fd3::t_946b13f917b6d7 2,5-7
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "acce75f30c4dcf1b34245377fb727a57d55a9d62",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
