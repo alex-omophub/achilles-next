@@ -1,0 +1,13 @@
+^AGENTS\.md$
+^LICENSE$
+^CONTRIBUTING\.md$
+^packages$
+^tools$
+^docs$
+^\.github$
+^\.git.*$
+^\.local$
+^artifacts$
+^tests/fixtures$
+^tests/test_.*\.py$
+^tests/tracer$
