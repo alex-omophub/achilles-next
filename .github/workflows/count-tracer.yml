@@ -15,7 +15,7 @@ jobs:
           POSTGRES_PASSWORD: synthetic-ci-only
         ports: ['5432:5432']
         options: >-
-          --health-cmd pg_isready --health-interval 5s
+          --health-cmd "pg_isready -U postgres -d postgres" --health-interval 5s
           --health-timeout 5s --health-retries 10
     env:
       DATABASECONNECTOR_JAR_FOLDER: ${{ github.workspace }}/.local/jdbc
@@ -35,6 +35,13 @@ jobs:
         with:
           r-version: '4.2.3'
           use-public-rspm: true
+      - name: Register the selected JDK with R
+        run: |
+          # rJava's JRI component links against R's system development libraries.
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev libtirpc-dev
+          # setup-java changes JAVA_HOME, but R keeps its build-time JNI paths.
+          sudo env JAVA_HOME="$JAVA_HOME" "$(command -v R)" CMD javareconf
       - name: Install R development dependencies and pinned JDBC driver
         shell: Rscript {0}
         run: |
@@ -42,6 +49,11 @@ jobs:
           .libPaths(c(Sys.getenv('R_LIBS'), .libPaths()))
           install.packages(c('remotes', 'jsonlite', 'digest'), repos='https://cloud.r-project.org')
           remotes::install_version('DatabaseConnector', version='6.3.2', upgrade='never', repos='https://cloud.r-project.org')
+          stopifnot(requireNamespace('DatabaseConnector', quietly=TRUE))
+          rJava::.jinit()
+          javaVersion <- rJava::.jcall('java/lang/System', 'S', 'getProperty', 'java.version')
+          stopifnot(startsWith(javaVersion, '11.'))
+          cat('R JNI smoke check passed with Java', javaVersion, '\n')
           dir.create(Sys.getenv('DATABASECONNECTOR_JAR_FOLDER'), recursive=TRUE)
           DatabaseConnector::downloadJdbcDrivers('postgresql')
           lock <- jsonlite::fromJSON('tests/tracer/runtime-lock.json')
