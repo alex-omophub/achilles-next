@@ -46,6 +46,8 @@ jobs:
         with:
           r-version: '4.2.3'
           use-public-rspm: true
+      - name: Check portable Gregorian request dates
+        run: Rscript --vanilla tests/tracer/request.R
       - name: Register the selected JDK with R
         run: |
           # rJava's JRI component links against R's system development libraries.

@@ -94,6 +94,18 @@ population prevalence.
 
 ## Verification
 
+Check the request calendar boundary using base R alone:
+
+```sh
+Rscript --vanilla tests/tracer/request.R
+```
+
+This tests years 0001–9999, leap/century rules, strict DATE syntax, window bounds
+and timezone independence without Java or a database. CI runs it before dependency
+installation. Date validity does not depend on platform-specific year formatting.
+
+Then run the live fixture and provider checks:
+
 ```sh
 R_LIBS=.local/R-library Rscript tests/tracer/postgresql.R \
   tools/tracer_fixture_config.R .local/tracer-integration
