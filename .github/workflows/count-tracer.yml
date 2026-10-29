@@ -26,6 +26,7 @@ jobs:
       ACHILLES_NEXT_FIXTURE_STATE: ${{ github.workspace }}/.local/postgresql
       R_LIBS: ${{ github.workspace }}/.local/R-library
       TRACER_TEST_BUNDLES: ${{ github.workspace }}/.local/tracer-integration
+      ACHILLES_NEXT_VIEWER_TEST_LIBRARY: ${{ github.workspace }}/.local/R-library
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -51,7 +52,7 @@ jobs:
         run: |
           dir.create(Sys.getenv('R_LIBS'), recursive=TRUE)
           .libPaths(c(Sys.getenv('R_LIBS'), .libPaths()))
-          install.packages(c('remotes', 'jsonlite', 'digest'), repos='https://cloud.r-project.org')
+          install.packages(c('remotes', 'jsonlite', 'digest', 'httpuv'), repos='https://cloud.r-project.org')
           remotes::install_version('DatabaseConnector', version='6.3.2', upgrade='never', repos='https://cloud.r-project.org')
           stopifnot(requireNamespace('DatabaseConnector', quietly=TRUE))
           rJava::.jinit()
@@ -82,6 +83,12 @@ jobs:
         env:
           PGPASSFILE: ${{ github.workspace }}/.local/admin.pgpass
         run: python3 tools/postgresql_fixtures.py setup --host 127.0.0.1 --admin-user postgres
+      - name: Rebuild and verify the shipped viewer before R installation
+        run: |
+          npm ci --prefix packages/tracer --ignore-scripts --no-audit --no-fund
+          npm run package-viewer --prefix packages/tracer
+          python3 tools/check_viewer_assets.py
+          git diff --exit-code -- inst/viewer
       - name: Install package and build real count bundles
         run: |
           R CMD INSTALL --library="$R_LIBS" .
@@ -93,8 +100,7 @@ jobs:
           for bundle in "$TRACER_TEST_BUNDLES"/*; do
             node packages/contracts/tools/validate.mjs "$bundle"
           done
-      - name: Build React and check the generated results through its file provider
+      - name: Check generated results and the installed local viewer
         run: |
-          npm ci --prefix packages/tracer --ignore-scripts --no-audit --no-fund
-          npm run check --prefix packages/tracer
+          npm test --prefix packages/tracer
           python3 -m unittest discover -s tests -p 'test_*.py'

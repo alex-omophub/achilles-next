@@ -2,13 +2,14 @@
 
 ## Installed runtime and development dependencies
 
-The count tracer uses OHDSI DatabaseConnector, jsonlite and digest through their
-R interfaces, plus React, React DOM and Ajv in the development viewer. Vite,
-TypeScript and Vitest are development tools. These dependencies retain their
-own licenses and notices in their installed distributions; their source and the
-PostgreSQL JDBC binary are not vendored here. The npm lockfiles and synthetic
-runtime tuple record the selected versions. Preserve dependency notices when
-distributing future built viewer assets.
+The count tracer uses OHDSI DatabaseConnector, jsonlite, digest and httpuv through
+R interfaces. The installed local viewer includes built React/React DOM and
+Ajv validation helpers; their dependency license texts are distributed in
+[inst/viewer/DEPENDENCY-LICENSES.txt](inst/viewer/DEPENDENCY-LICENSES.txt) and in the
+installed package's `viewer` directory. Full Ajv schema compilation, Vite,
+TypeScript and Vitest run only during contributor builds/tests. R dependencies
+and the PostgreSQL JDBC binary are not vendored here. Dependencies retain their
+own licenses; npm lockfiles and the synthetic runtime tuple pin selected versions.
 
 ## OHDSI Achilles definition references
 
