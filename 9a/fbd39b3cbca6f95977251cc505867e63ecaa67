@@ -1,0 +1,35 @@
+packages/tracer/src/CountView.tsx
+  s_895f6ebe145fd3::t_857639c567b610 16-17
+packages/tracer/src/MeasurementView.tsx
+  s_895f6ebe145fd3::t_857639c567b610 8,38,77
+packages/tracer/tests/weighted.test.tsx
+  s_895f6ebe145fd3::t_989e617dd3480c 4,7,19-31,58-61
+inst/viewer/assets/CartesianChart-DhmMICqd.js
+  s_895f6ebe145fd3::t_488ff7c5da5dfb 1
+inst/viewer/assets/MeasurementChart-C_ex-_k_.js
+  s_895f6ebe145fd3::t_fd7608bf68dd27 1
+inst/viewer/assets/ObservationChart-BqZd1HFN.js
+  s_895f6ebe145fd3::t_7e82e59da36c11 1
+inst/viewer/assets/index-DOVNwPpc.js
+  s_895f6ebe145fd3::t_e93f0a00f8225d 1-2,4,7,9-10,846,1682
+inst/viewer/index.html
+  s_895f6ebe145fd3::t_ff762d78b4e5af 3
+inst/viewer/viewer-lock.json
+  s_895f6ebe145fd3::t_76de69d7f57b9e 14,16,32-35,37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9afbd39b3cbca6f95977251cc505867e63ecaa67",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
