@@ -88,6 +88,31 @@ main <- function() {
   stopifnot(r$state$status == "failed", r$state$operations$bundle.write$status == "failed",
     r$state$operations$bundle.write$cause$code == "artifact_write_failed",
     all(vapply(r$state$outputs, function(o) o$status == "failed", TRUE)), !dir.exists(file.path(p, "staging/bundle")))
+  # Finalization belongs to bundle.write. Real validator/write failures after
+  # the initial export must remain failed operations with an explicit partial
+  # staging path, including when reopened in another process.
+  node <- Sys.which("node"); stopifnot(nzchar(node))
+  bin <- file.path(a[2], "fault-bin"); dir.create(bin)
+  finalizationFault <- function(name, script, cause) {
+    p <- make(name)
+    writeLines(c("#!/bin/sh", script), file.path(bin, "node")); Sys.chmod(file.path(bin, "node"), "0700")
+    oldPath <- Sys.getenv("PATH"); on.exit(Sys.setenv(PATH = oldPath), add = TRUE)
+    Sys.setenv(PATH = paste(normalizePath(bin), oldPath, sep = .Platform$path.sep))
+    r <- executeMeasurementRun(p, e$config$connectionDetails)
+    stopifnot(r$state$status == "failed", r$state$operations$bundle.write$status == "failed",
+      r$state$operations$bundle.write$cause$code == cause,
+      r$state$bundle$path == "staging/bundle", r$state$bundle$publication == "partial",
+      grepl("unvalidated partial staging retained", r$state$bundle$reason, fixed = TRUE),
+      all(vapply(r$state$outputs, function(o) o$status == "failed", TRUE)),
+      !any(vapply(r$history, function(h) h$state$operations$bundle.write$status == "succeeded", TRUE)))
+    Sys.chmod(file.path(p, "staging/bundle/manifest.json"), "0600")
+    p
+  }
+  invalid <- finalizationFault("validation-failed", "exit 1", "bundle_validation_failed")
+  unwritable <- finalizationFault("manifest-write-failed", c('chmod 400 "$2/manifest.json"', paste("exec", shQuote(node), '"$@"')), "operation_error")
+  reopened <- file.path(a[2], "reopened-finalization.json")
+  writeLines('library(AchillesNext); a<-commandArgs(TRUE); x<-lapply(a[1:2],inspectMeasurementRun); stopifnot(all(vapply(x,function(r) r$state$operations$bundle.write$status=="failed" && r$state$bundle$publication=="partial",TRUE))); writeLines(AchillesNext:::.json(x),a[3])', script)
+  stopifnot(system2(file.path(R.home("bin"), "Rscript"), c("--vanilla", shQuote(script), shQuote(invalid), shQuote(unwritable), shQuote(reopened))) == 0L)
   # No credential strings are stored in plan/ledger JSON or query text.
   paths <- list.files(a[2], pattern = "[.]json$", recursive = TRUE, full.names = TRUE)
   text <- paste(vapply(paths, function(p) paste(readLines(p, warn = FALSE), collapse = ""), ""), collapse = "")

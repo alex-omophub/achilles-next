@@ -127,7 +127,7 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
   codes <- c(TRACER_CONNECTION_FAILED = "connection_failed", TRACER_UNMARKED_SOURCE = "source_identity_failed",
     TRACER_INVALID_COUNT = "invalid_count", TRACER_PERSON_INTEGRITY = "person_integrity_failed",
     "Cannot create new output directory" = "artifact_write_failed", "Result exceeds" = "artifact_limit",
-    "Bundle exceeds" = "artifact_limit")
+    "Bundle exceeds" = "artifact_limit", "Bundle validation failed" = "bundle_validation_failed")
   at <- which(vapply(names(codes), function(prefix) startsWith(message, prefix), TRUE))
   if (length(at)) unname(codes[at[1]]) else "operation_error"
 }
@@ -137,6 +137,11 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
     ctx$state$operations[[id]]$status <- status; ctx$state$operations[[id]]["cause"] <- list(cause); .run_save(ctx)
   }
   list(capabilities = function(rows) {ctx$capabilities <- rows; invisible(NULL)},
+    finalize = function() {
+      ctx$state$bundle <- .object(path = "staging/bundle", publication = "partial", reason = "Unvalidated partial staging bundle; finalization in progress")
+      .run_save(ctx)
+      .publication_finalize(ctx)
+    },
     query = function(record) {queries[[length(queries) + 1L]] <<- record; invisible(NULL)},
     skip = function(id, dependency) {
       if (ctx$state$operations[[id]]$status != "planned" || !ctx$state$operations[[dependency]]$status %in% c("failed", "skipped", "cancelled")) stop("Invalid dependency skip")
@@ -152,6 +157,8 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
       update(id, "running")
       start <- proc.time()[["elapsed"]]
       finish <- function(status, cause = NULL) {
+        if (id == "bundle.write" && status != "succeeded" && !is.null(ctx$state$bundle$path))
+          ctx$state$bundle$reason <- "Bundle finalization did not complete; unvalidated partial staging retained"
         ctx$state$operations[[id]]$ended_at <- .stamp(); ctx$state$operations[[id]]$duration_ms <- .run_ms(start)
         ctx$state$operations[[id]]["timing_reason"] <- list(NULL); ctx$state$operations[[id]]$queries <- queries
         update(id, status, cause)
@@ -170,7 +177,7 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
   }
   for (i in seq_along(ctx$state$outputs)) if (ctx$state$outputs[[i]]$status %in% c("requested", "planned")) {
     ctx$state$outputs[[i]]$status <- if (status == "cancelled") "cancelled" else "failed"
-    ctx$state$outputs[[i]]$availability <- "unavailable"; ctx$state$outputs[[i]]$reason <- "Run ended before result export"
+    ctx$state$outputs[[i]]$availability <- "unavailable"; ctx$state$outputs[[i]]$reason <- "Run ended before validated result export"
   }
   ctx$state$status <- status; ctx$state["cause"] <- list(cause); .run_save(ctx)
 }
@@ -191,7 +198,6 @@ executeMeasurementRun <- function(runDir, connectionDetails) {
   tryCatch({
     .generate_tracer(connectionDetails, p$cdm_schema, p$source_id, file.path(ctx$dir, "staging", "bundle"),
       p$request, p$declared_cdm_version, TRUE, TRUE, p$numeric_strategy, control, p$run_id)
-    .publication_finalize(ctx)
     manifest <- jsonlite::fromJSON(file.path(ctx$dir, "staging/bundle/manifest.json"), simplifyVector = FALSE)
     ctx$state$outputs <- lapply(manifest$outputs, function(o) .object(metric_id = o$metric_id,
       status = if (o$state %in% c("computed", "empty_source", "empty_population", "suppressed")) "succeeded" else if (o$state %in% c("unsupported", "not_requested")) "skipped" else "failed",

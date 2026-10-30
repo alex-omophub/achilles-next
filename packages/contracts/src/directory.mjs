@@ -1,9 +1,27 @@
 // One bounded, ordinary-file inventory for producer and installed validation.
-import {readFile, lstat, realpath, readdir} from 'node:fs/promises';
+import {readFile, lstat, realpath, opendir} from 'node:fs/promises';
 import {resolve, sep} from 'node:path';
 import {createHash} from 'node:crypto';
 import {ensure} from './semantics.mjs';
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
+const decode = bytes => JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes));
+// Stream entries with a fixed-size buffer, retaining only the declared paths.
+export async function validateInventory(root, expected, openDirectory = opendir) {
+  const remaining = new Set(expected);
+  ensure(remaining.size === expected.length, 'Duplicate artifact paths');
+  let files = 0;
+  async function walk(dir, prefix='') {
+    for await (const entry of await openDirectory(dir,{bufferSize:32})) {
+      const path = prefix+entry.name;
+      if (entry.isDirectory() && path === 'results') await walk(resolve(dir,entry.name),path+'/');
+      else {
+        ensure(entry.isFile() && remaining.delete(path) && ++files <= expected.length, 'Unexpected bundle entry');
+      }
+    }
+  }
+  await walk(root);
+  ensure(remaining.size === 0, 'Missing bundle files');
+}
 export async function validateDirectory(directory, validateDocument, validateDocuments) {
   const root = await realpath(directory);
   let total = 0;
@@ -19,26 +37,16 @@ export async function validateDirectory(directory, validateDocument, validateDoc
     return bytes;
   };
   const manifestBytes = await read('manifest.json');
-  const manifest = JSON.parse(manifestBytes); validateDocument('bundle',manifest);
+  const manifest = decode(manifestBytes); validateDocument('bundle',manifest);
   const documents = new Map();
   for (const p of manifest.outputs) {
     const bytes = await read(p.path);
     ensure(digest(bytes) === p.sha256 && String(bytes.length) === p.bytes, 'Partition integrity mismatch');
-    documents.set(p.metric_id,JSON.parse(bytes));
+    documents.set(p.metric_id,decode(bytes));
   }
   const bytes = await read(manifest.terminology.path);
   ensure(digest(bytes) === manifest.terminology.sha256 && String(bytes.length) === manifest.terminology.bytes, 'Terminology integrity mismatch');
   // Extra files must never hitchhike into a distributable release or a copy.
-  const inventory = [];
-  async function walk(dir, prefix='') {
-    for (const entry of await readdir(dir,{withFileTypes:true})) {
-      const path = prefix+entry.name;
-      if (entry.isDirectory() && path === 'results') await walk(resolve(dir,entry.name),path+'/');
-      else {ensure(entry.isFile(),'Unexpected directory or symlink'); inventory.push(path);}
-    }
-  }
-  await walk(root);
-  const expected = ['manifest.json',manifest.terminology.path,...manifest.outputs.map(p=>p.path)].sort();
-  ensure(JSON.stringify(inventory.sort()) === JSON.stringify(expected), 'Unexpected or missing bundle files');
-  return {...validateDocuments(manifest,documents,JSON.parse(bytes)), manifest_sha256:digest(manifestBytes)};
+  await validateInventory(root,['manifest.json',manifest.terminology.path,...manifest.outputs.map(p=>p.path)]);
+  return {...validateDocuments(manifest,documents,decode(bytes)), manifest_sha256:digest(manifestBytes)};
 }

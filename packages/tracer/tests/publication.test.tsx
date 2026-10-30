@@ -28,6 +28,9 @@ it.runIf(!!root).each(['restricted','distributable'])('opens a complete %s relea
     expect(r.measurement!.terminology.concepts).toEqual([]);
     expect(html).toContain('Suppressed'); expect(html).not.toContain('declared:fixture-1');
     expect(html).not.toContain('Exact monthly counts');
+    expect(html).toContain('Observation opportunity suppressed');
+    expect(html).toContain('policy intentionally removes these values');
+    expect(html).not.toContain('Check observation periods and access, regenerate');
   } else expect(r.measurement!.documents.get('measurement.numeric_summary')!.rows!.length).toBeGreaterThan(0);
   const base = new URL('http://127.0.0.1:4000/nested/api/');
   const served = await openServedCountBundle(base,signal(),(async input=>{

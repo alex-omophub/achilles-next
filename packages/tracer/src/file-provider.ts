@@ -116,7 +116,7 @@ export async function openCountBundle(files: ReadonlyMap<string, BundleFile>, si
   }
   const manifestBytes = await read('manifest.json');
   const manifest = decode('bundle', manifestBytes) as BundleManifest;
-  requireValid(manifest.eligible_for_current_pointer === (manifest.publication === 'complete') &&
+  requireValid(['partial', 'complete'].includes(manifest.publication) && manifest.eligible_for_current_pointer === (manifest.publication === 'complete') &&
     ['AchillesNext-count-tracer', 'AchillesNext-observation-tracer', ...measurementGenerators].includes(manifest.generator.name), 'Choose a supported count, observation or measurement reference/weighted bundle.');
   requireValid(manifest.profile.sha256 === await sha256(profileText) &&
     manifest.request_sha256 === await sha256(canonical(manifest.request)) &&
@@ -140,7 +140,7 @@ export async function openCountBundle(files: ReadonlyMap<string, BundleFile>, si
       String(doc.rows?.length ?? 0) === partition.rows, 'Result identity or state mismatch.');
     if (measurementGenerators.includes(manifest.generator.name) && measurementIds.includes(doc.metric_id))
       requireValid(doc.state !== 'unsupported', 'Implemented measurement output cannot be unsupported. Regenerate the measurement reference/weighted bundle.');
-    if (manifest.contract_version === '1.0.0' && !['person.count', 'source.passport', ...(manifest.generator.name !== 'AchillesNext-count-tracer' ? observationIds : []), ...(measurementGenerators.includes(manifest.generator.name) ? measurementIds : [])].includes(doc.metric_id)) {
+    if ((manifest.contract_version === '1.0.0' || !measurementGenerators.includes(manifest.generator.name)) && !['person.count', 'source.passport', ...(manifest.generator.name !== 'AchillesNext-count-tracer' ? observationIds : []), ...(measurementGenerators.includes(manifest.generator.name) ? measurementIds : [])].includes(doc.metric_id)) {
       requireValid(doc.state === 'unsupported' && typeof doc.reason === 'string' && doc.reason.length > 0 && doc.rows === null,
         'Count tracer contains an undeclared implemented output.');
     }

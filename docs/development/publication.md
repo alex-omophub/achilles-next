@@ -63,16 +63,17 @@ not a k-anonymity threshold or a claim of universal anonymization.
 
 ```r
 shareStore <- file.path(tempdir(), "distributable-releases")
+# This hook example intentionally denies publication until configured.
 shareRelease <- publishMeasurementRun(
   runDir, shareStore, approvalId = "synthetic-review-001",
   outputScope = "distributable",
   institutionalPolicy = function(candidate) {
-    # Connect a trusted local approval check here. An error or anything other
-    # than exactly TRUE denies publication. The manifest is the projected scope.
-    candidate$manifest$disclosure$scope == "distributable"
+    # Replace this with a trusted approval check bound to the projected manifest
+    # and candidate$content_sha256. The example denies until configured.
+    FALSE
   }
 )
-viewResults(shareRelease)
+# After a configured check approves, open the returned shareRelease.
 ```
 
 The hook receives the projected manifest (including final partition hashes) and

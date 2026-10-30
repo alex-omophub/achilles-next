@@ -78,9 +78,10 @@ reason. No backend PID is passed off as a query identifier.
 
 Operation state describes computation; metric availability describes analytical
 results. Empty populations and exact zero can be successful computations. A
-failed query cannot become a succeeded requested metric. If export fails,
-previously completed operations remain recorded, but no finalized metric success
-is inferred. The ledger is outside `staging/bundle`, so bundle cleanup does not
+failed query cannot become a succeeded requested metric. The bundle-write operation includes final manifest writing and validation. If
+export or finalization fails, the operation is failed; previously completed
+compute operations remain recorded, but no finalized metric success is inferred.
+An existing unvalidated partial staging bundle is identified explicitly. The ledger is outside `staging/bundle`, so bundle cleanup does not
 erase failure evidence.
 
 The full-profile executor now exports all fifteen outputs using contract 1.1,

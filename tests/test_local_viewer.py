@@ -168,6 +168,17 @@ v$stop(); v$stop()
                 self.assertEqual(self.get(url + 'api/plan.json')[0], 404)
                 self.assertEqual(self.get(url + 'api/current.json')[0], 404)
 
+    def test_contract_10_rejects_distributable_scope_before_serving_payload(self):
+        path = self.bundle / 'manifest.json'
+        doc = json.loads(path.read_text())
+        self.assertEqual(doc['contract_version'], '1.0.0')
+        doc['request']['output_scope'] = 'distributable'
+        doc['disclosure']['scope'] = 'distributable'
+        path.write_text(json.dumps(doc))
+        with self.serving() as url:
+            self.assertEqual(self.status(url), 'invalid')
+            self.assertEqual(self.get(url + 'api/results/person.count.json')[0], 404)
+
     def test_missing_invalid_incompatible_have_no_analytical_payload(self):
         cases = [('missing-folder', self.root / 'absent', 'missing'),
                  ('bad-json', self.bundle, 'invalid'), ('wrong-version', self.bundle, 'incompatible')]

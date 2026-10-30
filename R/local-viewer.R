@@ -35,6 +35,7 @@
     ids <- unlist(profile$required_outputs, use.names = FALSE)
     if (!is.list(m$outputs) || length(m$outputs) != length(ids) || !is.null(names(m$outputs)) ||
         !identical(m$eligible_for_current_pointer, identical(m$publication, "complete")) || !m$request$output_scope %in% c("restricted", "distributable") ||
+        (identical(m$contract_version, "1.0.0") && !identical(m$request$output_scope, "restricted")) ||
         !identical(m$disclosure$scope, m$request$output_scope)) .viewer_error("invalid", "The manifest structure or output scope is invalid.")
     declared <- vapply(m$outputs, function(p) if (.string(p$metric_id)) p$metric_id else "", "")
     if (anyDuplicated(declared) || !setequal(declared, ids)) .viewer_error("invalid", "The manifest must declare all 15 output partitions exactly once.")

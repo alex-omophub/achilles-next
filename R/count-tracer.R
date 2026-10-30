@@ -108,8 +108,12 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     control$skip("measurement.compute", "observation.compute")
     measured <- .measurement_compute(query, execute, cdmSchema, request, observed, numericStrategy)
   } else measured <- if (measurement) step("measurement.compute", function() .measurement_compute(query, execute, cdmSchema, request, observed, numericStrategy)) else NULL
-  step("bundle.write", function() .tracer_bundle(outputDir, sourceId, request, declaredCdmVersion,
-    observation, measurement, numericStrategy, count, observed, measured, started, runIdentity))
+  step("bundle.write", function() {
+    .tracer_bundle(outputDir, sourceId, request, declaredCdmVersion,
+      observation, measurement, numericStrategy, count, observed, measured, started, runIdentity)
+    if (!is.null(control)) control$finalize()
+    invisible(outputDir)
+  })
 }
 .tracer_bundle <- function(outputDir, sourceId, request, declaredCdmVersion, observation, measurement,
                            numericStrategy, count, observed, measured, started, runIdentity = NULL) {

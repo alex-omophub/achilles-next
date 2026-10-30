@@ -112,6 +112,8 @@ The same installed viewer opens contract 1.1 restricted or distributable complet
 measurement releases. Generate and approve them using the
 [publication API](../development/publication.md), then pass the returned release
 directory to `viewResults()`. Publication/current resolution uses Node.js; opening
-the release in the installed viewer does not. Suppressed partitions show their
-explicit state and have no values to fetch or infer. The view pins one manifest
-and does not follow pointer updates during a session.
+the release in the installed viewer does not. Measurement and observation
+suppressions show their state. Capabilities and execution timing are not currently
+rendered by this view; their states remain in the result documents/output ledger.
+All suppressed partitions contain no values to fetch or infer. The view pins one
+manifest and does not follow pointer updates during a session.

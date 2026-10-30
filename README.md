@@ -45,9 +45,7 @@ The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v
 
 AchillesNext is an independent successor project. OHDSI Achilles and other ecosystem projects retain their own identities and attribution. Existing functionality is not claimed as implemented or certified here.
 
-## License
-
-See [LICENSE](LICENSE) for the Apache License 2.0. Preserve applicable notices when reusing third-party code.
+## Durable runs and publication
 
 The optional [durable execution API and CLI](docs/development/execution-ledger.md)
 persist a bounded plan, operation states and measured telemetry for synthetic
@@ -59,3 +57,7 @@ all fifteen alpha outputs for marked synthetic PostgreSQL fixtures.
 restricted/distributable releases before switching a local current pointer.
 Institutional execution, general anonymization and cross-run reuse remain outside
 this implementation.
+
+## License
+
+See [LICENSE](LICENSE) for the Apache License 2.0. Preserve applicable notices when reusing third-party code.
