@@ -37,6 +37,13 @@
     cte <- .measurement_cte(schema, request)
     conflict <- query(paste0(cte, " SELECT COUNT(*)::text AS invalid FROM (SELECT concept_id FROM local_concepts GROUP BY concept_id HAVING COUNT(*)>1) c"))
     if (!identical(conflict$INVALID, "0")) return(list(state = "failed", reason = "Conflicting local concept labels or domains", vocabulary = unknown, terms = list()))
+    # Domain membership defines numeric eligibility. A missing display name is
+    # invalid summary metadata, not an unknown-unit observation. Fail this atomic
+    # step rather than drop eligible records or fabricate a local unit label.
+    unnamed <- query(paste0(cte, " SELECT COUNT(*)::text AS invalid FROM eligible_measurements m JOIN local_concepts c ON c.concept_id=m.unit_concept_id ",
+      "WHERE c.concept_id>0 AND c.domain_id='Unit' AND (m.operator_concept_id IS NULL OR m.operator_concept_id=0) ",
+      "AND (c.concept_name IS NULL OR btrim(c.concept_name,E' \\t\\r\\n')='')"))
+    if (!identical(unnamed$INVALID, "0")) return(list(state = "failed", reason = "Local Unit-domain concepts used by numeric summaries have missing or blank names", vocabulary = unknown, terms = list()))
     termRows <- query(paste0(cte, " SELECT t.concept_id::text AS id,c.concept_name AS name,c.domain_id AS domain FROM term_ids t LEFT JOIN local_concepts c USING(concept_id) WHERE t.concept_id BETWEEN 0 AND 2147483647 ORDER BY t.concept_id"))
     terms <- lapply(seq_len(nrow(termRows)), function(i) {
       available <- !is.na(termRows$NAME[i]) && nzchar(trimws(termRows$NAME[i])) && !is.na(termRows$DOMAIN[i]) && nzchar(trimws(termRows$DOMAIN[i]))

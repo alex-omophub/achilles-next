@@ -33,7 +33,7 @@ eligible_measurements AS (
       WHEN m.unit_concept_id IS NULL THEN 'missing_unit'
       WHEN m.unit_concept_id=0 THEN 'unmapped_unit'
       WHEN NOT EXISTS (SELECT 1 FROM local_concepts c WHERE c.concept_id=m.unit_concept_id
-        AND c.concept_id>0 AND c.domain_id='Unit' AND btrim(c.concept_name,E' \t\r\n')<>'') THEN 'unknown_or_invalid_unit'
+        AND c.concept_id>0 AND c.domain_id='Unit') THEN 'unknown_or_invalid_unit'
       ELSE 'eligible' END AS eligibility_reason
   FROM eligible_measurements m
 )

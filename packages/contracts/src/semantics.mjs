@@ -7,10 +7,10 @@ const ALL_STATS = ['sum','min','max','mean_numerator','mean_denominator','p10','
 function reason(state, value) {
   ensure(state === 'computed' ? value === null : typeof value === 'string' && value.length > 0, 'State/reason mismatch');
 }
-function compareDecimal(a, b) {
+function compareDecimal(a, b, leftMultiplier = 1n) {
   const parse = value => { const [i, f=''] = value.split('.'); return [BigInt(i + f), f.length]; };
   const [x, p] = parse(a), [y, q] = parse(b), scale = Math.max(p,q);
-  const left=x*10n**BigInt(scale-p), right=y*10n**BigInt(scale-q);
+  const left=x*leftMultiplier*10n**BigInt(scale-p), right=y*10n**BigInt(scale-q);
   return left < right ? -1 : left > right ? 1 : 0;
 }
 export function validateResult(doc) {
@@ -32,6 +32,8 @@ export function validateResult(doc) {
       else {
         ensure(row.state === 'computed' && ALL_STATS.every(k => v[k] !== null), 'Nonempty summary lacks statistics');
         ensure(v.mean_numerator === v.sum && v.mean_denominator === v.n, 'Mean must retain exact sum/n');
+        const n=BigInt(v.n);
+        ensure(compareDecimal(v.min,v.sum,n)<=0 && compareDecimal(v.max,v.sum,n)>=0, 'Numeric sum outside exact n × min/max bounds');
         const ordered=['min','p10','p25','p50','p75','p90','max'];
         ensure(ordered.slice(1).every((k,i) => compareDecimal(v[ordered[i]],v[k]) <= 0), 'Numeric order statistics out of order');
       }
@@ -41,6 +43,8 @@ export function validateResult(doc) {
     if (doc.metric_id === 'source.capabilities') ensure(v.availability === 'available' ?
       v.table_present === true && v.column_present === true && v.readable === true && v.reason === null :
       v.reason !== null, 'Capability availability/reason is inconsistent');
+    if (doc.metric_id === 'source.capabilities' && v.availability === 'absent')
+      ensure(v.table_present === false || v.column_present === false, 'Absent capability must identify a missing table or column');
     if (doc.metric_id === 'execution.output_status') reason(v.state,v.reason);
   }
 }

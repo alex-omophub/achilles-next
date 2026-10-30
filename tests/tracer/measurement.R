@@ -122,6 +122,20 @@ main <- function() {
     for (id in AchillesNext:::.measurement_ids) stopifnot(read(name, id)$state == state, is.null(read(name, id)$rows), nzchar(read(name, id)$reason))
     stopifnot(read(name, "person.count")$rows[[1]]$values$count == "1", read(name, "observation.person_count")$state == "computed")
   }
+  for (i in seq_along(c("'   '", "E'\\t\\r\\n'", "NULL"))) {
+    literal <- c("'   '", "E'\\t\\r\\n'", "NULL")[i]
+    execute(paste0('UPDATE ', table("concept"), ' SET concept_name=', literal, ' WHERE concept_id=900000101'))
+    cte <- AchillesNext:::.measurement_cte(schema, cfg$request)
+    classified <- query(paste0(cte, " SELECT COUNT(*) FILTER (WHERE eligibility_reason='eligible')::text AS n FROM classified"))
+    stopifnot(classified$N == "1") # Local domain, not its display label, defines eligibility.
+    name <- paste0("unnamed-unit-", i); expectState(name, "failed")
+    stopifnot(grepl("missing or blank names", read(name, "measurement.numeric_summary")$reason, fixed = TRUE))
+  }
+  execute(paste0('UPDATE ', table("concept"), " SET concept_name='Unit one' WHERE concept_id=900000101; UPDATE ", table("concept"), " SET concept_name=NULL WHERE concept_id=900000001"))
+  generate("unnamed-measurement", cfg)
+  stopifnot(windowRows("unnamed-measurement", "measurement.record_count")[[1]]$values$count == "1",
+    windowRows("unnamed-measurement", "measurement.numeric_summary")[[1]]$values$n == "1")
+  execute(paste0('UPDATE ', table("concept"), " SET concept_name='Synthetic test' WHERE concept_id=900000001"))
   execute(paste0('INSERT INTO ', table("measurement"), " VALUES (1,99,900000001,'2020-01-15',1,900000101,0,NULL,NULL)")); expectState("orphan", "failed")
   execute(paste0('UPDATE ', table("measurement"), ' SET person_id=NULL WHERE person_id=99')); expectState("null-person", "failed")
   execute(paste0('DELETE FROM ', table("measurement"), ' WHERE person_id IS NULL; INSERT INTO ', table("concept"), " VALUES (900000101,'Conflicting label','Unit')")); expectState("conflicting-terms", "failed")

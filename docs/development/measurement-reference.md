@@ -20,8 +20,9 @@ fixture connection without embedding passwords.
 
 ```r
 library(AchillesNext)
-# config is a trusted local list; outputDir must not exist.
-outputDir <- file.path(tempdir(), "measurement-reference")
+# Run from the repository root after creating the marked fixtures.
+source("tools/tracer_fixture_config.R")  # Trusted local fixture configuration
+outputDir <- tempfile("measurement-reference-")  # New path for each run
 do.call(generateMeasurementReport, c(config, list(outputDir = outputDir)))
 ```
 
@@ -78,7 +79,7 @@ ATLAS integration.
 
 Missing/denied prerequisites produce explicit unavailable/inaccessible states;
 invalid source types, selected in-window orphan/null person IDs or conflicting
-local terminology produce failed measurement outputs with no numeric rows. The
+local terminology or missing labels for summary-eligible Unit-domain concepts produce failed measurement outputs with no numeric rows. The
 valid count/observation results remain available. The reference step is atomic
 across its seven metrics. It requires exact NUMERIC, integer IDs and DATE types;
 FLOAT sources are rejected. PERSON and observation integrity are prerequisites.

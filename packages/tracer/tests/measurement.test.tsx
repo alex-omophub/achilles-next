@@ -5,7 +5,7 @@ import {renderToStaticMarkup} from 'react-dom/server';
 import {canonical, sha256} from '../../contracts/src/index.mjs';
 import {openCountBundle, type BundleFile} from '../src/file-provider';
 import {CountView} from '../src/CountView';
-import {savedScope, rawLabel} from '../src/measurement';
+import {measurementIds, savedScope, rawLabel} from '../src/measurement';
 
 const base = process.env.MEASUREMENT_TEST_BUNDLES;
 const signal = () => new AbortController().signal;
@@ -79,10 +79,20 @@ describe.runIf(!!base)('real PostgreSQL measurement reference bundles', () => {
       expect(renderToStaticMarkup(<CountView result={r}/>)).toContain('No observed mapped-unit');
     }
   });
-  it.each(['orphan','null-person','conflicting-terms','denied','denied-terminology','float-source','missing-column'])('shows %s as an unavailable measurement report without losing the passport/count', async name => {
+  it.each(['orphan','null-person','conflicting-terms','denied','denied-terminology','float-source','missing-column','unnamed-unit-1','unnamed-unit-2','unnamed-unit-3'])('shows %s as an unavailable measurement report without losing the passport/count', async name => {
     const s = await input(name), r = await openCountBundle(s.files, signal());
     expect(r.count).toBe('1'); const html = renderToStaticMarkup(<CountView result={r}/>);
     expect(html).toContain('Measurement report unavailable'); expect(html).not.toContain('Reference distributions');
+  });
+  it.each(measurementIds)('rejects a rehashed unsupported implemented partition: %s', async id => {
+    const s = await input('tiny_a_2020-5.5');
+    await s.mutate(id, doc => Object.assign(doc, {state: 'unsupported', reason: 'Not implemented', rows: null}));
+    await expect(openCountBundle(s.files, signal())).rejects.toThrow('Implemented measurement output cannot be unsupported');
+  });
+  it('rejects an impossible exact sum after hashes and mean metadata have been updated', async () => {
+    const s = await input('tiny_a_2020-5.5');
+    await s.mutate('measurement.numeric_summary', doc => {doc.rows[0].values.sum = '-1000'; doc.rows[0].values.mean_numerator = '-1000';});
+    await expect(openCountBundle(s.files, signal())).rejects.toThrow('Numeric sum outside exact n × min/max bounds');
   });
   it.each(['missing-representation','wrong-denominator','wrong-unit','numeric-n','quantile-order','missing-month','out-of-scope','empty-statistics'])('rejects rehashed semantic corruption: %s', async kind => {
     const s = await input('tiny_a_2020-5.5');

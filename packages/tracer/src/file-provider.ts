@@ -138,6 +138,8 @@ export async function openCountBundle(files: ReadonlyMap<string, BundleFile>, si
       doc.metric_id === partition.metric_id && doc.metric_version === partition.metric_version &&
       doc.state === partition.state && doc.reason === partition.reason &&
       String(doc.rows?.length ?? 0) === partition.rows, 'Result identity or state mismatch.');
+    if (manifest.generator.name === 'AchillesNext-measurement-reference' && measurementIds.includes(doc.metric_id))
+      requireValid(doc.state !== 'unsupported', 'Implemented measurement output cannot be unsupported. Regenerate the measurement reference bundle.');
     if (!['person.count', 'source.passport', ...(manifest.generator.name !== 'AchillesNext-count-tracer' ? observationIds : []), ...(manifest.generator.name === 'AchillesNext-measurement-reference' ? measurementIds : [])].includes(doc.metric_id)) {
       requireValid(doc.state === 'unsupported' && typeof doc.reason === 'string' && doc.reason.length > 0 && doc.rows === null,
         'Count tracer contains an undeclared implemented output.');
