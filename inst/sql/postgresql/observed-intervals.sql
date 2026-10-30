@@ -18,7 +18,7 @@ WITH params AS (
 ), merged AS (
   SELECT person_id, MIN(start_date) AS start_date, MAX(end_date) AS end_date
   FROM islands GROUP BY person_id, island
-), observed_intervals AS (
+), observed_intervals AS MATERIALIZED (
   SELECT person_id, GREATEST(start_date, window_start) AS start_date,
     LEAST(end_date, window_end) AS end_date
   FROM merged, params WHERE start_date <= window_end AND end_date >= window_start
