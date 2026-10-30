@@ -1,0 +1,47 @@
+.github/workflows/count-tracer.yml
+  s_3e206b4a2cf4c3::t_5e1c730c97d289 134-135
+NAMESPACE
+  s_3e206b4a2cf4c3::t_35f034f297c743 5-7
+R/count-tracer.R
+  s_3e206b4a2cf4c3::t_a832b54ebc0791 67-68,79-84,89-114,123
+R/run-ledger.R
+  s_3e206b4a2cf4c3::t_cb099ba12e3e68 1-211
+R/tracer-session.R
+  s_3e206b4a2cf4c3::t_c6f4663f8cc6ae 4,30-42
+README.md
+  s_3e206b4a2cf4c3::t_f891d178a11232 51-54
+docs/development/execution-ledger.md
+  s_3e206b4a2cf4c3::t_7a8e0a737155bb 1-123
+inst/sql/postgresql/classified-measurements.sql
+  s_3e206b4a2cf4c3::t_6f2db8c6c4005e 18
+inst/sql/postgresql/numeric-frequencies.sql
+  s_3e206b4a2cf4c3::t_7a214bc7c5af68 1
+inst/sql/postgresql/observed-intervals.sql
+  s_3e206b4a2cf4c3::t_2aaeab867915c5 21
+man/measurementRuns.Rd
+  s_3e206b4a2cf4c3::t_7cc2758399e13f 1-25
+tests/tracer/run-ledger-offline.R
+  s_3e206b4a2cf4c3::t_4815d234f40214 1-74
+tests/tracer/run-ledger.R
+  s_3e206b4a2cf4c3::t_7b21ddc633666c 1-84
+tests/tracer/run-workers.py
+  s_3e206b4a2cf4c3::t_47aa4f9d65bfce 1-25
+tools/measurement_run.R
+  s_3e206b4a2cf4c3::t_4cbe64950a988d 1-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2bb4c97deda0ad169045a6c095d70ee77d55bfe4",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
