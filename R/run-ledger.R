@@ -102,7 +102,7 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
       .object(id = "observed_intervals", scope = "observation SQL statement", consumers = as.list(observation), strategy = "MATERIALIZED CTE"),
       .object(id = "observation_counts", scope = "same run/snapshot", consumers = as.list(setdiff(.measurement_ids, "measurement.numeric_summary")), strategy = "in-memory aggregate denominators"),
       .object(id = "classified", scope = "measurement SQL statement", consumers = as.list(.measurement_ids), strategy = "MATERIALIZED CTE"),
-      .object(id = "frequency_inputs", scope = "measurement SQL statement", consumers = as.list(c("exact_n_and_sum", if (numericStrategy == "weighted") "weighted_quantile_ranks")), strategy = "MATERIALIZED CTE")),
+      .object(id = "frequency_inputs", scope = "measurement SQL statement", consumers = as.list(c("exact_n_and_sum", if (numericStrategy == "weighted") "weighted_quantile_ranks")), strategy = if (numericStrategy == "weighted") "Multiply-referenced CTE; PostgreSQL default materialization" else "Single-consumer CTE; folding permitted")),
     limitations = as.list(c("Synthetic PostgreSQL only; cost classes are descriptive, not cardinality estimates", "Observation membership is recomputed within measurement SQL; no cross-statement interval cache", "No durable source identity, retry/resume, complete publication or disclosure approval")))
   .run_atomic(plan, file.path(runDir, "plan.json"))
   ids <- vapply(operations, function(op) op$id, "")

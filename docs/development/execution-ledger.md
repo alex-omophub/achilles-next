@@ -49,8 +49,12 @@ prerequisite checks still control execution.
 
 One observation computation supplies window/monthly denominators to measurement
 outputs. Materialized CTEs share interval union results within the observation
-statement, classified rows across measurement metric families and frequencies
-between exact totals and weighted ranks. Their compatibility boundary is the same
+statement and classified rows across measurement metric families. The frequency CTE stays
+foldable for the reference strategy, which has one consumer; PostgreSQL can
+materialize it by default for the weighted strategy, which shares it between
+exact totals and weighted ranks. See
+[PostgreSQL CTE materialization](https://www.postgresql.org/docs/17/queries-with.html#QUERIES-WITH-CTE-MATERIALIZATION).
+Their compatibility boundary is the same
 source, request window/concepts, strategy, definitions and read-only snapshot.
 Observation membership is recomputed within measurement SQL; there is no
 cross-statement interval cache or cross-run input reuse. The reference still sorts
@@ -120,4 +124,5 @@ protection against hostile record edits. Do not import untrusted run directories
 
 Verify with `tests/tracer/run-ledger-offline.R` and the marked-database
 `tests/tracer/run-ledger.R <config.R> <new-evidence-directory>`. The latter also
-requires installed contract dependencies/Node for result validation.
+requires Python 3 for its concurrent worker launcher and installed contract
+dependencies/Node for result validation.

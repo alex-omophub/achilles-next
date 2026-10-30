@@ -127,6 +127,8 @@ jobs:
           npm run package-viewer --prefix packages/tracer
           python3 tools/check_viewer_assets.py
           git diff --exit-code -- inst/viewer
+      - name: Install contracts dependencies before generator validation
+        run: npm ci --prefix packages/contracts --ignore-scripts --no-audit --no-fund
       - name: Install package and build real count bundles
         run: |
           R CMD INSTALL --library="$R_LIBS" .
@@ -141,7 +143,6 @@ jobs:
           python3 tools/benchmark/weighted_quantiles.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/weighted-quantile-parity"
       - name: Validate every generated bundle against the frozen contracts
         run: |
-          npm ci --prefix packages/contracts --ignore-scripts --no-audit --no-fund
           npm run check --prefix packages/contracts
           for bundle in "$TRACER_TEST_BUNDLES"/* "$OBSERVATION_TEST_BUNDLES"/* "$MEASUREMENT_TEST_BUNDLES"/* "$WEIGHTED_TEST_BUNDLES"/*; do
             node packages/contracts/tools/validate.mjs "$bundle"

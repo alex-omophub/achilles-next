@@ -1,5 +1,6 @@
 # Durable planning/state-machine tests without database access.
 library(AchillesNext)
+source("tests/tracer/credential-guard.R")
 main <- function() {
   root <- tempfile("execution-offline-"); dir.create(root); on.exit(unlink(root, recursive = TRUE), add = TRUE)
   request <- list(profile_id = "alpha-measurement-v1", source_id = "fixture:tiny_a",
@@ -7,6 +8,12 @@ main <- function() {
     output_scope = "restricted", disclosure_policy_id = "synthetic-unsuppressed-v1")
   plan <- function(name, ...) {p <- file.path(root, name); planMeasurementRun(p, "cdm_tiny_a_55", request$source_id, request, "5.5", ...); p}
   fails <- function(work, text) stopifnot(grepl(text, tryCatch({work(); "accepted"}, error = conditionMessage), fixed = TRUE))
+  for (credentials in list(character(), NULL, list()))
+    fails(function() assertNoCredentials('{"safe":"clean"}', credentials), "Known fixture credentials are required")
+  fakeSecret <- 'fixture-"secret\\-value'
+  assertNoCredentials('{"safe":"clean"}', fakeSecret)
+  fails(function() assertNoCredentials(AchillesNext:::.json(list(renamed_field = fakeSecret)), fakeSecret), "Credential value found")
+  fails(function() assertNoCredentials(AchillesNext:::.json(list(message = paste("prefix", fakeSecret, "suffix"))), fakeSecret), "Credential value found")
   p <- plan("planned"); r <- inspectMeasurementRun(p)
   stopifnot(length(r$plan$requested_outputs) == 15L, length(r$plan$outputs) == 15L,
     length(r$plan$operations) == 6L, r$plan$max_concurrency == 1L,
