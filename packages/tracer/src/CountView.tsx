@@ -13,7 +13,8 @@ export function CountView({result}: {result: VerifiedCount}) {
       <span className="status">{state === 'empty_source' ? 'Empty source' : 'Computed'}</span></div>
     <p className="exact-count" aria-label={`Exact person count: ${count}`}>{count}</p>
     <p className="count-caption">Exact count · unique, non-null person IDs</p>
-    {result.measurement ? <MeasurementView key={manifest.bundle_id} measurement={result.measurement} request={manifest.request}/> : null}
+    {result.measurement ? <MeasurementView key={manifest.bundle_id} measurement={result.measurement} request={manifest.request}
+      numericStrategy={manifest.generator.name === 'AchillesNext-measurement-weighted' ? 'weighted' : 'reference'}/> : null}
     {result.observation ? <ObservationView observation={result.observation} start={manifest.request.window.start} end={manifest.request.window.end}/> : null}
     <table><caption>Result identity</caption><tbody>
       <tr><th scope="row">Source</th><td>{manifest.source.source_id}</td></tr>

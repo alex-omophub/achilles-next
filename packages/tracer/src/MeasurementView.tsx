@@ -5,7 +5,7 @@ const MeasurementChart = lazy(() => import('./MeasurementChart'));
 
 /** Aggregate-only, embeddable report. Scope changes inspect stored cells; they do
  * not query a CDM, mutate a provider, or manufacture new cross-filter results. */
-export function MeasurementView({measurement, request}: {measurement: VerifiedMeasurement; request: AnalysisRequest}) {
+export function MeasurementView({measurement, request, numericStrategy}: {measurement: VerifiedMeasurement; request: AnalysisRequest; numericStrategy: 'reference' | 'weighted'}) {
   const title = useId(), scopeId = useId();
   const initial = (): ScopeRequest => ({concept: String(request.measurement_concept_ids.find(id => measurement.terminology.concepts.some(c => c.concept_id === id && c.state === 'available' && c.domain_id === 'Measurement')) ?? request.measurement_concept_ids[0]), ...request.window, jointFilter: false});
   const [draft, setDraft] = useState<ScopeRequest>(initial);
@@ -35,7 +35,7 @@ export function MeasurementView({measurement, request}: {measurement: VerifiedMe
   }).sort((a, b) => a.start.localeCompare(b.start));
   const chartable = months.every(m => m.records !== null && m.people !== null && BigInt(m.records) <= BigInt(Number.MAX_SAFE_INTEGER) && BigInt(m.people) <= BigInt(Number.MAX_SAFE_INTEGER));
   return <section className="measurement" aria-labelledby={title}>
-    <div className="count-heading"><div><p className="eyebrow">Measurements · reference report</p><h2 id={title}>From records to distributions</h2></div><span className="status">Saved aggregates</span></div>
+    <div className="count-heading"><div><p className="eyebrow">Measurements · {numericStrategy} report</p><h2 id={title}>From records to distributions</h2></div><span className="status">Saved aggregates</span></div>
     <p className="vocabulary">Local vocabulary: <strong>{vocabulary.state === 'known' ? vocabulary.id : 'Unknown'}</strong>.
       {vocabulary.state === 'unknown' ? ` ${vocabulary.reason}.` : ' Declared CDM_SOURCE metadata; no immutable vocabulary snapshot is asserted.'} Labels come from the local CONCEPT table.</p>
     <label className="concept-select">Saved measurement concept<select value={resolved.available ? String(resolved.concept) : ''} onChange={e => {
@@ -74,7 +74,7 @@ export function MeasurementView({measurement, request}: {measurement: VerifiedMe
       </tbody></table>{!window('measurement.operator_count').length ? <p>No observed operator strata.</p> : null}</div></div>
       <h3>Numeric eligibility</h3><p>First matching reason wins. Only finite numeric values with a known Unit-domain unit and raw operator NULL or 0 enter a distribution. All nonzero operators, including equality, are excluded.</p>
       <table className="report-table"><caption>Inclusion and exclusion · window records</caption><thead><tr><th scope="col">Reason</th><th scope="col">Records</th></tr></thead><tbody>{window('measurement.numeric_eligibility_count').map(r => <tr key={r.dimensions.eligibility_reason}><th scope="row">{r.dimensions.eligibility_reason.replaceAll('_', ' ')}</th><td>{r.values?.count ?? 'Suppressed'}</td></tr>)}</tbody></table>
-      <h3>Reference distributions</h3><p>Each unit and raw operator has its own summary. No unit conversion or pooling. NULL and 0 mean no explicit comparator; they do not prove uncensored values. Quantiles are observed values at rank ceil(p × n), with duplicate multiplicity retained.</p>
+      <h3>{numericStrategy === 'weighted' ? 'Weighted distributions' : 'Reference distributions'}</h3><p>Each unit and raw operator has its own summary. No unit conversion or pooling. NULL and 0 mean no explicit comparator; they do not prove uncensored values. Quantiles are observed values at rank ceil(p × n), with duplicate multiplicity retained.</p>
       {!window('measurement.numeric_summary').length ? <p>No observed mapped-unit / allowed-operator groups. No distribution is inferred.</p> : null}
       {window('measurement.numeric_summary').map(r => <section className="numeric-stratum" key={`${r.dimensions.unit_concept_id}-${r.dimensions.raw_operator_tag}`}>
         <h4>{label(r.dimensions.unit_concept_id)} · {rawLabel(terminology, r.dimensions.raw_operator_tag, 'operator')}</h4>

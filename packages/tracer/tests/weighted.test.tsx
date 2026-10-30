@@ -1,8 +1,10 @@
 import {readFile, readdir} from 'node:fs/promises';
 import {resolve} from 'node:path';
 import {it, expect} from 'vitest';
+import {renderToStaticMarkup} from 'react-dom/server';
 import {canonical, sha256} from '../../contracts/src/index.mjs';
 import {openCountBundle, openServedCountBundle, type BundleFile} from '../src/file-provider';
+import {CountView} from '../src/CountView';
 const root = process.env.WEIGHTED_TEST_BUNDLES;
 const reference = process.env.MEASUREMENT_TEST_BUNDLES;
 const signal = () => new AbortController().signal;
@@ -14,6 +16,19 @@ async function filesAt(root: string, name: string) {
   }
   return files;
 }
+it.runIf(!!root && !!reference)('renders report and distribution labels for the verified generator strategy', async () => {
+  for (const [folder, strategy, heading, otherHeading] of [
+    [reference!, 'reference', 'Reference distributions', 'Weighted distributions'],
+    [root!, 'weighted', 'Weighted distributions', 'Reference distributions'],
+  ]) {
+    const r = await openCountBundle(await filesAt(folder, 'tiny_a_2020-5.5'), signal());
+    const html = renderToStaticMarkup(<CountView result={r}/>);
+    expect(html).toContain(`Measurements · ${strategy} report`);
+    expect(html).toContain(`<h3>${heading}</h3>`);
+    expect(html).not.toContain(`<h3>${otherHeading}</h3>`);
+    expect(html).toContain('100.5 / 6');
+  }
+});
 it.runIf(!!root && !!reference)('all weighted generated bundles preserve reference metric payloads and typed failure states', async () => {
   for (const name of await readdir(root!)) {
     const r = await openCountBundle(await filesAt(root!, name), signal());
@@ -40,6 +55,10 @@ it.runIf(!!root)('weighted output opens through the same non-root served provide
   };
   const r = await openServedCountBundle(base, signal(), fetcher as typeof fetch);
   expect(r.measurement?.documents.get('measurement.numeric_summary')?.rows?.[0].values).toMatchObject({n: '6', sum: '100.5', p50: '1'});
+  const html = renderToStaticMarkup(<CountView result={r}/>);
+  expect(html).toContain('Measurements · weighted report');
+  expect(html).toContain('<h3>Weighted distributions</h3>');
+  expect(html).not.toContain('Reference distributions');
 });
 it.runIf(!!root)('weighted generator cannot forge unsupported implemented outputs', async () => {
   const files = await filesAt(root!, 'tiny_a_2020-5.5');
