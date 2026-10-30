@@ -21,6 +21,7 @@
 .string <- function(x) is.character(x) && length(x) == 1L && !is.na(x) && nzchar(x)
 .write_json <- function(value, path) {
   bytes <- charToRaw(enc2utf8(.json(value)))
+  if (length(bytes) > 10 * 1024 * 1024) stop("Result exceeds the 10 MiB artifact limit; narrow the request", call. = FALSE)
   writeBin(bytes, path)
   Sys.chmod(path, "0600")
   .object(sha256 = digest::digest(bytes, algo = "sha256", serialize = FALSE), bytes = as.character(length(bytes)))
@@ -63,7 +64,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   .generate_tracer(connectionDetails, cdmSchema, sourceId, outputDir, request, declaredCdmVersion, observation = FALSE)
 }
 .generate_tracer <- function(connectionDetails, cdmSchema, sourceId, outputDir,
-                             request, declaredCdmVersion, observation) {
+                             request, declaredCdmVersion, observation, measurement = FALSE) {
   if (!inherits(connectionDetails, "ConnectionDetails") || !identical(connectionDetails$dbms, "postgresql")) stop("PostgreSQL connection details required", call. = FALSE)
   if (!.string(cdmSchema) || !grepl("^cdm_tiny_[a-z0-9_]+_(53|54|55)$", cdmSchema)) stop("A marked tiny fixture schema is required", call. = FALSE)
   if (!.string(sourceId) || !.string(outputDir) || !.string(declaredCdmVersion) || !declaredCdmVersion %in% c("5.3", "5.4", "5.5") ||
@@ -94,29 +95,30 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   if (!identical(counts[["RECORDS"]], counts[["NONNULL_IDS"]]) || !identical(counts[["RECORDS"]], counts[["PEOPLE"]])) stop("TRACER_PERSON_INTEGRITY: null or duplicate person IDs", call. = FALSE)
   count <- counts[["PEOPLE"]]
   observed <- if (observation) .observation_compute(query, execute, cdmSchema, request$window) else NULL
+  measured <- if (measurement) .measurement_compute(query, execute, cdmSchema, request, observed) else NULL
   ended <- .stamp()
   profilePath <- system.file("analysis", "alpha-measurement-v1.json", package = "AchillesNext", mustWork = TRUE)
   profile <- jsonlite::fromJSON(profilePath, simplifyVector = FALSE)
   profileHash <- digest::digest(file = profilePath, algo = "sha256")
   if (profileHash != "2e106f260cbcfcaccab23c55846384886dc5c0b2d7178b48e62c7f82cbe18951") stop("Frozen profile mismatch", call. = FALSE)
   ids <- unlist(profile$required_outputs, use.names = FALSE)
-  generator <- if (observation) "AchillesNext-observation-tracer" else "AchillesNext-count-tracer"
-  runId <- paste0(if (observation) "observation-" else "count-", .hash(paste(started, sourceId, tempfile(), sep = ":")))
+  generator <- if (measurement) "AchillesNext-measurement-reference" else if (observation) "AchillesNext-observation-tracer" else "AchillesNext-count-tracer"
+  runId <- paste0(if (measurement) "measurement-" else if (observation) "observation-" else "count-", .hash(paste(started, sourceId, tempfile(), sep = ":")))
   bundleId <- runId
   unknown <- .unknown("Not established by this development tracer")
   snapshot <- c(unknown, .object(immutable = FALSE, assertion_id = NULL, basis = NULL))
   source <- .object(source_id = sourceId, snapshot = snapshot, data_release = unknown,
-    vocabulary_release = unknown, schema_fingerprint = .unknown("A full schema fingerprint was not established"), declared_cdm_version = declaredCdmVersion)
+    vocabulary_release = if (measurement) measured$vocabulary else unknown, schema_fingerprint = .unknown("A full schema fingerprint was not established"), declared_cdm_version = declaredCdmVersion)
   requestHash <- .hash(.json(request))
   common <- .object(contract_version = "1.0.0", bundle_id = bundleId, source_id = sourceId, run_id = runId, request_sha256 = requestHash)
-  unsupported <- if (observation) "Not implemented by the observation development tracer" else "Not implemented by the count-only development tracer"
+  unsupported <- if (measurement) "Not implemented by the measurement reference generator" else if (observation) "Not implemented by the observation development tracer" else "Not implemented by the count-only development tracer"
   documents <- lapply(ids, function(id) c(common, .object(metric_id = id, metric_version = "1.0.0", state = "unsupported", reason = unsupported, rows = NULL)))
   names(documents) <- ids
   computed <- function(id, values, state = "computed", reason = NULL) c(common, .object(metric_id = id, metric_version = "1.0.0", state = state, reason = reason,
     rows = list(.object(dimensions = .object(), denominator = NULL, state = state, reason = reason, values = values))))
   documents[["source.passport"]] <- computed("source.passport", .object(source_id = sourceId,
     source_snapshot_id = NULL, data_release_id = NULL, declared_cdm_version = declaredCdmVersion,
-    observed_schema_evidence = source$schema_fingerprint, vocabulary_release_id = NULL,
+    observed_schema_evidence = source$schema_fingerprint, vocabulary_release_id = source$vocabulary_release$id,
     profile_id = profile$profile_id, profile_revision = profile$revision,
     metric_versions = stats::setNames(as.list(rep("1.0.0", length(ids))), ids), run_id = runId))
   documents[["person.count"]] <- computed("person.count", .object(count = count),
@@ -149,6 +151,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
       documents[["observation.monthly_person_count"]] <- document("observation.monthly_person_count", rows)
     }
   }
+  if (measurement) documents <- .measurement_documents(documents, common, measured, observed, count)
   if (!dir.create(outputDir, mode = "0700")) stop("Cannot create new output directory", call. = FALSE)
   success <- FALSE
   on.exit(if (!success) unlink(outputDir, recursive = TRUE), add = TRUE)
@@ -160,8 +163,8 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     c(.object(metric_id = id, metric_version = "1.0.0", state = doc$state, reason = doc$reason, path = path),
       integrity, .object(rows = as.character(length(doc$rows))))
   })
-  terminology <- .object(contract_version = "1.0.0", provider_id = "count-tracer-no-terminology", provider_version = "1.0.0",
-    source_id = sourceId, vocabulary_release = unknown, concepts = list())
+  terminology <- .object(contract_version = "1.0.0", provider_id = if (measurement) "local-concept-table" else "count-tracer-no-terminology", provider_version = "1.0.0",
+    source_id = sourceId, vocabulary_release = source$vocabulary_release, concepts = if (measurement) measured$terms else list())
   termIntegrity <- .write_json(terminology, file.path(outputDir, "terminology.json"))
   manifest <- .object(contract_version = "1.0.0", bundle_id = bundleId, run_id = runId, created_at = ended,
     generator = .object(name = generator, version = "0.0.0.9000"),
@@ -173,6 +176,8 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     outputs = partitions, terminology = c(.object(path = "terminology.json"), termIntegrity),
     timing_phases = as.list(c("compute", "materialize", "validate", "export")))
   .write_json(manifest, file.path(outputDir, "manifest.json"))
+  if (sum(file.info(list.files(outputDir, recursive = TRUE, full.names = TRUE))$size) > 64 * 1024 * 1024)
+    stop("Bundle exceeds the 64 MiB viewer limit; narrow the request", call. = FALSE)
   success <- TRUE
   invisible(outputDir)
 }

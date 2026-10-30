@@ -3,8 +3,9 @@ Type: Package
 Title: Development Tracer for OMOP Characterization Results
 Version: 0.0.0.9000
 Authors@R: person("Alex", "Chen", email = "alex@omophub.com", role = c("aut", "cre"))
-Description: Computes exact person counts and observation opportunity from marked
-    synthetic PostgreSQL fixtures and writes a partial, versioned aggregate
+Description: Computes exact counts, observation opportunity and bounded measurement
+    representations and reference distributions from marked synthetic PostgreSQL
+    fixtures and writes a partial, versioned aggregate
     bundle for a reusable React view. This development tracer does not implement the complete
     characterization profile or production publication and recovery.
 License: Apache License (>= 2)

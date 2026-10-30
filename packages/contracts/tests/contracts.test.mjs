@@ -37,6 +37,33 @@ test('zero-n statistics preserve undefined mean and extrema',()=>{
   r.state='empty_population';r.reason='no_numeric_values';for(const key of Object.keys(r.values)) r.values[key]=key==='n'?'0':null;
   r.denominator.value='0';validateDocument('result',doc);r.values.sum='0';assert.throws(()=>validateDocument('result',doc));
 });
+for(const [label,n,min,max,sum,valid] of [
+  ['positive lower bound','2','1','3','0',false],
+  ['positive upper bound','2','1','3','7',false],
+  ['negative lower bound','2','-3','-1','-7',false],
+  ['negative upper bound','2','-3','-1','0',false],
+  ['fraction beyond Number precision','2','9007199254740993.125','9007199254740993.125','18014398509481986.249',false],
+  ['count beyond safe integer','9007199254740993','0.1','0.1','900719925474099.2',false],
+  ['positive boundary','3','0.125','0.125','0.375',true],
+  ['negative boundary','3','-0.125','-0.125','-0.375',true],
+  ['mixed signs','2','-1.25','1.25','0',true],
+  ['large count exact product','9007199254740993','0.1','0.1','900719925474099.3',true]
+]) test(`numeric sum bounds: ${label}`,()=>{
+  const doc=structuredClone(source.documents.get('measurement.numeric_summary')),r=doc.rows[0];
+  Object.assign(r.values,{n,min,max,sum,mean_numerator:sum,mean_denominator:n,p10:min,p25:min,p50:min,p75:max,p90:max});
+  r.denominator.value=n;
+  if(valid) validateDocument('result',doc);
+  else assert.throws(()=>validateDocument('result',doc),/sum.*bounds/i);
+});
+test('absent capability requires a missing table or column, not unknown or fully present flags',()=>{
+  const doc=structuredClone(source.documents.get('source.capabilities')),v=doc.rows[0].values;
+  Object.assign(v,{availability:'absent',reason:'Missing dependency',table_present:true,column_present:true,readable:true});
+  assert.throws(()=>validateDocument('result',doc),/Absent capability/);
+  Object.assign(v,{table_present:null,column_present:null,readable:null});
+  assert.throws(()=>validateDocument('result',doc),/Absent capability/);
+  Object.assign(v,{table_present:true,column_present:false});validateDocument('result',doc);
+  Object.assign(v,{table_present:false,column_present:null});validateDocument('result',doc);
+});
 test('a resolvable but wrong all-person denominator is rejected',()=>{
   const b=clone(),r=b.documents.get('measurement.person_count').rows[0];
   r.denominator={metric_id:'person.count',dimensions:{},field:'count',value:'4'};assert.throws(()=>validate(b),/Wrong denominator/);

@@ -6,7 +6,7 @@ import {BundleOpenError, openCountBundle, openServedCountBundle, selectedBundleF
 const errorText = {
   missing: ['Results not found', 'Check that the folder contains manifest.json and all declared files, then reopen the viewer.'],
   invalid: ['Invalid results', 'Regenerate or restore an unchanged bundle, then reopen the viewer.'],
-  incompatible: ['Unsupported results version', 'Use a compatible count-tracer or observation-tracer bundle, or update AchillesNext.'],
+  incompatible: ['Unsupported results version', 'Use a compatible count-tracer, observation-tracer or measurement reference bundle, or update AchillesNext.'],
   unavailable: ['Local viewer unavailable', 'Keep the R viewer process running, then reopen the viewer.'],
 };
 export function ResultError({state, message}: {state: OpenErrorState; message: string}) {
@@ -47,11 +47,11 @@ export function ViewerApp({servedBase}: {servedBase?: URL}) {
     finally {if (!controller.signal.aborted) setBusy(false);}
   }
   return <main><header><a className="wordmark" href="#">Achilles<span>Next</span></a><span className="development">Local results · development</span></header>
-    <section className="intro"><h1>Trace the count.<br/>Keep the context.</h1>
-      <p>Inspect exact PostgreSQL counts, observation opportunity and computation limits.</p></section>
+    <section className="intro"><h1>Explore the data.<br/>Keep the context.</h1>
+      <p>Inspect measurement representations, exact distributions and observation opportunity.</p></section>
     {servedBase ? <section className="selection"><div><h2>Selected results</h2>
       <p>Opening the bundle selected in R. Results stay on this computer.</p></div></section> :
-      <section className="selection" aria-labelledby="open-title"><div><h2 id="open-title">Open a count bundle</h2>
+      <section className="selection" aria-labelledby="open-title"><div><h2 id="open-title">Open a result bundle</h2>
         <p>Select the folder containing manifest.json. Only declared aggregate files are read. Files stay in this browser.</p></div>
         <label className="file-button">Choose bundle folder<input type="file" multiple {...{webkitdirectory: ''}}
           aria-label="Choose bundle folder" onChange={event => {void select(event.currentTarget.files); event.currentTarget.value = '';}} /></label></section>}

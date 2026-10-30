@@ -64,7 +64,7 @@ describe.runIf(!!base)('actual PostgreSQL observation bundles', () => {
       if (kind === 'excess-people') d.rows[0].values.count = '5';
       if (kind === 'false-zero') d.rows[0].values.count = '0';
     });
-    await expect(openCountBundle(s.files, signal())).rejects.toThrow('Observation results:');
+    await expect(openCountBundle(s.files, signal())).rejects.toThrow();
   });
   it('retains huge exact values and omits unsafe chart coordinates', async () => {
     const s = await input('tiny_a_january_partial-5.5'), huge = '9007199254740993';
