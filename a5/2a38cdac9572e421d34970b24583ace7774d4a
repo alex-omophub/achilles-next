@@ -1,0 +1,83 @@
+.github/workflows/count-tracer.yml
+  s_3e206b4a2cf4c3::t_c96078386cbe33 29,135,137-138,143
+R/count-tracer.R
+  s_3e206b4a2cf4c3::t_2d1616f2535ca1 67,98,105-106
+R/local-viewer.R
+  s_3e206b4a2cf4c3::t_fa99d07c9c8356 29
+R/measurement.R
+  s_3e206b4a2cf4c3::t_f6259781630412 12-32,74,97-99
+README.md
+  s_3e206b4a2cf4c3::t_e7ecd10ebeb73b 5
+docs/development/measurement-reference.md
+  s_3e206b4a2cf4c3::t_9d3d39a98365f5 75,90-91
+docs/development/weighted-quantiles.md
+  s_3e206b4a2cf4c3::t_844f32175c9f8f 1-120
+docs/viewing/local-viewer.md
+  s_3e206b4a2cf4c3::t_d980d258b0b2a2 4,25
+inst/analysis/measurement-reference-operation-v1.json
+  s_3e206b4a2cf4c3::t_e5021ec5d369fc 7
+inst/analysis/measurement-weighted-operation-v1.json
+  s_3e206b4a2cf4c3::t_3501cb77c1f0f5 1-37
+inst/sql/postgresql/measurement-report.sql
+  s_3e206b4a2cf4c3::t_9912d72ef5ce52 43-45
+inst/sql/postgresql/numeric-frequencies.sql
+  s_3e206b4a2cf4c3::t_ed3ab08262ae81 1-6
+inst/sql/postgresql/numeric-groups.sql
+  s_3e206b4a2cf4c3::t_0571982155a126 1-4
+inst/sql/postgresql/numeric-reference.sql
+  s_3e206b4a2cf4c3::t_3cafb95c81360a 1-19
+inst/sql/postgresql/numeric-totals.sql
+  s_3e206b4a2cf4c3::t_b1f50a25fa8e1e 1-4
+inst/sql/postgresql/numeric-weighted.sql
+  s_3e206b4a2cf4c3::t_9f42affa9f1826 1-21
+inst/viewer/assets/CartesianChart-BpFHyOoI.js
+  s_3e206b4a2cf4c3::t_5d59bde902bd59 1
+inst/viewer/assets/MeasurementChart-DPKbct-w.js
+  s_3e206b4a2cf4c3::t_4465ba1ea34dc7 1
+inst/viewer/assets/ObservationChart-CuO5twLU.js
+  s_3e206b4a2cf4c3::t_02bb6b7839ec31 1
+inst/viewer/assets/index-CTOnAr_7.js
+  s_3e206b4a2cf4c3::t_ef1acfa0cf3770 1-2,9-10,846,1682
+inst/viewer/index.html
+  s_3e206b4a2cf4c3::t_60f3d73773b44f 3
+inst/viewer/viewer-lock.json
+  s_3e206b4a2cf4c3::t_1cbf17d0e9bcd7 14,20,22,32-35,37
+man/generateMeasurementReport.Rd
+  s_3e206b4a2cf4c3::t_e2395a41f97808 6,14,18
+packages/tracer/src/CountView.tsx
+  s_3e206b4a2cf4c3::t_72c4aa516b2218 26
+packages/tracer/src/file-provider.ts
+  s_3e206b4a2cf4c3::t_66dff8ed35e746 2,75,120,141,143,153,204
+packages/tracer/src/measurement.ts
+  s_3e206b4a2cf4c3::t_0fbe7bd3c8428d 2
+packages/tracer/tests/weighted.test.tsx
+  s_3e206b4a2cf4c3::t_e8f88ed7ad960f 1-52
+tests/test_local_viewer.py
+  s_3e206b4a2cf4c3::t_f491cf0f2a66e0 142-150
+tests/test_weighted_quantiles.py
+  s_3e206b4a2cf4c3::t_e1814bec9f1c92 1-45
+tests/tracer/measurement.R
+  s_3e206b4a2cf4c3::t_6b8a635714de20 9-10
+tests/tracer/quantile-request.R
+  s_3e206b4a2cf4c3::t_3752ebd248344c 1-7
+tools/benchmark/weighted_quantiles.R
+  s_3e206b4a2cf4c3::t_ddaa9b3737a7dd 1-151
+tools/benchmark/weighted_quantiles.py
+  s_3e206b4a2cf4c3::t_0cd19f388db19c 1-193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a52a38cdac9572e421d34970b24583ace7774d4a",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
