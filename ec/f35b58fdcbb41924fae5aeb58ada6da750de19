@@ -1,0 +1,21 @@
+tests/tracer/credential-guard.R
+  s_895f6ebe145fd3::t_3ff6b4b533639e 3-4
+tests/tracer/run-ledger-offline.R
+  s_895f6ebe145fd3::t_3ff6b4b533639e 11-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ecf35b58fdcbb41924fae5aeb58ada6da750de19",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
