@@ -125,6 +125,20 @@ v$stop(); v$stop()
                 self.assertEqual(code, 200)
                 self.assertEqual(json.loads(body)['rows'][0]['values']['count'], expected)
 
+    @unittest.skipUnless(os.environ.get('MEASUREMENT_TEST_BUNDLES'), 'Set MEASUREMENT_TEST_BUNDLES for the measurement viewer')
+    def test_measurement_bundle_is_available_without_node_under_nested_base(self):
+        folder = Path(os.environ['MEASUREMENT_TEST_BUNDLES']) / 'numeric-edges'
+        with self.serving(folder) as url:
+            self.assertEqual(self.status(url), 'ready')
+            code, _, body = self.get(url + 'api/results/measurement.numeric_summary.json')
+            self.assertEqual(code, 200)
+            doc = json.loads(body)
+            self.assertEqual(len(doc['rows']), 3)
+            self.assertIn('9007199254740995.125', [r['values']['sum'] for r in doc['rows']])
+            code, _, body = self.get(url + 'api/terminology.json')
+            self.assertEqual(code, 200)
+            self.assertEqual(json.loads(body)['provider_id'], 'local-concept-table')
+
     def test_missing_invalid_incompatible_have_no_analytical_payload(self):
         cases = [('missing-folder', self.root / 'absent', 'missing'),
                  ('bad-json', self.bundle, 'invalid'), ('wrong-version', self.bundle, 'incompatible')]

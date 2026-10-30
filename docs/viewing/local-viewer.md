@@ -1,7 +1,7 @@
 # Open generated results locally
 
 The installed R package contains a prebuilt React viewer for partial synthetic
-count/observation-tracer bundles. Opening a bundle requires R, the installed package and a
+count, observation and measurement reference bundles. Opening a bundle requires R, the installed package and a
 modern browser. It does not invoke Node, npm or Shiny, contact an external account,
 or build frontend assets. Installing R dependencies may require network access;
 this is not yet a verified offline distribution.
@@ -20,7 +20,9 @@ The URL includes `/achilles-next/`; selecting the folder again is unnecessary.
 Count-only bundles implement `person.count` and the passport, leaving 13 outputs
 unsupported. The [observation tracer](../development/observation-tracer.md) adds
 three observation metrics with a Recharts monthly view and exact table, leaving
-ten outputs unsupported. Publication stays partial, and no
+ten outputs unsupported. The [measurement reference report](../development/measurement-reference.md)
+adds seven measurement outputs and local terminology, leaving three unsupported.
+Publication stays partial, and no
 disclosure policy or institutional authorization is inferred.
 
 For interactive R, keep the session alive and its event loop available:
@@ -35,7 +37,7 @@ viewer$stop()                  # Safe to call more than once
 In noninteractive R, `block` defaults to `TRUE` and services requests until
 interrupted. Use Ctrl+C to stop. A process started with `block = FALSE` must stay
 alive and service the httpuv event loop; exiting R stops the viewer. The browser
-performs additional validation before displaying a count, so server status
+performs additional validation before displaying analytical values, so server status
 `ready` alone does not establish that a bundle is valid.
 
 To run from a shell without a source checkout or frontend tools:
@@ -55,7 +57,7 @@ The R server binds only to `127.0.0.1`. It snapshots the manifest and declared
 aggregate/terminology files into memory after path, size, identity and hash
 checks. Unrelated files, symbolic links, path traversal, foreign Host/Origin
 headers and write methods are refused. The browser uses the frozen schemas and
-the same partial-tracer semantic verifier as local folder selection. No count is
+the same partial-tracer semantic verifier as local folder selection. No analytical value is
 shown until those checks pass. Limits are 10 MiB per file and 64 MiB per bundle.
 
 The viewer distinguishes missing files, invalid results, incompatible versions

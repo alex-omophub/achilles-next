@@ -50,12 +50,12 @@ const inputs = [
   ...await walk(resolve(project, 'tools')),
   ...['package.json', 'package-lock.json', 'index.html', 'tsconfig.json', 'vite.config.ts'].map(p => join(project, p)),
   ...['inst/analysis/alpha-measurement-v1.json', 'inst/contracts/v1/contract.schema.json',
-    'packages/contracts/src/index.mjs', 'packages/contracts/src/http-provider.mjs'].map(p => resolve(root, p)),
+    'packages/contracts/src/semantics.mjs', 'packages/contracts/src/index.mjs', 'packages/contracts/src/http-provider.mjs'].map(p => resolve(root, p)),
 ];
 const source_sha256 = {};
 for (const path of inputs.sort()) source_sha256[relative(root, path)] = hash(await readFile(path));
 const files = {};
 for (const path of await walk(out)) files[relative(out, path)] = hash(await readFile(path));
 await writeFile(join(out, 'viewer-lock.json'), JSON.stringify({format_version: 1,
-  generated_by: 'achilles-next-package-viewer', scope: 'partial-count-observation-tracer', source_sha256, files}, null, 2) + '\n');
+  generated_by: 'achilles-next-package-viewer', scope: 'partial-count-observation-measurement-reference', source_sha256, files}, null, 2) + '\n');
 console.log(`Packaged ${Object.keys(files).length} prebuilt viewer files with source and asset hashes.`);

@@ -1,3 +1,4 @@
 export(generateCountTracer)
 export(viewResults)
 export(generateObservationTracer)
+export(generateMeasurementReport)

@@ -10,7 +10,9 @@ const date = value => /^\d{4}-\d{2}-\d{2}$/.test(value) && !value.startsWith('00
   !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value;
 const stamp = value => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
   !Number.isNaN(Date.parse(value)) && new Date(value).toISOString() === value;
-const ajv = new Ajv2020({allErrors: true, strict: true, inlineRefs: false,
+// Stop after the first error in each branch: collecting every error for all
+// nonmatching metric/state unions rescans large, otherwise valid row arrays.
+const ajv = new Ajv2020({allErrors: false, strict: true, inlineRefs: false,
   code: {source: true, esm: true, formats: new _Code(`({date: ${date.toString()}, "date-time": ${stamp.toString()}})`)}});
 ajv.addFormat('date', date);
 ajv.addFormat('date-time', stamp);
