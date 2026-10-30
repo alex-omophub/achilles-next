@@ -1,0 +1,63 @@
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_f9b46af5f1de97 133
+tests/test_local_viewer.py
+  s_895f6ebe145fd3::t_f9b46af5f1de97 162-164
+docs/development/weighted-quantiles.md
+  s_895f6ebe145fd3::t_c8192c82ac0ea0 111-113
+  s_895f6ebe145fd3::t_f9b46af5f1de97 109-110,114-118,120-121
+  s_895f6ebe145fd3::t_905ef0c3329d2a 119
+packages/tracer/tests/served.test.tsx
+  s_895f6ebe145fd3::t_f9b46af5f1de97 17-21
+tests/tracer/measurement.R
+  s_895f6ebe145fd3::t_c8192c82ac0ea0 154-155
+  s_895f6ebe145fd3::t_9036fcfd19eeb5 4-5
+  s_895f6ebe145fd3::t_f9b46af5f1de97 24-28
+packages/tracer/tests/weighted.test.tsx
+  s_895f6ebe145fd3::t_f9b46af5f1de97 51
+tools/benchmark/implementation_identity.R
+  s_895f6ebe145fd3::t_9036fcfd19eeb5 1-40
+R/count-tracer.R
+  s_895f6ebe145fd3::t_9089a3475c80f9 114
+R/local-viewer.R
+  s_895f6ebe145fd3::t_dcee136b8216f9 30
+inst/viewer/assets/CartesianChart-jUr3m5S4.js
+  s_895f6ebe145fd3::t_c222c54d58c85c 1
+inst/viewer/assets/MeasurementChart-DNTIwWRS.js
+  s_895f6ebe145fd3::t_6abb4c72bbcfd5 1
+inst/viewer/assets/ObservationChart-B7Bf3FWd.js
+  s_895f6ebe145fd3::t_cfcc3d2f37b7a8 1
+inst/viewer/assets/index-B093fY6T.js
+  s_895f6ebe145fd3::t_b162366010836c 1,10,846,1682
+inst/viewer/index.html
+  s_895f6ebe145fd3::t_69961fc6b7b566 3
+inst/viewer/viewer-lock.json
+  s_895f6ebe145fd3::t_e42cf3546a6c7c 19-20,32-35,37
+packages/tracer/src/ViewerApp.tsx
+  s_895f6ebe145fd3::t_f1ca958275e057 9
+packages/tracer/src/file-provider.ts
+  s_895f6ebe145fd3::t_865f7fbbf41910 70,76,120,142
+packages/tracer/tests/count.test.tsx
+  s_895f6ebe145fd3::t_aec3519e225f97 62
+tests/tracer/implementation-identity.R
+  s_895f6ebe145fd3::t_652f1958a53ab5 1-19
+tools/benchmark/weighted_quantiles.R
+  s_895f6ebe145fd3::t_82b42629f6a6a3 7-8,144-145
+tools/benchmark/weighted_quantiles.py
+  s_895f6ebe145fd3::t_4e79725a4bba4d 141-143,163-167
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0cf6c0a2d9b99a5b819279331c254a6c0b834c23",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
