@@ -1,0 +1,122 @@
+README.md
+  s_3e206b4a2cf4c3::t_71a14579357c38 55-61
+packages/tracer/package.json
+  s_3e206b4a2cf4c3::t_c6fbc519493adc 14
+R/run-ledger.R
+  s_3e206b4a2cf4c3::t_ee45f66f6794ce 199
+  s_895f6ebe145fd3::t_9c66f03a8c505a 86,90,106,139-140,194
+packages/contracts/src/semantics.mjs
+  s_3e206b4a2cf4c3::t_c6fbc519493adc 76-84,88
+  s_895f6ebe145fd3::t_b00131b5c6e84c 67-71
+  s_3e206b4a2cf4c3::t_320e16203325e7 74-75
+docs/viewing/local-viewer.md
+  s_3e206b4a2cf4c3::t_71a14579357c38 108-117
+inst/viewer/assets/ObservationChart-CiYStYmk.js
+  s_3e206b4a2cf4c3::t_2675c00d7958c1 1
+R/count-tracer.R
+  s_895f6ebe145fd3::t_9c66f03a8c505a 97
+inst/contracts/v1.1/schema-lock.json
+  s_895f6ebe145fd3::t_69811b2af9ae8e 1-6
+packages/contracts/src/validator.mjs
+  s_895f6ebe145fd3::t_69811b2af9ae8e 3-4,27-30,33-36,69
+inst/viewer/assets/index-BtfFCQGm.js
+  s_3e206b4a2cf4c3::t_2675c00d7958c1 1-1682
+docs/contracts/v1.md
+  s_3e206b4a2cf4c3::t_71a14579357c38 135-152
+packages/contracts/src/directory.mjs
+  s_895f6ebe145fd3::t_6e131ae3906096 1-44
+packages/tracer/tests/publication.test.tsx
+  s_3e206b4a2cf4c3::t_169e361831dbb0 1-38
+packages/tracer/tools/build-publication-validator.mjs
+  s_895f6ebe145fd3::t_b4f115d37d1d61 1-11
+packages/tracer/src/observation.ts
+  s_3e206b4a2cf4c3::t_ee45f66f6794ce 15
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_23f061b981ac71 129,137,153-154
+inst/validation/validator-lock.json
+  s_3e206b4a2cf4c3::t_2675c00d7958c1 3
+  s_3e206b4a2cf4c3::t_f6579b086ba119 1-2,4
+packages/contracts/src/index.d.mts
+  s_895f6ebe145fd3::t_69811b2af9ae8e 2,21,27
+inst/contracts/v1.1/contract.schema.json
+  s_895f6ebe145fd3::t_69811b2af9ae8e 1-4022
+inst/viewer/viewer-lock.json
+  s_3e206b4a2cf4c3::t_d555c0ec64c308 7,9,15-16,18,22,25,27-30
+  s_3e206b4a2cf4c3::t_2675c00d7958c1 12,36-39,41
+tests/tracer/run-ledger.R
+  s_895f6ebe145fd3::t_60ea982d053248 17,20-21
+NAMESPACE
+  s_3e206b4a2cf4c3::t_a8d492c2863667 8-10
+R/local-viewer.R
+  s_3e206b4a2cf4c3::t_ee45f66f6794ce 28,30,37-38
+tools/check_viewer_assets.py
+  s_895f6ebe145fd3::t_23f061b981ac71 24-28
+inst/validation/validate.mjs
+  s_3e206b4a2cf4c3::t_2675c00d7958c1 33885
+  s_3e206b4a2cf4c3::t_fb23c7d3b97060 1-33884,33886-34093
+inst/viewer/assets/CartesianChart-B4OeyQk7.js
+  s_3e206b4a2cf4c3::t_2675c00d7958c1 1-55
+tests/test_local_viewer.py
+  s_895f6ebe145fd3::t_23f061b981ac71 151-170
+man/measurementRuns.Rd
+  s_3e206b4a2cf4c3::t_71a14579357c38 23,25
+packages/tracer/tools/build-validators.mjs
+  s_895f6ebe145fd3::t_69811b2af9ae8e 19,21,25
+packages/tracer/tools/package-viewer.mjs
+  s_3e206b4a2cf4c3::t_c6fbc519493adc 52-53
+tests/tracer/publication.R
+  s_895f6ebe145fd3::t_cce85400dd981b 1-23,27-43,46-124
+  s_3e206b4a2cf4c3::t_71a14579357c38 44-45
+  s_895f6ebe145fd3::t_7ef061565e879f 24-26
+R/publication.R
+  s_895f6ebe145fd3::t_7ef061565e879f 164-165,167
+  s_895f6ebe145fd3::t_a3aab3e94edaed 171-181
+  s_895f6ebe145fd3::t_c8110024561f09 62-74,127
+  s_895f6ebe145fd3::t_a08fbf130e3e33 131-132,184-185
+  s_3e206b4a2cf4c3::t_a8d492c2863667 1-61,75-126,128-130,133-152,155-163,166,168-170,182-183,186-209
+  s_3e206b4a2cf4c3::t_ee45f66f6794ce 153-154
+packages/tracer/tools/publication-validator.mjs
+  s_895f6ebe145fd3::t_b4f115d37d1d61 1-33
+man/publication.Rd
+  s_3e206b4a2cf4c3::t_169e361831dbb0 1-22
+docs/development/publication.md
+  s_3e206b4a2cf4c3::t_169e361831dbb0 1-138
+packages/tracer/src/file-provider.ts
+  s_3e206b4a2cf4c3::t_ee45f66f6794ce 74-76,119-120,143,169
+docs/development/execution-ledger.md
+  s_3e206b4a2cf4c3::t_71a14579357c38 29,46-48,86-94
+inst/viewer/assets/MeasurementChart-Cc02_7HA.js
+  s_3e206b4a2cf4c3::t_2675c00d7958c1 1-5
+inst/viewer/index.html
+  s_3e206b4a2cf4c3::t_2675c00d7958c1 3
+packages/tracer/src/CountView.tsx
+  s_3e206b4a2cf4c3::t_ed74c634615319 26-27,29
+packages/tracer/src/MeasurementView.tsx
+  s_3e206b4a2cf4c3::t_aa7a961c6be145 22
+packages/tracer/tests/count.test.tsx
+  s_3e206b4a2cf4c3::t_ad806ad647040b 62
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "75cbdc4f56fa66c55c92478e12a0bcde1a86094c",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
