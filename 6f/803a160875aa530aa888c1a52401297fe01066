@@ -1,0 +1,33 @@
+tests/tracer/run-ledger-offline.R
+  s_895f6ebe145fd3::t_9517d23e1ace23 3,11-14
+tests/tracer/credential-guard.R
+  s_895f6ebe145fd3::t_9517d23e1ace23 1-12
+tests/tracer/run-ledger.R
+  s_895f6ebe145fd3::t_9517d23e1ace23 3,55-66,95
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_8abe76aac56386 130-131
+R/run-ledger.R
+  s_895f6ebe145fd3::t_3e52c071694745 105
+docs/development/execution-ledger.md
+  s_895f6ebe145fd3::t_5cb3ec21103f23 52-57,127-128
+inst/sql/postgresql/numeric-frequencies.sql
+  s_895f6ebe145fd3::t_fe4b498da7251f 1
+man/measurementRuns.Rd
+  s_895f6ebe145fd3::t_c98647a5cd06dd 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6f803a160875aa530aa888c1a52401297fe01066",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
