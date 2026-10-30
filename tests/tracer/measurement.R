@@ -1,6 +1,8 @@
 # Live, marked synthetic PostgreSQL tests; temporary changes use a disposable schema.
 suppressPackageStartupMessages(library(AchillesNext))
 main <- function() {
+  source("tools/benchmark/implementation_identity.R", local = TRUE)
+  implementation <- implementationIdentity(getwd())
   args <- commandArgs(TRUE)
   if (length(args) != 2L) stop("Usage: measurement.R <fixture-config.R> <new-artifact-parent>")
   env <- new.env(parent = globalenv()); sys.source(args[1], env)
@@ -19,6 +21,11 @@ main <- function() {
     cfg <- env$config; cfg$request <- case$request; cfg$sourceId <- case$request$source_id
     cfg$cdmSchema <- paste0("cdm_", case$fixture_source, "_", gsub(".", "", version, fixed = TRUE)); cfg$declaredCdmVersion <- version
     name <- paste0(case$id, "-", version); generate(name, cfg)
+    for (id in c("source.capabilities", "execution.output_status", "execution.timing")) {
+      reserved <- read(name, id)
+      stopifnot(reserved$state == "unsupported", is.null(reserved$rows),
+        reserved$reason == "Not implemented by the measurement development generator")
+    }
     for (metric in c("record_count", "person_count")) {
       expected <- if (metric == "record_count") case$expected$records_by_concept else case$expected$people_by_concept
       for (id in names(expected)) stopifnot(windowRows(name, paste0("measurement.", metric), as.integer(id))[[1]]$values$count == expected[[id]])
@@ -144,6 +151,7 @@ main <- function() {
   execute(paste0('GRANT SELECT ON ', table("measurement"), ' TO achilles_next_runner; REVOKE SELECT ON ', table("concept"), ' FROM achilles_next_runner')); expectState("denied-terminology", "inaccessible")
   execute(paste0('GRANT SELECT ON ', table("concept"), ' TO achilles_next_runner; ALTER TABLE ', table("measurement"), ' ALTER COLUMN value_as_number TYPE double precision')); expectState("float-source", "failed")
   execute(paste0('ALTER TABLE ', table("measurement"), ' DROP COLUMN value_source_value')); expectState("missing-column", "unavailable")
-  cat("PASS: 15 source/version/window measurement oracles; 16 numeric edge rows; eight representations; exact precision; zero-n; duplicate events/intervals; bounded calendars; missing/denied/type/integrity failures\n")
+  stopifnot(identical(implementation, implementationIdentity(getwd())))
+  cat("PASS: 15 source/version/window measurement oracles; 16 numeric edge rows; eight representations; exact precision; zero-n; duplicate events/intervals; bounded calendars; missing/denied/type/integrity failures; stable executed implementation identity\n")
 }
 main()

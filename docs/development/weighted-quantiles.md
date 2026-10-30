@@ -106,7 +106,19 @@ Fixed session settings are 64MB work_mem, no parallel gather workers, JIT off,
 synthetic; background contention, server CPU/peak RSS and cold-cache behavior
 are not controlled/measured. SQL/source hashes, runtime, source content hashes,
 plans/buffer counters, individual trials and generated bundles stay in the chosen
-local evidence directory. Optional `--budget-file /path/to/reviewed-budgets.json`
+local evidence directory. Before evaluating fixture configuration or connecting,
+the harness compares every loaded package function's formals/body and namespace
+constant with the checkout using canonical deparsed R syntax in the same runtime,
+and verifies installed SQL. Canonical syntax avoids changes in serialized
+in-memory language representations after execution.
+It records these SHA-256 fingerprints plus raw hashes of all R modules,
+DESCRIPTION, NAMESPACE, SQL and benchmark scripts; implementation identity is
+checked again after measurement and source hashes after verification. Reinstall
+from the checkout if these checks fail: a shared development version alone is
+insufficient provenance. The identity check excludes bytecode and dependency
+implementations; R and DatabaseConnector versions are recorded separately.
+
+Optional `--budget-file /path/to/reviewed-budgets.json`
 applies local numeric and regression thresholds to the report; no delivery
 threshold or automatic promotion is built into the package. The optional JSON
 uses `numeric_compute_materialize_ms` (workload ID → positive milliseconds) and

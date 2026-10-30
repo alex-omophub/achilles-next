@@ -159,6 +159,9 @@ v$stop(); v$stop()
                 (self.bundle / 'manifest.json').write_text(json.dumps(doc))
             with self.subTest(name=name), self.serving(folder) as url:
                 self.assertEqual(self.status(url), expected)
+                if expected == 'incompatible':
+                    message = json.loads(self.get(url + 'api/status.json')[2])['message']
+                    self.assertIn('measurement reference/weighted bundles', message)
                 self.assertEqual(self.get(url + 'api/results/person.count.json')[0], 404)
 
     def test_missing_tampered_and_symlinked_partitions_are_not_exposed(self):

@@ -138,7 +138,9 @@ def main():
     output.mkdir(parents=True, mode=0o700)
     oracle = cases()
     (output / 'oracle.json').write_text(json.dumps(oracle, indent=2) + '\n')
-    definitions = [*sorted((ROOT / 'inst/sql/postgresql').glob('*.sql')), ROOT / 'tools/benchmark/weighted_quantiles.R', Path(__file__)]
+    definitions = [*sorted((ROOT / 'inst/sql/postgresql').glob('*.sql')), *sorted((ROOT / 'R').glob('*.R')),
+                   ROOT / 'DESCRIPTION', ROOT / 'NAMESPACE', ROOT / 'tools/benchmark/implementation_identity.R',
+                   ROOT / 'tools/benchmark/weighted_quantiles.R', Path(__file__)]
     code_hashes = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in definitions}
     begin = time.perf_counter()
     subprocess.run(['Rscript', '--vanilla', str(ROOT / 'tools/benchmark/weighted_quantiles.R'),
@@ -158,6 +160,11 @@ def main():
     for name, digest in report['installed_sql_sha256'].items():
         if code_hashes.get('inst/sql/postgresql/' + name) != digest:
             raise ValueError('Installed SQL differs from the recorded source')
+    for name, digest in report['implementation']['source_files_sha256'].items():
+        if code_hashes.get(name) != digest:
+            raise ValueError('R implementation source differs from recorded definitions')
+    if report['implementation']['source_bindings_sha256'] != report['implementation']['installed_bindings_sha256']:
+        raise ValueError('Installed R implementation differs from checkout')
     report['definition_sha256'] = code_hashes
     report['validated_bundle_pairs'] = len(report.get('bundle_pairs', []))
     report['default_selection'] = 'reference; weighted is explicit opt-in, no automatic performance promotion'

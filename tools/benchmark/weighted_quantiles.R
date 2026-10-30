@@ -4,6 +4,8 @@ suppressPackageStartupMessages(library(AchillesNext))
 main <- function() {
   args <- commandArgs(TRUE)
   if (length(args) != 3L || !args[3] %in% c("parity", "benchmark")) stop("Use weighted_quantiles.py with a trusted fixture config")
+  source("tools/benchmark/implementation_identity.R", local = TRUE)
+  implementation <- implementationIdentity(getwd()) # Before config evaluation or DB access.
   env <- new.env(parent = globalenv()); sys.source(args[1], env)
   out <- normalizePath(args[2], mustWork = TRUE)
   if (file.exists(file.path(out, "report.json"))) stop("Evidence must be new")
@@ -139,6 +141,8 @@ main <- function() {
   sqlRoot <- system.file("sql/postgresql", package = "AchillesNext", mustWork = TRUE)
   sqlNames <- list.files(sqlRoot, pattern = "[.]sql$")
   report$installed_sql_sha256 <- stats::setNames(lapply(sqlNames, function(name) digest::digest(file = file.path(sqlRoot, name), algo = "sha256")), sqlNames)
+  stopifnot(identical(implementation, implementationIdentity(getwd())))
+  report$implementation <- implementation
   report$runtime <- list(R = as.character(getRversion()), DatabaseConnector = as.character(packageVersion("DatabaseConnector")),
     system = as.list(Sys.info()[c("sysname", "release", "machine")]), logical_cpus = parallel::detectCores(logical = TRUE))
   session$rollback()

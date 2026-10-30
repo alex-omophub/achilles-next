@@ -111,7 +111,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     vocabulary_release = if (measurement) measured$vocabulary else unknown, schema_fingerprint = .unknown("A full schema fingerprint was not established"), declared_cdm_version = declaredCdmVersion)
   requestHash <- .hash(.json(request))
   common <- .object(contract_version = "1.0.0", bundle_id = bundleId, source_id = sourceId, run_id = runId, request_sha256 = requestHash)
-  unsupported <- if (measurement) "Not implemented by the measurement reference generator" else if (observation) "Not implemented by the observation development tracer" else "Not implemented by the count-only development tracer"
+  unsupported <- if (measurement) "Not implemented by the measurement development generator" else if (observation) "Not implemented by the observation development tracer" else "Not implemented by the count-only development tracer"
   documents <- lapply(ids, function(id) c(common, .object(metric_id = id, metric_version = "1.0.0", state = "unsupported", reason = unsupported, rows = NULL)))
   names(documents) <- ids
   computed <- function(id, values, state = "computed", reason = NULL) c(common, .object(metric_id = id, metric_version = "1.0.0", state = state, reason = reason,

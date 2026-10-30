@@ -14,6 +14,11 @@ it.each(['missing', 'invalid', 'incompatible'] as const)('keeps %s explicit and 
   await expect(openServedCountBundle(base, signal(), fetcher as typeof fetch)).rejects.toMatchObject({state});
   const html = renderToStaticMarkup(<ResultError state={state} message="Selected results cannot be opened"/>);
   expect(html).toContain(`data-state="${state}"`); expect(html).not.toContain('Exact person count');
+  if (state === 'incompatible') expect(html).toContain('measurement reference/weighted bundle');
+});
+it('names both measurement strategies when served status has no recovery message', async () => {
+  const fetcher = async () => new Response(JSON.stringify({state: 'incompatible'}));
+  await expect(openServedCountBundle(base, signal(), fetcher as typeof fetch)).rejects.toThrow('measurement reference/weighted bundle');
 });
 it('distinguishes malformed manifest bytes from an unreachable local server', async () => {
   let count = 0;

@@ -67,13 +67,13 @@ export async function openServedCountBundle(base: URL, signal: AbortSignal,
     const status = JSON.parse(new TextDecoder().decode(await read('status.json')));
     if (status.state !== 'ready') {
       const state: OpenErrorState = ['missing', 'invalid', 'incompatible'].includes(status.state) ? status.state : 'unavailable';
-      throw new BundleOpenError(state, typeof status.message === 'string' ? status.message : 'Reopen a supported count-tracer, observation-tracer or measurement reference bundle.');
+      throw new BundleOpenError(state, typeof status.message === 'string' ? status.message : 'Reopen a supported count-tracer, observation-tracer or measurement reference/weighted bundle.');
     }
     const manifestBytes = await read('manifest.json');
     const manifest = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(manifestBytes));
     if (manifest.contract_version !== '1.0.0' || manifest.profile?.id !== 'alpha-measurement-v1' ||
       !['AchillesNext-count-tracer', 'AchillesNext-observation-tracer', ...measurementGenerators].includes(manifest.generator?.name) || manifest.publication !== 'partial') {
-      throw new BundleOpenError('incompatible', 'This viewer supports partial count, observation or measurement reference bundles using contract 1.0.0.');
+      throw new BundleOpenError('incompatible', 'This viewer supports partial count, observation or measurement reference/weighted bundles using contract 1.0.0.');
     }
     requireValid(validators.bundle(manifest), 'Invalid manifest: incompatible typed fields.');
     requireValid(new Set(manifest.outputs.map((p: {path: string}) => p.path)).size === 15, 'Duplicate output path.');
@@ -117,7 +117,7 @@ export async function openCountBundle(files: ReadonlyMap<string, BundleFile>, si
   const manifestBytes = await read('manifest.json');
   const manifest = decode('bundle', manifestBytes) as BundleManifest;
   requireValid(manifest.publication === 'partial' && manifest.eligible_for_current_pointer === false &&
-    ['AchillesNext-count-tracer', 'AchillesNext-observation-tracer', ...measurementGenerators].includes(manifest.generator.name), 'Choose a partial count-tracer, observation-tracer or measurement reference bundle, not a complete alpha report.');
+    ['AchillesNext-count-tracer', 'AchillesNext-observation-tracer', ...measurementGenerators].includes(manifest.generator.name), 'Choose a partial count-tracer, observation-tracer or measurement reference/weighted bundle, not a complete alpha report.');
   requireValid(manifest.profile.sha256 === await sha256(profileText) &&
     manifest.request_sha256 === await sha256(canonical(manifest.request)) &&
     manifest.request.source_id === manifest.source.source_id, 'Request, profile or source identity mismatch.');
@@ -139,7 +139,7 @@ export async function openCountBundle(files: ReadonlyMap<string, BundleFile>, si
       doc.state === partition.state && doc.reason === partition.reason &&
       String(doc.rows?.length ?? 0) === partition.rows, 'Result identity or state mismatch.');
     if (measurementGenerators.includes(manifest.generator.name) && measurementIds.includes(doc.metric_id))
-      requireValid(doc.state !== 'unsupported', 'Implemented measurement output cannot be unsupported. Regenerate the measurement reference bundle.');
+      requireValid(doc.state !== 'unsupported', 'Implemented measurement output cannot be unsupported. Regenerate the measurement reference/weighted bundle.');
     if (!['person.count', 'source.passport', ...(manifest.generator.name !== 'AchillesNext-count-tracer' ? observationIds : []), ...(measurementGenerators.includes(manifest.generator.name) ? measurementIds : [])].includes(doc.metric_id)) {
       requireValid(doc.state === 'unsupported' && typeof doc.reason === 'string' && doc.reason.length > 0 && doc.rows === null,
         'Count tracer contains an undeclared implemented output.');

@@ -48,5 +48,5 @@ it.runIf(!!root)('weighted generator cannot forge unsupported implemented output
   const doc = await read(p.path); Object.assign(doc, {state: 'unsupported', reason: 'Not implemented', rows: null});
   const put = (path: string, value: unknown) => {const bytes = new TextEncoder().encode(canonical(value)); files.set(path, {size: bytes.length, arrayBuffer: async () => bytes.slice().buffer}); return bytes;};
   const bytes = put(p.path, doc); Object.assign(p, {sha256: await sha256(bytes), bytes: String(bytes.length), rows: '0', state: doc.state, reason: doc.reason}); put('manifest.json', m);
-  await expect(openCountBundle(files, signal())).rejects.toThrow('Implemented measurement output cannot be unsupported');
+  await expect(openCountBundle(files, signal())).rejects.toThrow('Implemented measurement output cannot be unsupported. Regenerate the measurement reference/weighted bundle.');
 });

@@ -130,6 +130,7 @@ jobs:
       - name: Install package and build real count bundles
         run: |
           R CMD INSTALL --library="$R_LIBS" .
+          Rscript --vanilla tests/tracer/implementation-identity.R
           Rscript tests/tracer/postgresql.R tools/tracer_fixture_config.R "$TRACER_TEST_BUNDLES"
           Rscript tests/tracer/observation.R tools/tracer_fixture_config.R "$OBSERVATION_TEST_BUNDLES"
           Rscript --vanilla tests/tracer/quantile-request.R
