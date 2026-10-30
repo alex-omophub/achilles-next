@@ -64,7 +64,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   .generate_tracer(connectionDetails, cdmSchema, sourceId, outputDir, request, declaredCdmVersion, observation = FALSE)
 }
 .generate_tracer <- function(connectionDetails, cdmSchema, sourceId, outputDir,
-                             request, declaredCdmVersion, observation, measurement = FALSE) {
+                             request, declaredCdmVersion, observation, measurement = FALSE, numericStrategy = "reference") {
   if (!inherits(connectionDetails, "ConnectionDetails") || !identical(connectionDetails$dbms, "postgresql")) stop("PostgreSQL connection details required", call. = FALSE)
   if (!.string(cdmSchema) || !grepl("^cdm_tiny_[a-z0-9_]+_(53|54|55)$", cdmSchema)) stop("A marked tiny fixture schema is required", call. = FALSE)
   if (!.string(sourceId) || !.string(outputDir) || !.string(declaredCdmVersion) || !declaredCdmVersion %in% c("5.3", "5.4", "5.5") ||
@@ -95,15 +95,15 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   if (!identical(counts[["RECORDS"]], counts[["NONNULL_IDS"]]) || !identical(counts[["RECORDS"]], counts[["PEOPLE"]])) stop("TRACER_PERSON_INTEGRITY: null or duplicate person IDs", call. = FALSE)
   count <- counts[["PEOPLE"]]
   observed <- if (observation) .observation_compute(query, execute, cdmSchema, request$window) else NULL
-  measured <- if (measurement) .measurement_compute(query, execute, cdmSchema, request, observed) else NULL
+  measured <- if (measurement) .measurement_compute(query, execute, cdmSchema, request, observed, numericStrategy) else NULL
   ended <- .stamp()
   profilePath <- system.file("analysis", "alpha-measurement-v1.json", package = "AchillesNext", mustWork = TRUE)
   profile <- jsonlite::fromJSON(profilePath, simplifyVector = FALSE)
   profileHash <- digest::digest(file = profilePath, algo = "sha256")
   if (profileHash != "2e106f260cbcfcaccab23c55846384886dc5c0b2d7178b48e62c7f82cbe18951") stop("Frozen profile mismatch", call. = FALSE)
   ids <- unlist(profile$required_outputs, use.names = FALSE)
-  generator <- if (measurement) "AchillesNext-measurement-reference" else if (observation) "AchillesNext-observation-tracer" else "AchillesNext-count-tracer"
-  runId <- paste0(if (measurement) "measurement-" else if (observation) "observation-" else "count-", .hash(paste(started, sourceId, tempfile(), sep = ":")))
+  generator <- if (measurement) paste0("AchillesNext-measurement-", numericStrategy) else if (observation) "AchillesNext-observation-tracer" else "AchillesNext-count-tracer"
+  runId <- paste0(if (measurement) paste0("measurement-", numericStrategy, "-") else if (observation) "observation-" else "count-", .hash(paste(started, sourceId, tempfile(), sep = ":")))
   bundleId <- runId
   unknown <- .unknown("Not established by this development tracer")
   snapshot <- c(unknown, .object(immutable = FALSE, assertion_id = NULL, basis = NULL))
@@ -111,7 +111,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     vocabulary_release = if (measurement) measured$vocabulary else unknown, schema_fingerprint = .unknown("A full schema fingerprint was not established"), declared_cdm_version = declaredCdmVersion)
   requestHash <- .hash(.json(request))
   common <- .object(contract_version = "1.0.0", bundle_id = bundleId, source_id = sourceId, run_id = runId, request_sha256 = requestHash)
-  unsupported <- if (measurement) "Not implemented by the measurement reference generator" else if (observation) "Not implemented by the observation development tracer" else "Not implemented by the count-only development tracer"
+  unsupported <- if (measurement) "Not implemented by the measurement development generator" else if (observation) "Not implemented by the observation development tracer" else "Not implemented by the count-only development tracer"
   documents <- lapply(ids, function(id) c(common, .object(metric_id = id, metric_version = "1.0.0", state = "unsupported", reason = unsupported, rows = NULL)))
   names(documents) <- ids
   computed <- function(id, values, state = "computed", reason = NULL) c(common, .object(metric_id = id, metric_version = "1.0.0", state = state, reason = reason,

@@ -9,7 +9,27 @@
   for (key in names(replacements)) sql <- gsub(paste0("{{", key, "}}"), replacements[[key]], sql, fixed = TRUE)
   paste0(.observation_cte(schema, request$window), "\n", sql)
 }
-.measurement_compute <- function(query, execute, schema, request, observed) {
+.numeric_strategy_sql <- function(numericStrategy) {
+  if (!.string(numericStrategy) || !numericStrategy %in% c("reference", "weighted"))
+    stop("numericStrategy must be reference or weighted", call. = FALSE)
+  path <- system.file(paste0("sql/postgresql/numeric-", numericStrategy, ".sql"), package = "AchillesNext", mustWork = TRUE)
+  paste(readLines(path, warn = FALSE), collapse = "\n")
+}
+.numeric_ctes <- function(numericStrategy, materialized = FALSE) {
+  strategy <- .numeric_strategy_sql(numericStrategy)
+  names <- c("numeric-groups", if (!materialized) "numeric-frequencies", "numeric-totals")
+  inputs <- vapply(names, function(name) paste(readLines(system.file(paste0("sql/postgresql/", name, ".sql"),
+    package = "AchillesNext", mustWork = TRUE), warn = FALSE), collapse = "\n"), "")
+  paste(c(inputs, strategy), collapse = "\n")
+}
+.measurement_sql <- function(schema, request, numericStrategy = "reference", numericOnly = FALSE) {
+  numeric <- .numeric_ctes(numericStrategy)
+  if (numericOnly) return(paste(.measurement_cte(schema, request), numeric,
+    "SELECT dimensions::text AS dimensions, values::text AS values FROM summaries ORDER BY dimensions::text", sep = "\n"))
+  sql <- paste(readLines(system.file("sql/postgresql/measurement-report.sql", package = "AchillesNext", mustWork = TRUE), warn = FALSE), collapse = "\n")
+  paste(.measurement_cte(schema, request), gsub("{{numeric_summary}}", numeric, sql, fixed = TRUE), sep = "\n")
+}
+.measurement_compute <- function(query, execute, schema, request, observed, numericStrategy = "reference") {
   unknown <- .unknown("Local vocabulary release metadata is absent, inaccessible or ambiguous")
   if (observed$state != "computed") return(list(state = observed$state,
     reason = paste0("Observation prerequisite: ", observed$reason), vocabulary = unknown, terms = list()))
@@ -51,8 +71,7 @@
         concept_name = if (available) termRows$NAME[i] else NULL, domain_id = if (available) termRows$DOMAIN[i] else NULL,
         reason = if (available) NULL else "No unambiguous name and domain in the local CONCEPT table")
     })
-    path <- system.file("sql/postgresql/measurement-reference.sql", package = "AchillesNext", mustWork = TRUE)
-    results <- query(paste0(cte, "\n", paste(readLines(path, warn = FALSE), collapse = "\n")))
+    results <- query(.measurement_sql(schema, request, numericStrategy))
     if (nrow(results) != 7L || !setequal(results$METRIC, .measurement_ids)) stop("Incomplete measurement reference result")
     rows <- stats::setNames(lapply(results$ROWS, jsonlite::fromJSON, simplifyVector = FALSE), results$METRIC)
     # Optional metadata has its own savepoint; denied/missing metadata never turns
@@ -75,8 +94,9 @@
 
 #' Generate a bounded synthetic measurement reference report
 #' @export
-generateMeasurementReport <- function(connectionDetails, cdmSchema, sourceId, outputDir, request, declaredCdmVersion) {
-  .generate_tracer(connectionDetails, cdmSchema, sourceId, outputDir, request, declaredCdmVersion, observation = TRUE, measurement = TRUE)
+generateMeasurementReport <- function(connectionDetails, cdmSchema, sourceId, outputDir, request, declaredCdmVersion, numericStrategy = "reference") {
+  .numeric_strategy_sql(numericStrategy) # Reject unsupported strategies before connecting or writing.
+  .generate_tracer(connectionDetails, cdmSchema, sourceId, outputDir, request, declaredCdmVersion, observation = TRUE, measurement = TRUE, numericStrategy = numericStrategy)
 }
 .measurement_documents <- function(documents, common, measured, observed, count) {
   if (measured$state != "computed") {

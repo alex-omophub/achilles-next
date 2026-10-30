@@ -72,7 +72,7 @@ ATLAS integration.
   physical value for quantiles at `ceil(p × n)`. It does not use FLOAT casts or
   interpolation. Frequency inputs stay in the database CTE; no measurement rows,
   patient IDs or frequency table are exported. This is a correctness reference,
-  not the optimized cumulative-frequency algorithm.
+  not the optimized cumulative-frequency algorithm. An explicit [weighted strategy](weighted-quantiles.md) is also available without changing the metric definition.
 - NUMERIC statistics and counts are strings. The mean is exact sum/n. Observed
   mapped-unit/allowed-operator groups with no eligible values retain n=0 and NULL
   statistics. No observed group means no fabricated summary.
@@ -86,6 +86,8 @@ FLOAT sources are rejected. PERSON and observation integrity are prerequisites.
 The generator uses its own read-only repeatable-read JDBC transaction and no
 source writes. Artifacts exceeding 10 MiB per file or 64 MiB total are refused;
 narrow the request rather than truncating results.
+
+The optional [weighted strategy](weighted-quantiles.md) reuses the same inputs and output semantics. The reference remains the default.
 
 ## Viewer behavior
 

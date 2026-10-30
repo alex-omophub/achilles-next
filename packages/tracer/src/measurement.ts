@@ -1,4 +1,5 @@
 import type {AnalysisRequest, MetricId, ResultDocument, TerminologyDocument} from '../../contracts/src/index.mjs';
+export const measurementGenerators = ['AchillesNext-measurement-reference', 'AchillesNext-measurement-weighted'];
 export const measurementIds: MetricId[] = ['measurement.record_count', 'measurement.person_count', 'measurement.representation_count',
   'measurement.unit_count', 'measurement.operator_count', 'measurement.numeric_eligibility_count', 'measurement.numeric_summary'];
 export interface VerifiedMeasurement {documents: ReadonlyMap<MetricId, ResultDocument>; terminology: TerminologyDocument}
