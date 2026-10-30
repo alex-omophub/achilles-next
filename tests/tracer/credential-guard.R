@@ -1,5 +1,7 @@
 # Test-only guard: inspect credential values, including escaped JSON substrings.
 assertNoCredentials <- function(text, credentials) {
+  if (!length(credentials))
+    stop("Known fixture credentials are required for this check", call. = FALSE)
   for (value in credentials) {
     if (!is.character(value) || length(value) != 1L || is.na(value) || !nzchar(value))
       stop("Known fixture credentials are required for this check", call. = FALSE)

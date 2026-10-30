@@ -8,6 +8,8 @@ main <- function() {
     output_scope = "restricted", disclosure_policy_id = "synthetic-unsuppressed-v1")
   plan <- function(name, ...) {p <- file.path(root, name); planMeasurementRun(p, "cdm_tiny_a_55", request$source_id, request, "5.5", ...); p}
   fails <- function(work, text) stopifnot(grepl(text, tryCatch({work(); "accepted"}, error = conditionMessage), fixed = TRUE))
+  for (credentials in list(character(), NULL, list()))
+    fails(function() assertNoCredentials('{"safe":"clean"}', credentials), "Known fixture credentials are required")
   fakeSecret <- 'fixture-"secret\\-value'
   assertNoCredentials('{"safe":"clean"}', fakeSecret)
   fails(function() assertNoCredentials(AchillesNext:::.json(list(renamed_field = fakeSecret)), fakeSecret), "Credential value found")
