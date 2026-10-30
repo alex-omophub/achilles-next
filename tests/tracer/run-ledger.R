@@ -1,5 +1,6 @@
 # Live ledger regression, restricted to the existing synthetic fixture sandbox.
 library(AchillesNext)
+source("tests/tracer/credential-guard.R")
 main <- function() {
   a <- commandArgs(TRUE); if (length(a) != 2L) stop("Use run-ledger.R <fixture-config.R> <new-evidence-dir>")
   e <- new.env(parent = globalenv()); sys.source(a[1], e)
@@ -51,6 +52,18 @@ main <- function() {
   query <- function(sql) DatabaseConnector::querySql(owner, sql, integer64AsNumeric = FALSE)
   guard <- query("SELECT current_database() AS db,shobj_description(oid,'pg_database') AS marker FROM pg_database WHERE datname=current_database()")
   stopifnot(guard$DB == "achilles_next_fixtures", guard$MARKER == "AchillesNext synthetic fixture sandbox v1")
+  # The default reference may inline its single-consumer frequency aggregate;
+  # weighted still shares that aggregate between totals and cumulative ranks.
+  cteNames <- function(x) {
+    if (!is.list(x)) return(character())
+    c(x[["CTE Name"]], unlist(lapply(x, cteNames), use.names = FALSE))
+  }
+  for (strategy in c("reference", "weighted")) {
+    planText <- query(paste("EXPLAIN (FORMAT JSON)", AchillesNext:::.measurement_sql(e$config$cdmSchema, e$config$request, strategy)))[[1]][1]
+    plan <- jsonlite::fromJSON(planText, simplifyVector = FALSE)
+    stopifnot(("frequency_inputs" %in% cteNames(plan)) == (strategy == "weighted"))
+    writeLines(planText, file.path(a[2], paste0("explain-", strategy, ".json")))
+  }
   schema <- paste0("cdm_tiny_execution_", Sys.getpid(), "_55")
   execute(paste0('CREATE SCHEMA "', schema, '"; COMMENT ON SCHEMA "', schema, '" IS \'AchillesNext synthetic fixture sandbox v1: ', schema, "'"))
   on.exit(execute(paste0('DROP SCHEMA "', schema, '" CASCADE')), add = TRUE, after = FALSE)
@@ -79,6 +92,7 @@ main <- function() {
   paths <- list.files(a[2], pattern = "[.]json$", recursive = TRUE, full.names = TRUE)
   text <- paste(vapply(paths, function(p) paste(readLines(p, warn = FALSE), collapse = ""), ""), collapse = "")
   stopifnot(!grepl('"password"', text, fixed = TRUE), !grepl('"connectionDetails"', text, fixed = TRUE))
+  assertNoCredentials(text, c(e$config$connectionDetails$password(), e$fixtureConnection("owner")$password()))
   cat("PASS: reference/weighted durable runs, exact validated bundles, failed/skipped dependencies, export failure, two concurrent isolated runs and telemetry\n")
 }
 main()
