@@ -1,7 +1,7 @@
 # Own transaction boundaries on the already configured PostgreSQL JDBC handle.
 # DatabaseConnector 6.3.2's batched query cleanup commits transactions, while
 # executeSql also commits non-autocommit connections. Neither can own these reads.
-.tracer_session <- function(connection) {
+.tracer_session <- function(connection, observer = NULL) {
   if (!inherits(connection, "DatabaseConnectorJdbcConnection")) stop("A PostgreSQL JDBC connection is required", call. = FALSE)
   jdbc <- connection@jConnection
   rJava::.jcall(jdbc, "V", "setAutoCommit", FALSE)
@@ -27,5 +27,17 @@
     on.exit(rJava::.jcall(statement, "V", "close"), add = TRUE)
     invisible(rJava::.jcall(statement, "Z", "execute", sql))
   }, error = function(e) stop("TRACER_TRANSACTION_FAILED", call. = FALSE))
-  list(query = query, execute = execute, rollback = function() rJava::.jcall(jdbc, "V", "rollback"))
+  measured <- function(kind, sql, work) {
+    if (is.null(observer)) return(work())
+    started <- proc.time()[["elapsed"]]
+    value <- tryCatch(work(), error = function(e) e)
+    observer(.object(kind = kind, sql_sha256 = .hash(sql), duration_ms = .run_ms(started),
+      state = if (inherits(value, "error")) "failed" else "succeeded", query_id = NULL,
+      query_id_reason = "PostgreSQL JDBC does not expose a warehouse query identifier"))
+    if (inherits(value, "error")) stop(value)
+    value
+  }
+  list(query = function(sql) measured("query", sql, function() query(sql)),
+    execute = function(sql) measured("execute", sql, function() execute(sql)),
+    rollback = function() rJava::.jcall(jdbc, "V", "rollback"))
 }

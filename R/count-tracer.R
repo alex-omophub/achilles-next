@@ -64,7 +64,8 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   .generate_tracer(connectionDetails, cdmSchema, sourceId, outputDir, request, declaredCdmVersion, observation = FALSE)
 }
 .generate_tracer <- function(connectionDetails, cdmSchema, sourceId, outputDir,
-                             request, declaredCdmVersion, observation, measurement = FALSE, numericStrategy = "reference") {
+                             request, declaredCdmVersion, observation, measurement = FALSE, numericStrategy = "reference", control = NULL, runIdentity = NULL) {
+  step <- if (is.null(control)) function(id, work) work() else control$step
   if (!inherits(connectionDetails, "ConnectionDetails") || !identical(connectionDetails$dbms, "postgresql")) stop("PostgreSQL connection details required", call. = FALSE)
   if (!.string(cdmSchema) || !grepl("^cdm_tiny_[a-z0-9_]+_(53|54|55)$", cdmSchema)) stop("A marked tiny fixture schema is required", call. = FALSE)
   if (!.string(sourceId) || !.string(outputDir) || !.string(declaredCdmVersion) || !declaredCdmVersion %in% c("5.3", "5.4", "5.5") ||
@@ -75,27 +76,42 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   parent <- normalizePath(dirname(outputDir), mustWork = TRUE)
   outputDir <- file.path(parent, basename(outputDir))
   started <- .stamp()
-  connection <- tryCatch(DatabaseConnector::connect(connectionDetails), error = function(e) stop("TRACER_CONNECTION_FAILED: check local configuration and driver", call. = FALSE))
-  on.exit(try(DatabaseConnector::disconnect(connection), silent = TRUE), add = TRUE)
-  session <- .tracer_session(connection)
+  connection <- NULL
+  on.exit(if (!is.null(connection)) try(DatabaseConnector::disconnect(connection), silent = TRUE), add = TRUE)
+  session <- step("source.connect", function() {
+    connection <<- tryCatch(DatabaseConnector::connect(connectionDetails), error = function(e) stop("TRACER_CONNECTION_FAILED: check local configuration and driver", call. = FALSE))
+    .tracer_session(connection, if (is.null(control)) NULL else control$query)
+  })
   query <- session$query
   execute <- session$execute
   on.exit(try(session$rollback(), silent = TRUE), add = TRUE, after = FALSE)
   # Fixed identifiers and a validated schema prevent SQL interpolation of input.
-  guard <- query(paste0("SELECT current_database() AS database_name, current_setting('transaction_read_only') AS read_only, ",
-    "shobj_description(d.oid, 'pg_database') AS database_marker, obj_description(n.oid, 'pg_namespace') AS schema_marker ",
-    "FROM pg_database d CROSS JOIN pg_namespace n WHERE d.datname=current_database() AND n.nspname='", cdmSchema, "'"))
-  marker <- "AchillesNext synthetic fixture sandbox v1"
-  if (nrow(guard) != 1L || !identical(guard[["DATABASE_NAME"]], "achilles_next_fixtures") ||
-      !identical(guard[["READ_ONLY"]], "on") || !identical(guard[["DATABASE_MARKER"]], marker) ||
-      !identical(guard[["SCHEMA_MARKER"]], paste0(marker, ": ", cdmSchema))) stop("TRACER_UNMARKED_SOURCE: fixture identity/read-only check failed", call. = FALSE)
-  counts <- query(paste0('SELECT COUNT(*)::text AS records, COUNT(person_id)::text AS nonnull_ids, ',
-    'COUNT(DISTINCT person_id)::text AS people FROM "', cdmSchema, '"."person"'))
-  if (nrow(counts) != 1L || !all(vapply(counts, function(x) is.character(x) && length(x) == 1L && !is.na(x) && grepl("^(0|[1-9][0-9]*)$", x), TRUE))) stop("TRACER_INVALID_COUNT: driver must preserve exact count text", call. = FALSE)
-  if (!identical(counts[["RECORDS"]], counts[["NONNULL_IDS"]]) || !identical(counts[["RECORDS"]], counts[["PEOPLE"]])) stop("TRACER_PERSON_INTEGRITY: null or duplicate person IDs", call. = FALSE)
-  count <- counts[["PEOPLE"]]
-  observed <- if (observation) .observation_compute(query, execute, cdmSchema, request$window) else NULL
-  measured <- if (measurement) .measurement_compute(query, execute, cdmSchema, request, observed, numericStrategy) else NULL
+  step("source.guard", function() {
+    guard <- query(paste0("SELECT current_database() AS database_name, current_setting('transaction_read_only') AS read_only, ",
+      "shobj_description(d.oid, 'pg_database') AS database_marker, obj_description(n.oid, 'pg_namespace') AS schema_marker ",
+      "FROM pg_database d CROSS JOIN pg_namespace n WHERE d.datname=current_database() AND n.nspname='", cdmSchema, "'"))
+    marker <- "AchillesNext synthetic fixture sandbox v1"
+    if (nrow(guard) != 1L || !identical(guard[["DATABASE_NAME"]], "achilles_next_fixtures") ||
+        !identical(guard[["READ_ONLY"]], "on") || !identical(guard[["DATABASE_MARKER"]], marker) ||
+        !identical(guard[["SCHEMA_MARKER"]], paste0(marker, ": ", cdmSchema))) stop("TRACER_UNMARKED_SOURCE: fixture identity/read-only check failed", call. = FALSE)
+  })
+  count <- step("person.count", function() {
+    counts <- query(paste0('SELECT COUNT(*)::text AS records, COUNT(person_id)::text AS nonnull_ids, ',
+      'COUNT(DISTINCT person_id)::text AS people FROM "', cdmSchema, '"."person"'))
+    if (nrow(counts) != 1L || !all(vapply(counts, function(x) is.character(x) && length(x) == 1L && !is.na(x) && grepl("^(0|[1-9][0-9]*)$", x), TRUE))) stop("TRACER_INVALID_COUNT: driver must preserve exact count text", call. = FALSE)
+    if (!identical(counts[["RECORDS"]], counts[["NONNULL_IDS"]]) || !identical(counts[["RECORDS"]], counts[["PEOPLE"]])) stop("TRACER_PERSON_INTEGRITY: null or duplicate person IDs", call. = FALSE)
+    counts[["PEOPLE"]]
+  })
+  observed <- if (observation) step("observation.compute", function() .observation_compute(query, execute, cdmSchema, request$window)) else NULL
+  if (measurement && observed$state != "computed" && !is.null(control)) {
+    control$skip("measurement.compute", "observation.compute")
+    measured <- .measurement_compute(query, execute, cdmSchema, request, observed, numericStrategy)
+  } else measured <- if (measurement) step("measurement.compute", function() .measurement_compute(query, execute, cdmSchema, request, observed, numericStrategy)) else NULL
+  step("bundle.write", function() .tracer_bundle(outputDir, sourceId, request, declaredCdmVersion,
+    observation, measurement, numericStrategy, count, observed, measured, started, runIdentity))
+}
+.tracer_bundle <- function(outputDir, sourceId, request, declaredCdmVersion, observation, measurement,
+                           numericStrategy, count, observed, measured, started, runIdentity = NULL) {
   ended <- .stamp()
   profilePath <- system.file("analysis", "alpha-measurement-v1.json", package = "AchillesNext", mustWork = TRUE)
   profile <- jsonlite::fromJSON(profilePath, simplifyVector = FALSE)
@@ -104,6 +120,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   ids <- unlist(profile$required_outputs, use.names = FALSE)
   generator <- if (measurement) paste0("AchillesNext-measurement-", numericStrategy) else if (observation) "AchillesNext-observation-tracer" else "AchillesNext-count-tracer"
   runId <- paste0(if (measurement) paste0("measurement-", numericStrategy, "-") else if (observation) "observation-" else "count-", .hash(paste(started, sourceId, tempfile(), sep = ":")))
+  if (!is.null(runIdentity)) runId <- runIdentity
   bundleId <- runId
   unknown <- .unknown("Not established by this development tracer")
   snapshot <- c(unknown, .object(immutable = FALSE, assertion_id = NULL, basis = NULL))

@@ -15,7 +15,7 @@ eligible_measurements AS (
   SELECT DISTINCT c.concept_id, c.concept_name, c.domain_id
   FROM "{{schema}}".concept c JOIN term_ids t ON t.concept_id=c.concept_id
   WHERE c.concept_id BETWEEN 0 AND 2147483647
-), classified AS (
+), classified AS MATERIALIZED (
   SELECT m.*,
     m.value_as_number IS NOT NULL AS numeric_present,
     m.value_as_concept_id IS NOT NULL AND m.value_as_concept_id<>0 AS coded_present,
