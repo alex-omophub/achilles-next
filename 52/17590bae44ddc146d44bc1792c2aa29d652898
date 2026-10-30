@@ -1,0 +1,49 @@
+R/measurement.R
+  s_3e206b4a2cf4c3::t_43d9354ba854b0 40-46
+docs/development/measurement-reference.md
+  s_3e206b4a2cf4c3::t_b044fe3446fdf5 23-25,82
+inst/sql/postgresql/classified-measurements.sql
+  s_3e206b4a2cf4c3::t_d0f0cb35571ef0 36
+inst/viewer/assets/CartesianChart-Dk6T9n2n.js
+  s_3e206b4a2cf4c3::t_efb95ffe3757f8 1
+inst/viewer/assets/MeasurementChart-B6ITxEFl.js
+  s_3e206b4a2cf4c3::t_93f7daa4cd19a2 1
+inst/viewer/assets/ObservationChart-Raa9Cs_-.js
+  s_3e206b4a2cf4c3::t_326caaf3f95c24 1
+inst/viewer/assets/index-BEmnL7lN.js
+  s_3e206b4a2cf4c3::t_479cac39b546c2 1,10,1682
+inst/viewer/assets/index-nDAKfuAt.css
+  s_3e206b4a2cf4c3::t_1233c19f838928 1
+inst/viewer/index.html
+  s_3e206b4a2cf4c3::t_2839466dd6cea9 3-4
+inst/viewer/viewer-lock.json
+  s_3e206b4a2cf4c3::t_a51d0da508704d 10,20,24,32-37
+packages/contracts/src/semantics.mjs
+  s_3e206b4a2cf4c3::t_ab25c2d0cac969 10,13,35-36,46-47
+packages/contracts/tests/contracts.test.mjs
+  s_3e206b4a2cf4c3::t_9bc9efb263775d 40-66
+packages/tracer/src/file-provider.ts
+  s_3e206b4a2cf4c3::t_45bbc82727c911 141-142
+packages/tracer/src/style.css
+  s_3e206b4a2cf4c3::t_5a48b18a3cdd6d 18
+packages/tracer/tests/measurement.test.tsx
+  s_3e206b4a2cf4c3::t_c1bdc3fb8ba531 8,82,87-96
+tests/tracer/measurement.R
+  s_3e206b4a2cf4c3::t_d618f7af8e0c45 125-138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5217590bae44ddc146d44bc1792c2aa29d652898",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
