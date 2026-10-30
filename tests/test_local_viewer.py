@@ -139,6 +139,15 @@ v$stop(); v$stop()
             self.assertEqual(code, 200)
             self.assertEqual(json.loads(body)['provider_id'], 'local-concept-table')
 
+    @unittest.skipUnless(os.environ.get('WEIGHTED_TEST_BUNDLES'), 'Set WEIGHTED_TEST_BUNDLES for the weighted viewer')
+    def test_weighted_bundle_uses_same_installed_no_node_viewer(self):
+        folder = Path(os.environ['WEIGHTED_TEST_BUNDLES']) / 'tiny_a_2020-5.5'
+        with self.serving(folder) as url:
+            self.assertEqual(self.status(url), 'ready')
+            self.assertEqual(json.loads(self.get(url + 'api/manifest.json')[2])['generator']['name'], 'AchillesNext-measurement-weighted')
+            rows = json.loads(self.get(url + 'api/results/measurement.numeric_summary.json')[2])['rows']
+            self.assertEqual(next(r['values']['sum'] for r in rows if r['dimensions']['measurement_concept_id'] == 900000001), '100.5')
+
     def test_missing_invalid_incompatible_have_no_analytical_payload(self):
         cases = [('missing-folder', self.root / 'absent', 'missing'),
                  ('bad-json', self.bundle, 'invalid'), ('wrong-version', self.bundle, 'incompatible')]

@@ -23,7 +23,7 @@ export function CountView({result}: {result: VerifiedCount}) {
       <tr><th scope="row">Run</th><td>{manifest.run_id}</td></tr>
     </tbody></table>
     <aside className="limitation"><h3>Partial development result</h3>
-      <p>{result.measurement ? 'This reference report implements 12 outputs. Capabilities, execution status and timing remain unsupported.' : result.observation ? 'This slice implements the passport, person count and three observation outputs. The other 10 outputs are explicitly unsupported.' : 'The passport and person count are implemented. The other 13 outputs are explicitly unsupported.'} This bundle cannot replace a complete alpha report.</p>
+      <p>{result.measurement ? 'This measurement report implements 12 outputs. Capabilities, execution status and timing remain unsupported.' : result.observation ? 'This slice implements the passport, person count and three observation outputs. The other 10 outputs are explicitly unsupported.' : 'The passport and person count are implemented. The other 13 outputs are explicitly unsupported.'} This bundle cannot replace a complete alpha report.</p>
       <p>{manifest.reproducibility.limitation}</p>
       <p>Restricted synthetic output. No disclosure policy has been applied.</p>
     </aside>

@@ -6,7 +6,8 @@ main <- function() {
   env <- new.env(parent = globalenv()); sys.source(args[1], env)
   if (!dir.create(args[2], mode = "0700")) stop("Test artifact parent must be new")
   read <- function(name, metric) jsonlite::fromJSON(file.path(args[2], name, "results", paste0(metric, ".json")), simplifyVector = FALSE)
-  generate <- function(name, cfg) do.call(generateMeasurementReport, c(cfg, list(outputDir = file.path(args[2], name))))
+  strategy <- Sys.getenv("ACHILLES_NEXT_TEST_NUMERIC_STRATEGY", "reference")
+  generate <- function(name, cfg) do.call(generateMeasurementReport, c(cfg, list(outputDir = file.path(args[2], name), numericStrategy = strategy)))
   windowRows <- function(name, metric, concept = 900000001L) Filter(function(r) r$dimensions$measurement_concept_id == concept &&
     (is.null(r$dimensions$period_kind) || r$dimensions$period_kind == "window"), read(name, metric)$rows)
   # Compare exact decimal text by removing only insignificant trailing zeros.

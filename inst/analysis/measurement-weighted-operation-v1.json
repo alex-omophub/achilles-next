@@ -1,0 +1,37 @@
+{
+  "id": "postgresql-measurement-weighted-v1",
+  "metric_version": "1.0.0",
+  "scope": "Marked synthetic PostgreSQL fixtures only; partial publication",
+  "inputs": [
+    "validated explicit concept IDs and inclusive DATE window",
+    "unique non-null PERSON membership",
+    "valid observed_intervals",
+    "exact NUMERIC measurement values",
+    "local CONCEPT names and domains"
+  ],
+  "outputs": [
+    "measurement.record_count",
+    "measurement.person_count",
+    "measurement.representation_count",
+    "measurement.unit_count",
+    "measurement.operator_count",
+    "measurement.numeric_eligibility_count",
+    "measurement.numeric_summary"
+  ],
+  "sql": [
+    "sql/postgresql/classified-measurements.sql",
+    "sql/postgresql/measurement-report.sql",
+    "sql/postgresql/numeric-groups.sql",
+    "sql/postgresql/numeric-frequencies.sql",
+    "sql/postgresql/numeric-totals.sql",
+    "sql/postgresql/numeric-weighted.sql"
+  ],
+  "internal_cte_builder": ".measurement_cte",
+  "frequency_inputs": "Restricted CTE grouped by concept, known unit, raw operator and exact finite value; physical duplicate multiplicity retained in COUNT(*)",
+  "sum_and_n": "SUM(value * frequency), SUM(frequency); exact NUMERIC text",
+  "grouping": "Known positive Unit-domain concept and raw operator NULL or 0, separately; observed zero-n groups retain NULL statistics",
+  "export": "Only bounded aggregate partitions and local terminology; no source rows, person IDs or frequency table",
+  "prerequisite_failure": "Atomic explicit status for seven measurement outputs, no numeric rows; retain valid passport/person/observation outputs",
+  "quantile_weighted": "Sort grouped exact values; cumulative SUM(frequency) with explicit ROWS frame; choose first value reaching exact integer ceil(a*n/b) rank using DIV(a*n+b-1,b). No physical expansion, self-join, FLOAT or interpolation",
+  "selection": "Explicit numericStrategy=weighted; reference stays default. No universal performance promotion."
+}

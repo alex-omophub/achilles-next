@@ -4,7 +4,7 @@
   "scope": "Marked synthetic PostgreSQL fixtures only; partial publication",
   "inputs": ["validated explicit concept IDs and inclusive DATE window", "unique non-null PERSON membership", "valid observed_intervals", "exact NUMERIC measurement values", "local CONCEPT names and domains"],
   "outputs": ["measurement.record_count", "measurement.person_count", "measurement.representation_count", "measurement.unit_count", "measurement.operator_count", "measurement.numeric_eligibility_count", "measurement.numeric_summary"],
-  "sql": ["sql/postgresql/classified-measurements.sql", "sql/postgresql/measurement-reference.sql"],
+  "sql": ["sql/postgresql/classified-measurements.sql", "sql/postgresql/measurement-report.sql", "sql/postgresql/numeric-groups.sql", "sql/postgresql/numeric-frequencies.sql", "sql/postgresql/numeric-totals.sql", "sql/postgresql/numeric-reference.sql"],
   "internal_cte_builder": ".measurement_cte",
   "frequency_inputs": "Restricted CTE grouped by concept, known unit, raw operator and exact finite value; physical duplicate multiplicity retained in COUNT(*)",
   "sum_and_n": "SUM(value * frequency), SUM(frequency); exact NUMERIC text",

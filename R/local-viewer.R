@@ -26,7 +26,7 @@
     m <- .viewer_decode(files[["manifest.json"]])
     if (!is.list(m) || !.string(m$contract_version)) .viewer_error("invalid", "The manifest has no valid contract version.")
     if (m$contract_version != "1.0.0" || !identical(m$profile$id, "alpha-measurement-v1") ||
-        !identical(m$profile$revision, "1.0.0") || !m$generator$name %in% c("AchillesNext-count-tracer", "AchillesNext-observation-tracer", "AchillesNext-measurement-reference") ||
+        !identical(m$profile$revision, "1.0.0") || !m$generator$name %in% c("AchillesNext-count-tracer", "AchillesNext-observation-tracer", "AchillesNext-measurement-reference", "AchillesNext-measurement-weighted") ||
         !identical(m$publication, "partial")) .viewer_error("incompatible", "This viewer supports partial count, observation or measurement reference bundles using contract 1.0.0.")
     profilePath <- system.file("analysis/alpha-measurement-v1.json", package = "AchillesNext", mustWork = TRUE)
     profile <- jsonlite::fromJSON(profilePath, simplifyVector = FALSE)

@@ -1,7 +1,7 @@
 # Open generated results locally
 
 The installed R package contains a prebuilt React viewer for partial synthetic
-count, observation and measurement reference bundles. Opening a bundle requires R, the installed package and a
+count, observation and measurement bundles. Opening a bundle requires R, the installed package and a
 modern browser. It does not invoke Node, npm or Shiny, contact an external account,
 or build frontend assets. Installing R dependencies may require network access;
 this is not yet a verified offline distribution.
@@ -22,6 +22,7 @@ unsupported. The [observation tracer](../development/observation-tracer.md) adds
 three observation metrics with a Recharts monthly view and exact table, leaving
 ten outputs unsupported. The [measurement reference report](../development/measurement-reference.md)
 adds seven measurement outputs and local terminology, leaving three unsupported.
+The [explicit weighted option](../development/weighted-quantiles.md) opens through the same viewer and preserves the reference metric semantics.
 Publication stays partial, and no
 disclosure policy or institutional authorization is inferred.
 
