@@ -48,7 +48,3 @@ AchillesNext is an independent successor project. OHDSI Achilles and other ecosy
 ## License
 
 See [LICENSE](LICENSE) for the Apache License 2.0. Preserve applicable notices when reusing third-party code.
-
-The optional [durable execution API and CLI](docs/development/execution-ledger.md)
-persist a bounded plan, operation states and measured telemetry for synthetic
-measurement runs. Inspect records after process exit without reconnecting.
