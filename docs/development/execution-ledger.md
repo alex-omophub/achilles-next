@@ -26,7 +26,7 @@ approved for sharing.
 ## Plan and sharing boundaries
 
 `plan.json` is a fixed development-format plan (`0.1.0`), separate from the frozen
-result contracts (`1.0.0`). It records the canonical bounded request and hash,
+result contracts (`1.0.0` for direct generators, `1.1.0` for complete run outputs). It records the canonical bounded request and hash,
 all fifteen requested metric IDs/versions, logical metric dependencies, physical
 operations, descriptive resource classes, strategy, loaded implementation/SQL
 fingerprints and runtime versions. Changed installed definitions require a new
@@ -43,9 +43,9 @@ person.count + observation.compute + measurement.compute -> bundle.write
 
 Measurement requires successful observation prerequisites. Bundle export waits
 for terminal states so a failure can still be represented as a partial result.
-Logical profile dependencies remain visible; a logical capability dependency is
-not a claim that `source.capabilities` has been implemented. Existing inline
-prerequisite checks still control execution.
+Logical profile dependencies remain visible. The source guard now captures all
+frozen capability probes in the same read-only session. Existing inline
+prerequisite/type checks still control execution.
 
 One observation computation supplies window/monthly denominators to measurement
 outputs. Materialized CTEs share interval union results within the observation
@@ -83,13 +83,15 @@ previously completed operations remain recorded, but no finalized metric success
 is inferred. The ledger is outside `staging/bundle`, so bundle cleanup does not
 erase failure evidence.
 
-**The current full-profile run is incomplete.** Twelve analytical/passport outputs
-are implemented; capability and both execution wire outputs remain unsupported.
-The ledger records successful implemented outputs and skipped unsupported ones,
-with overall `failed` / `requested_outputs_incomplete`. This is expected even
-when every physical operation succeeds. The optional staging bundle stays partial,
-unvalidated and ineligible for a current pointer. This API does not publish a
-complete report or turn telemetry into `execution.timing` partitions.
+The full-profile executor now exports all fifteen outputs using contract 1.1,
+including capabilities, output status and timing. It validates staging before
+recording metric success; failed or unsupported requested outputs still fail the
+run. Successful staging remains partial and ineligible for current until the
+separate [approved publication](publication.md) action. Execution success does
+not assert disclosure approval, immutable source identity or reusable inputs.
+Compute timing rows repeat their shared physical-operation duration; unmeasured
+phases remain NULL with a reason. Direct generator APIs still produce their
+partial contract 1.0 development bundles.
 
 ## CLI and inspection after restart
 

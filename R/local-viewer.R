@@ -25,17 +25,17 @@
     files <- list("manifest.json" = .viewer_read(root, "manifest.json"))
     m <- .viewer_decode(files[["manifest.json"]])
     if (!is.list(m) || !.string(m$contract_version)) .viewer_error("invalid", "The manifest has no valid contract version.")
-    if (m$contract_version != "1.0.0" || !identical(m$profile$id, "alpha-measurement-v1") ||
+    if (!m$contract_version %in% c("1.0.0", "1.1.0") || !identical(m$profile$id, "alpha-measurement-v1") ||
         !identical(m$profile$revision, "1.0.0") || !m$generator$name %in% c("AchillesNext-count-tracer", "AchillesNext-observation-tracer", "AchillesNext-measurement-reference", "AchillesNext-measurement-weighted") ||
-        !identical(m$publication, "partial")) .viewer_error("incompatible", "This viewer supports partial count, observation or measurement reference/weighted bundles using contract 1.0.0.")
+        !m$publication %in% c("partial", "complete")) .viewer_error("incompatible", "This viewer supports count, observation or measurement reference/weighted bundles using contracts 1.0 and 1.1.")
     profilePath <- system.file("analysis/alpha-measurement-v1.json", package = "AchillesNext", mustWork = TRUE)
     profile <- jsonlite::fromJSON(profilePath, simplifyVector = FALSE)
     if (!identical(m$profile$sha256, digest::digest(file = profilePath, algo = "sha256")))
       .viewer_error("incompatible", "The results use a different analysis profile.")
     ids <- unlist(profile$required_outputs, use.names = FALSE)
     if (!is.list(m$outputs) || length(m$outputs) != length(ids) || !is.null(names(m$outputs)) ||
-        !identical(m$eligible_for_current_pointer, FALSE) || !identical(m$request$output_scope, "restricted") ||
-        !identical(m$disclosure$scope, "restricted")) .viewer_error("invalid", "The partial manifest structure or output scope is invalid.")
+        !identical(m$eligible_for_current_pointer, identical(m$publication, "complete")) || !m$request$output_scope %in% c("restricted", "distributable") ||
+        !identical(m$disclosure$scope, m$request$output_scope)) .viewer_error("invalid", "The manifest structure or output scope is invalid.")
     declared <- vapply(m$outputs, function(p) if (.string(p$metric_id)) p$metric_id else "", "")
     if (anyDuplicated(declared) || !setequal(declared, ids)) .viewer_error("invalid", "The manifest must declare all 15 output partitions exactly once.")
     total <- length(files[["manifest.json"]])

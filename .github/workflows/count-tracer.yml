@@ -126,7 +126,7 @@ jobs:
           npm ci --prefix packages/tracer --ignore-scripts --no-audit --no-fund
           npm run package-viewer --prefix packages/tracer
           python3 tools/check_viewer_assets.py
-          git diff --exit-code -- inst/viewer
+          git diff --exit-code -- inst/viewer inst/validation
       - name: Install contracts dependencies before generator validation
         run: npm ci --prefix packages/contracts --ignore-scripts --no-audit --no-fund
       - name: Install package and build real count bundles
@@ -134,6 +134,7 @@ jobs:
           R CMD INSTALL --library="$R_LIBS" .
           Rscript --vanilla tests/tracer/implementation-identity.R
           Rscript --vanilla tests/tracer/run-ledger-offline.R
+          Rscript --vanilla tests/tracer/publication.R tools/tracer_fixture_config.R "$RUNNER_TEMP/publication"
           Rscript --vanilla tests/tracer/run-ledger.R tools/tracer_fixture_config.R "$RUNNER_TEMP/execution-ledger"
           Rscript tests/tracer/postgresql.R tools/tracer_fixture_config.R "$TRACER_TEST_BUNDLES"
           Rscript tests/tracer/observation.R tools/tracer_fixture_config.R "$OBSERVATION_TEST_BUNDLES"
@@ -149,5 +150,6 @@ jobs:
           done
       - name: Check generated results and the installed local viewer
         run: |
-          npm test --prefix packages/tracer
+          PUBLICATION_TEST_BUNDLES="$RUNNER_TEMP/publication" npm test --prefix packages/tracer
+          export PUBLICATION_TEST_BUNDLES="$RUNNER_TEMP/publication"
           python3 -m unittest discover -s tests -p 'test_*.py'

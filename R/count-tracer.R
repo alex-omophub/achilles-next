@@ -94,6 +94,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     if (nrow(guard) != 1L || !identical(guard[["DATABASE_NAME"]], "achilles_next_fixtures") ||
         !identical(guard[["READ_ONLY"]], "on") || !identical(guard[["DATABASE_MARKER"]], marker) ||
         !identical(guard[["SCHEMA_MARKER"]], paste0(marker, ": ", cdmSchema))) stop("TRACER_UNMARKED_SOURCE: fixture identity/read-only check failed", call. = FALSE)
+    if (!is.null(control)) control$capabilities(.publication_probes(query, cdmSchema))
   })
   count <- step("person.count", function() {
     counts <- query(paste0('SELECT COUNT(*)::text AS records, COUNT(person_id)::text AS nonnull_ids, ',

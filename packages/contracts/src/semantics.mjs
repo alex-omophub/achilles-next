@@ -64,11 +64,28 @@ export function periods(request) {
 }
 export function validateBundleDocuments(manifest, documents, terminology, {profile, validateDocument}) {
   validateDocument('bundle',manifest);validateDocument('terminology',terminology);
+  ensure(manifest.source.source_id===manifest.request.source_id,'Request/source mismatch');
+  ensure(manifest.source.schema_fingerprint.state!=='known'||/^[0-9a-f]{64}$/.test(manifest.source.schema_fingerprint.id),'Schema identity must be a fingerprint');
+  ensure(manifest.source.snapshot.state!=='unknown'||(!manifest.reproducibility.consistent_snapshot&&manifest.reproducibility.limitation!==null),'Unknown snapshot needs reproducibility limitation');
+  ensure(manifest.reproducibility.consistent_snapshot||manifest.reproducibility.limitation!==null,'Inconsistent execution needs reproducibility limitation');
+  ensure(manifest.reproducibility.execution_start<=manifest.reproducibility.execution_end,'Invalid execution window');
   ensure(documents.size===manifest.outputs.length && [...documents.keys()].every(id=>profile.required_outputs.includes(id)),'Unexpected result documents');
   ensure(terminology.source_id===manifest.source.source_id && canonical(terminology.vocabulary_release)===canonical(manifest.source.vocabulary_release), 'Terminology scope/vocabulary mismatch');
+  ensure(manifest.eligible_for_current_pointer===(manifest.publication==='complete'),'Partial run cannot replace current complete pointer');
+  if(manifest.publication==='complete') ensure(manifest.disclosure.applied && manifest.disclosure.approval_id!==null && manifest.outputs.every(o=>AVAILABLE.has(o.state)||o.state==='suppressed'),'Complete bundle has incomplete outputs or unapplied disclosure policy');
+  ensure(manifest.disclosure.scope===manifest.request.output_scope && manifest.disclosure.policy_id===manifest.request.disclosure_policy_id,'Disclosure scope/policy mismatch');
+  ensure(new Set(manifest.outputs.map(o=>o.metric_id)).size===profile.required_outputs.length && profile.required_outputs.every(id=>manifest.outputs.some(o=>o.metric_id===id)),'Missing/duplicate requested outputs');
+  ensure(terminology.contract_version===manifest.contract_version,'Mixed contract versions');
+  if(manifest.request.output_scope==='distributable') {
+    ensure(manifest.contract_version==='1.1.0' && manifest.disclosure.applied && manifest.disclosure.approval_id!==null && manifest.disclosure.policy_id==='synthetic-aggregates-v1','Unapproved distributable scope');
+    const permitted=new Set(['source.passport','person.count','execution.output_status']);
+    ensure(manifest.outputs.every(p=>permitted.has(p.metric_id)||p.state==='suppressed'),'Restricted partition in distributable bundle');
+    ensure(terminology.concepts.length===0 && manifest.source.source_id==='fixture:synthetic' && manifest.source.snapshot.state==='unknown' && manifest.source.data_release.state==='unknown' && manifest.source.vocabulary_release.state==='unknown' && manifest.source.schema_fingerprint.state==='unknown','Restricted metadata in distributable bundle');
+  }
   const byId=new Map(), cells=new Map();
   for(const partition of manifest.outputs) {
     const doc=documents.get(partition.metric_id);ensure(doc,'Missing declared result document');validateDocument('result',doc);
+    ensure(doc.contract_version===manifest.contract_version,'Mixed contract versions');
     ensure(doc.metric_id===partition.metric_id && doc.metric_version===partition.metric_version && doc.state===partition.state && doc.reason===partition.reason, 'Partition/result identity or status mismatch');
     ensure(doc.bundle_id===manifest.bundle_id && doc.source_id===manifest.source.source_id && doc.run_id===manifest.run_id && doc.request_sha256===manifest.request_sha256,'Result source/run/request mismatch');
     ensure(partition.rows===String(doc.rows?.length??0),'Declared row count mismatch');byId.set(doc.metric_id,doc);

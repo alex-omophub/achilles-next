@@ -1,6 +1,7 @@
 // Node-only producer/fixture validator. Schema registry is local and offline.
 import Ajv2020 from 'ajv/dist/2020.js';
-import { readFile, lstat, realpath } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
+import {validateDirectory} from './directory.mjs';
 import { fileURLToPath } from 'node:url';
 import { resolve, sep } from 'node:path';
 import { createHash } from 'node:crypto';
@@ -23,10 +24,16 @@ ajv.addFormat('date', value => /^\d{4}-\d{2}-\d{2}$/.test(value) && value.slice(
 ajv.addFormat('date-time', value => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value) &&
   value.slice(0,4) !== '0000' && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString() === value);
 ajv.addSchema(schema);
+const schema11 = JSON.parse(await readFile(resolve(ROOT,'inst/contracts/v1.1/contract.schema.json'),'utf8'));
+const lock11 = JSON.parse(await readFile(resolve(ROOT,'inst/contracts/v1.1/schema-lock.json'),'utf8'));
+ensure(digest(await readFile(resolve(ROOT,'inst/contracts/v1.1/contract.schema.json'))) === lock11.sha256['contract.schema.json'], 'Schema 1.1 lock mismatch');
+ajv.addSchema(schema11);
 const validators = new Map();
 export function validateDocument(name, document) {
-  let validate = validators.get(name);
-  if (!validate) { validate = ajv.compile({$ref: `${schema.$id}#/$defs/${name}`}); validators.set(name,validate); }
+  const selected = document?.contract_version === '1.1.0' ? schema11 : schema;
+  const key = selected.$id + name;
+  let validate = validators.get(key);
+  if (!validate) { validate = ajv.compile({$ref: `${selected.$id}#/$defs/${name}`}); validators.set(key,validate); }
   ensure(validate(document), `${name} schema: ${ajv.errorsText(validate.errors, {separator: '; '})}`);
   if (name === 'result') validateResult(document);
   if (name === 'bundle') validateManifest(document);
@@ -59,18 +66,5 @@ export function validateBundleDocuments(manifest, documents, terminology) {
   return validatePortableBundle(manifest, documents, terminology, {profile, validateDocument});
 }
 export async function validateBundleDirectory(directory) {
-  const root=await realpath(directory);
-  const read=async path=>{
-    const target=resolve(root,path);ensure(target.startsWith(root+sep),'Bundle path escapes root');
-    const actual=await realpath(target);ensure(actual===target,'Symlinked artifact paths are not accepted');
-    const stat=await lstat(target);ensure(stat.isFile()&&stat.size<=10*1024*1024,'Invalid/oversize artifact');return readFile(target);
-  };
-  const manifestBytes=await read('manifest.json');const manifest=JSON.parse(manifestBytes);validateDocument('bundle',manifest);
-  const documents=new Map();
-  for(const p of manifest.outputs) {
-    const bytes=await read(p.path);ensure(digest(bytes)===p.sha256&&String(bytes.length)===p.bytes,'Partition integrity mismatch');
-    documents.set(p.metric_id,JSON.parse(bytes));
-  }
-  const bytes=await read(manifest.terminology.path);ensure(digest(bytes)===manifest.terminology.sha256&&String(bytes.length)===manifest.terminology.bytes,'Terminology integrity mismatch');
-  return {...validateBundleDocuments(manifest,documents,JSON.parse(bytes)),manifest_sha256:digest(manifestBytes)};
+  return validateDirectory(directory, validateDocument, validateBundleDocuments);
 }

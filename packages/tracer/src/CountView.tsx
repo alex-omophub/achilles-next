@@ -23,10 +23,10 @@ export function CountView({result}: {result: VerifiedCount}) {
       <tr><th scope="row">Profile</th><td>{manifest.profile.id} · {manifest.profile.revision}</td></tr>
       <tr><th scope="row">Run</th><td>{manifest.run_id}</td></tr>
     </tbody></table>
-    <aside className="limitation"><h3>Partial development result</h3>
-      <p>{result.measurement ? 'This measurement report implements 12 outputs. Capabilities, execution status and timing remain unsupported.' : result.observation ? 'This slice implements the passport, person count and three observation outputs. The other 10 outputs are explicitly unsupported.' : 'The passport and person count are implemented. The other 13 outputs are explicitly unsupported.'} This bundle cannot replace a complete alpha report.</p>
+    <aside className="limitation"><h3>{manifest.publication === 'complete' ? 'Complete approved bundle' : 'Partial development result'}</h3>
+      <p>{manifest.publication === 'complete' ? 'All 15 requested outputs are validated or explicitly policy-suppressed.' : manifest.contract_version === '1.1.0' ? 'All 15 output partitions are present; publication approval has not been applied.' : result.measurement ? 'This measurement report implements 12 outputs. Capabilities, execution status and timing remain unsupported.' : result.observation ? 'This slice implements the passport, person count and three observation outputs. The other 10 outputs are explicitly unsupported.' : 'The passport and person count are implemented. The other 13 outputs are explicitly unsupported.'}{manifest.publication === 'partial' ? ' This bundle cannot replace a complete alpha report.' : ''}</p>
       <p>{manifest.reproducibility.limitation}</p>
-      <p>Restricted synthetic output. No disclosure policy has been applied.</p>
+      <p>{manifest.disclosure.applied ? `${manifest.disclosure.scope} synthetic output · policy ${manifest.disclosure.policy_id} · approval ${manifest.disclosure.approval_id}.` : 'Restricted synthetic output. No disclosure policy has been applied.'}</p>
     </aside>
     <details><summary>Request and integrity</summary><dl>
       <dt>Request window</dt><dd>{manifest.request.window.start} to {manifest.request.window.end}. This count uses all source people.</dd>

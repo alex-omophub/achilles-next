@@ -49,7 +49,8 @@ const inputs = [
   ...(await walk(resolve(project, 'src'))).filter(p => !p.endsWith('generated-validation.mjs')),
   ...await walk(resolve(project, 'tools')),
   ...['package.json', 'package-lock.json', 'index.html', 'tsconfig.json', 'vite.config.ts'].map(p => join(project, p)),
-  ...['inst/analysis/alpha-measurement-v1.json', 'inst/contracts/v1/contract.schema.json',
+  ...['inst/analysis/alpha-measurement-v1.json', 'inst/contracts/v1/contract.schema.json', 'inst/contracts/v1.1/contract.schema.json',
+    'packages/contracts/src/directory.mjs',
     'packages/contracts/src/semantics.mjs', 'packages/contracts/src/index.mjs', 'packages/contracts/src/http-provider.mjs'].map(p => resolve(root, p)),
 ];
 const source_sha256 = {};

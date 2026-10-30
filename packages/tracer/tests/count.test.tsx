@@ -59,7 +59,7 @@ describe('count tracer file/provider/view boundary', () => {
   });
   it('rejects a forged complete pointer, even with otherwise well-formed documents', async () => {
     const s = await sample(); s.manifest.publication = 'complete'; s.manifest.eligible_for_current_pointer = true; s.put('manifest.json', s.manifest);
-    await expect(openCountBundle(s.files, signal())).rejects.toThrow('partial count-tracer, observation-tracer or measurement reference/weighted');
+    await expect(openCountBundle(s.files, signal())).rejects.toThrow('Complete bundle has incomplete outputs or unapplied disclosure policy');
   });
   it('rejects tampering, missing files, unsafe numeric values and impossible count states', async () => {
     const tampered = await sample(); tampered.put('results/person.count.json', {});

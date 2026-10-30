@@ -16,11 +16,13 @@ const ajv = new Ajv2020({allErrors: false, strict: true, inlineRefs: false,
   code: {source: true, esm: true, formats: new _Code(`({date: ${date.toString()}, "date-time": ${stamp.toString()}})`)}});
 ajv.addFormat('date', date);
 ajv.addFormat('date-time', stamp);
+const schema11 = JSON.parse(await readFile(new URL('../../../inst/contracts/v1.1/contract.schema.json', import.meta.url), 'utf8'));
 ajv.addSchema(schema);
+ajv.addSchema(schema11);
 const refs = {};
 for (const name of ['bundle', 'result', 'terminology']) {
   const id = `urn:achilles-next:viewer:${name}`;
-  ajv.addSchema({$id: id, $ref: `${schema.$id}#/$defs/${name}`});
+  ajv.addSchema({$id: id, anyOf: [schema, schema11].map(s => ({$ref: `${s.$id}#/$defs/${name}`}))});
   refs[name] = id;
 }
 let code = standaloneCode(ajv, refs);

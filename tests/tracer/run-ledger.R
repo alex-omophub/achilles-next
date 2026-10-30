@@ -14,11 +14,11 @@ main <- function() {
     p <- make(name, cfg, strategy); executeMeasurementRun(p, cfg$connectionDetails)
   }
   valid <- function(name, r) {
-    stopifnot(r$state$status == "failed", r$state$cause$code == "requested_outputs_incomplete",
+    stopifnot(r$state$status == "succeeded", is.null(r$state$cause),
       all(vapply(r$state$operations, function(op) op$status == "succeeded" && op$attempt == 1L &&
         !is.null(op$duration_ms) && grepl("^[0-9]+$", op$duration_ms) && is.null(op$query_id) && nzchar(op$query_id_reason), TRUE)),
-      sum(vapply(r$state$outputs, function(o) o$status == "succeeded", TRUE)) == 12L,
-      sum(vapply(r$state$outputs, function(o) o$availability == "unsupported", TRUE)) == 3L)
+      sum(vapply(r$state$outputs, function(o) o$status == "succeeded", TRUE)) == 15L,
+      sum(vapply(r$state$outputs, function(o) o$availability == "unsupported", TRUE)) == 0L)
     p <- file.path(a[2], name, "staging/bundle")
     m <- jsonlite::fromJSON(file.path(p, "manifest.json"), simplifyVector = FALSE)
     stopifnot(m$run_id == r$plan$run_id, m$publication == "partial", !m$eligible_for_current_pointer)

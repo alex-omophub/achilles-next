@@ -148,6 +148,26 @@ v$stop(); v$stop()
             rows = json.loads(self.get(url + 'api/results/measurement.numeric_summary.json')[2])['rows']
             self.assertEqual(next(r['values']['sum'] for r in rows if r['dimensions']['measurement_concept_id'] == 900000001), '100.5')
 
+    @unittest.skipUnless(os.environ.get('PUBLICATION_TEST_BUNDLES'), 'Set PUBLICATION_TEST_BUNDLES for complete scope checks')
+    def test_complete_scoped_releases_without_node(self):
+        root = Path(os.environ['PUBLICATION_TEST_BUNDLES'])
+        for scope in ('restricted', 'distributable'):
+            store = root / scope
+            pointer = json.loads((store / 'current.json').read_text())
+            folder = store / pointer['path']
+            with self.subTest(scope=scope), self.serving(folder) as url:
+                self.assertEqual(self.status(url), 'ready')
+                m = json.loads(self.get(url + 'api/manifest.json')[2])
+                self.assertEqual(m['publication'], 'complete')
+                self.assertEqual(m['disclosure']['scope'], scope)
+                doc = json.loads(self.get(url + 'api/results/measurement.numeric_summary.json')[2])
+                if scope == 'distributable':
+                    self.assertEqual(doc['state'], 'suppressed')
+                    self.assertIsNone(doc['rows'])
+                    self.assertEqual(json.loads(self.get(url + 'api/terminology.json')[2])['concepts'], [])
+                self.assertEqual(self.get(url + 'api/plan.json')[0], 404)
+                self.assertEqual(self.get(url + 'api/current.json')[0], 404)
+
     def test_missing_invalid_incompatible_have_no_analytical_payload(self):
         cases = [('missing-folder', self.root / 'absent', 'missing'),
                  ('bad-json', self.bundle, 'invalid'), ('wrong-version', self.bundle, 'incompatible')]
