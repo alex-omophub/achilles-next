@@ -1,0 +1,43 @@
+tests/tracer/recovery.R
+  s_3e206b4a2cf4c3::t_ec531e9e228d2a 26,35-38
+  s_895f6ebe145fd3::t_d4ed26f9144a09 5,8-25,27-34,39-48,134,184,188-190
+R/recovery.R
+  s_895f6ebe145fd3::t_0a2226788bc4a8 121-131,145,153-154
+tools/measurement_run.R
+  s_895f6ebe145fd3::t_0a2226788bc4a8 2-3
+tests/tracer/recovery-offline.R
+  s_895f6ebe145fd3::t_d4ed26f9144a09 17-26
+R/run-ledger.R
+  s_895f6ebe145fd3::t_0a2226788bc4a8 173-175,203,206
+tests/tracer/recovery-workers.py
+  s_3e206b4a2cf4c3::t_ec531e9e228d2a 67
+  s_3e206b4a2cf4c3::t_28366aa6a13cf5 11,19-23,26-30,32-36,45-50,52-66,68-82,89
+docs/development/recovery.md
+  s_895f6ebe145fd3::t_9746bb7531433c 82-85
+man/measurementRecovery.Rd
+  s_895f6ebe145fd3::t_a59ed485073911 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0f00a7275156920bfff6ce29c0ae6edc61e2aa1c",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
