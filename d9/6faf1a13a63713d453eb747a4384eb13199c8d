@@ -1,0 +1,74 @@
+R/tracer-session.R
+  s_895f6ebe145fd3::t_61bb9fc8087d05 12-16,27,32-39
+  s_3e206b4a2cf4c3::t_6cf4b760056150 4,42,49
+README.md
+  s_3e206b4a2cf4c3::t_49aa189b056019 58-60
+R/run-ledger.R
+  s_3e206b4a2cf4c3::t_6cf4b760056150 65-68,104,110,143-145,157,173-176,187,191,209,218-220,228
+NAMESPACE
+  s_3e206b4a2cf4c3::t_79dd7e092e841f 11-13
+man/measurementRuns.Rd
+  s_3e206b4a2cf4c3::t_49aa189b056019 23
+R/publication.R
+  s_3e206b4a2cf4c3::t_6cf4b760056150 96-98,100-101
+  s_895f6ebe145fd3::t_168d30ebb77267 99
+docs/development/publication.md
+  s_3e206b4a2cf4c3::t_49aa189b056019 112-113
+tools/measurement_run.R
+  s_895f6ebe145fd3::t_61bb9fc8087d05 5-14,19-22,37-38
+  s_3e206b4a2cf4c3::t_2c217d05d34ded 39
+  s_3e206b4a2cf4c3::t_49aa189b056019 2,15-18
+tests/tracer/recovery-offline.R
+  s_895f6ebe145fd3::t_ee3568bb344133 1-34
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_ee3568bb344133 136,138
+man/measurementRecovery.Rd
+  s_895f6ebe145fd3::t_ee3568bb344133 1-23
+R/count-tracer.R
+  s_3e206b4a2cf4c3::t_79dd7e092e841f 97-100
+  s_3e206b4a2cf4c3::t_6cf4b760056150 83
+tests/tracer/recovery.R
+  s_895f6ebe145fd3::t_3aabf558c4b5b8 10,82,124
+  s_3e206b4a2cf4c3::t_2c217d05d34ded 68-70,100-106
+  s_895f6ebe145fd3::t_25e2545cc5f232 154
+  s_895f6ebe145fd3::t_b34ea53e3e703e 1-9,11-61,71-81,83-99,107-123,125-129,139-153,155-160
+  s_895f6ebe145fd3::t_96e2c813c7240c 62-67,130-138
+docs/development/recovery.md
+  s_3e206b4a2cf4c3::t_49aa189b056019 1-81,85-148
+  s_895f6ebe145fd3::t_97c91b4a758976 82-84
+tests/tracer/recovery-workers.py
+  s_895f6ebe145fd3::t_b34ea53e3e703e 1-54
+DESCRIPTION
+  s_3e206b4a2cf4c3::t_49aa189b056019 8-11
+docs/development/execution-ledger.md
+  s_3e206b4a2cf4c3::t_49aa189b056019 120-128
+R/recovery.R
+  s_3e206b4a2cf4c3::t_79dd7e092e841f 1-46,48-60,62-95,98-102,104-105,108-114,119-143
+  s_895f6ebe145fd3::t_9335e4d6c18012 103
+  s_895f6ebe145fd3::t_168d30ebb77267 61,107,115-118
+  s_895f6ebe145fd3::t_f4daab8e3c2185 47,96-97,106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d96faf1a13a63713d453eb747a4384eb13199c8d",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
