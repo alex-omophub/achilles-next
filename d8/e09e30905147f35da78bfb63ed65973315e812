@@ -1,0 +1,200 @@
+man/initializeResultStore.Rd
+  s_895f6ebe145fd3::t_94f9ae2d06d32b 1-15
+R/publication.R
+  s_895f6ebe145fd3::t_5163d2f3fc2ca8 4-5
+R/native-validation.R
+  s_895f6ebe145fd3::t_5f4047f9ffa1ef 20,27,50,54,64,69,75,81,85,98-105,153,167,182,191,195,217,228,232,252,260,275,284,293,297,306,312
+  s_895f6ebe145fd3::t_9e621f94d9067e 304
+  s_895f6ebe145fd3::t_567b31f6d5d0ce 32
+  s_895f6ebe145fd3::t_6ad8c0ae610d7d 4,7-11,29,41,55-56,87,96,110,114,122,155,169,197,299,320
+  s_895f6ebe145fd3::t_db31f27d0362fa 46
+  s_895f6ebe145fd3::t_13e254c42d2bbe 78
+  s_895f6ebe145fd3::t_ae7992b24adf60 1-3
+  s_895f6ebe145fd3::t_6a31137f498211 5-6
+  s_895f6ebe145fd3::t_95fcd7a8721b27 12-14,17-19
+  s_895f6ebe145fd3::t_56f7abfde3e79f 21-26
+  s_895f6ebe145fd3::t_d8f1d9b82916b4 28
+  s_895f6ebe145fd3::t_e66b58e77129e6 30-31
+  s_895f6ebe145fd3::t_627026902bc551 33-35,38-40
+  s_895f6ebe145fd3::t_207b3d007d59f6 42-45
+  s_895f6ebe145fd3::t_642dc036e9bfad 47-49
+  s_895f6ebe145fd3::t_cd1a373ca175db 51-53
+  s_895f6ebe145fd3::t_28ba07ddc42a3b 57-59,61-63
+  s_895f6ebe145fd3::t_764c0ba0b9e1da 65-68
+  s_895f6ebe145fd3::t_1c434079abc77a 70-74
+  s_895f6ebe145fd3::t_a8b4b6fe5621cd 76-77
+  s_895f6ebe145fd3::t_5ea6efed238355 79-80
+  s_895f6ebe145fd3::t_be5b3cd8cf10af 82-84
+  s_895f6ebe145fd3::t_ab4ff6211d7b92 86
+  s_895f6ebe145fd3::t_1473d0089ae7ae 88-90,93-95
+  s_895f6ebe145fd3::t_001d830029647d 97
+  s_895f6ebe145fd3::t_35050037d65ceb 106-109
+  s_895f6ebe145fd3::t_ea6ded83441efe 111-113
+  s_895f6ebe145fd3::t_98c806614c86b3 115-117,119-121
+  s_895f6ebe145fd3::t_719853a11a7051 123-125,150-152
+  s_895f6ebe145fd3::t_a9902a54306f5b 154
+  s_895f6ebe145fd3::t_b70f3521b1b207 156-158,164-166
+  s_895f6ebe145fd3::t_efe6fdbba83045 168
+  s_895f6ebe145fd3::t_7e982160b45eaa 170-172,179-181
+  s_895f6ebe145fd3::t_086472b9cdcf39 183-185,188-190
+  s_895f6ebe145fd3::t_94f1a2ebc6d818 192-194
+  s_895f6ebe145fd3::t_403c2a96f3e540 196
+  s_895f6ebe145fd3::t_d9a487c31668af 198-200,214-216
+  s_895f6ebe145fd3::t_52e4fb2cb0a4d4 218-220,225-227
+  s_895f6ebe145fd3::t_ff0bfb84b12db9 229-231
+  s_895f6ebe145fd3::t_3af139a73bd2e4 233-235,249-251
+  s_895f6ebe145fd3::t_c5a012a50ddccf 253-255,257-259
+  s_895f6ebe145fd3::t_4492a2b58f87ea 261-263,272-274
+  s_895f6ebe145fd3::t_19346499be000d 276-278,281-283
+  s_895f6ebe145fd3::t_d79fb2cd798280 285-287,290-292
+  s_895f6ebe145fd3::t_62b3bcea35655f 294-296
+  s_895f6ebe145fd3::t_326b56ba83c665 298
+  s_895f6ebe145fd3::t_5b0518fc687051 300-303
+  s_895f6ebe145fd3::t_56a5ed2ea39aaf 305
+  s_895f6ebe145fd3::t_20bce57f39ebc6 307-311
+  s_895f6ebe145fd3::t_45fff81fee1218 313-315,317-319
+  s_895f6ebe145fd3::t_094ec99a8aa30a 15-16,36-37,60,91-92,118,126-149,159-163,173-178,186-187,201-213,221-224,236-248,256,264-271,279-280,288-289,316
+R/result-export.R
+  s_895f6ebe145fd3::t_823678fa9caf97 15,17,65-67
+  s_895f6ebe145fd3::t_4f78d9be076d1e 143-146
+  s_895f6ebe145fd3::t_a7f1d0df0b4258 168
+  s_895f6ebe145fd3::t_07090031f52da3 1-14,16,18-64,68-142,147-167,169-174
+  s_895f6ebe145fd3::t_d69d2fc0714767 175-180
+inst/sql/postgresql/result-store.sql
+  s_895f6ebe145fd3::t_bd4edbfbeeedf8 15-69
+  s_895f6ebe145fd3::t_e39744391bbb01 226,246,249,253,268,273,288,333,336,339,343,360,365,381,388,391,413,428,436,463,478-483,486
+  s_895f6ebe145fd3::t_12f0ce3bd6fc5a 80-104
+  s_895f6ebe145fd3::t_e54fb2145cb142 12-14
+  s_895f6ebe145fd3::t_1c4aaec8bf176b 70-72,77-79
+  s_895f6ebe145fd3::t_b95f102de40878 105-107,223-225
+  s_895f6ebe145fd3::t_2d2461bdcbefde 227-229,243-245
+  s_895f6ebe145fd3::t_e22862aad147ca 247-248
+  s_895f6ebe145fd3::t_cadcbde32122ad 250-252
+  s_895f6ebe145fd3::t_0efb803f338fdd 254-256,265-267
+  s_895f6ebe145fd3::t_f274f4248c7a1a 269-272
+  s_895f6ebe145fd3::t_7f2c508b232e99 274-276,285-287
+  s_895f6ebe145fd3::t_cac9741fe1eab1 289-291,330-332
+  s_895f6ebe145fd3::t_56d525091e4a54 334-335
+  s_895f6ebe145fd3::t_1ade701479d5c3 337-338
+  s_895f6ebe145fd3::t_63ac33dba9624f 340-342
+  s_895f6ebe145fd3::t_ba453c4c0628e0 344-346,357-359
+  s_895f6ebe145fd3::t_61b1f866f0d168 361-364
+  s_895f6ebe145fd3::t_35331cf95c9fbb 366-368,378-380
+  s_895f6ebe145fd3::t_077a0472bc7b6a 382-387
+  s_895f6ebe145fd3::t_82482caa38b9c3 389-390
+  s_895f6ebe145fd3::t_8777b2f8a65f40 392-394,410-412
+  s_895f6ebe145fd3::t_d71b52953a97f2 414-416,425-427
+  s_895f6ebe145fd3::t_3bedcff8164fdb 429-431,433-435
+  s_895f6ebe145fd3::t_3df9740fe85f7c 437-439,460-462
+  s_895f6ebe145fd3::t_467aefcf0cfa67 464-466,475-477
+  s_895f6ebe145fd3::t_02c24b0d329415 484-485
+  s_895f6ebe145fd3::t_e0883b8e705031 487-489
+  s_895f6ebe145fd3::t_a3bf8ec9c9b4e0 1-11,73-76,108-222,230-242,257-264,277-284,292-329,347-356,369-377,395-409,417-424,432,440-459,467-474,490-492
+tests/tracer/result-export.R
+  s_895f6ebe145fd3::t_76e48462464d10 27,44-45,54,72-144
+  s_895f6ebe145fd3::t_fe9b6b378f06dc 1-26,28-43,46-53,55-71,145-161
+R/result-artifact.R
+  s_895f6ebe145fd3::t_71d371874895ad 54-159
+  s_895f6ebe145fd3::t_ef36875c5f8ee0 29
+  s_895f6ebe145fd3::t_6b6b0725b1c7ae 1-28,30-53,160-186
+R/result-validation.R
+  s_895f6ebe145fd3::t_5aa3978d101e72 20,30,34,37,42,46,55,76-77,88,105-154,246-254,261-263
+  s_895f6ebe145fd3::t_65d9312854e466 3,36
+  s_895f6ebe145fd3::t_1164e1c02b8a07 64,97,255-260
+  s_895f6ebe145fd3::t_8d460eef6a1445 68-75,155-245
+  s_895f6ebe145fd3::t_b863923ff0cd9a 4-12
+  s_895f6ebe145fd3::t_a43b5f2b07cf09 1-2
+  s_895f6ebe145fd3::t_8235e3575a68b3 13-15,17-19
+  s_895f6ebe145fd3::t_0699972d9c5d5b 21-23,27-29
+  s_895f6ebe145fd3::t_f64052c14b8cb3 31-33
+  s_895f6ebe145fd3::t_480cdb84f57397 35
+  s_895f6ebe145fd3::t_c25470fd53ee20 38-41
+  s_895f6ebe145fd3::t_c6272d3dd836a1 43-45
+  s_895f6ebe145fd3::t_f7debf2888e7b4 47-49,52-54
+  s_895f6ebe145fd3::t_a0e631743a5a6a 56-58,61-63
+  s_895f6ebe145fd3::t_c21377e7d92983 65-67
+  s_895f6ebe145fd3::t_51ccbf316e0661 78-80,85-87
+  s_895f6ebe145fd3::t_246ba5fe4139c6 89-91,94-96
+  s_895f6ebe145fd3::t_95d31715ff7ccd 98-100,102-104
+  s_895f6ebe145fd3::t_97e15daed4b32a 16,24-26,50-51,59-60,81-84,92-93,101
+R/result-store.R
+  s_895f6ebe145fd3::t_94f9ae2d06d32b 1-35,43-46,104
+  s_895f6ebe145fd3::t_beead56c751f57 36-42,47-103
+R/result-wire.R
+  s_895f6ebe145fd3::t_6588fc0ec0cd63 93-94,103
+  s_895f6ebe145fd3::t_78143b63eb7352 110
+  s_895f6ebe145fd3::t_d6309950017939 22-91,102,123,126-170
+  s_895f6ebe145fd3::t_65d62d15ecf980 96-99
+  s_895f6ebe145fd3::t_d5510a75516291 19-21
+  s_895f6ebe145fd3::t_2ef6ac64c7aab9 92
+  s_895f6ebe145fd3::t_e9fa4ee181b12e 95
+  s_895f6ebe145fd3::t_1842ee48a6aed3 100-101
+  s_895f6ebe145fd3::t_f0e5ca6e3688b6 104-109
+  s_895f6ebe145fd3::t_75de6af78dbd4d 111-113,120-122
+  s_895f6ebe145fd3::t_b444293ec9807e 124-125
+  s_895f6ebe145fd3::t_209bcf00a5ab06 1-18,114-119
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_3810ab96475233 135-139
+NAMESPACE
+  s_895f6ebe145fd3::t_6b1b26608144ba 14-21
+R/result-reader.R
+  s_895f6ebe145fd3::t_36626eeec886f8 1-37
+docs/development/execution-ledger.md
+  s_895f6ebe145fd3::t_db9c6fb92c6eae 132-133
+docs/development/publication.md
+  s_895f6ebe145fd3::t_4e76af64b90d5b 12-14
+docs/development/result-store.md
+  s_895f6ebe145fd3::t_b49f9b9dcf209a 1-132
+inst/analysis/core-characterization-v2.json
+  s_895f6ebe145fd3::t_f762ce0db66468 1-4391
+inst/contracts/v2/dimensions.json
+  s_895f6ebe145fd3::t_384663ecdef942 1-686
+inst/contracts/v2/metadata.schema.json
+  s_895f6ebe145fd3::t_db8b6cb21c0a65 1-438
+inst/contracts/v2/row.schema.json
+  s_895f6ebe145fd3::t_e34675c7a7d144 1
+inst/contracts/v2/rows.json
+  s_895f6ebe145fd3::t_778e53cef8e29c 1-2613
+inst/contracts/v2/schema-lock.json
+  s_895f6ebe145fd3::t_8625e1faf948f8 1-9
+man/publication.Rd
+  s_895f6ebe145fd3::t_8d4119b6af336d 18
+man/readResultObject.Rd
+  s_895f6ebe145fd3::t_5f56d8911be5f2 1-19
+man/resultPublication.Rd
+  s_895f6ebe145fd3::t_4f8466ae1f2e68 1-27
+man/resultStoreLifecycle.Rd
+  s_895f6ebe145fd3::t_94d6f7aebad353 1-24
+packages/contracts/src/v2-row.mjs
+  s_895f6ebe145fd3::t_592fd874d533a0 1-59
+packages/contracts/tools/validate-v2-corpus.mjs
+  s_895f6ebe145fd3::t_ac995d9397b0fd 1-6
+tests/tracer/native-validation.R
+  s_895f6ebe145fd3::t_717cc38433441f 1-25
+tests/tracer/publication.R
+  s_895f6ebe145fd3::t_f98cff6fe5188c 9-14
+tests/tracer/result-store.R
+  s_895f6ebe145fd3::t_c726c89035e7ba 1-65
+tests/tracer/result-wire.R
+  s_895f6ebe145fd3::t_d1548e0fcaaebb 1-71
+tools/build_result_schema.py
+  s_895f6ebe145fd3::t_fb726688a819bf 1-71
+tools/test_result_serving.py
+  s_895f6ebe145fd3::t_e24b1683d14b91 1-52
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d8e09e30905147f35da78bfb63ed65973315e812",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
