@@ -109,7 +109,8 @@ edit local files, and subsequent current resolution rejects changed bytes.
 
 The source snapshot remains unknown, with an explicit reproducibility limitation.
 Complete publication describes requested-output completeness and approval, not
-reusable input identity. No cross-run reuse or recovery is enabled.
+reusable input identity. No cross-run reuse is enabled. [Execution recovery](recovery.md) creates a new
+recomputed attempt and requires a separate publication approval.
 
 ## Telemetry and contributor checks
 

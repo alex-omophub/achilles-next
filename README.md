@@ -55,7 +55,9 @@ The optional [durable run API](docs/development/execution-ledger.md) now generat
 all fifteen alpha outputs for marked synthetic PostgreSQL fixtures.
 [Approved publication](docs/development/publication.md) validates immutable
 restricted/distributable releases before switching a local current pointer.
-Institutional execution, general anonymization and cross-run reuse remain outside
+[Cancellation and isolated recovery](docs/development/recovery.md) record targeted
+PostgreSQL cancellation and linked, idempotent attempts; unknown source identity
+forces recomputation. Institutional execution, general anonymization and cross-run reuse remain outside
 this implementation.
 
 ## License

@@ -133,7 +133,9 @@ jobs:
         run: |
           R CMD INSTALL --library="$R_LIBS" .
           Rscript --vanilla tests/tracer/implementation-identity.R
+          Rscript --vanilla tests/tracer/recovery-offline.R
           Rscript --vanilla tests/tracer/run-ledger-offline.R
+          Rscript --vanilla tests/tracer/recovery.R tools/tracer_fixture_config.R "$RUNNER_TEMP/recovery"
           Rscript --vanilla tests/tracer/publication.R tools/tracer_fixture_config.R "$RUNNER_TEMP/publication"
           Rscript --vanilla tests/tracer/run-ledger.R tools/tracer_fixture_config.R "$RUNNER_TEMP/execution-ledger"
           Rscript tests/tracer/postgresql.R tools/tracer_fixture_config.R "$TRACER_TEST_BUNDLES"

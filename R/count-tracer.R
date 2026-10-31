@@ -80,7 +80,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
   on.exit(if (!is.null(connection)) try(DatabaseConnector::disconnect(connection), silent = TRUE), add = TRUE)
   session <- step("source.connect", function() {
     connection <<- tryCatch(DatabaseConnector::connect(connectionDetails), error = function(e) stop("TRACER_CONNECTION_FAILED: check local configuration and driver", call. = FALSE))
-    .tracer_session(connection, if (is.null(control)) NULL else control$query)
+    .tracer_session(connection, if (is.null(control)) NULL else control$query, if (is.null(control)) NULL else control$check)
   })
   query <- session$query
   execute <- session$execute
@@ -94,7 +94,10 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     if (nrow(guard) != 1L || !identical(guard[["DATABASE_NAME"]], "achilles_next_fixtures") ||
         !identical(guard[["READ_ONLY"]], "on") || !identical(guard[["DATABASE_MARKER"]], marker) ||
         !identical(guard[["SCHEMA_MARKER"]], paste0(marker, ": ", cdmSchema))) stop("TRACER_UNMARKED_SOURCE: fixture identity/read-only check failed", call. = FALSE)
-    if (!is.null(control)) control$capabilities(.publication_probes(query, cdmSchema))
+    if (!is.null(control)) {
+      control$capabilities(.publication_probes(query, cdmSchema))
+      control$bind(session)
+    }
   })
   count <- step("person.count", function() {
     counts <- query(paste0('SELECT COUNT(*)::text AS records, COUNT(person_id)::text AS nonnull_ids, ',
