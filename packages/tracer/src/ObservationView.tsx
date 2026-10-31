@@ -5,8 +5,10 @@ const ObservationChart = lazy(() => import('./ObservationChart'));
 export function ObservationView({observation, start, end}: {observation: VerifiedObservation; start: string; end: string}) {
   const title = useId();
   if (!observation.available) return <section className="observation unavailable" aria-labelledby={title}>
-    <h2 id={title}>Observation opportunity unavailable</h2><p>{observation.reason}</p>
-    <p>State: {observation.state}. Check observation periods and access, regenerate, then reopen. No observation counts are inferred.</p>
+    <h2 id={title}>{observation.state === 'suppressed' ? 'Observation opportunity suppressed' : 'Observation opportunity unavailable'}</h2><p>{observation.reason}</p>
+    <p>{observation.state === 'suppressed'
+      ? 'State: suppressed. The output policy intentionally removes these values. Access changes or regeneration do not release them. No observation counts are inferred.'
+      : `State: ${observation.state}. Check observation periods and access, regenerate, then reopen. No observation counts are inferred.`}</p>
   </section>;
   const chartable = observation.months.every(m => BigInt(m.count) <= BigInt(Number.MAX_SAFE_INTEGER));
   const data = chartable ? observation.months.map(m => ({month: m.month.slice(0, 7), count: Number(m.count)})) : [];

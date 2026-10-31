@@ -19,7 +19,7 @@ export function MeasurementView({measurement, request, numericStrategy}: {measur
   const reset = () => {setDraft(initial()); setScope(initial());};
   const label = (id: number) => conceptLabel(terminology, id);
   if (failures.length) return <section className="measurement unavailable" aria-labelledby={title}>
-    <h2 id={title}>Measurement report unavailable</h2><p>No numeric values are inferred for failed prerequisites.</p>
+    <h2 id={title}>Measurement report unavailable</h2><p>No values are inferred for suppressed or unavailable outputs.</p>
     <ul>{failures.map(doc => <li key={doc.metric_id}>{doc.metric_id}: {doc.state} · {doc.reason}</li>)}</ul>
   </section>;
   const vocabulary = terminology.vocabulary_release;

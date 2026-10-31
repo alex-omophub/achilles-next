@@ -105,3 +105,15 @@ unavailable. They exercise served assets, exact counts, immutable snapshots,
 missing/tampered/incompatible bundles, symlink and route boundaries, allowed
 methods, Host/Origin checks and shutdown. Tests need permission to bind loopback
 sockets. Without both environment variables they explicitly skip.
+
+## Approved complete bundles
+
+The same installed viewer opens contract 1.1 restricted or distributable complete
+measurement releases. Generate and approve them using the
+[publication API](../development/publication.md), then pass the returned release
+directory to `viewResults()`. Publication/current resolution uses Node.js; opening
+the release in the installed viewer does not. Measurement and observation
+suppressions show their state. Capabilities and execution timing are not currently
+rendered by this view; their states remain in the result documents/output ledger.
+All suppressed partitions contain no values to fetch or infer. The view pins one
+manifest and does not follow pointer updates during a session.

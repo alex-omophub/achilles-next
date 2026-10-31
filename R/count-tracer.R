@@ -94,6 +94,7 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     if (nrow(guard) != 1L || !identical(guard[["DATABASE_NAME"]], "achilles_next_fixtures") ||
         !identical(guard[["READ_ONLY"]], "on") || !identical(guard[["DATABASE_MARKER"]], marker) ||
         !identical(guard[["SCHEMA_MARKER"]], paste0(marker, ": ", cdmSchema))) stop("TRACER_UNMARKED_SOURCE: fixture identity/read-only check failed", call. = FALSE)
+    if (!is.null(control)) control$capabilities(.publication_probes(query, cdmSchema))
   })
   count <- step("person.count", function() {
     counts <- query(paste0('SELECT COUNT(*)::text AS records, COUNT(person_id)::text AS nonnull_ids, ',
@@ -107,8 +108,12 @@ generateCountTracer <- function(connectionDetails, cdmSchema, sourceId, outputDi
     control$skip("measurement.compute", "observation.compute")
     measured <- .measurement_compute(query, execute, cdmSchema, request, observed, numericStrategy)
   } else measured <- if (measurement) step("measurement.compute", function() .measurement_compute(query, execute, cdmSchema, request, observed, numericStrategy)) else NULL
-  step("bundle.write", function() .tracer_bundle(outputDir, sourceId, request, declaredCdmVersion,
-    observation, measurement, numericStrategy, count, observed, measured, started, runIdentity))
+  step("bundle.write", function() {
+    .tracer_bundle(outputDir, sourceId, request, declaredCdmVersion,
+      observation, measurement, numericStrategy, count, observed, measured, started, runIdentity)
+    if (!is.null(control)) control$finalize()
+    invisible(outputDir)
+  })
 }
 .tracer_bundle <- function(outputDir, sourceId, request, declaredCdmVersion, observation, measurement,
                            numericStrategy, count, observed, measured, started, runIdentity = NULL) {

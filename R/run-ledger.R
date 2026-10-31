@@ -83,11 +83,11 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
     readiness = readiness, outputs = as.list(outputs), resource_class = resource)
   observation <- c("observation.person_count", "observation.monthly_person_count", "observation.person_days")
   operations <- list(op("source.connect", character(), character(), "connection"),
-    op("source.guard", "source.connect", character(), "metadata"),
+    op("source.guard", "source.connect", "source.capabilities", "metadata"),
     op("person.count", "source.guard", "person.count", "source_distinct_count"),
     op("observation.compute", "person.count", observation, "interval_union_and_distinct_count"),
     op("measurement.compute", "observation.compute", .measurement_ids, "bounded_measurement_and_exact_quantiles"),
-    op("bundle.write", c("person.count", "observation.compute", "measurement.compute"), "source.passport", "local_aggregate_export", "terminal"))
+    op("bundle.write", c("person.count", "observation.compute", "measurement.compute"), c("source.passport", "execution.output_status", "execution.timing"), "local_aggregate_export", "terminal"))
   outputs <- lapply(profile$metrics, function(m) {
     at <- Filter(function(op) m$id %in% unlist(op$outputs), operations)
     .object(metric_id = m$id, metric_version = m$version, dependencies = m$dependencies,
@@ -103,7 +103,7 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
       .object(id = "observation_counts", scope = "same run/snapshot", consumers = as.list(setdiff(.measurement_ids, "measurement.numeric_summary")), strategy = "in-memory aggregate denominators"),
       .object(id = "classified", scope = "measurement SQL statement", consumers = as.list(.measurement_ids), strategy = "MATERIALIZED CTE"),
       .object(id = "frequency_inputs", scope = "measurement SQL statement", consumers = as.list(c("exact_n_and_sum", if (numericStrategy == "weighted") "weighted_quantile_ranks")), strategy = if (numericStrategy == "weighted") "Multiply-referenced CTE; PostgreSQL default materialization" else "Single-consumer CTE; folding permitted")),
-    limitations = as.list(c("Synthetic PostgreSQL only; cost classes are descriptive, not cardinality estimates", "Observation membership is recomputed within measurement SQL; no cross-statement interval cache", "No durable source identity, retry/resume, complete publication or disclosure approval")))
+    limitations = as.list(c("Synthetic PostgreSQL only; cost classes are descriptive, not cardinality estimates", "Observation membership is recomputed within measurement SQL; no cross-statement interval cache", "No durable source identity or retry/resume; separate explicit publication approval required")))
   .run_atomic(plan, file.path(runDir, "plan.json"))
   ids <- vapply(operations, function(op) op$id, "")
   states <- stats::setNames(lapply(ids, function(id) .object(status = "requested", cause = NULL, attempt = 0L,
@@ -127,7 +127,7 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
   codes <- c(TRACER_CONNECTION_FAILED = "connection_failed", TRACER_UNMARKED_SOURCE = "source_identity_failed",
     TRACER_INVALID_COUNT = "invalid_count", TRACER_PERSON_INTEGRITY = "person_integrity_failed",
     "Cannot create new output directory" = "artifact_write_failed", "Result exceeds" = "artifact_limit",
-    "Bundle exceeds" = "artifact_limit")
+    "Bundle exceeds" = "artifact_limit", "Bundle validation failed" = "bundle_validation_failed")
   at <- which(vapply(names(codes), function(prefix) startsWith(message, prefix), TRUE))
   if (length(at)) unname(codes[at[1]]) else "operation_error"
 }
@@ -136,7 +136,13 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
   update <- function(id, status, cause = NULL) {
     ctx$state$operations[[id]]$status <- status; ctx$state$operations[[id]]["cause"] <- list(cause); .run_save(ctx)
   }
-  list(query = function(record) {queries[[length(queries) + 1L]] <<- record; invisible(NULL)},
+  list(capabilities = function(rows) {ctx$capabilities <- rows; invisible(NULL)},
+    finalize = function() {
+      ctx$state$bundle <- .object(path = "staging/bundle", publication = "partial", reason = "Unvalidated partial staging bundle; finalization in progress")
+      .run_save(ctx)
+      .publication_finalize(ctx)
+    },
+    query = function(record) {queries[[length(queries) + 1L]] <<- record; invisible(NULL)},
     skip = function(id, dependency) {
       if (ctx$state$operations[[id]]$status != "planned" || !ctx$state$operations[[dependency]]$status %in% c("failed", "skipped", "cancelled")) stop("Invalid dependency skip")
       update(id, "skipped", .run_cause("dependency_unsatisfied", dependency))
@@ -151,6 +157,8 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
       update(id, "running")
       start <- proc.time()[["elapsed"]]
       finish <- function(status, cause = NULL) {
+        if (id == "bundle.write" && status != "succeeded" && !is.null(ctx$state$bundle$path))
+          ctx$state$bundle$reason <- "Bundle finalization did not complete; unvalidated partial staging retained"
         ctx$state$operations[[id]]$ended_at <- .stamp(); ctx$state$operations[[id]]$duration_ms <- .run_ms(start)
         ctx$state$operations[[id]]["timing_reason"] <- list(NULL); ctx$state$operations[[id]]$queries <- queries
         update(id, status, cause)
@@ -169,7 +177,7 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
   }
   for (i in seq_along(ctx$state$outputs)) if (ctx$state$outputs[[i]]$status %in% c("requested", "planned")) {
     ctx$state$outputs[[i]]$status <- if (status == "cancelled") "cancelled" else "failed"
-    ctx$state$outputs[[i]]$availability <- "unavailable"; ctx$state$outputs[[i]]$reason <- "Run ended before result export"
+    ctx$state$outputs[[i]]$availability <- "unavailable"; ctx$state$outputs[[i]]$reason <- "Run ended before validated result export"
   }
   ctx$state$status <- status; ctx$state["cause"] <- list(cause); .run_save(ctx)
 }
@@ -194,7 +202,7 @@ executeMeasurementRun <- function(runDir, connectionDetails) {
     ctx$state$outputs <- lapply(manifest$outputs, function(o) .object(metric_id = o$metric_id,
       status = if (o$state %in% c("computed", "empty_source", "empty_population", "suppressed")) "succeeded" else if (o$state %in% c("unsupported", "not_requested")) "skipped" else "failed",
       availability = o$state, reason = o$reason))
-    ctx$state$bundle <- .object(path = "staging/bundle", publication = manifest$publication, reason = "Unvalidated partial staging bundle; no current pointer")
+    ctx$state$bundle <- .object(path = "staging/bundle", publication = manifest$publication, manifest_sha256 = digest::digest(file = file.path(ctx$dir, "staging/bundle/manifest.json"), algo = "sha256"), reason = "Validated staging bundle; separate publication approval required, no current pointer")
     complete <- all(vapply(ctx$state$outputs, function(o) o$status == "succeeded", TRUE))
     .run_terminal(ctx, if (complete) "succeeded" else "failed", if (complete) NULL else .run_cause("requested_outputs_incomplete"))
   }, interrupt = function(e) .run_terminal(ctx, "cancelled", .run_cause("interrupted")),

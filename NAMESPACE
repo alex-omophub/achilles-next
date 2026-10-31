@@ -5,3 +5,6 @@ export(generateMeasurementReport)
 export(planMeasurementRun)
 export(executeMeasurementRun)
 export(inspectMeasurementRun)
+
+export(publishMeasurementRun)
+export(currentMeasurementBundle)

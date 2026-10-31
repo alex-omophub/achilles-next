@@ -71,9 +71,9 @@ export async function openServedCountBundle(base: URL, signal: AbortSignal,
     }
     const manifestBytes = await read('manifest.json');
     const manifest = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(manifestBytes));
-    if (manifest.contract_version !== '1.0.0' || manifest.profile?.id !== 'alpha-measurement-v1' ||
-      !['AchillesNext-count-tracer', 'AchillesNext-observation-tracer', ...measurementGenerators].includes(manifest.generator?.name) || manifest.publication !== 'partial') {
-      throw new BundleOpenError('incompatible', 'This viewer supports partial count, observation or measurement reference/weighted bundles using contract 1.0.0.');
+    if (!['1.0.0', '1.1.0'].includes(manifest.contract_version) || manifest.profile?.id !== 'alpha-measurement-v1' ||
+      !['AchillesNext-count-tracer', 'AchillesNext-observation-tracer', ...measurementGenerators].includes(manifest.generator?.name) || !['partial', 'complete'].includes(manifest.publication)) {
+      throw new BundleOpenError('incompatible', 'This viewer supports count, observation or measurement reference/weighted bundles using contracts 1.0 and 1.1.');
     }
     requireValid(validators.bundle(manifest), 'Invalid manifest: incompatible typed fields.');
     requireValid(new Set(manifest.outputs.map((p: {path: string}) => p.path)).size === 15, 'Duplicate output path.');
@@ -116,8 +116,8 @@ export async function openCountBundle(files: ReadonlyMap<string, BundleFile>, si
   }
   const manifestBytes = await read('manifest.json');
   const manifest = decode('bundle', manifestBytes) as BundleManifest;
-  requireValid(manifest.publication === 'partial' && manifest.eligible_for_current_pointer === false &&
-    ['AchillesNext-count-tracer', 'AchillesNext-observation-tracer', ...measurementGenerators].includes(manifest.generator.name), 'Choose a partial count-tracer, observation-tracer or measurement reference/weighted bundle, not a complete alpha report.');
+  requireValid(['partial', 'complete'].includes(manifest.publication) && manifest.eligible_for_current_pointer === (manifest.publication === 'complete') &&
+    ['AchillesNext-count-tracer', 'AchillesNext-observation-tracer', ...measurementGenerators].includes(manifest.generator.name), 'Choose a supported count, observation or measurement reference/weighted bundle.');
   requireValid(manifest.profile.sha256 === await sha256(profileText) &&
     manifest.request_sha256 === await sha256(canonical(manifest.request)) &&
     manifest.request.source_id === manifest.source.source_id, 'Request, profile or source identity mismatch.');
@@ -140,7 +140,7 @@ export async function openCountBundle(files: ReadonlyMap<string, BundleFile>, si
       String(doc.rows?.length ?? 0) === partition.rows, 'Result identity or state mismatch.');
     if (measurementGenerators.includes(manifest.generator.name) && measurementIds.includes(doc.metric_id))
       requireValid(doc.state !== 'unsupported', 'Implemented measurement output cannot be unsupported. Regenerate the measurement reference/weighted bundle.');
-    if (!['person.count', 'source.passport', ...(manifest.generator.name !== 'AchillesNext-count-tracer' ? observationIds : []), ...(measurementGenerators.includes(manifest.generator.name) ? measurementIds : [])].includes(doc.metric_id)) {
+    if ((manifest.contract_version === '1.0.0' || !measurementGenerators.includes(manifest.generator.name)) && !['person.count', 'source.passport', ...(manifest.generator.name !== 'AchillesNext-count-tracer' ? observationIds : []), ...(measurementGenerators.includes(manifest.generator.name) ? measurementIds : [])].includes(doc.metric_id)) {
       requireValid(doc.state === 'unsupported' && typeof doc.reason === 'string' && doc.reason.length > 0 && doc.rows === null,
         'Count tracer contains an undeclared implemented output.');
     }
@@ -166,7 +166,7 @@ export async function openCountBundle(files: ReadonlyMap<string, BundleFile>, si
     identity.source_id === manifest.source.source_id && identity.run_id === manifest.run_id && identity.source_snapshot_id === manifest.source.snapshot.id &&
     identity.data_release_id === manifest.source.data_release.id && identity.vocabulary_release_id === manifest.source.vocabulary_release.id &&
     identity.declared_cdm_version === manifest.source.declared_cdm_version && canonical(identity.observed_schema_evidence) === canonical(manifest.source.schema_fingerprint), 'Passport/manifest mismatch.');
-  requireValid(manifest.source.snapshot.state === 'unknown' && manifest.reproducibility.consistent_snapshot === false &&
+  if (manifest.publication === 'partial') requireValid(manifest.source.snapshot.state === 'unknown' && manifest.reproducibility.consistent_snapshot === false &&
     !!manifest.reproducibility.limitation && manifest.disclosure.applied === false && manifest.disclosure.approval_id === null &&
     manifest.disclosure.policy_id === manifest.request.disclosure_policy_id && manifest.reproducibility.execution_start <= manifest.reproducibility.execution_end,
   'Tracer must retain unknown snapshot and unapplied disclosure limitations.');

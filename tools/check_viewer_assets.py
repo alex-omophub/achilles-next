@@ -21,6 +21,11 @@ def check():
         assert path.is_relative_to(VIEWER.resolve())
         assert hashlib.sha256(path.read_bytes()).hexdigest() == sha, f'Viewer asset changed: {name}'
     assert {p.relative_to(VIEWER).as_posix() for p in VIEWER.rglob('*') if p.is_file()} == set(lock['files']) | {'viewer-lock.json'}
+    validator = ROOT / 'inst/validation'
+    validation_lock = json.loads((validator / 'validator-lock.json').read_text())
+    assert validation_lock['format_version'] == 1
+    assert hashlib.sha256((validator / 'validate.mjs').read_bytes()).hexdigest() == validation_lock['sha256']
+    print('PASS: installed publication validator integrity')
     print(f"PASS: {len(lock['files'])} prebuilt viewer files; {len(lock['source_sha256'])} source fingerprints")
 
 

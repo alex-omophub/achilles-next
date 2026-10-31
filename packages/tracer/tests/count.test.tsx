@@ -57,9 +57,30 @@ describe('count tracer file/provider/view boundary', () => {
     const {files} = await sample('0', 'empty_source'); const result = await openCountBundle(files, signal());
     expect(result.state).toBe('empty_source'); expect(renderToStaticMarkup(<CountView result={result}/>)).toContain('Empty source');
   });
+  it('rejects failed publication through folder selection', async () => {
+    const s = await sample(); s.manifest.publication = 'failed'; s.manifest.eligible_for_current_pointer = false;
+    s.put('manifest.json', s.manifest);
+    await expect(openCountBundle(s.files, signal())).rejects.toThrow('Choose a supported');
+  });
+  it.each(['AchillesNext-count-tracer', 'AchillesNext-observation-tracer'])('keeps contract 1.1 generator output boundaries for %s', async name => {
+    const s = await sample(); s.manifest.contract_version = '1.1.0'; s.manifest.generator.name = name;
+    // Capabilities are implemented only by the durable measurement generators.
+    for (const p of s.manifest.outputs) {
+      const doc = JSON.parse(new TextDecoder().decode(await s.files.get(p.path)!.arrayBuffer()));
+      doc.contract_version = '1.1.0';
+      if (p.metric_id === 'source.capabilities') Object.assign(doc, {state: 'computed', reason: null, rows: []});
+      const bytes = s.put(p.path, doc);
+      Object.assign(p, {sha256: await sha256(bytes), bytes: String(bytes.length), state: doc.state, reason: doc.reason, rows: String(doc.rows?.length ?? 0)});
+    }
+    const term = JSON.parse(new TextDecoder().decode(await s.files.get('terminology.json')!.arrayBuffer()));
+    term.contract_version = '1.1.0'; const bytes = s.put('terminology.json', term);
+    Object.assign(s.manifest.terminology, {sha256: await sha256(bytes), bytes: String(bytes.length)});
+    s.put('manifest.json', s.manifest);
+    await expect(openCountBundle(s.files, signal())).rejects.toThrow('undeclared implemented output');
+  });
   it('rejects a forged complete pointer, even with otherwise well-formed documents', async () => {
     const s = await sample(); s.manifest.publication = 'complete'; s.manifest.eligible_for_current_pointer = true; s.put('manifest.json', s.manifest);
-    await expect(openCountBundle(s.files, signal())).rejects.toThrow('partial count-tracer, observation-tracer or measurement reference/weighted');
+    await expect(openCountBundle(s.files, signal())).rejects.toThrow('Complete bundle has incomplete outputs or unapplied disclosure policy');
   });
   it('rejects tampering, missing files, unsafe numeric values and impossible count states', async () => {
     const tampered = await sample(); tampered.put('results/person.count.json', {});

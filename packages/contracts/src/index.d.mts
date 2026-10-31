@@ -1,5 +1,5 @@
 /** v1 contracts. Types describe the future viewer API; no UI mount is shipped. */
-export type ContractVersion = '1.0.0';
+export type ContractVersion = '1.0.0'|'1.1.0';
 export type CountString = string;
 export type DecimalString = string;
 export type MetricId = 'source.passport'|'source.capabilities'|'person.count'|
@@ -18,13 +18,13 @@ export interface SourceIdentity {source_id:string;snapshot:Snapshot;data_release
 export interface AccessContext {source_id:string;bundle_id:string;manifest_sha256:string;
   access_scope_id:string;authorization_epoch:string}
 export interface AnalysisRequest {profile_id:'alpha-measurement-v1';source_id:string;window:{start:string;end:string};
-  measurement_concept_ids:readonly number[];output_scope:'restricted';disclosure_policy_id:string}
+  measurement_concept_ids:readonly number[];output_scope:'restricted'|'distributable'|'distributable';disclosure_policy_id:string}
 export interface Partition {metric_id:MetricId;metric_version:'1.0.0';state:State;reason:string|null;
   path:string;sha256:string;bytes:CountString;rows:CountString}
 export interface BundleManifest {contract_version:ContractVersion;bundle_id:string;run_id:string;created_at:string;
   generator:{name:string;version:string};profile:{id:'alpha-measurement-v1';revision:'1.0.0';sha256:string};
   source:SourceIdentity;request:AnalysisRequest;request_sha256:string;publication:'complete'|'partial'|'failed';
-  eligible_for_current_pointer:boolean;disclosure:{policy_id:string;applied:boolean;approval_id:string|null;scope:'restricted'};
+  eligible_for_current_pointer:boolean;disclosure:{policy_id:string;applied:boolean;approval_id:string|null;scope:'restricted'|'distributable'};
   reproducibility:{consistent_snapshot:boolean;execution_start:string;execution_end:string;limitation:string|null};
   outputs:readonly Partition[];terminology:{path:'terminology.json';sha256:string;bytes:CountString};
   timing_phases:readonly ['compute','materialize','validate','export']}

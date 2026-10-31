@@ -12,7 +12,7 @@ export function verifyObservation(manifest: BundleManifest, documents: Map<Metri
   const available = ['computed', 'empty_source', 'empty_population'];
   const failure = docs.find(d => !available.includes(d.state));
   if (failure) {
-    requireValid(docs.every(d => ['failed', 'unavailable', 'inaccessible'].includes(d.state) && d.rows === null && !!d.reason), 'inconsistent availability');
+    requireValid(docs.every(d => ['failed', 'unavailable', 'inaccessible', 'suppressed'].includes(d.state) && d.rows === null && !!d.reason), 'inconsistent availability');
     return {available: false, state: failure.state, reason: failure.reason!};
   }
   const total = BigInt(allPeople);
