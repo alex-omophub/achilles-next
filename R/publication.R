@@ -93,6 +93,12 @@
   m$reproducibility$limitation <- "One read-only repeatable-read session; durable snapshot identity is unknown. Input reuse is disabled."
   b$manifest <- m; b$documents <- docs
   .publication_write(b, path); .publication_validate(path)
+  ctx$state$analytical_sha256 <- stats::setNames(lapply(c("person.count", "observation.person_count", "observation.monthly_person_count", "observation.person_days", .measurement_ids), function(id) {
+    d <- docs[[id]]; .hash(.json(d[c("metric_id", "metric_version", "state", "reason", "rows")]))
+  }), c("person.count", "observation.person_count", "observation.monthly_person_count", "observation.person_days", .measurement_ids))
+  ctx$state$input_identity$data_release <- m$source$data_release
+  ctx$state$input_identity$vocabulary_release <- m$source$vocabulary_release
+  ctx$state$input_identity$terminology_sha256 <- .hash(.json(b$terminology$concepts))
   invisible(NULL)
 }
 .publication_project <- function(b, scope, approvalId) {

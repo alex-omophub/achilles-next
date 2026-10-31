@@ -117,13 +117,15 @@ hash and the previous revision hash. Uncommitted temporary files are ignored;
 missing or corrupt committed history fails closed. Files use mode 0600 and run
 folders 0700 where supported by the operating system.
 
-A caught R interrupt persists cancellation. Hard termination can leave `running`
-and a writer lock; inspection reports the last persisted facts without claiming
-liveness. No automatic takeover, retry, dependency reuse or resume is allowed.
-Create another run. Database-side cancellation and safe recovery are not yet
-provided. Atomic rename here covers process interruption on local filesystems,
-not power-loss durability, network filesystem guarantees or authenticated
-protection against hostile record edits. Do not import untrusted run directories.
+A caught R interrupt persists cancellation. The separate
+[cancellation/recovery APIs](recovery.md) also record cooperative requests, target
+the registered PostgreSQL query where available, and recover into a linked new
+attempt. Unknown input identity forces full recomputation. Hard termination can
+leave `running` and a writer lock; inspection reports last persisted facts without
+claiming liveness. There is no stale-lock takeover or in-place resumption.
+Atomic rename covers process interruption on trusted local filesystems, not
+power-loss durability, network filesystem guarantees or authentication against
+hostile edits. Do not import untrusted run directories.
 
 Verify with `tests/tracer/run-ledger-offline.R` and the marked-database
 `tests/tracer/run-ledger.R <config.R> <new-evidence-directory>`. The latter also
