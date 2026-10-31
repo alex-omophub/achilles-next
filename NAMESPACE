@@ -11,3 +11,11 @@ export(currentMeasurementBundle)
 
 export(cancelMeasurementRun)
 export(resumeMeasurementRun)
+
+export(initializeResultStore)
+export(sealResultRelease)
+export(promoteResultPublication)
+export(validateResultRelease)
+export(publishResultRelease)
+export(validateResultArtifact)
+export(readResultObject)

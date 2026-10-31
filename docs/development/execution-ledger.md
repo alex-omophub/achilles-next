@@ -129,5 +129,5 @@ hostile edits. Do not import untrusted run directories.
 
 Verify with `tests/tracer/run-ledger-offline.R` and the marked-database
 `tests/tracer/run-ledger.R <config.R> <new-evidence-directory>`. The latter also
-requires Python 3 for its concurrent worker launcher and installed contract
-dependencies/Node for result validation.
+requires Python 3 for its concurrent worker launcher. Result validation uses
+the installed native R validator; npm and Node are development checks only.

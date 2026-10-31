@@ -1,0 +1,4391 @@
+{
+  "format_version": 2,
+  "profile_id": "core-characterization-v2",
+  "revision": "2.0.0",
+  "domains": {
+    "condition": {
+      "table": "condition_occurrence",
+      "concept": "condition_concept_id",
+      "event_date": "condition_start_date",
+      "end_date": "condition_end_date",
+      "type_concept": "condition_type_concept_id",
+      "source_concept": "condition_source_concept_id",
+      "source_text": "condition_source_value",
+      "record_id": "condition_occurrence_id",
+      "expected_concept_domains": [
+        "Condition"
+      ]
+    },
+    "drug": {
+      "table": "drug_exposure",
+      "concept": "drug_concept_id",
+      "event_date": "drug_exposure_start_date",
+      "end_date": "drug_exposure_end_date",
+      "type_concept": "drug_type_concept_id",
+      "source_concept": "drug_source_concept_id",
+      "source_text": "drug_source_value",
+      "record_id": "drug_exposure_id",
+      "expected_concept_domains": [
+        "Drug"
+      ]
+    },
+    "procedure": {
+      "table": "procedure_occurrence",
+      "concept": "procedure_concept_id",
+      "event_date": "procedure_date",
+      "end_date": "procedure_end_date",
+      "type_concept": "procedure_type_concept_id",
+      "source_concept": "procedure_source_concept_id",
+      "source_text": "procedure_source_value",
+      "record_id": "procedure_occurrence_id",
+      "expected_concept_domains": [
+        "Procedure"
+      ]
+    },
+    "visit": {
+      "table": "visit_occurrence",
+      "concept": "visit_concept_id",
+      "event_date": "visit_start_date",
+      "end_date": "visit_end_date",
+      "type_concept": "visit_type_concept_id",
+      "source_concept": "visit_source_concept_id",
+      "source_text": "visit_source_value",
+      "record_id": "visit_occurrence_id",
+      "expected_concept_domains": [
+        "Visit"
+      ]
+    },
+    "device": {
+      "table": "device_exposure",
+      "concept": "device_concept_id",
+      "event_date": "device_exposure_start_date",
+      "end_date": "device_exposure_end_date",
+      "type_concept": "device_type_concept_id",
+      "source_concept": "device_source_concept_id",
+      "source_text": "device_source_value",
+      "record_id": "device_exposure_id",
+      "expected_concept_domains": [
+        "Device"
+      ]
+    },
+    "observation": {
+      "table": "observation",
+      "concept": "observation_concept_id",
+      "event_date": "observation_date",
+      "end_date": null,
+      "type_concept": "observation_type_concept_id",
+      "source_concept": "observation_source_concept_id",
+      "source_text": "observation_source_value",
+      "record_id": "observation_id",
+      "expected_concept_domains": [
+        "Observation"
+      ]
+    },
+    "death": {
+      "table": "death",
+      "concept": "cause_concept_id",
+      "event_date": "death_date",
+      "end_date": null,
+      "type_concept": "death_type_concept_id",
+      "source_concept": "cause_source_concept_id",
+      "source_text": "cause_source_value",
+      "record_id": null,
+      "expected_concept_domains": [
+        "Condition"
+      ]
+    },
+    "specimen": {
+      "table": "specimen",
+      "concept": "specimen_concept_id",
+      "event_date": "specimen_date",
+      "end_date": null,
+      "type_concept": "specimen_type_concept_id",
+      "source_concept": null,
+      "source_text": "specimen_source_value",
+      "record_id": "specimen_id",
+      "expected_concept_domains": [
+        "Specimen"
+      ]
+    },
+    "measurement": {
+      "table": "measurement",
+      "concept": "measurement_concept_id",
+      "event_date": "measurement_date",
+      "end_date": null,
+      "type_concept": "measurement_type_concept_id",
+      "source_concept": "measurement_source_concept_id",
+      "source_text": "measurement_source_value",
+      "record_id": "measurement_id",
+      "expected_concept_domains": [
+        "Measurement"
+      ]
+    }
+  },
+  "contracts": {
+    "populations": {
+      "source_context": "One institution/source/schema identity. No cross-source PERSON join.",
+      "person_table": "Accessible PERSON with unique non-null person_id; duplicates/nulls block PERSON-dependent outputs. Includes people with no events/observation.",
+      "all_recorded_rows": "Every physical row in each readable domain table within declared scope. Default is full table/history including undated, unmapped and orphan rows. Record counts preserve multiplicity; person_count counts only linked unique PERSON members, with excluded record counts visible.",
+      "linked_people_with_dated_records": "PERSON members with at least one valid dated domain row in scope, independent of observation periods.",
+      "raw_observation_intervals": "All physical observation_period rows before union, including malformed/orphan rows.",
+      "valid_observation_intervals": "PERSON-linked finite non-null start/end with end>=start; merge overlaps and adjacency. Invalid rows excluded only with counted reasons.",
+      "people_with_valid_intervals": "Unique PERSON members with at least one valid merged observation interval.",
+      "observed_people": "PERSON members with a valid observation union intersecting the declared inclusive period.",
+      "observed_rows": "PERSON-linked domain rows with finite recorded event DATE in the valid observation union and requested inclusive period. One event once; no span-coverage inference.",
+      "observed_year_people": "Distinct PERSON members with an observed event in the year, grouped under fixed year/gender/year-age anchor matching the denominator.",
+      "requested_outputs": "All declared required/conditional profile outputs, whether produced or unavailable."
+    },
+    "periods": {
+      "default": "All validated recorded history per domain, plus undated bucket; not a 120-month cap or explicit concept list.",
+      "grains": [
+        "full_scope",
+        "calendar_month",
+        "calendar_year"
+      ],
+      "calendar": "Finite proleptic Gregorian DATE years 0001..9999, inclusive scope endpoints. Unrepresentable/non-finite dates are flagged, never assigned a fake month.",
+      "history_bounds": "Record source minima/maxima and generation coverage explicitly per domain and observation; no clipping to the first observed domain or 1900..2099.",
+      "optional_limits": "Operator-approved narrower history/concepts/modules create an explicitly partial/reduced-scope profile/release with excluded counts and reasons. Never silently truncate the standard baseline.",
+      "nonadditivity": "Distinct people, first-event age, frequency and quantiles are computed at their declared grain, not rolled up by summing monthly people/averaging monthly summaries."
+    },
+    "exact-values": {
+      "counts": "Nonnegative arbitrary-precision integer strings; never JS Number for storage/validation.",
+      "numeric": "Finite source numeric values preserved as exact decimal strings. Float-source adapters require an explicit precision contract and separate evidence; no invented decimal precision.",
+      "summary_fields": [
+        "n",
+        "sum",
+        "min",
+        "max",
+        "mean_numerator",
+        "mean_denominator",
+        "p10",
+        "p25",
+        "p50",
+        "p75",
+        "p90"
+      ],
+      "mean": "Exact rational (sum,n); displayed rounding is labelled and does not rewrite the exact table.",
+      "quantiles": "Empirical discrete x[ceil(p*n)] for positive n; duplicate physical row multiplicity is preserved.",
+      "empty": "n=0: all statistics including sum/mean are NULL, eligibility counts remain available.",
+      "eligibility": "Every summary counts included, missing, non-finite and domain-specific exclusions explicitly; no silent filtering.",
+      "excluded": "Standard deviation, interpolated/approximate percentiles and unit conversions are not provided in this baseline. Legacy distribution parity is partial, not asserted."
+    },
+    "availability-and-completeness": {
+      "required_tables": [
+        "person",
+        "observation_period",
+        "condition_occurrence",
+        "drug_exposure",
+        "procedure_occurrence",
+        "visit_occurrence",
+        "device_exposure",
+        "observation",
+        "death",
+        "specimen",
+        "measurement",
+        "concept"
+      ],
+      "missing_required": "Unexpected absent/inaccessible base table or required column blocks the standard complete baseline; explicit reduced profile requires new recorded scope.",
+      "conditional_columns": "Actual schema/capability evidence, not declared version alone. Unsupported-by-schema conditional panels are reported and do not fabricate zero/missing counts.",
+      "empty": "Accessible empty table yields known zero counts, empty distributions and explicit empty-source/population. Unavailable/failed/suppressed/not-requested remain distinct.",
+      "sparse_zero": "A missing sparse cell means zero ONLY inside a successfully computed, integrity-validated declared concept/calendar/strata support with an exact denominator. No absent artifacts or new filters imply zero.",
+      "publication": "Every required output present/validated or explicitly policy-suppressed, with versioned conditional states; never publish a partial candidate as the full baseline."
+    },
+    "concept-and-source-tags": {
+      "raw": "NULL, 0 and each signed integer ID remain distinct raw tags. Unknown/wrong-domain concepts are labelled, not discarded.",
+      "all_concepts": "Every concept tag observed in source rows, including unknown/unmapped and explicit null defects; never only top N or vocabulary descendants.",
+      "lookups": "Unique-key LEFT lookups only. Conflicting duplicate vocabulary/dimension keys fail affected semantic outputs, never multiply rows.",
+      "hierarchy": "No descendant expansion/treemap hierarchy roll-up in this baseline; concept browse uses saved flat counts.",
+      "text": "Default source panel exports concept pairs and text presence, not raw strings. No note, observation text, value_source_value, device IDs or specimen identifiers in distributable artifacts."
+    },
+    "serving": "Batch-only R/CLI/scheduled source execution; all UI/API/ATLAS reads use pinned precomputed aggregates. No per-concept source jobs or chart-time CDM SQL.",
+    "disclosure": "Restricted generation is default. No synthetic policy is assumed for institutions; approved exports apply institution policy and physically omit restricted values. Denominator/overlapping-summary disclosure review is required, not just chart hiding.",
+    "eligibility-reasons": {
+      "numeric_summary_order": [
+        "numeric_missing",
+        "numeric_non_finite",
+        "unit_null",
+        "unit_zero",
+        "unit_unrecognized",
+        "operator_explicit_measurement_only",
+        "eligible"
+      ],
+      "numeric_summary_notes": "Use first matching reason. For observation omit the operator reason; do not create an operator column. All reason counts reconcile to physical concept rows.",
+      "nonnegative_scalar_order": [
+        "value_missing",
+        "value_non_finite",
+        "value_negative",
+        "eligible"
+      ],
+      "elapsed_duration_order": [
+        "start_missing_or_invalid",
+        "end_missing_or_invalid",
+        "end_before_start",
+        "eligible"
+      ],
+      "age_order": [
+        "event_date_missing_or_invalid",
+        "birth_year_missing_or_invalid",
+        "year_age_outside_0_130",
+        "eligible"
+      ],
+      "range_boundary_order": [
+        "bound_missing",
+        "bound_non_finite",
+        "unit_null",
+        "unit_zero",
+        "unit_unrecognized",
+        "eligible"
+      ],
+      "range_status_order": [
+        "numeric_missing",
+        "numeric_non_finite",
+        "unit_unavailable_or_unrecognized",
+        "operator_explicit",
+        "both_bounds_missing",
+        "one_bound_missing",
+        "bound_non_finite",
+        "bounds_reversed",
+        "below",
+        "within",
+        "above"
+      ],
+      "representation_flags": {
+        "measurement": [
+          "numeric_present",
+          "coded_present",
+          "source_text_present"
+        ],
+        "observation": [
+          "numeric_present",
+          "coded_present",
+          "source_text_present",
+          "standard_string_present",
+          "date_present_or_schema_absent"
+        ]
+      },
+      "date_presence": "DATE presence is a representation flag, not a distribution of date values. Schema-absent is distinct from null in an existing column.",
+      "numeric_summary_groups": "Emit n=0 with NULL stats for each observed allowed known-unit/NULL-or-0 operator stratum even when no row is eligible; excluded unit/operator strata are explained in counts. Do not invent cross-products of unit/operator combinations never observed.",
+      "age_proxy": "The 0..130 proxy eligibility interval is a declared descriptive policy in this revision, not validated clinical age. Unknown/invalid buckets retain counts; no inferred birthday. Any policy change requires a metric version change."
+    },
+    "strata-and-support": {
+      "capture": "Precompute concept_tag=ALL (domain total) separately from raw concept tags; ALL is a reserved typed selector, never concept 0/NULL. The same applies to period full_scope vs calendar. Record totals are additive over disjoint concept/date buckets; distinct-person totals are computed directly.",
+      "type_and_source": "Whole-source-history concept marginals only, not a joint concept/type/source/date cube. No raw source text groups in default output.",
+      "summaries": "Whole-scope summaries only, except observation coverage/calendar counts. Monthly numeric/age summaries require a newly declared batch scope; never synthesize them from whole-scope or average summaries.",
+      "histograms": "Event-count and distinct-concept histograms are whole-scope, not monthly. Zero-people cells need complete PERSON denominator and valid distinct-person counts.",
+      "first_age": "First dated record within declared generation history, not first lifetime event, incident disease or a retrospective claim before the dataset starts.",
+      "schema_absent": "Typed schema_absent tags are separate from null/zero; no schema-absent column is queried by a generated SQL module.",
+      "representation_support": "Emit all supported Boolean combinations for each observed concept. For 5.3/5.4 observation date is schema_absent in every combination, not a false Boolean.",
+      "empty_domain": "Domain ALL total is zero with empty_domain; concept catalogue empty. Do not allocate all vocabulary concepts or fabricate a concept-0 record.",
+      "reference_summary": "No raw numeric frequency/value rows are distributable by default; exact summary/eligibility counts are released under institution policy."
+    }
+  },
+  "metrics": [
+    {
+      "id": "core.source.passport",
+      "version": "1.0.0",
+      "family": "metadata",
+      "population": "source_context",
+      "grain": "source/release",
+      "dimensions": [],
+      "fields": [
+        "typed_metadata"
+      ],
+      "calculation": "Declared and observed CDM/schema/vocabulary/source identity, profile+metric revisions, full requested scope, actual coverage, generation/as-of time and unknown identity reasons. Never infer a snapshot from max event date.",
+      "denominator": null,
+      "inputs": [
+        "cdm_source",
+        "vocabulary",
+        "capability_probes",
+        "operator_assertions"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.source.capabilities",
+      "version": "1.0.0",
+      "family": "metadata",
+      "population": "source_context",
+      "grain": "table/column/probe",
+      "dimensions": [
+        "probe_id"
+      ],
+      "fields": [
+        "state",
+        "reason",
+        "observed_type"
+      ],
+      "calculation": "Probe precisely the physical dependencies in this manifest; absent, inaccessible, present-empty and present-readable differ. A declared CDM version does not override observed columns.",
+      "denominator": null,
+      "inputs": [
+        "schema_metadata"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.execution.output_status",
+      "version": "1.0.0",
+      "family": "metadata",
+      "population": "requested_outputs",
+      "grain": "metric/release",
+      "dimensions": [
+        "metric_id"
+      ],
+      "fields": [
+        "state",
+        "reason",
+        "required",
+        "coverage",
+        "integrity"
+      ],
+      "calculation": "Account for every required metric and conditional feature. Unavailable conditional fields are explicit unsupported-by-schema; unexpected missing/inaccessible required dependencies block publication. Policy-approved suppression carries completeness evidence.",
+      "denominator": null,
+      "inputs": [],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.execution.timing",
+      "version": "1.0.0",
+      "family": "metadata",
+      "population": "requested_outputs",
+      "grain": "phase/operation/run",
+      "dimensions": [
+        "operation_id",
+        "phase"
+      ],
+      "fields": [
+        "duration_ms",
+        "telemetry",
+        "availability"
+      ],
+      "calculation": "Measured monotonic wall time; optional physical-work/cost telemetry is labelled missing when unavailable, never inferred from wall time.",
+      "denominator": null,
+      "inputs": [],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.person.gender_count",
+      "version": "1.0.0",
+      "family": "person_count",
+      "population": "person_table",
+      "grain": "person/gender_concept_id",
+      "dimensions": [
+        "gender_concept_id"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count unique PERSON members by the raw recorded gender_concept_id; NULL, 0 and other values remain distinct. No demographic imputation.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "person.gender_concept_id",
+        "person.person_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.person.birth_year_count",
+      "version": "1.0.0",
+      "family": "person_count",
+      "population": "person_table",
+      "grain": "person/year_of_birth",
+      "dimensions": [
+        "year_of_birth"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count unique PERSON members by the raw recorded year_of_birth; NULL, 0 and other values remain distinct. No demographic imputation.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "person.year_of_birth",
+        "person.person_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.person.race_count",
+      "version": "1.0.0",
+      "family": "person_count",
+      "population": "person_table",
+      "grain": "person/race_concept_id",
+      "dimensions": [
+        "race_concept_id"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count unique PERSON members by the raw recorded race_concept_id; NULL, 0 and other values remain distinct. No demographic imputation.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "person.race_concept_id",
+        "person.person_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.person.ethnicity_count",
+      "version": "1.0.0",
+      "family": "person_count",
+      "population": "person_table",
+      "grain": "person/ethnicity_concept_id",
+      "dimensions": [
+        "ethnicity_concept_id"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count unique PERSON members by the raw recorded ethnicity_concept_id; NULL, 0 and other values remain distinct. No demographic imputation.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "person.ethnicity_concept_id",
+        "person.person_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.person.count",
+      "version": "1.0.0",
+      "family": "person_count",
+      "population": "person_table",
+      "grain": "source",
+      "dimensions": [],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "COUNT(DISTINCT person_id); null/duplicate PERSON IDs fail PERSON-dependent metrics; zero on an accessible empty PERSON table.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.person.birth_year_gender_count",
+      "version": "1.0.0",
+      "family": "person_count",
+      "population": "person_table",
+      "grain": "person/year_of_birth/gender_concept_id",
+      "dimensions": [
+        "year_of_birth",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count PERSON members by the exact joint recorded dimensions. Preserve NULL/zero categories; no inference from absence of DEATH.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.person.race_ethnicity_count",
+      "version": "1.0.0",
+      "family": "person_count",
+      "population": "person_table",
+      "grain": "person/race_concept_id/ethnicity_concept_id",
+      "dimensions": [
+        "race_concept_id",
+        "ethnicity_concept_id"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count PERSON members by the exact joint recorded dimensions. Preserve NULL/zero categories; no inference from absence of DEATH.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "person.person_id",
+        "person.race_concept_id",
+        "person.ethnicity_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.coverage_count",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "observed_people",
+      "grain": "window/month/year",
+      "dimensions": [
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "person_count",
+        "person_days"
+      ],
+      "calculation": "Merge overlapping and adjacent valid inclusive PERSON intervals, clip to each declared period and count unique people and union person-days. A partial edge period is labelled clipped. Never sum monthly people to a window count.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "observed_people",
+      "grain": "person/year/recorded gender/year-age decile",
+      "dimensions": [
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "At least one observed day in year. Age proxy is calendar year minus year_of_birth, the SAME year anchor used by observed domain numerators; negative or >130 and absent birth year use explicit unknown/invalid-age categories. All recorded genders retained. One person once in that year/gender/age bucket.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.continuous_person_count",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "observed_people",
+      "grain": "person/full month or year",
+      "dimensions": [
+        "period_kind",
+        "period_start",
+        "period_end",
+        "full_calendar_period"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Merged observation union covers every day of the actual full calendar month/year. Partial boundary periods are not called full-year/month observation. Also record clipped-window coverage as a separate scope.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.first_age_summary",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "people_with_valid_intervals",
+      "grain": "person at first merged start/gender",
+      "dimensions": [
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "First merged start per PERSON; year(start)-year_of_birth is labelled approximate year-age, not precise birthday age. Valid proxy 0..130; missing/invalid counted separately. Use exact summary contract.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.first_age_count",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "people_with_valid_intervals",
+      "grain": "person at first merged start/approximate year-age/gender",
+      "dimensions": [
+        "year_age_or_unknown",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count linked people by approximate year-age at first merged observation start and recorded gender. Preserve invalid/unknown age buckets under the same 0..130 descriptive policy; this is a histogram, separate from summary quantiles.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.first_interval_days_summary",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "people_with_valid_intervals",
+      "grain": "first merged interval/person/gender/age decile",
+      "dimensions": [
+        "gender_concept_id",
+        "first_year_age_decile"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Inclusive days of first merged interval per PERSON, before scope clipping; observation union removes overlap. Exact summary, stratified by recorded gender and approximate year-age decile including unknown.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.first_interval_30d_count",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "people_with_valid_intervals",
+      "grain": "person/first merged interval length bucket",
+      "dimensions": [
+        "floor_days_div_30"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Bucket FLOOR(inclusive first merged interval days/30). This intentionally differs from legacy exclusive DATEDIFF and arbitrary first-row ties.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.person_interval_histogram",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "person_table",
+      "grain": "person/number of merged intervals",
+      "dimensions": [
+        "interval_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count merged valid intervals per PERSON, including zero intervals. Non-additive across windows; default uses full recorded observation history.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.boundary_month_count",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "valid_observation_intervals",
+      "grain": "merged interval/start or end month",
+      "dimensions": [
+        "boundary_kind",
+        "month"
+      ],
+      "fields": [
+        "interval_count",
+        "person_count"
+      ],
+      "calculation": "Count merged interval starts and ends by calendar month and distinct linked people independently; starts/ends are not ongoing observed population.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.type_count",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "raw_observation_intervals",
+      "grain": "physical row/raw period type",
+      "dimensions": [
+        "period_type_concept_id"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Count all physical observation_period rows by raw period type without interval union; do not confuse type totals with union lengths.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.total_days_histogram",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "person_table",
+      "grain": "person/total union days bucket",
+      "dimensions": [
+        "floor_days_div_30"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Total inclusive merged observed days per PERSON, bucketed in 30-day increments; includes zero and is separate from first-interval length.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation_period.integrity_count",
+      "version": "1.0.0",
+      "family": "observation_union",
+      "population": "raw_observation_intervals",
+      "grain": "row/one ordered integrity category",
+      "dimensions": [
+        "reason"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Exactly one category in order: null person, orphan person, null endpoints, reversed interval, valid. Invalid intervals remain in this aggregate and are excluded with visible counts from coverage; do not substitute a zero for failed prerequisites.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date",
+        "observation_period.period_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.condition.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/period; records and linked distinct people are separate measures",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical source rows once by raw standard concept tag. Count distinct valid PERSON members separately. Precompute full declared scope, each month and each year; undated rows remain in full-scope counts and an explicit undated bucket, not a fabricated month. Dated subperiod counts never silently include undated rows.",
+      "denominator": "core.person.count for full-scope people only; no all-recorded/observed-population ratio",
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.condition.source_count",
+      "version": "1.0.0",
+      "family": "source_count",
+      "population": "all_recorded_rows",
+      "grain": "standard concept/raw source representation/full scope",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count records and linked people for raw source-concept-to-standard-concept pairs. Source text exports ONLY null/blank/nonblank presence states; raw text, patient IDs and unique source identifiers never enter public aggregates. Specimen has no source-concept column: use unsupported-by-schema, not concept 0. Raw source-string breakdown is a separate restricted future module.",
+      "denominator": null,
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date",
+        "condition_occurrence.condition_source_concept_id",
+        "condition_occurrence.condition_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.condition.type_count",
+      "version": "1.0.0",
+      "family": "type_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw type/full scope",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records and linked people by the recorded type without vocabulary inner joins or concept roll-up. NULL, zero, unknown and known concept IDs retain raw identity.",
+      "denominator": null,
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date",
+        "condition_occurrence.condition_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.condition.first_age_summary",
+      "version": "1.0.0",
+      "family": "first_age_summary",
+      "population": "linked_people_with_dated_records",
+      "grain": "person/concept first dated record/gender",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "For each linked PERSON/concept find earliest valid recorded event date in scope; take year(event)-year_of_birth. Summarize one approximate year-age per person/concept, by gender, using exact summary contract. Missing/invalid ages and people without dated events have explicit eligibility counts. No observation requirement and no incident diagnosis/onset claim.",
+      "denominator": null,
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.condition.frequency_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/concept/physical event count in full scope",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Histogram number of physical records per linked PERSON/concept, including event-count=0 computed as PERSON total minus distinct linked people for that concept. All observed concept tags only. Excluded orphan/null people appear in integrity counts. Cumulative >=x counts derive from this saved histogram and denominator core.person.count; not from chart-time CDM queries.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.condition.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/domain/distinct concept count",
+      "dimensions": [
+        "concept_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count distinct raw non-null concept tags per linked PERSON across full scope, retaining concept 0. Null concept is an explicit integrity defect and is not a distinct concept. Histogram includes PERSON members with zero qualifying concepts.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.condition.integrity_count",
+      "version": "1.0.0",
+      "family": "integrity_count",
+      "population": "all_recorded_rows",
+      "grain": "row/independent integrity flag",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Independent boolean marginals for null/orphan person, missing/invalid date, null/zero/unknown/wrong-domain concept, and missing/reversed end where applicable. Marginals may overlap and are never summed as mutually exclusive people or rows. Vocabulary identity is a LEFT lookup; no clinical row multiplication. Duplicate record IDs are flagged without deduplicating physical rows; DEATH uses repeated person rows, not an invented death_id.",
+      "denominator": null,
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date",
+        "person.person_id",
+        "concept.concept_id",
+        "concept.domain_id",
+        "condition_occurrence.condition_occurrence_id",
+        "condition_occurrence.condition_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.condition.observation_qualification_count",
+      "version": "1.0.0",
+      "family": "observation_membership",
+      "population": "all_recorded_rows",
+      "grain": "concept/ordered observation-membership category/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "One row category in order: null/orphan person, undated, no valid intervals, outside valid union, inside valid union. Membership is an EXISTS lookup into merged intervals at event_date, never a multiplicative join. Category record counts sum to full-scope capture records. Distinct people can appear in several categories and are NOT additive; percentages require the declared record or any-event-person denominator.",
+      "denominator": "core.condition.capture_count in full scope",
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.condition.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "observed_rows",
+      "grain": "concept/period within recorded observation union",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical source rows linked to valid PERSON and dated within at least one valid inclusive merged observation interval and requested period. Count once; separately distinct people per full window/month/year. Saved numerator/denominator scope is explicit; denominator is same-period observed people, not person-time or disease prevalence.",
+      "denominator": "core.observation_period.coverage_count same period",
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.condition.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "year_gender_age_count",
+      "population": "observed_year_people",
+      "grain": "person/concept/year/recorded gender/year-age decile",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Distinct linked people with an observed event during the year; assign year-age using calendar year minus year_of_birth, exactly the denominator year anchor. No single person moves between age buckets within a year. All genders and explicit unknown/invalid age buckets retained. A recorded-event share, not incidence or validated prevalence. Include a concept_tag=ALL subtotal computed as a separate distinct-person grouping; never sum concept people.",
+      "denominator": "core.observation_period.year_gender_age_count same year/gender/age",
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/period; records and linked distinct people are separate measures",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical source rows once by raw standard concept tag. Count distinct valid PERSON members separately. Precompute full declared scope, each month and each year; undated rows remain in full-scope counts and an explicit undated bucket, not a fabricated month. Dated subperiod counts never silently include undated rows.",
+      "denominator": "core.person.count for full-scope people only; no all-recorded/observed-population ratio",
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.source_count",
+      "version": "1.0.0",
+      "family": "source_count",
+      "population": "all_recorded_rows",
+      "grain": "standard concept/raw source representation/full scope",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count records and linked people for raw source-concept-to-standard-concept pairs. Source text exports ONLY null/blank/nonblank presence states; raw text, patient IDs and unique source identifiers never enter public aggregates. Specimen has no source-concept column: use unsupported-by-schema, not concept 0. Raw source-string breakdown is a separate restricted future module.",
+      "denominator": null,
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date",
+        "drug_exposure.drug_source_concept_id",
+        "drug_exposure.drug_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.type_count",
+      "version": "1.0.0",
+      "family": "type_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw type/full scope",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records and linked people by the recorded type without vocabulary inner joins or concept roll-up. NULL, zero, unknown and known concept IDs retain raw identity.",
+      "denominator": null,
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date",
+        "drug_exposure.drug_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.first_age_summary",
+      "version": "1.0.0",
+      "family": "first_age_summary",
+      "population": "linked_people_with_dated_records",
+      "grain": "person/concept first dated record/gender",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "For each linked PERSON/concept find earliest valid recorded event date in scope; take year(event)-year_of_birth. Summarize one approximate year-age per person/concept, by gender, using exact summary contract. Missing/invalid ages and people without dated events have explicit eligibility counts. No observation requirement and no incident diagnosis/onset claim.",
+      "denominator": null,
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.frequency_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/concept/physical event count in full scope",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Histogram number of physical records per linked PERSON/concept, including event-count=0 computed as PERSON total minus distinct linked people for that concept. All observed concept tags only. Excluded orphan/null people appear in integrity counts. Cumulative >=x counts derive from this saved histogram and denominator core.person.count; not from chart-time CDM queries.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/domain/distinct concept count",
+      "dimensions": [
+        "concept_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count distinct raw non-null concept tags per linked PERSON across full scope, retaining concept 0. Null concept is an explicit integrity defect and is not a distinct concept. Histogram includes PERSON members with zero qualifying concepts.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.integrity_count",
+      "version": "1.0.0",
+      "family": "integrity_count",
+      "population": "all_recorded_rows",
+      "grain": "row/independent integrity flag",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Independent boolean marginals for null/orphan person, missing/invalid date, null/zero/unknown/wrong-domain concept, and missing/reversed end where applicable. Marginals may overlap and are never summed as mutually exclusive people or rows. Vocabulary identity is a LEFT lookup; no clinical row multiplication. Duplicate record IDs are flagged without deduplicating physical rows; DEATH uses repeated person rows, not an invented death_id.",
+      "denominator": null,
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date",
+        "person.person_id",
+        "concept.concept_id",
+        "concept.domain_id",
+        "drug_exposure.drug_exposure_id",
+        "drug_exposure.drug_exposure_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.observation_qualification_count",
+      "version": "1.0.0",
+      "family": "observation_membership",
+      "population": "all_recorded_rows",
+      "grain": "concept/ordered observation-membership category/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "One row category in order: null/orphan person, undated, no valid intervals, outside valid union, inside valid union. Membership is an EXISTS lookup into merged intervals at event_date, never a multiplicative join. Category record counts sum to full-scope capture records. Distinct people can appear in several categories and are NOT additive; percentages require the declared record or any-event-person denominator.",
+      "denominator": "core.drug.capture_count in full scope",
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.drug.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "observed_rows",
+      "grain": "concept/period within recorded observation union",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical source rows linked to valid PERSON and dated within at least one valid inclusive merged observation interval and requested period. Count once; separately distinct people per full window/month/year. Saved numerator/denominator scope is explicit; denominator is same-period observed people, not person-time or disease prevalence.",
+      "denominator": "core.observation_period.coverage_count same period",
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.drug.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "year_gender_age_count",
+      "population": "observed_year_people",
+      "grain": "person/concept/year/recorded gender/year-age decile",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Distinct linked people with an observed event during the year; assign year-age using calendar year minus year_of_birth, exactly the denominator year anchor. No single person moves between age buckets within a year. All genders and explicit unknown/invalid age buckets retained. A recorded-event share, not incidence or validated prevalence. Include a concept_tag=ALL subtotal computed as a separate distinct-person grouping; never sum concept people.",
+      "denominator": "core.observation_period.year_gender_age_count same year/gender/age",
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.procedure.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/period; records and linked distinct people are separate measures",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical source rows once by raw standard concept tag. Count distinct valid PERSON members separately. Precompute full declared scope, each month and each year; undated rows remain in full-scope counts and an explicit undated bucket, not a fabricated month. Dated subperiod counts never silently include undated rows.",
+      "denominator": "core.person.count for full-scope people only; no all-recorded/observed-population ratio",
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.procedure.source_count",
+      "version": "1.0.0",
+      "family": "source_count",
+      "population": "all_recorded_rows",
+      "grain": "standard concept/raw source representation/full scope",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count records and linked people for raw source-concept-to-standard-concept pairs. Source text exports ONLY null/blank/nonblank presence states; raw text, patient IDs and unique source identifiers never enter public aggregates. Specimen has no source-concept column: use unsupported-by-schema, not concept 0. Raw source-string breakdown is a separate restricted future module.",
+      "denominator": null,
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "procedure_occurrence.procedure_source_concept_id",
+        "procedure_occurrence.procedure_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.procedure.type_count",
+      "version": "1.0.0",
+      "family": "type_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw type/full scope",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records and linked people by the recorded type without vocabulary inner joins or concept roll-up. NULL, zero, unknown and known concept IDs retain raw identity.",
+      "denominator": null,
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "procedure_occurrence.procedure_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.procedure.first_age_summary",
+      "version": "1.0.0",
+      "family": "first_age_summary",
+      "population": "linked_people_with_dated_records",
+      "grain": "person/concept first dated record/gender",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "For each linked PERSON/concept find earliest valid recorded event date in scope; take year(event)-year_of_birth. Summarize one approximate year-age per person/concept, by gender, using exact summary contract. Missing/invalid ages and people without dated events have explicit eligibility counts. No observation requirement and no incident diagnosis/onset claim.",
+      "denominator": null,
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.procedure.frequency_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/concept/physical event count in full scope",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Histogram number of physical records per linked PERSON/concept, including event-count=0 computed as PERSON total minus distinct linked people for that concept. All observed concept tags only. Excluded orphan/null people appear in integrity counts. Cumulative >=x counts derive from this saved histogram and denominator core.person.count; not from chart-time CDM queries.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.procedure.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/domain/distinct concept count",
+      "dimensions": [
+        "concept_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count distinct raw non-null concept tags per linked PERSON across full scope, retaining concept 0. Null concept is an explicit integrity defect and is not a distinct concept. Histogram includes PERSON members with zero qualifying concepts.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.procedure.integrity_count",
+      "version": "1.0.0",
+      "family": "integrity_count",
+      "population": "all_recorded_rows",
+      "grain": "row/independent integrity flag",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Independent boolean marginals for null/orphan person, missing/invalid date, null/zero/unknown/wrong-domain concept, and missing/reversed end where applicable. Marginals may overlap and are never summed as mutually exclusive people or rows. Vocabulary identity is a LEFT lookup; no clinical row multiplication. Duplicate record IDs are flagged without deduplicating physical rows; DEATH uses repeated person rows, not an invented death_id.",
+      "denominator": null,
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "person.person_id",
+        "concept.concept_id",
+        "concept.domain_id",
+        "procedure_occurrence.procedure_occurrence_id",
+        "procedure_occurrence.procedure_end_date"
+      ],
+      "conditional_inputs": [
+        "procedure_occurrence.procedure_end_date"
+      ],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.procedure.observation_qualification_count",
+      "version": "1.0.0",
+      "family": "observation_membership",
+      "population": "all_recorded_rows",
+      "grain": "concept/ordered observation-membership category/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "One row category in order: null/orphan person, undated, no valid intervals, outside valid union, inside valid union. Membership is an EXISTS lookup into merged intervals at event_date, never a multiplicative join. Category record counts sum to full-scope capture records. Distinct people can appear in several categories and are NOT additive; percentages require the declared record or any-event-person denominator.",
+      "denominator": "core.procedure.capture_count in full scope",
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.procedure.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "observed_rows",
+      "grain": "concept/period within recorded observation union",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical source rows linked to valid PERSON and dated within at least one valid inclusive merged observation interval and requested period. Count once; separately distinct people per full window/month/year. Saved numerator/denominator scope is explicit; denominator is same-period observed people, not person-time or disease prevalence.",
+      "denominator": "core.observation_period.coverage_count same period",
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.procedure.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "year_gender_age_count",
+      "population": "observed_year_people",
+      "grain": "person/concept/year/recorded gender/year-age decile",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Distinct linked people with an observed event during the year; assign year-age using calendar year minus year_of_birth, exactly the denominator year anchor. No single person moves between age buckets within a year. All genders and explicit unknown/invalid age buckets retained. A recorded-event share, not incidence or validated prevalence. Include a concept_tag=ALL subtotal computed as a separate distinct-person grouping; never sum concept people.",
+      "denominator": "core.observation_period.year_gender_age_count same year/gender/age",
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/period; records and linked distinct people are separate measures",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical source rows once by raw standard concept tag. Count distinct valid PERSON members separately. Precompute full declared scope, each month and each year; undated rows remain in full-scope counts and an explicit undated bucket, not a fabricated month. Dated subperiod counts never silently include undated rows.",
+      "denominator": "core.person.count for full-scope people only; no all-recorded/observed-population ratio",
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.source_count",
+      "version": "1.0.0",
+      "family": "source_count",
+      "population": "all_recorded_rows",
+      "grain": "standard concept/raw source representation/full scope",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count records and linked people for raw source-concept-to-standard-concept pairs. Source text exports ONLY null/blank/nonblank presence states; raw text, patient IDs and unique source identifiers never enter public aggregates. Specimen has no source-concept column: use unsupported-by-schema, not concept 0. Raw source-string breakdown is a separate restricted future module.",
+      "denominator": null,
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date",
+        "visit_occurrence.visit_source_concept_id",
+        "visit_occurrence.visit_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.type_count",
+      "version": "1.0.0",
+      "family": "type_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw type/full scope",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records and linked people by the recorded type without vocabulary inner joins or concept roll-up. NULL, zero, unknown and known concept IDs retain raw identity.",
+      "denominator": null,
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date",
+        "visit_occurrence.visit_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.first_age_summary",
+      "version": "1.0.0",
+      "family": "first_age_summary",
+      "population": "linked_people_with_dated_records",
+      "grain": "person/concept first dated record/gender",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "For each linked PERSON/concept find earliest valid recorded event date in scope; take year(event)-year_of_birth. Summarize one approximate year-age per person/concept, by gender, using exact summary contract. Missing/invalid ages and people without dated events have explicit eligibility counts. No observation requirement and no incident diagnosis/onset claim.",
+      "denominator": null,
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.frequency_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/concept/physical event count in full scope",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Histogram number of physical records per linked PERSON/concept, including event-count=0 computed as PERSON total minus distinct linked people for that concept. All observed concept tags only. Excluded orphan/null people appear in integrity counts. Cumulative >=x counts derive from this saved histogram and denominator core.person.count; not from chart-time CDM queries.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/domain/distinct concept count",
+      "dimensions": [
+        "concept_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count distinct raw non-null concept tags per linked PERSON across full scope, retaining concept 0. Null concept is an explicit integrity defect and is not a distinct concept. Histogram includes PERSON members with zero qualifying concepts.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.integrity_count",
+      "version": "1.0.0",
+      "family": "integrity_count",
+      "population": "all_recorded_rows",
+      "grain": "row/independent integrity flag",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Independent boolean marginals for null/orphan person, missing/invalid date, null/zero/unknown/wrong-domain concept, and missing/reversed end where applicable. Marginals may overlap and are never summed as mutually exclusive people or rows. Vocabulary identity is a LEFT lookup; no clinical row multiplication. Duplicate record IDs are flagged without deduplicating physical rows; DEATH uses repeated person rows, not an invented death_id.",
+      "denominator": null,
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date",
+        "person.person_id",
+        "concept.concept_id",
+        "concept.domain_id",
+        "visit_occurrence.visit_occurrence_id",
+        "visit_occurrence.visit_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.observation_qualification_count",
+      "version": "1.0.0",
+      "family": "observation_membership",
+      "population": "all_recorded_rows",
+      "grain": "concept/ordered observation-membership category/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "One row category in order: null/orphan person, undated, no valid intervals, outside valid union, inside valid union. Membership is an EXISTS lookup into merged intervals at event_date, never a multiplicative join. Category record counts sum to full-scope capture records. Distinct people can appear in several categories and are NOT additive; percentages require the declared record or any-event-person denominator.",
+      "denominator": "core.visit.capture_count in full scope",
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.visit.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "observed_rows",
+      "grain": "concept/period within recorded observation union",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical source rows linked to valid PERSON and dated within at least one valid inclusive merged observation interval and requested period. Count once; separately distinct people per full window/month/year. Saved numerator/denominator scope is explicit; denominator is same-period observed people, not person-time or disease prevalence.",
+      "denominator": "core.observation_period.coverage_count same period",
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.visit.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "year_gender_age_count",
+      "population": "observed_year_people",
+      "grain": "person/concept/year/recorded gender/year-age decile",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Distinct linked people with an observed event during the year; assign year-age using calendar year minus year_of_birth, exactly the denominator year anchor. No single person moves between age buckets within a year. All genders and explicit unknown/invalid age buckets retained. A recorded-event share, not incidence or validated prevalence. Include a concept_tag=ALL subtotal computed as a separate distinct-person grouping; never sum concept people.",
+      "denominator": "core.observation_period.year_gender_age_count same year/gender/age",
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.device.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/period; records and linked distinct people are separate measures",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical source rows once by raw standard concept tag. Count distinct valid PERSON members separately. Precompute full declared scope, each month and each year; undated rows remain in full-scope counts and an explicit undated bucket, not a fabricated month. Dated subperiod counts never silently include undated rows.",
+      "denominator": "core.person.count for full-scope people only; no all-recorded/observed-population ratio",
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.device.source_count",
+      "version": "1.0.0",
+      "family": "source_count",
+      "population": "all_recorded_rows",
+      "grain": "standard concept/raw source representation/full scope",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count records and linked people for raw source-concept-to-standard-concept pairs. Source text exports ONLY null/blank/nonblank presence states; raw text, patient IDs and unique source identifiers never enter public aggregates. Specimen has no source-concept column: use unsupported-by-schema, not concept 0. Raw source-string breakdown is a separate restricted future module.",
+      "denominator": null,
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date",
+        "device_exposure.device_source_concept_id",
+        "device_exposure.device_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.device.type_count",
+      "version": "1.0.0",
+      "family": "type_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw type/full scope",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records and linked people by the recorded type without vocabulary inner joins or concept roll-up. NULL, zero, unknown and known concept IDs retain raw identity.",
+      "denominator": null,
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date",
+        "device_exposure.device_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.device.first_age_summary",
+      "version": "1.0.0",
+      "family": "first_age_summary",
+      "population": "linked_people_with_dated_records",
+      "grain": "person/concept first dated record/gender",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "For each linked PERSON/concept find earliest valid recorded event date in scope; take year(event)-year_of_birth. Summarize one approximate year-age per person/concept, by gender, using exact summary contract. Missing/invalid ages and people without dated events have explicit eligibility counts. No observation requirement and no incident diagnosis/onset claim.",
+      "denominator": null,
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.device.frequency_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/concept/physical event count in full scope",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Histogram number of physical records per linked PERSON/concept, including event-count=0 computed as PERSON total minus distinct linked people for that concept. All observed concept tags only. Excluded orphan/null people appear in integrity counts. Cumulative >=x counts derive from this saved histogram and denominator core.person.count; not from chart-time CDM queries.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.device.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/domain/distinct concept count",
+      "dimensions": [
+        "concept_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count distinct raw non-null concept tags per linked PERSON across full scope, retaining concept 0. Null concept is an explicit integrity defect and is not a distinct concept. Histogram includes PERSON members with zero qualifying concepts.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.device.integrity_count",
+      "version": "1.0.0",
+      "family": "integrity_count",
+      "population": "all_recorded_rows",
+      "grain": "row/independent integrity flag",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Independent boolean marginals for null/orphan person, missing/invalid date, null/zero/unknown/wrong-domain concept, and missing/reversed end where applicable. Marginals may overlap and are never summed as mutually exclusive people or rows. Vocabulary identity is a LEFT lookup; no clinical row multiplication. Duplicate record IDs are flagged without deduplicating physical rows; DEATH uses repeated person rows, not an invented death_id.",
+      "denominator": null,
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date",
+        "person.person_id",
+        "concept.concept_id",
+        "concept.domain_id",
+        "device_exposure.device_exposure_id",
+        "device_exposure.device_exposure_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.device.observation_qualification_count",
+      "version": "1.0.0",
+      "family": "observation_membership",
+      "population": "all_recorded_rows",
+      "grain": "concept/ordered observation-membership category/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "One row category in order: null/orphan person, undated, no valid intervals, outside valid union, inside valid union. Membership is an EXISTS lookup into merged intervals at event_date, never a multiplicative join. Category record counts sum to full-scope capture records. Distinct people can appear in several categories and are NOT additive; percentages require the declared record or any-event-person denominator.",
+      "denominator": "core.device.capture_count in full scope",
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.device.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "observed_rows",
+      "grain": "concept/period within recorded observation union",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical source rows linked to valid PERSON and dated within at least one valid inclusive merged observation interval and requested period. Count once; separately distinct people per full window/month/year. Saved numerator/denominator scope is explicit; denominator is same-period observed people, not person-time or disease prevalence.",
+      "denominator": "core.observation_period.coverage_count same period",
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.device.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "year_gender_age_count",
+      "population": "observed_year_people",
+      "grain": "person/concept/year/recorded gender/year-age decile",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Distinct linked people with an observed event during the year; assign year-age using calendar year minus year_of_birth, exactly the denominator year anchor. No single person moves between age buckets within a year. All genders and explicit unknown/invalid age buckets retained. A recorded-event share, not incidence or validated prevalence. Include a concept_tag=ALL subtotal computed as a separate distinct-person grouping; never sum concept people.",
+      "denominator": "core.observation_period.year_gender_age_count same year/gender/age",
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/period; records and linked distinct people are separate measures",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical source rows once by raw standard concept tag. Count distinct valid PERSON members separately. Precompute full declared scope, each month and each year; undated rows remain in full-scope counts and an explicit undated bucket, not a fabricated month. Dated subperiod counts never silently include undated rows.",
+      "denominator": "core.person.count for full-scope people only; no all-recorded/observed-population ratio",
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.source_count",
+      "version": "1.0.0",
+      "family": "source_count",
+      "population": "all_recorded_rows",
+      "grain": "standard concept/raw source representation/full scope",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count records and linked people for raw source-concept-to-standard-concept pairs. Source text exports ONLY null/blank/nonblank presence states; raw text, patient IDs and unique source identifiers never enter public aggregates. Specimen has no source-concept column: use unsupported-by-schema, not concept 0. Raw source-string breakdown is a separate restricted future module.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "observation.observation_source_concept_id",
+        "observation.observation_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.type_count",
+      "version": "1.0.0",
+      "family": "type_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw type/full scope",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records and linked people by the recorded type without vocabulary inner joins or concept roll-up. NULL, zero, unknown and known concept IDs retain raw identity.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "observation.observation_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.first_age_summary",
+      "version": "1.0.0",
+      "family": "first_age_summary",
+      "population": "linked_people_with_dated_records",
+      "grain": "person/concept first dated record/gender",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "For each linked PERSON/concept find earliest valid recorded event date in scope; take year(event)-year_of_birth. Summarize one approximate year-age per person/concept, by gender, using exact summary contract. Missing/invalid ages and people without dated events have explicit eligibility counts. No observation requirement and no incident diagnosis/onset claim.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.frequency_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/concept/physical event count in full scope",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Histogram number of physical records per linked PERSON/concept, including event-count=0 computed as PERSON total minus distinct linked people for that concept. All observed concept tags only. Excluded orphan/null people appear in integrity counts. Cumulative >=x counts derive from this saved histogram and denominator core.person.count; not from chart-time CDM queries.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/domain/distinct concept count",
+      "dimensions": [
+        "concept_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count distinct raw non-null concept tags per linked PERSON across full scope, retaining concept 0. Null concept is an explicit integrity defect and is not a distinct concept. Histogram includes PERSON members with zero qualifying concepts.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.integrity_count",
+      "version": "1.0.0",
+      "family": "integrity_count",
+      "population": "all_recorded_rows",
+      "grain": "row/independent integrity flag",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Independent boolean marginals for null/orphan person, missing/invalid date, null/zero/unknown/wrong-domain concept, and missing/reversed end where applicable. Marginals may overlap and are never summed as mutually exclusive people or rows. Vocabulary identity is a LEFT lookup; no clinical row multiplication. Duplicate record IDs are flagged without deduplicating physical rows; DEATH uses repeated person rows, not an invented death_id.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "person.person_id",
+        "concept.concept_id",
+        "concept.domain_id",
+        "observation.observation_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.observation_qualification_count",
+      "version": "1.0.0",
+      "family": "observation_membership",
+      "population": "all_recorded_rows",
+      "grain": "concept/ordered observation-membership category/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "One row category in order: null/orphan person, undated, no valid intervals, outside valid union, inside valid union. Membership is an EXISTS lookup into merged intervals at event_date, never a multiplicative join. Category record counts sum to full-scope capture records. Distinct people can appear in several categories and are NOT additive; percentages require the declared record or any-event-person denominator.",
+      "denominator": "core.observation.capture_count in full scope",
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.observation.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "observed_rows",
+      "grain": "concept/period within recorded observation union",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical source rows linked to valid PERSON and dated within at least one valid inclusive merged observation interval and requested period. Count once; separately distinct people per full window/month/year. Saved numerator/denominator scope is explicit; denominator is same-period observed people, not person-time or disease prevalence.",
+      "denominator": "core.observation_period.coverage_count same period",
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.observation.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "year_gender_age_count",
+      "population": "observed_year_people",
+      "grain": "person/concept/year/recorded gender/year-age decile",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Distinct linked people with an observed event during the year; assign year-age using calendar year minus year_of_birth, exactly the denominator year anchor. No single person moves between age buckets within a year. All genders and explicit unknown/invalid age buckets retained. A recorded-event share, not incidence or validated prevalence. Include a concept_tag=ALL subtotal computed as a separate distinct-person grouping; never sum concept people.",
+      "denominator": "core.observation_period.year_gender_age_count same year/gender/age",
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.death.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/period; records and linked distinct people are separate measures",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical source rows once by raw standard concept tag. Count distinct valid PERSON members separately. Precompute full declared scope, each month and each year; undated rows remain in full-scope counts and an explicit undated bucket, not a fabricated month. Dated subperiod counts never silently include undated rows.",
+      "denominator": "core.person.count for full-scope people only; no all-recorded/observed-population ratio",
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.death.source_count",
+      "version": "1.0.0",
+      "family": "source_count",
+      "population": "all_recorded_rows",
+      "grain": "standard concept/raw source representation/full scope",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count records and linked people for raw source-concept-to-standard-concept pairs. Source text exports ONLY null/blank/nonblank presence states; raw text, patient IDs and unique source identifiers never enter public aggregates. Specimen has no source-concept column: use unsupported-by-schema, not concept 0. Raw source-string breakdown is a separate restricted future module.",
+      "denominator": null,
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date",
+        "death.cause_source_concept_id",
+        "death.cause_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.death.type_count",
+      "version": "1.0.0",
+      "family": "type_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw type/full scope",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records and linked people by the recorded type without vocabulary inner joins or concept roll-up. NULL, zero, unknown and known concept IDs retain raw identity.",
+      "denominator": null,
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date",
+        "death.death_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.death.first_age_summary",
+      "version": "1.0.0",
+      "family": "first_age_summary",
+      "population": "linked_people_with_dated_records",
+      "grain": "person/concept first dated record/gender",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "For each linked PERSON/concept find earliest valid recorded event date in scope; take year(event)-year_of_birth. Summarize one approximate year-age per person/concept, by gender, using exact summary contract. Missing/invalid ages and people without dated events have explicit eligibility counts. No observation requirement and no incident diagnosis/onset claim.",
+      "denominator": null,
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.death.frequency_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/concept/physical event count in full scope",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Histogram number of physical records per linked PERSON/concept, including event-count=0 computed as PERSON total minus distinct linked people for that concept. All observed concept tags only. Excluded orphan/null people appear in integrity counts. Cumulative >=x counts derive from this saved histogram and denominator core.person.count; not from chart-time CDM queries.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.death.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/domain/distinct concept count",
+      "dimensions": [
+        "concept_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count distinct raw non-null concept tags per linked PERSON across full scope, retaining concept 0. Null concept is an explicit integrity defect and is not a distinct concept. Histogram includes PERSON members with zero qualifying concepts.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.death.integrity_count",
+      "version": "1.0.0",
+      "family": "integrity_count",
+      "population": "all_recorded_rows",
+      "grain": "row/independent integrity flag",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Independent boolean marginals for null/orphan person, missing/invalid date, null/zero/unknown/wrong-domain concept, and missing/reversed end where applicable. Marginals may overlap and are never summed as mutually exclusive people or rows. Vocabulary identity is a LEFT lookup; no clinical row multiplication. Duplicate record IDs are flagged without deduplicating physical rows; DEATH uses repeated person rows, not an invented death_id.",
+      "denominator": null,
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date",
+        "person.person_id",
+        "concept.concept_id",
+        "concept.domain_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.death.observation_qualification_count",
+      "version": "1.0.0",
+      "family": "observation_membership",
+      "population": "all_recorded_rows",
+      "grain": "concept/ordered observation-membership category/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "One row category in order: null/orphan person, undated, no valid intervals, outside valid union, inside valid union. Membership is an EXISTS lookup into merged intervals at event_date, never a multiplicative join. Category record counts sum to full-scope capture records. Distinct people can appear in several categories and are NOT additive; percentages require the declared record or any-event-person denominator.",
+      "denominator": "core.death.capture_count in full scope",
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.death.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "observed_rows",
+      "grain": "concept/period within recorded observation union",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical source rows linked to valid PERSON and dated within at least one valid inclusive merged observation interval and requested period. Count once; separately distinct people per full window/month/year. Saved numerator/denominator scope is explicit; denominator is same-period observed people, not person-time or disease prevalence.",
+      "denominator": "core.observation_period.coverage_count same period",
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.death.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "year_gender_age_count",
+      "population": "observed_year_people",
+      "grain": "person/concept/year/recorded gender/year-age decile",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Distinct linked people with an observed event during the year; assign year-age using calendar year minus year_of_birth, exactly the denominator year anchor. No single person moves between age buckets within a year. All genders and explicit unknown/invalid age buckets retained. A recorded-event share, not incidence or validated prevalence. Include a concept_tag=ALL subtotal computed as a separate distinct-person grouping; never sum concept people.",
+      "denominator": "core.observation_period.year_gender_age_count same year/gender/age",
+      "inputs": [
+        "death.person_id",
+        "death.cause_concept_id",
+        "death.death_date",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/period; records and linked distinct people are separate measures",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical source rows once by raw standard concept tag. Count distinct valid PERSON members separately. Precompute full declared scope, each month and each year; undated rows remain in full-scope counts and an explicit undated bucket, not a fabricated month. Dated subperiod counts never silently include undated rows.",
+      "denominator": "core.person.count for full-scope people only; no all-recorded/observed-population ratio",
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.source_count",
+      "version": "1.0.0",
+      "family": "source_count",
+      "population": "all_recorded_rows",
+      "grain": "standard concept/raw source representation/full scope",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count records and linked people for raw source-concept-to-standard-concept pairs. Source text exports ONLY null/blank/nonblank presence states; raw text, patient IDs and unique source identifiers never enter public aggregates. Specimen has no source-concept column: use unsupported-by-schema, not concept 0. Raw source-string breakdown is a separate restricted future module.",
+      "denominator": null,
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date",
+        "specimen.specimen_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.type_count",
+      "version": "1.0.0",
+      "family": "type_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw type/full scope",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records and linked people by the recorded type without vocabulary inner joins or concept roll-up. NULL, zero, unknown and known concept IDs retain raw identity.",
+      "denominator": null,
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date",
+        "specimen.specimen_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.first_age_summary",
+      "version": "1.0.0",
+      "family": "first_age_summary",
+      "population": "linked_people_with_dated_records",
+      "grain": "person/concept first dated record/gender",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "For each linked PERSON/concept find earliest valid recorded event date in scope; take year(event)-year_of_birth. Summarize one approximate year-age per person/concept, by gender, using exact summary contract. Missing/invalid ages and people without dated events have explicit eligibility counts. No observation requirement and no incident diagnosis/onset claim.",
+      "denominator": null,
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.frequency_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/concept/physical event count in full scope",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Histogram number of physical records per linked PERSON/concept, including event-count=0 computed as PERSON total minus distinct linked people for that concept. All observed concept tags only. Excluded orphan/null people appear in integrity counts. Cumulative >=x counts derive from this saved histogram and denominator core.person.count; not from chart-time CDM queries.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/domain/distinct concept count",
+      "dimensions": [
+        "concept_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count distinct raw non-null concept tags per linked PERSON across full scope, retaining concept 0. Null concept is an explicit integrity defect and is not a distinct concept. Histogram includes PERSON members with zero qualifying concepts.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.integrity_count",
+      "version": "1.0.0",
+      "family": "integrity_count",
+      "population": "all_recorded_rows",
+      "grain": "row/independent integrity flag",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Independent boolean marginals for null/orphan person, missing/invalid date, null/zero/unknown/wrong-domain concept, and missing/reversed end where applicable. Marginals may overlap and are never summed as mutually exclusive people or rows. Vocabulary identity is a LEFT lookup; no clinical row multiplication. Duplicate record IDs are flagged without deduplicating physical rows; DEATH uses repeated person rows, not an invented death_id.",
+      "denominator": null,
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date",
+        "person.person_id",
+        "concept.concept_id",
+        "concept.domain_id",
+        "specimen.specimen_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.observation_qualification_count",
+      "version": "1.0.0",
+      "family": "observation_membership",
+      "population": "all_recorded_rows",
+      "grain": "concept/ordered observation-membership category/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "One row category in order: null/orphan person, undated, no valid intervals, outside valid union, inside valid union. Membership is an EXISTS lookup into merged intervals at event_date, never a multiplicative join. Category record counts sum to full-scope capture records. Distinct people can appear in several categories and are NOT additive; percentages require the declared record or any-event-person denominator.",
+      "denominator": "core.specimen.capture_count in full scope",
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.specimen.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "observed_rows",
+      "grain": "concept/period within recorded observation union",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical source rows linked to valid PERSON and dated within at least one valid inclusive merged observation interval and requested period. Count once; separately distinct people per full window/month/year. Saved numerator/denominator scope is explicit; denominator is same-period observed people, not person-time or disease prevalence.",
+      "denominator": "core.observation_period.coverage_count same period",
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.specimen.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "year_gender_age_count",
+      "population": "observed_year_people",
+      "grain": "person/concept/year/recorded gender/year-age decile",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Distinct linked people with an observed event during the year; assign year-age using calendar year minus year_of_birth, exactly the denominator year anchor. No single person moves between age buckets within a year. All genders and explicit unknown/invalid age buckets retained. A recorded-event share, not incidence or validated prevalence. Include a concept_tag=ALL subtotal computed as a separate distinct-person grouping; never sum concept people.",
+      "denominator": "core.observation_period.year_gender_age_count same year/gender/age",
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/period; records and linked distinct people are separate measures",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical source rows once by raw standard concept tag. Count distinct valid PERSON members separately. Precompute full declared scope, each month and each year; undated rows remain in full-scope counts and an explicit undated bucket, not a fabricated month. Dated subperiod counts never silently include undated rows.",
+      "denominator": "core.person.count for full-scope people only; no all-recorded/observed-population ratio",
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.source_count",
+      "version": "1.0.0",
+      "family": "source_count",
+      "population": "all_recorded_rows",
+      "grain": "standard concept/raw source representation/full scope",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count records and linked people for raw source-concept-to-standard-concept pairs. Source text exports ONLY null/blank/nonblank presence states; raw text, patient IDs and unique source identifiers never enter public aggregates. Specimen has no source-concept column: use unsupported-by-schema, not concept 0. Raw source-string breakdown is a separate restricted future module.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "measurement.measurement_source_concept_id",
+        "measurement.measurement_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.type_count",
+      "version": "1.0.0",
+      "family": "type_count",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw type/full scope",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records and linked people by the recorded type without vocabulary inner joins or concept roll-up. NULL, zero, unknown and known concept IDs retain raw identity.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "measurement.measurement_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.first_age_summary",
+      "version": "1.0.0",
+      "family": "first_age_summary",
+      "population": "linked_people_with_dated_records",
+      "grain": "person/concept first dated record/gender",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "For each linked PERSON/concept find earliest valid recorded event date in scope; take year(event)-year_of_birth. Summarize one approximate year-age per person/concept, by gender, using exact summary contract. Missing/invalid ages and people without dated events have explicit eligibility counts. No observation requirement and no incident diagnosis/onset claim.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "person.year_of_birth",
+        "person.gender_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.frequency_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/concept/physical event count in full scope",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Histogram number of physical records per linked PERSON/concept, including event-count=0 computed as PERSON total minus distinct linked people for that concept. All observed concept tags only. Excluded orphan/null people appear in integrity counts. Cumulative >=x counts derive from this saved histogram and denominator core.person.count; not from chart-time CDM queries.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "family": "frequency_histogram",
+      "population": "person_table",
+      "grain": "person/domain/distinct concept count",
+      "dimensions": [
+        "concept_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count distinct raw non-null concept tags per linked PERSON across full scope, retaining concept 0. Null concept is an explicit integrity defect and is not a distinct concept. Histogram includes PERSON members with zero qualifying concepts.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.integrity_count",
+      "version": "1.0.0",
+      "family": "integrity_count",
+      "population": "all_recorded_rows",
+      "grain": "row/independent integrity flag",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Independent boolean marginals for null/orphan person, missing/invalid date, null/zero/unknown/wrong-domain concept, and missing/reversed end where applicable. Marginals may overlap and are never summed as mutually exclusive people or rows. Vocabulary identity is a LEFT lookup; no clinical row multiplication. Duplicate record IDs are flagged without deduplicating physical rows; DEATH uses repeated person rows, not an invented death_id.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "person.person_id",
+        "concept.concept_id",
+        "concept.domain_id",
+        "measurement.measurement_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.observation_qualification_count",
+      "version": "1.0.0",
+      "family": "observation_membership",
+      "population": "all_recorded_rows",
+      "grain": "concept/ordered observation-membership category/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "One row category in order: null/orphan person, undated, no valid intervals, outside valid union, inside valid union. Membership is an EXISTS lookup into merged intervals at event_date, never a multiplicative join. Category record counts sum to full-scope capture records. Distinct people can appear in several categories and are NOT additive; percentages require the declared record or any-event-person denominator.",
+      "denominator": "core.measurement.capture_count in full scope",
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.measurement.capture_count",
+      "version": "1.0.0",
+      "family": "capture_count",
+      "population": "observed_rows",
+      "grain": "concept/period within recorded observation union",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical source rows linked to valid PERSON and dated within at least one valid inclusive merged observation interval and requested period. Count once; separately distinct people per full window/month/year. Saved numerator/denominator scope is explicit; denominator is same-period observed people, not person-time or disease prevalence.",
+      "denominator": "core.observation_period.coverage_count same period",
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "observed.measurement.year_gender_age_count",
+      "version": "1.0.0",
+      "family": "year_gender_age_count",
+      "population": "observed_year_people",
+      "grain": "person/concept/year/recorded gender/year-age decile",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Distinct linked people with an observed event during the year; assign year-age using calendar year minus year_of_birth, exactly the denominator year anchor. No single person moves between age buckets within a year. All genders and explicit unknown/invalid age buckets retained. A recorded-event share, not incidence or validated prevalence. Include a concept_tag=ALL subtotal computed as a separate distinct-person grouping; never sum concept people.",
+      "denominator": "core.observation_period.year_gender_age_count same year/gender/age",
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "person.year_of_birth",
+        "person.gender_concept_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.condition.status_type_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/status_concept_tag/type_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "status_concept_tag",
+        "type_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical rows by raw condition status/type and linked people; no inferred active disease, no vocabulary roll-up.",
+      "denominator": null,
+      "inputs": [
+        "condition_occurrence.person_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_status_concept_id",
+        "condition_occurrence.condition_type_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.days_supply_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept//full scope",
+      "dimensions": [
+        "concept_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Exact summary of non-null finite nonnegative recorded days_supply. Include zero; negative, non-finite and missing are separate eligibility counts. Refills/days_supply are integral as stored. No strength/route/unit conversion or inferred adherence. Quantity is heterogeneous even within a concept; label its recorded semantics.",
+      "denominator": null,
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.days_supply"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.refills_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept//full scope",
+      "dimensions": [
+        "concept_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Exact summary of non-null finite nonnegative recorded refills. Include zero; negative, non-finite and missing are separate eligibility counts. Refills/days_supply are integral as stored. No strength/route/unit conversion or inferred adherence. Quantity is heterogeneous even within a concept; label its recorded semantics.",
+      "denominator": null,
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.refills"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.drug.quantity_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept//full scope",
+      "dimensions": [
+        "concept_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Exact summary of non-null finite nonnegative recorded quantity. Include zero; negative, non-finite and missing are separate eligibility counts. Refills/days_supply are integral as stored. No strength/route/unit conversion or inferred adherence. Quantity is heterogeneous even within a concept; label its recorded semantics.",
+      "denominator": null,
+      "inputs": [
+        "drug_exposure.person_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.quantity"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.duration_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept//full scope",
+      "dimensions": [
+        "concept_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Elapsed calendar days = visit_end_date - visit_start_date; same-day=0, not inclusive observed person-days. Missing/reversed/non-finite dates are eligibility counts; exact summary of valid nonnegative durations. No observation-span restriction.",
+      "denominator": null,
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date",
+        "visit_occurrence.visit_end_date"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.visit.care_setting_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/setting_kind/setting_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "setting_kind",
+        "setting_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Separate marginals for visit concept, admitted-from concept, discharged-to concept, and CARE_SITE.place_of_service_concept_id through a unique care_site_id LEFT lookup. Distinguish absent care_site table, null/missing links and duplicate ambiguous keys. Never cross-multiply the marginals or expose care_site/provider/location IDs. Non-core CARE_SITE unavailability makes only that marginal unavailable, not zero. Resolve 5.3 admission/discharge aliases explicitly from physical schema; missing both or conflicting populated aliases fails the affected marginal rather than guessing.",
+      "denominator": null,
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.admitted_from_concept_id",
+        "visit_occurrence.discharged_to_concept_id",
+        "visit_occurrence.care_site_id",
+        "care_site.care_site_id",
+        "care_site.place_of_service_concept_id"
+      ],
+      "conditional_inputs": [
+        "care_site.care_site_id",
+        "care_site.place_of_service_concept_id"
+      ],
+      "input_aliases": {
+        "visit_occurrence.admitted_from_concept_id": {
+          "5.3": "visit_occurrence.admitting_source_concept_id",
+          "5.4": "visit_occurrence.admitted_from_concept_id",
+          "5.5": "visit_occurrence.admitted_from_concept_id"
+        },
+        "visit_occurrence.discharged_to_concept_id": {
+          "5.3": "visit_occurrence.discharge_to_concept_id",
+          "5.4": "visit_occurrence.discharged_to_concept_id",
+          "5.5": "visit_occurrence.discharged_to_concept_id"
+        }
+      },
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "core_visit_dimensions_required_care_site_marginal_conditional"
+    },
+    {
+      "id": "core.procedure.end_precision_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/reason/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Exclusive marginal for start DATE/DATETIME presence and end DATE/DATETIME presence, plus separate missing/negative duration and disagreement flags. Do not invent end dates or use a date precision flag as duration. On 5.3 absent end fields are unsupported-by-schema, not all-null.",
+      "denominator": null,
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "procedure_occurrence.procedure_datetime",
+        "procedure_occurrence.procedure_end_date",
+        "procedure_occurrence.procedure_end_datetime"
+      ],
+      "conditional_inputs": [
+        "procedure_occurrence.procedure_end_date",
+        "procedure_occurrence.procedure_end_datetime"
+      ],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "end_columns_conditional_by_observed_schema"
+    },
+    {
+      "id": "core.device.quantity_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Exact finite nonnegative recorded quantity by raw unit when device unit fields exist. For 5.3 use a schema-absent-unit category distinct from NULL and 0, label quantity as unspecified-unit; never pool it with mapped units.",
+      "denominator": null,
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.quantity",
+        "device_exposure.unit_concept_id"
+      ],
+      "conditional_inputs": [
+        "device_exposure.unit_concept_id"
+      ],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "quantity_required_unit_columns_conditional"
+    },
+    {
+      "id": "core.device.unit_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/source_unit_presence/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag",
+        "source_unit_presence"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical rows by raw unit tag and source-unit presence. Columns absent in 5.3 produce unsupported-by-schema, not a fabricated zero distribution. No unique_device_id/production_id values exported.",
+      "denominator": null,
+      "inputs": [
+        "device_exposure.person_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.unit_concept_id",
+        "device_exposure.unit_source_value",
+        "device_exposure.unit_source_concept_id"
+      ],
+      "conditional_inputs": [
+        "device_exposure.unit_concept_id",
+        "device_exposure.unit_source_value",
+        "device_exposure.unit_source_concept_id"
+      ],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "unit_columns_conditional_by_observed_schema"
+    },
+    {
+      "id": "core.specimen.quantity_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Exact summary of finite nonnegative quantity separately for every raw unit tag including NULL/0/unknown; those tags are explicitly unspecified unit, never merged with known units or converted.",
+      "denominator": null,
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.quantity",
+        "specimen.unit_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.site_status_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/dimension_kind/dimension_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "dimension_kind",
+        "dimension_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Separate anatomic-site and disease-status concept marginals; no inference of diagnosis, pathology or specimen equivalence. Never export specimen_source_id.",
+      "denominator": null,
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.anatomic_site_concept_id",
+        "specimen.disease_status_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.specimen.visit_link_presence_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/link_kind/present/full scope",
+      "dimensions": [
+        "concept_tag",
+        "link_kind",
+        "present"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Only visit_occurrence/visit_detail link presence, never link identifiers or rows. 5.5 columns are conditional; absence in earlier schemas is unsupported, not missing-in-every-row.",
+      "denominator": null,
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.visit_occurrence_id",
+        "specimen.visit_detail_id"
+      ],
+      "conditional_inputs": [
+        "specimen.visit_occurrence_id",
+        "specimen.visit_detail_id"
+      ],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "visit_link_columns_conditional_by_observed_schema"
+    },
+    {
+      "id": "core.observation.representation_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/representation_flags/full scope",
+      "dimensions": [
+        "concept_tag",
+        "representation_flags"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count exact joint presence flags: numeric IS NOT NULL (includes non-finite); coded is non-null/nonzero; source text after U+0020 trim nonempty. Observation additionally has standardized string presence and 5.5 date presence. Never export text/date values. Absent columns use schema-absent flags, never false. Emit/reconstruct complete supported flag combinations; all-false distinguishes no represented value.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.value_as_number",
+        "observation.value_as_concept_id",
+        "observation.value_source_value",
+        "observation.value_as_string",
+        "observation.value_as_date"
+      ],
+      "conditional_inputs": [
+        "observation.value_source_value",
+        "observation.value_as_date"
+      ],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.unit_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical record counts by exact raw unit tag NULL/0/ID; labels distinguish unknown/wrong-domain/known Unit. No pooling or conversion.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.unit_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.coded_value_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/value_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "value_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records by exact value_as_concept_id tag; missing/zero retained. Values are recorded codes, not inferred equivalent clinical outcomes.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.value_as_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.numeric_eligibility_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/reason/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "One ordered category: numeric missing; numeric non-finite; unit NULL; unit 0; unit unknown/wrong domain; measurement nonzero operator; eligible. Observation has no operator column and does not invent one. Category records reconcile to capture_count. Known Unit means positive concept with domain_id Unit; invalid_reason/validity dates do not erase historical identities.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.value_as_number",
+        "observation.unit_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.numeric_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Use exact summary of eligible physical numeric rows under numeric_eligibility_count, by concept/known unit and separate measurement NULL/0 operator. No observation qualification: all-recorded is a new named profile. No monthly percentile averaging or pooling across units. Explicit empty groups retain n=0 and NULL statistics.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.value_as_number",
+        "observation.unit_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.representation_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/representation_flags/full scope",
+      "dimensions": [
+        "concept_tag",
+        "representation_flags"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count exact joint presence flags: numeric IS NOT NULL (includes non-finite); coded is non-null/nonzero; source text after U+0020 trim nonempty. Observation additionally has standardized string presence and 5.5 date presence. Never export text/date values. Absent columns use schema-absent flags, never false. Emit/reconstruct complete supported flag combinations; all-false distinguishes no represented value.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.value_as_number",
+        "measurement.value_as_concept_id",
+        "measurement.value_source_value"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.unit_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical record counts by exact raw unit tag NULL/0/ID; labels distinguish unknown/wrong-domain/known Unit. No pooling or conversion.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.unit_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.coded_value_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/value_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "value_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count physical records by exact value_as_concept_id tag; missing/zero retained. Values are recorded codes, not inferred equivalent clinical outcomes.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.value_as_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.numeric_eligibility_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/reason/full scope",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "One ordered category: numeric missing; numeric non-finite; unit NULL; unit 0; unit unknown/wrong domain; measurement nonzero operator; eligible. Observation has no operator column and does not invent one. Category records reconcile to capture_count. Known Unit means positive concept with domain_id Unit; invalid_reason/validity dates do not erase historical identities.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.value_as_number",
+        "measurement.unit_concept_id",
+        "measurement.operator_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.numeric_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/raw_operator_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag",
+        "raw_operator_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Use exact summary of eligible physical numeric rows under numeric_eligibility_count, by concept/known unit and separate measurement NULL/0 operator. No observation qualification: all-recorded is a new named profile. No monthly percentile averaging or pooling across units. Explicit empty groups retain n=0 and NULL statistics.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.value_as_number",
+        "measurement.unit_concept_id",
+        "measurement.operator_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.observation.qualifier_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/qualifier_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "qualifier_concept_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Physical counts by recorded qualifier; no inferred negation/comparator semantics and no merging with numeric units.",
+      "denominator": null,
+      "inputs": [
+        "observation.person_id",
+        "observation.observation_concept_id",
+        "observation.qualifier_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.operator_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/raw_operator_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "raw_operator_tag"
+      ],
+      "fields": [
+        "record_count",
+        "person_count"
+      ],
+      "calculation": "Count all recorded operators including NULL, 0 and every nonzero ID separately. Numeric summaries allow only NULL/0, labelled no explicit comparator rather than proven uncensored.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.operator_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.range_low_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Exact finite range_low summary in known Unit-domain strata. Boundary presence is independent of numeric-result/other-boundary presence; keep missing/non-finite/unit exclusions explicit. Reversed paired bounds are flagged in range_status_count; this descriptive boundary summary does not claim a valid interval.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.range_low",
+        "measurement.unit_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.range_high_summary",
+      "version": "1.0.0",
+      "family": "exact_summary",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "fields": [
+        "exact_summary",
+        "eligibility_counts"
+      ],
+      "calculation": "Exact finite range_high summary in known Unit-domain strata. Boundary presence is independent of numeric-result/other-boundary presence; keep missing/non-finite/unit exclusions explicit. Reversed paired bounds are flagged in range_status_count; this descriptive boundary summary does not claim a valid interval.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.range_high",
+        "measurement.unit_concept_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.measurement.range_status_count",
+      "version": "1.0.0",
+      "family": "domain_specific",
+      "population": "all_recorded_rows",
+      "grain": "concept/unit_concept_tag/raw_operator_tag/reason/full scope",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag",
+        "raw_operator_tag",
+        "reason"
+      ],
+      "fields": [
+        "record_count"
+      ],
+      "calculation": "Exclusive order: numeric missing/non-finite; unit unavailable/unknown; explicit nonzero operator; both bounds absent; one bound absent; non-finite bound; reversed bounds; below; within inclusive bounds; above. Compare same-row finite value to finite ordered same-row bounds only. No lab-to-lab normal-range harmonization or clinical normality claim. Counts reconcile to all recorded concept rows.",
+      "denominator": null,
+      "inputs": [
+        "measurement.person_id",
+        "measurement.measurement_concept_id",
+        "measurement.value_as_number",
+        "measurement.unit_concept_id",
+        "measurement.operator_concept_id",
+        "measurement.range_low",
+        "measurement.range_high"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.density.domain_presence_count",
+      "version": "1.0.0",
+      "family": "bounded_presence",
+      "population": "person_table",
+      "grain": "person/exact nine-domain presence pattern/full scope",
+      "dimensions": [
+        "presence_bits"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Order condition, drug, procedure, visit, device, observation, death, specimen, measurement; at most 512 exact patterns, including no-domain people. Linked all-recorded physical domain presence, no concept-pair cube. Inclusive subset counts derive by summing disjoint exact patterns only. Never sum overlapping inclusive subsets.",
+      "denominator": "core.person.count",
+      "inputs": [
+        "person.person_id",
+        "condition_occurrence.person_id",
+        "drug_exposure.person_id",
+        "procedure_occurrence.person_id",
+        "visit_occurrence.person_id",
+        "device_exposure.person_id",
+        "observation.person_id",
+        "death.person_id",
+        "specimen.person_id",
+        "measurement.person_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "core.density.domain_count",
+      "version": "1.0.0",
+      "family": "bounded_presence",
+      "population": "person_table",
+      "grain": "person/number of recorded domains",
+      "dimensions": [
+        "domain_count"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Derive histogram 0..9 from exact saved presence patterns. Domain totals/time panels reuse native capture counts with explicit raw-record/linked-person labels; do not divide all-recorded rows by an observation-only denominator.",
+      "denominator": "core.person.count",
+      "inputs": [],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    }
+  ]
+}

@@ -132,6 +132,11 @@ jobs:
       - name: Install package and build real count bundles
         run: |
           R CMD INSTALL --library="$R_LIBS" .
+          Rscript --vanilla tests/tracer/native-validation.R .
+          Rscript --vanilla tests/tracer/result-wire.R "$RUNNER_TEMP/v2-corpus.json"
+          node packages/contracts/tools/validate-v2-corpus.mjs "$RUNNER_TEMP/v2-corpus.json"
+          Rscript --vanilla tests/tracer/result-store.R tools/tracer_fixture_config.R
+          PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_result_serving.py --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/result-export" --admin-host 127.0.0.1 --admin-user postgres
           Rscript --vanilla tests/tracer/implementation-identity.R
           Rscript --vanilla tests/tracer/recovery-offline.R
           Rscript --vanilla tests/tracer/run-ledger-offline.R

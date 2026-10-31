@@ -1,0 +1,9 @@
+{
+  "contract_version": "2.0.0",
+  "sha256": {
+    "rows.json": "21753464779a785005884a350c1bbee252ae43a61d5c85ff9962802038cd987b",
+    "dimensions.json": "edd7a65d26696eb91d6e199000154e94768a8e3a7e9471caf90a114128f06501",
+    "metadata.schema.json": "badec2f95f2484faa1749a1958d9db82e1aa4cb1d457f917f08cd597a44de5d7",
+    "row.schema.json": "4aa2deca24379792480f291267f8e51ba11b2b69b380bcf86e8a7b49a2ba5957"
+  }
+}

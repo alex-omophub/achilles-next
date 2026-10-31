@@ -1,0 +1,2613 @@
+{
+  "contract_version": "2.0.0",
+  "profile_sha256": "3a06e7a7a53c205e84a62d2ff1c7fab0860928f14ff6dd60cb7f00f12e60dbf2",
+  "metrics": [
+    {
+      "id": "core.source.passport",
+      "version": "1.0.0",
+      "dimensions": [],
+      "row_schema_id": "v2:core.source.passport:1.0.0",
+      "value_keys_by_row_kind": {
+        "metadata": [
+          "source_id",
+          "source_release",
+          "declared_cdm_version",
+          "observed_schema",
+          "vocabulary_release",
+          "profile",
+          "coverage",
+          "generation",
+          "consistency"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.source.capabilities",
+      "version": "1.0.0",
+      "dimensions": [
+        "probe_id"
+      ],
+      "row_schema_id": "v2:core.source.capabilities:1.0.0",
+      "value_keys_by_row_kind": {
+        "metadata": [
+          "state",
+          "reason_code",
+          "observed_type"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.execution.output_status",
+      "version": "1.0.0",
+      "dimensions": [
+        "metric_id"
+      ],
+      "row_schema_id": "v2:core.execution.output_status:1.0.0",
+      "value_keys_by_row_kind": {
+        "metadata": [
+          "state",
+          "reason_code",
+          "required",
+          "coverage",
+          "integrity"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.execution.timing",
+      "version": "1.0.0",
+      "dimensions": [
+        "operation_id",
+        "phase"
+      ],
+      "row_schema_id": "v2:core.execution.timing:1.0.0",
+      "value_keys_by_row_kind": {
+        "metadata": [
+          "duration_ms",
+          "telemetry",
+          "availability",
+          "reason_code"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.person.gender_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.person.gender_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.person.birth_year_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "year_of_birth"
+      ],
+      "row_schema_id": "v2:core.person.birth_year_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.person.race_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "race_concept_id"
+      ],
+      "row_schema_id": "v2:core.person.race_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.person.ethnicity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "ethnicity_concept_id"
+      ],
+      "row_schema_id": "v2:core.person.ethnicity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.person.count",
+      "version": "1.0.0",
+      "dimensions": [],
+      "row_schema_id": "v2:core.person.count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.person.birth_year_gender_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "year_of_birth",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.person.birth_year_gender_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.person.race_ethnicity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "race_concept_id",
+        "ethnicity_concept_id"
+      ],
+      "row_schema_id": "v2:core.person.race_ethnicity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.coverage_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.observation_period.coverage_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count",
+          "person_days"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:core.observation_period.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.continuous_person_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "period_kind",
+        "period_start",
+        "period_end",
+        "full_calendar_period"
+      ],
+      "row_schema_id": "v2:core.observation_period.continuous_person_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.observation_period.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.observation_period.first_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "year_age_or_unknown",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.observation_period.first_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.first_interval_days_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "gender_concept_id",
+        "first_year_age_decile"
+      ],
+      "row_schema_id": "v2:core.observation_period.first_interval_days_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.observation_period.first_interval_30d_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "floor_days_div_30"
+      ],
+      "row_schema_id": "v2:core.observation_period.first_interval_30d_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.person_interval_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "interval_count"
+      ],
+      "row_schema_id": "v2:core.observation_period.person_interval_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.boundary_month_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "boundary_kind",
+        "month"
+      ],
+      "row_schema_id": "v2:core.observation_period.boundary_month_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "interval_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "period_type_concept_id"
+      ],
+      "row_schema_id": "v2:core.observation_period.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.total_days_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "floor_days_div_30"
+      ],
+      "row_schema_id": "v2:core.observation_period.total_days_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation_period.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "reason"
+      ],
+      "row_schema_id": "v2:core.observation_period.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.condition.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.condition.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.condition.source_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "row_schema_id": "v2:core.condition.source_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.condition.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.condition.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.condition.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.condition.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.condition.frequency_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "row_schema_id": "v2:core.condition.frequency_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.condition.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_count"
+      ],
+      "row_schema_id": "v2:core.condition.distinct_concepts_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.condition.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "row_schema_id": "v2:core.condition.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.condition.observation_qualification_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.condition.observation_qualification_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.condition.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:observed.condition.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.condition.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:observed.condition.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.drug.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.drug.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.drug.source_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "row_schema_id": "v2:core.drug.source_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.drug.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.drug.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.drug.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.drug.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.drug.frequency_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "row_schema_id": "v2:core.drug.frequency_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.drug.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_count"
+      ],
+      "row_schema_id": "v2:core.drug.distinct_concepts_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.drug.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "row_schema_id": "v2:core.drug.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.drug.observation_qualification_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.drug.observation_qualification_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.drug.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:observed.drug.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.drug.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:observed.drug.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.procedure.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.procedure.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.procedure.source_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "row_schema_id": "v2:core.procedure.source_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.procedure.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.procedure.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.procedure.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.procedure.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.procedure.frequency_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "row_schema_id": "v2:core.procedure.frequency_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.procedure.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_count"
+      ],
+      "row_schema_id": "v2:core.procedure.distinct_concepts_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.procedure.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "row_schema_id": "v2:core.procedure.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.procedure.observation_qualification_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.procedure.observation_qualification_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.procedure.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:observed.procedure.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.procedure.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:observed.procedure.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.visit.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.visit.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.visit.source_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "row_schema_id": "v2:core.visit.source_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.visit.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.visit.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.visit.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.visit.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.visit.frequency_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "row_schema_id": "v2:core.visit.frequency_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.visit.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_count"
+      ],
+      "row_schema_id": "v2:core.visit.distinct_concepts_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.visit.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "row_schema_id": "v2:core.visit.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.visit.observation_qualification_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.visit.observation_qualification_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.visit.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:observed.visit.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.visit.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:observed.visit.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.device.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.device.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.device.source_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "row_schema_id": "v2:core.device.source_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.device.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.device.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.device.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.device.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.device.frequency_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "row_schema_id": "v2:core.device.frequency_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.device.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_count"
+      ],
+      "row_schema_id": "v2:core.device.distinct_concepts_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.device.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "row_schema_id": "v2:core.device.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.device.observation_qualification_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.device.observation_qualification_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.device.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:observed.device.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.device.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:observed.device.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.observation.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.source_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "row_schema_id": "v2:core.observation.source_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.observation.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.observation.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.observation.frequency_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "row_schema_id": "v2:core.observation.frequency_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_count"
+      ],
+      "row_schema_id": "v2:core.observation.distinct_concepts_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "row_schema_id": "v2:core.observation.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.observation_qualification_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.observation.observation_qualification_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.observation.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:observed.observation.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.observation.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:observed.observation.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.death.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.death.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.death.source_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "row_schema_id": "v2:core.death.source_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.death.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.death.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.death.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.death.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.death.frequency_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "row_schema_id": "v2:core.death.frequency_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.death.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_count"
+      ],
+      "row_schema_id": "v2:core.death.distinct_concepts_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.death.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "row_schema_id": "v2:core.death.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.death.observation_qualification_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.death.observation_qualification_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.death.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:observed.death.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.death.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:observed.death.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.specimen.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.specimen.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.specimen.source_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "row_schema_id": "v2:core.specimen.source_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.specimen.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.specimen.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.specimen.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.specimen.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.specimen.frequency_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "row_schema_id": "v2:core.specimen.frequency_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.specimen.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_count"
+      ],
+      "row_schema_id": "v2:core.specimen.distinct_concepts_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.specimen.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "row_schema_id": "v2:core.specimen.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.specimen.observation_qualification_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.specimen.observation_qualification_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.specimen.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:observed.specimen.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.specimen.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:observed.specimen.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:core.measurement.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.source_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "source_concept_tag",
+        "source_value_state"
+      ],
+      "row_schema_id": "v2:core.measurement.source_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.measurement.type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.first_age_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:core.measurement.first_age_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.measurement.frequency_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "event_count"
+      ],
+      "row_schema_id": "v2:core.measurement.frequency_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.distinct_concepts_histogram",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_count"
+      ],
+      "row_schema_id": "v2:core.measurement.distinct_concepts_histogram:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.integrity_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "flag",
+        "present"
+      ],
+      "row_schema_id": "v2:core.measurement.integrity_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.observation_qualification_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.measurement.observation_qualification_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.measurement.capture_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "period_kind",
+        "period_start",
+        "period_end"
+      ],
+      "row_schema_id": "v2:observed.measurement.capture_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "observed.measurement.year_gender_age_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "year",
+        "gender_concept_id",
+        "year_age_decile"
+      ],
+      "row_schema_id": "v2:observed.measurement.year_gender_age_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.condition.status_type_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "status_concept_tag",
+        "type_concept_tag"
+      ],
+      "row_schema_id": "v2:core.condition.status_type_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.drug.days_supply_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag"
+      ],
+      "row_schema_id": "v2:core.drug.days_supply_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.drug.refills_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag"
+      ],
+      "row_schema_id": "v2:core.drug.refills_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.drug.quantity_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag"
+      ],
+      "row_schema_id": "v2:core.drug.quantity_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.visit.duration_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag"
+      ],
+      "row_schema_id": "v2:core.visit.duration_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.visit.care_setting_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "setting_kind",
+        "setting_concept_tag"
+      ],
+      "row_schema_id": "v2:core.visit.care_setting_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.procedure.end_precision_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.procedure.end_precision_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.device.quantity_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "row_schema_id": "v2:core.device.quantity_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.device.unit_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag",
+        "source_unit_presence"
+      ],
+      "row_schema_id": "v2:core.device.unit_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.specimen.quantity_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "row_schema_id": "v2:core.specimen.quantity_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.specimen.site_status_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "dimension_kind",
+        "dimension_concept_tag"
+      ],
+      "row_schema_id": "v2:core.specimen.site_status_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.specimen.visit_link_presence_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "link_kind",
+        "present"
+      ],
+      "row_schema_id": "v2:core.specimen.visit_link_presence_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.representation_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "representation_flags"
+      ],
+      "row_schema_id": "v2:core.observation.representation_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.unit_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "row_schema_id": "v2:core.observation.unit_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.coded_value_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "value_concept_tag"
+      ],
+      "row_schema_id": "v2:core.observation.coded_value_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.numeric_eligibility_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.observation.numeric_eligibility_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.observation.numeric_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "row_schema_id": "v2:core.observation.numeric_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.measurement.representation_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "representation_flags"
+      ],
+      "row_schema_id": "v2:core.measurement.representation_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.unit_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "row_schema_id": "v2:core.measurement.unit_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.coded_value_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "value_concept_tag"
+      ],
+      "row_schema_id": "v2:core.measurement.coded_value_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.numeric_eligibility_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.measurement.numeric_eligibility_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.numeric_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag",
+        "raw_operator_tag"
+      ],
+      "row_schema_id": "v2:core.measurement.numeric_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.observation.qualifier_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "qualifier_concept_tag"
+      ],
+      "row_schema_id": "v2:core.observation.qualifier_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.operator_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "raw_operator_tag"
+      ],
+      "row_schema_id": "v2:core.measurement.operator_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count",
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.measurement.range_low_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "row_schema_id": "v2:core.measurement.range_low_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.measurement.range_high_summary",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag"
+      ],
+      "row_schema_id": "v2:core.measurement.range_high_summary:1.0.0",
+      "value_keys_by_row_kind": {
+        "summary": [
+          "n",
+          "sum",
+          "min",
+          "max",
+          "mean_numerator",
+          "mean_denominator",
+          "p10",
+          "p25",
+          "p50",
+          "p75",
+          "p90"
+        ],
+        "eligibility_counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {
+        "eligibility_counts": [
+          "eligibility_reason"
+        ]
+      }
+    },
+    {
+      "id": "core.measurement.range_status_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "concept_tag",
+        "unit_concept_tag",
+        "raw_operator_tag",
+        "reason"
+      ],
+      "row_schema_id": "v2:core.measurement.range_status_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "record_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.density.domain_presence_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "presence_bits"
+      ],
+      "row_schema_id": "v2:core.density.domain_presence_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "core.density.domain_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "domain_count"
+      ],
+      "row_schema_id": "v2:core.density.domain_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    }
+  ]
+}
