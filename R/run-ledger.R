@@ -170,7 +170,9 @@ planMeasurementRun <- function(runDir, cdmSchema, sourceId, request, declaredCdm
         ctx$state$operations[[id]]["timing_reason"] <- list(NULL); ctx$state$operations[[id]]$queries <- queries
         update(id, status, cause)
       }
-      result <- tryCatch({value <- work(); check(); value}, interrupt = function(e) {finish("cancelled", .run_cause("interrupted")); stop(e)},
+      result <- tryCatch({value <- work(); check(); value}, interrupt = function(e) {
+        finish("cancelled", .run_cause(if (inherits(e, "AchillesCancellation")) "cancellation_requested" else "interrupted")); stop(e)
+      },
         error = function(e) {
           if (.recovery_requested(ctx)) {finish("cancelled", .run_cause("cancellation_requested")); stop(.recovery_interrupt())}
           finish("failed", .run_cause(.run_error_code(e))); stop("Operation failed; inspect the durable run ledger", call. = FALSE)})
@@ -198,10 +200,10 @@ executeMeasurementRun <- function(runDir, connectionDetails) {
   if (!inherits(connectionDetails, "ConnectionDetails") || !identical(connectionDetails$dbms, "postgresql")) stop("PostgreSQL connection details required", call. = FALSE)
   ctx <- .run_read(runDir)
   lock <- file.path(ctx$dir, ".writer-lock")
-  if (!dir.create(lock, mode = "0700", showWarnings = FALSE)) stop("Run is locked; no automatic lock takeover or resume", call. = FALSE)
+  if (!dir.create(lock, mode = "0700", showWarnings = FALSE)) stop(.recovery_claim_lost("Run is locked; no automatic lock takeover or resume"))
   on.exit(unlink(lock, recursive = TRUE), add = TRUE)
   ctx <- .run_read(runDir)
-  if (ctx$state$status != "planned") stop("Only a new planned run can execute; create another run", call. = FALSE)
+  if (ctx$state$status != "planned") stop(.recovery_claim_lost("Only a new planned run can execute; create another run"))
   if (!identical(.json(ctx$plan$definitions), .json(.run_definitions()))) stop("Installed definitions changed after planning; create another run", call. = FALSE)
   ctx$state$status <- "running"; ctx$state$attempt <- 1L; .run_save(ctx)
   p <- ctx$plan; control <- .run_control(ctx)

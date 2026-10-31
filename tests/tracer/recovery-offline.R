@@ -14,6 +14,16 @@ main <- function() {
     !dir.exists(file.path(p, ".writer-lock")), !dir.exists(file.path(p, ".cancel-lock")), is.null(r$state$backend))
   fails(function() resumeMeasurementRun(p, file.path(p, "nested"), details), "outside the previous run")
   stopifnot(!dir.exists(file.path(p, "nested")))
+  # API cancellation and a native interrupt retain distinct active-operation causes.
+  for (api in c(FALSE, TRUE)) {
+    p <- make(if (api) "api-cause" else "interrupt-cause")
+    ctx <- AchillesNext:::.run_read(p); control <- AchillesNext:::.run_control(ctx)
+    tryCatch(control$step("source.connect", function() {
+      if (api) cancelMeasurementRun(p)
+      else stop(structure(list(message = "Ctrl+C", call = NULL), class = c("interrupt", "condition")))
+    }), interrupt = function(e) AchillesNext:::.recovery_terminal(ctx, "cancelled", AchillesNext:::.run_cause("interrupted")))
+    stopifnot(inspectMeasurementRun(p)$state$operations$source.connect$cause$code == if (api) "cancellation_requested" else "interrupted")
+  }
   # Cleanup refuses a symlinked staging parent and leaves the other directory intact.
   p <- make("linked"); outside <- file.path(root, "outside"); dir.create(outside); dir.create(file.path(outside, "bundle"))
   sentinel <- file.path(outside, "bundle", "keep"); writeLines("outside sentinel", sentinel)

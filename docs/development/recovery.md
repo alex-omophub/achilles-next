@@ -79,7 +79,10 @@ CLI supplies the connection; it cannot silently revise the recorded request.
 `newRunDir` must be outside the old run directory, under an existing parent. It
 is the idempotency key: repeated calls with the same parent and definitions return
 the existing running/terminal attempt, or execute a matching unclaimed planned
-attempt. Observing an existing target does not check contemporary source data;
+attempt. If another caller wins the execution claim, the losing retry observes
+the same matching target. It waits up to five seconds for a claimed planned state
+to transition, then returns the last persisted state without stealing a lock or
+asserting process liveness. Observing an existing target does not check contemporary source data;
 choose a new target to analyze a changed source. A reused destination for another
 parent or changed definitions is
 rejected. Each actual operation has one attempt within that run; the recovery

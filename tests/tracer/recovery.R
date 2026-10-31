@@ -2,10 +2,50 @@
 library(AchillesNext)
 source("tests/tracer/credential-guard.R")
 a <- commandArgs(TRUE)
-if (length(a) && a[1] %in% c("worker", "resume", "control")) {
+if (length(a) && a[1] %in% c("worker", "resume", "race-resume", "hold", "control")) {
   e <- new.env(parent = globalenv()); sys.source(a[2], e)
   if (a[1] == "worker") executeMeasurementRun(a[3], e$config$connectionDetails)
-  if (a[1] == "resume") resumeMeasurementRun(a[3], a[4], e$config$connectionDetails)
+  if (a[1] %in% c("resume", "race-resume")) {
+    recover <- resumeMeasurementRun
+    if (a[1] == "race-resume") {
+      # Clone only the caller's lexical environment to synchronize the boundary
+      # after the public pre-check. Installed namespace/definition hashes stay intact.
+      scope <- new.env(parent = environment(recover))
+      scope$executeMeasurementRun <- function(...) {
+        writeLines("ready", paste0(a[5], ".ready"))
+        deadline <- Sys.time() + 30
+        while (!file.exists(file.path(dirname(a[5]), "go"))) {
+          if (Sys.time() > deadline) stop("Claim rendezvous deadline exceeded")
+          Sys.sleep(0.02)
+        }
+        AchillesNext::executeMeasurementRun(...)
+      }
+      environment(recover) <- scope
+    }
+    r <- recover(a[3], a[4], e$config$connectionDetails)
+    AchillesNext:::.run_atomic(AchillesNext:::.object(state = r$state$status, run_id = r$plan$run_id), a[5])
+  }
+  if (a[1] == "hold") {
+    hold <- function() {
+      c <- DatabaseConnector::connect(get("fixtureConnection", envir = e)("owner"))
+      on.exit(DatabaseConnector::disconnect(c), add = TRUE)
+      session <- AchillesNext:::.tracer_session(c)
+      rJava::.jcall(c@jConnection, "V", "setReadOnly", FALSE)
+      on.exit(try(session$rollback(), silent = TRUE), add = TRUE, after = FALSE)
+      AchillesNext:::.recovery_endpoint(session)
+      stopifnot(grepl("^cdm_tiny_recovery_[0-9]+_55$", e$config$cdmSchema))
+      marker <- session$query(paste0("SELECT obj_description(oid,'pg_namespace') AS marker FROM pg_namespace WHERE nspname='", e$config$cdmSchema, "'"))
+      stopifnot(nrow(marker) == 1L, marker$MARKER == paste0("AchillesNext synthetic fixture sandbox v1: ", e$config$cdmSchema))
+      session$execute(paste0('LOCK TABLE "', e$config$cdmSchema, '".measurement IN ACCESS EXCLUSIVE MODE'))
+      writeLines("locked", a[3])
+      deadline <- Sys.time() + 45
+      while (!file.exists(a[4])) {
+        if (Sys.time() > deadline) stop("Overlap lock deadline exceeded")
+        Sys.sleep(0.02)
+      }
+    }
+    hold()
+  }
   if (a[1] == "control") {
     c <- DatabaseConnector::connect(e$config$connectionDetails)
     query <- function(sql) DatabaseConnector::querySql(c, sql, integer64AsNumeric = FALSE)
@@ -91,7 +131,7 @@ main <- function() {
     p
   }
   cancelled <- worker("cancel", "cancelled-query"); r <- inspect(cancelled)
-  stopifnot(r$state$status == "cancelled", r$state$operations$measurement.compute$status == "cancelled",
+  stopifnot(r$state$status == "cancelled", r$state$operations$measurement.compute$status == "cancelled", r$state$operations$measurement.compute$cause$code == "cancellation_requested",
     r$state$cancellation$cleanup == "removed", !file.exists(file.path(cancelled, "staging/bundle")),
     r$recovery$cancellation_requested, all(vapply(r$state$outputs, function(o) o$status == "cancelled", TRUE)))
   r <- resume(cancelled, "resumed"); stopifnot(r$state$status == "succeeded", identical(r$state$analytical_sha256, b$state$analytical_sha256),
@@ -141,10 +181,13 @@ main <- function() {
   stopifnot(structure$state$status == "succeeded", !identical(structure$state$input_identity$schema_sha256, b$state$input_identity$schema_sha256))
   # Independent recovery attempts never share staging; a repeated in-flight
   # target is observed rather than executed for a second time.
-  for (mode in c("parallel", "same-target")) {
+  for (mode in c("parallel", "same-target", "claim-race")) {
     out <- file.path(root, mode); dir.create(out)
     stopifnot(system2("python3", c("tests/tracer/recovery-workers.py", mode, shQuote(file.path(R.home("bin"), "Rscript")),
       shQuote(normalizePath("tests/tracer/recovery.R")), shQuote(fixtureConfig), shQuote(out), shQuote(cancelled))) == 0L)
+    overlap <- jsonlite::fromJSON(file.path(out, "overlap.json"))
+    stopifnot(overlap$first_state == "running", overlap$second_state == "running")
+    if (mode == "claim-race") stopifnot(overlap$both_ready, overlap$planned_at_gate)
     paths <- if (mode == "parallel") c("attempt-a", "attempt-b") else "attempt-a"
     rs <- lapply(file.path(out, paths), inspect)
     stopifnot(all(vapply(rs, function(r) r$state$status == "succeeded" && length(Filter(function(h) h$state$status == "running", r$history)) > 0L &&

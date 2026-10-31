@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
-# Trusted local config is evaluated only for commands requesting database access.
+# Plan evaluates trusted config without connecting; execution/recovery and
+# configured cancellation also evaluate it. Status never evaluates config.
 suppressPackageStartupMessages(library(AchillesNext))
 a <- commandArgs(TRUE)
 usage <- function() stop("Usage: measurement_run.R plan|execute <trusted-config.R> <run-dir> OR resume|retry <trusted-config.R> <old-run> <new-run> OR cancel <run-dir> [trusted-config.R] OR status <run-dir> [--json]", call. = FALSE)

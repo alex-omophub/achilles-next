@@ -118,6 +118,17 @@ cancelMeasurementRun <- function(runDir, connectionDetails = NULL) {
   .object(lineage = ctx$plan$recovery, cancellation_requested = .recovery_requested(ctx), cancellation_response = response,
     reuse = "disabled", reason = "No durable input identity assertion is supported; every recovery attempt recomputes all operations")
 }
+.recovery_claim_lost <- function(message) structure(list(message = message, call = NULL), class = c("AchillesRecoveryClaimLost", "error", "condition"))
+.recovery_observe <- function(target, key) {
+  deadline <- proc.time()[["elapsed"]] + 5
+  repeat {
+    child <- .run_read(target)
+    if (!identical(child$plan$recovery$key, key)) stop("Recovery target belongs to another source plan or definitions; choose a new directory", call. = FALSE)
+    if (!child$state$status %in% c("requested", "planned") || !dir.exists(file.path(target, ".writer-lock")) || proc.time()[["elapsed"]] >= deadline)
+      return(invisible(inspectMeasurementRun(target)))
+    Sys.sleep(0.02)
+  }
+}
 
 #' Recover work into an isolated, idempotent new measurement attempt
 #' @export
@@ -131,7 +142,7 @@ resumeMeasurementRun <- function(runDir, newRunDir, connectionDetails) {
   if (dir.exists(target)) {
     child <- .run_read(target)
     if (!identical(child$plan$recovery$key, key)) stop("Recovery target belongs to another source plan or definitions; choose a new directory", call. = FALSE)
-    if (child$state$status != "planned" || dir.exists(file.path(target, ".writer-lock"))) return(invisible(inspectMeasurementRun(target)))
+    if (child$state$status != "planned" || dir.exists(file.path(target, ".writer-lock"))) return(.recovery_observe(target, key))
   } else {
     recovery <- .object(key = key, root_run_id = p$recovery$root_run_id %||% p$run_id, parent_run_id = p$run_id, parent_plan_sha256 = parent$planHash,
       parent_revision_sha256 = parent$previous, attempt = (p$recovery$attempt %||% 1L) + 1L, reused_operations = list(),
@@ -139,5 +150,6 @@ resumeMeasurementRun <- function(runDir, newRunDir, connectionDetails) {
       recompute_operations = as.list(vapply(p$operations, function(op) op$id, "")))
     .plan_measurement_run(target, p$cdm_schema, p$source_id, p$request, p$declared_cdm_version, p$numeric_strategy, 1L, recovery)
   }
-  executeMeasurementRun(target, connectionDetails)
+  tryCatch(executeMeasurementRun(target, connectionDetails),
+    AchillesRecoveryClaimLost = function(e) .recovery_observe(target, key))
 }
