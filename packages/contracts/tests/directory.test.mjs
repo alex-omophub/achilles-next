@@ -37,7 +37,10 @@ for(const artifact of ['manifest','result','terminology']) test(`reject malforme
     await writeFile(resolve(root,'terminology.json'),term);
     await writeFile(resolve(root,'manifest.json'),bytes(b.manifest,artifact==='manifest'));
     await assert.rejects(()=>validateBundleDirectory(root),{code:'ERR_ENCODING_INVALID_ENCODED_DATA'});
-    const installed=spawnSync(process.execPath,[resolve(ROOT,'inst/validation/validate.mjs'),root],{encoding:'utf8'});
+    const validator=resolve(ROOT,'inst/validation/validate.mjs');
+    const control=spawnSync(process.execPath,[validator,resolve(ROOT,'tests/fixtures/contracts/complete')],{encoding:'utf8'});
+    assert.equal(control.status,0,'Installed validator must accept the known-good fixture: '+control.stdout+control.stderr);
+    const installed=spawnSync(process.execPath,[validator,root],{encoding:'utf8'});
     assert.equal(installed.status,1,installed.stdout+installed.stderr);
   } finally {await rm(root,{recursive:true,force:true});}
 });
