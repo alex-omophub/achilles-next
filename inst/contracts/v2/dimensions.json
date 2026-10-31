@@ -1,0 +1,686 @@
+{
+  "boundary_kind": {
+    "enum": [
+      "start",
+      "end"
+    ]
+  },
+  "concept_count": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "concept_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "dimension_concept_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "dimension_kind": {
+    "enum": [
+      "anatomic_site",
+      "disease_status"
+    ]
+  },
+  "domain_count": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "eligibility_reason": {
+    "enum": [
+      "above",
+      "below",
+      "birth_year_missing_or_invalid",
+      "both_bounds_missing",
+      "bound_missing",
+      "bound_non_finite",
+      "bounds_reversed",
+      "eligible",
+      "end_absent",
+      "end_before_start",
+      "end_date_and_datetime",
+      "end_date_only",
+      "end_datetime_only",
+      "end_disagreement",
+      "end_missing_or_invalid",
+      "event_date_missing_or_invalid",
+      "inside_valid_union",
+      "missing_duration",
+      "negative_duration",
+      "no_valid_intervals",
+      "null_endpoints",
+      "null_or_orphan_person",
+      "null_person",
+      "numeric_missing",
+      "numeric_non_finite",
+      "one_bound_missing",
+      "operator_explicit",
+      "operator_explicit_measurement_only",
+      "orphan_person",
+      "outside_valid_union",
+      "reversed_interval",
+      "start_absent",
+      "start_date_and_datetime",
+      "start_date_only",
+      "start_datetime_only",
+      "start_disagreement",
+      "start_missing_or_invalid",
+      "undated",
+      "unit_null",
+      "unit_unavailable_or_unrecognized",
+      "unit_unrecognized",
+      "unit_zero",
+      "valid",
+      "value_missing",
+      "value_negative",
+      "value_non_finite",
+      "within",
+      "year_age_outside_0_130"
+    ]
+  },
+  "ethnicity_concept_id": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "event_count": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "first_year_age_decile": {
+    "type": "string",
+    "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+  },
+  "flag": {
+    "enum": [
+      "null_person",
+      "orphan_person",
+      "missing_date",
+      "invalid_date",
+      "null_concept",
+      "zero_concept",
+      "unknown_concept",
+      "wrong_domain_concept",
+      "missing_end",
+      "reversed_end",
+      "duplicate_record_id",
+      "repeated_person_rows"
+    ]
+  },
+  "floor_days_div_30": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "full_calendar_period": {
+    "enum": [
+      "true",
+      "false"
+    ]
+  },
+  "gender_concept_id": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "interval_count": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "link_kind": {
+    "enum": [
+      "visit_occurrence",
+      "visit_detail"
+    ]
+  },
+  "metric_id": {
+    "type": "string",
+    "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+  },
+  "month": {
+    "anyOf": [
+      {
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "enum": [
+          "null",
+          "undated"
+        ]
+      }
+    ]
+  },
+  "operation_id": {
+    "type": "string",
+    "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+  },
+  "period_end": {
+    "anyOf": [
+      {
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "enum": [
+          "null",
+          "undated"
+        ]
+      }
+    ]
+  },
+  "period_kind": {
+    "enum": [
+      "full_scope",
+      "calendar_month",
+      "calendar_year",
+      "undated"
+    ]
+  },
+  "period_start": {
+    "anyOf": [
+      {
+        "type": "string",
+        "format": "date"
+      },
+      {
+        "enum": [
+          "null",
+          "undated"
+        ]
+      }
+    ]
+  },
+  "period_type_concept_id": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "phase": {
+    "enum": [
+      "planning",
+      "source_read",
+      "materialization",
+      "aggregation",
+      "validation",
+      "projection",
+      "export",
+      "publication",
+      "execution",
+      "generation"
+    ]
+  },
+  "presence_bits": {
+    "type": "string",
+    "pattern": "^[01X]{1,16}$"
+  },
+  "present": {
+    "enum": [
+      "true",
+      "false"
+    ]
+  },
+  "probe_id": {
+    "type": "string",
+    "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+  },
+  "qualifier_concept_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "race_concept_id": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "raw_operator_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "reason": {
+    "enum": [
+      "above",
+      "below",
+      "birth_year_missing_or_invalid",
+      "both_bounds_missing",
+      "bound_missing",
+      "bound_non_finite",
+      "bounds_reversed",
+      "eligible",
+      "end_absent",
+      "end_before_start",
+      "end_date_and_datetime",
+      "end_date_only",
+      "end_datetime_only",
+      "end_disagreement",
+      "end_missing_or_invalid",
+      "event_date_missing_or_invalid",
+      "inside_valid_union",
+      "missing_duration",
+      "negative_duration",
+      "no_valid_intervals",
+      "null_endpoints",
+      "null_or_orphan_person",
+      "null_person",
+      "numeric_missing",
+      "numeric_non_finite",
+      "one_bound_missing",
+      "operator_explicit",
+      "operator_explicit_measurement_only",
+      "orphan_person",
+      "outside_valid_union",
+      "reversed_interval",
+      "start_absent",
+      "start_date_and_datetime",
+      "start_date_only",
+      "start_datetime_only",
+      "start_disagreement",
+      "start_missing_or_invalid",
+      "undated",
+      "unit_null",
+      "unit_unavailable_or_unrecognized",
+      "unit_unrecognized",
+      "unit_zero",
+      "valid",
+      "value_missing",
+      "value_negative",
+      "value_non_finite",
+      "within",
+      "year_age_outside_0_130"
+    ]
+  },
+  "representation_flags": {
+    "type": "string",
+    "pattern": "^[01X]{1,16}$"
+  },
+  "setting_concept_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "setting_kind": {
+    "enum": [
+      "visit",
+      "admitted_from",
+      "discharged_to",
+      "place_of_service"
+    ]
+  },
+  "source_concept_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "source_unit_presence": {
+    "enum": [
+      "null",
+      "blank",
+      "nonblank",
+      "schema_absent"
+    ]
+  },
+  "source_value_state": {
+    "enum": [
+      "null",
+      "blank",
+      "nonblank",
+      "schema_absent"
+    ]
+  },
+  "status_concept_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "type_concept_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "unit_concept_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "value_concept_tag": {
+    "oneOf": [
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "all",
+              "null",
+              "schema_absent"
+            ]
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false
+      },
+      {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "const": "id"
+          },
+          "value": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ],
+        "additionalProperties": false
+      }
+    ]
+  },
+  "year": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  },
+  "year_age_decile": {
+    "type": "string",
+    "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+  },
+  "year_age_or_unknown": {
+    "type": "string",
+    "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+  },
+  "year_of_birth": {
+    "type": "string",
+    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+  }
+}
