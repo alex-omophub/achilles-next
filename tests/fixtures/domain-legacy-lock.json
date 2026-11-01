@@ -1,0 +1,36 @@
+{
+  "Achilles": "1.7.2",
+  "SqlRender": "1.19.0",
+  "commit": "86741da9c8ad74a5be7785d7b9da24aacfa4c09e",
+  "scope": "Observed distinct-person counts only; specimen is a new baseline with no matched legacy analysis",
+  "analyses": {
+    "200": {
+      "domain": "visit",
+      "sha256": "4769085c8bad2a8ece3fa80448e8ddd598a6bc4c5584677b2552a0f33441ca3c"
+    },
+    "400": {
+      "domain": "condition",
+      "sha256": "e6253b8e8a4e9dd9604541d98394696ce82390e361ee7d1a8a40645bacf0bad8"
+    },
+    "500": {
+      "domain": "death",
+      "sha256": "b8011e38981b89516b5edc0637c278d8dcdea965325ff41e437e1deca7e4d2cf"
+    },
+    "600": {
+      "domain": "procedure",
+      "sha256": "19576b31ce2e3f967226069ec8362399e7f004243edde2401de38c118e7e9c23"
+    },
+    "700": {
+      "domain": "drug",
+      "sha256": "674ceea3230c83f574f82acea04fa7e2a20ab5a7e4544f43fb229216cf41279a"
+    },
+    "800": {
+      "domain": "observation",
+      "sha256": "5d39e72a1f223a57d2ed54eacde11e0e4999e6c28092de94b878b5f4be86fdf9"
+    },
+    "2100": {
+      "domain": "device",
+      "sha256": "0b83ecffd4847b8953bc86ed5354fa49f5e72ad318d1b289e46761b909eeb5f1"
+    }
+  }
+}

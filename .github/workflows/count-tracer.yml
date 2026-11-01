@@ -156,6 +156,8 @@ jobs:
           python3 tools/benchmark/batch_primitives.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/batch-primitives" --trials 1
       - name: Verify persisted population and observation baseline
         run: python3 tools/test_population_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/population-baseline"
+      - name: Verify eight-domain generation and saved concept/time selection
+        run: python3 tools/test_domain_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/domain-baseline"
       - name: Validate every generated bundle against the frozen contracts
         run: |
           npm run check --prefix packages/contracts

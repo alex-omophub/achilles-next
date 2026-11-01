@@ -42,7 +42,7 @@ The [synthetic PostgreSQL reference benchmark](docs/benchmark/reference.md) chec
 The experimental [core batch planner](docs/development/batch-planner.md) enumerates
 all 142 frozen core results across 51 dependency nodes, with explicit shared-input
 candidates and exact grains. It plans full-history/all-concept work; complete core
-domain generation remains unimplemented. A small synthetic harness compares
+generation remains incomplete. A small synthetic harness compares
 reference and transaction-private materialization with independent numerical oracles.
 
 `generatePopulationObservationBaseline()` computes and persists seven population
@@ -51,6 +51,14 @@ and twelve observation-period outputs from PostgreSQL sources. The
 worker permissions and saved readback without CDM access. Its building release
 leaves the other 123 core outputs explicitly ungenerated and cannot be published
 as a complete core result.
+
+`generateDomainBaseline()` adds the eight-domain and density baseline: 100 frozen
+outputs with the same 19 population dependencies, for 119 of 142 outputs accounted
+for. The [domain guide](docs/development/domain-baseline.md) covers batch generation,
+exact concept/month/year selection and paged raw concept catalogues without CDM
+access. Conditional unsupported fields retain explicit states. Measurement and
+metadata generation remain pending; these restricted building releases cannot be
+published as complete core results or opened in the v1 tracer viewer.
 
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 

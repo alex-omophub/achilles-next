@@ -49,7 +49,7 @@ export function validateSavedRow(metricId,row) {
   }
   for(const ref of row.denominator_refs)need(Object.hasOwn(v,ref.measure),'Denominator measure');
   const d=row.dimensions;
-  if(d.representation_flags!==undefined)need((metricId.includes('measurement')?/^[01]{3}$/:/^[01]{4}[01X]$/).test(d.representation_flags),'Representation flags');
+  if(d.representation_flags!==undefined)need((metricId.includes('measurement')?/^[01]{3}$/:/^[01]{2}[01X][01][01X]$/).test(d.representation_flags),'Representation flags');
   if(d.presence_bits!==undefined)need(/^[01]{9}$/.test(d.presence_bits),'Domain mask');
   if(d.month!==undefined)need(/^\d{4}-(0[1-9]|1[0-2])-01$/.test(d.month),'Month anchor');
   for(const key of ['first_year_age_decile','year_age_decile','year_age_or_unknown'])if(d[key]!==undefined&&d[key]!=='unknown')need(/^(0|[1-9][0-9]*)$/.test(d[key])&&BigInt(d[key])<=BigInt(key==='year_age_or_unknown'?130:13),'Age bound');

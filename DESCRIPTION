@@ -3,12 +3,12 @@ Type: Package
 Title: Development Tracer for OMOP Characterization Results
 Version: 0.0.0.9000
 Authors@R: person("Alex", "Chen", email = "alex@omophub.com", role = c("aut", "cre"))
-Description: Precomputes exact population demographics and observation baselines
-    from PostgreSQL OMOP sources into a restricted typed aggregate store. Includes
-    a separate bounded synthetic measurement tracer, versioned bundles, approved
-    publication tools and a reusable React view. Provides an experimental core
-    batch planner, transaction-private staging and conservative recomputation.
-    Complete multi-domain generation, general input reuse and production-scale
+Description: Precomputes exact population, observation opportunity and eight-domain
+    characterization reports from PostgreSQL OMOP sources into a restricted typed
+    aggregate store. Includes saved concept and calendar selection, exact summaries,
+    explicit schema support states, a separate bounded synthetic measurement tracer,
+    versioned bundles, approved publication tools and a reusable React view.
+    Complete core-profile generation, general input reuse and production-scale
     qualification are not yet implemented.
 License: Apache License (>= 2)
 Encoding: UTF-8
