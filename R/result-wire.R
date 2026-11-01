@@ -4,26 +4,24 @@
 .v2_keys <- function(x, keys) .nv_need(.nv_object(x) && setequal(names(x), keys), "Unknown or missing fields")
 .v2_count <- function(x) .string(x) && grepl("^(0|[1-9][0-9]*)$", x)
 .v2_decimal <- function(x) .string(x) && grepl("^-?(0|[1-9][0-9]*)(\\.[0-9]*[1-9])?$", x) && x != "-0"
-.v2_assets <- local({
-  cache <- NULL
-  function() {
-    if (!is.null(cache)) return(cache)
-    file <- function(p) system.file(p, package = "AchillesNext", mustWork = TRUE)
-    lock <- jsonlite::fromJSON(file("contracts/v2/schema-lock.json"),simplifyVector=FALSE)
-    for(name in names(lock$sha256)) .nv_need(identical(digest::digest(file=file(paste0("contracts/v2/",name)),algo="sha256"),lock$sha256[[name]]),"Row schema integrity failure")
-    profilePath <- file("analysis/core-characterization-v2.json")
-    profile <- jsonlite::fromJSON(profilePath, simplifyVector = FALSE)
-    rows <- jsonlite::fromJSON(file("contracts/v2/rows.json"), simplifyVector = FALSE)
-    .nv_need(identical(digest::digest(file = profilePath, algo = "sha256"), rows$profile_sha256), "Profile integrity failure")
-    ids <- vapply(profile$metrics, function(m) m$id, "")
-    .nv_need(identical(ids, vapply(rows$metrics, function(m) m$id, "")))
-    cache <<- list(profile = profile, hash = rows$profile_sha256,
-      metrics = stats::setNames(profile$metrics, ids), rows = stats::setNames(rows$metrics, ids),
-      metadata = jsonlite::fromJSON(file("contracts/v2/metadata.schema.json"), simplifyVector = FALSE),
-      dimensions = jsonlite::fromJSON(file("contracts/v2/dimensions.json"), simplifyVector = FALSE))
-    cache
-  }
-})
+.v2_assets <- function() {
+  if (exists("v2",.validation_cache,inherits=FALSE)) return(get("v2",.validation_cache,inherits=FALSE))
+  file <- function(p) system.file(p, package = "AchillesNext", mustWork = TRUE)
+  lock <- jsonlite::fromJSON(file("contracts/v2/schema-lock.json"),simplifyVector=FALSE)
+  for(name in names(lock$sha256)) .nv_need(identical(digest::digest(file=file(paste0("contracts/v2/",name)),algo="sha256"),lock$sha256[[name]]),"Row schema integrity failure")
+  profilePath <- file("analysis/core-characterization-v2.json")
+  profile <- jsonlite::fromJSON(profilePath, simplifyVector = FALSE)
+  rows <- jsonlite::fromJSON(file("contracts/v2/rows.json"), simplifyVector = FALSE)
+  .nv_need(identical(digest::digest(file = profilePath, algo = "sha256"), rows$profile_sha256), "Profile integrity failure")
+  ids <- vapply(profile$metrics, function(m) m$id, "")
+  .nv_need(identical(ids, vapply(rows$metrics, function(m) m$id, "")))
+  result <- list(profile = profile, hash = rows$profile_sha256,
+    metrics = stats::setNames(profile$metrics, ids), rows = stats::setNames(rows$metrics, ids),
+    metadata = jsonlite::fromJSON(file("contracts/v2/metadata.schema.json"), simplifyVector = FALSE),
+    dimensions = jsonlite::fromJSON(file("contracts/v2/dimensions.json"), simplifyVector = FALSE))
+  assign("v2",result,.validation_cache)
+  result
+}
 .v2_component <- function(x, name) {
   if (grepl("_tag$", name)) {
     .nv_need(.nv_object(x) && .string(x$kind))

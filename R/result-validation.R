@@ -145,7 +145,7 @@
       if(d$state=="suppressed") .nv_need(row$state=="suppressed")
       if(d$state %in% c("empty_source","empty_population")) .nv_need(row$state %in% c(d$state,"suppressed"))
       if(mid=="core.source.capabilities" && row$state!="suppressed") capabilities[[row$dimensions$probe_id]] <<- row$values
-      if(mid=="core.execution.output_status") {
+      if(mid=="core.execution.output_status" && d$state!="suppressed") {
         .nv_need(row$state=="computed" && !is.null(row$values),"Missing ledger entry payload")
         ledger[[row$dimensions$metric_id]] <<- row$values
       }

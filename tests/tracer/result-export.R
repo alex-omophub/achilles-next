@@ -110,7 +110,14 @@ local({
   full <- publishResultRelease(details,schema,release,file.path(root,'full-inventory'),'fixture-full','review-full',fullPolicy,function(candidate)TRUE)
   validateResultArtifact(full$export_dir)
   testArtifactRegressions(full$export_dir,root)
-  testStoreRegressions(details,schema,release,ids[[2]],ex,q)
+  retainedRelease<-testStoreRegressions(details,schema,release,ids[[2]],ex,q)
+  retained<-publishResultRelease(details,schema,retainedRelease,file.path(root,'suppressed-ledger-release'),'fixture-retained','review-retained',fullPolicy,function(candidate)TRUE)
+  validateResultArtifact(retained$export_dir)
+  f('.v2_directory')(retained$export_dir,function(d,bytes) {
+    doc<-f('.nv_json')(bytes)
+    if(d$kind=='data'&&doc$metric_id=='core.execution.output_status')stopifnot(length(doc$rows)==142L,all(vapply(doc$rows,function(r)r$state=='suppressed'&&is.null(r$values)&&!length(r$denominator_refs),TRUE)))
+  })
+  cat('SUPPRESSED_LEDGER_PUBLICATION_AND_ARTIFACT_ROUNDTRIP_OK\n')
   before <- q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID
   fail <- function(work)stopifnot(tryCatch({work();FALSE},error=function(e)TRUE))
   fail(function()publishResultRelease(details,schema,release,file.path(root,'denied'),'fixture-restricted','denied',allow,function(candidate)FALSE,'1'))

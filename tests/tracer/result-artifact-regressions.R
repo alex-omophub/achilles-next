@@ -4,7 +4,7 @@ testArtifactRegressions <- function(bundleDir, evidenceDir) {
  ns<-asNamespace('AchillesNext');f<-function(n)get(n,ns)
  read<-function(path)jsonlite::fromJSON(path,simplifyVector=FALSE)
  midFor<-function(mode)switch(mode,'missing-ledger'='core.execution.output_status','missing-passport'='core.source.passport','missing-summary'='core.measurement.numeric_summary',NULL)
- for(mode in c('missing-ledger','missing-passport','missing-summary','passport-source','passport-profile','passport-schema','passport-consistency','observed-records','observed-people')) {
+ for(mode in c('suppressed-ledger','suppressed-ledger-row','missing-ledger','missing-passport','missing-summary','passport-source','passport-profile','passport-schema','passport-consistency','observed-records','observed-people')) {
   path<-file.path(evidenceDir,mode);stopifnot(dir.create(path));stopifnot(all(file.copy(list.files(bundleDir,full.names=TRUE),path,recursive=TRUE)))
   pointer<-read(file.path(path,'publication.json'))
   rewrite<-function(d) {
@@ -19,7 +19,17 @@ testArtifactRegressions <- function(bundleDir, evidenceDir) {
     e<-doc$entries[[i]]
     if(e$metric_id==midFor(mode))doc$entries[[i]]$rows<-as.character(as.integer(e$rows)-1L)
    }
+   if(doc$kind=='metric_catalogue'&&mode=='suppressed-ledger')for(i in seq_along(doc$entries)) {
+    if(doc$entries[[i]]$metric_id=='core.execution.output_status') {
+     doc$entries[[i]]$state<-'suppressed';doc$entries[[i]]$reason_code<-'fixture.policy_suppressed'
+    }
+   }
    if(doc$kind=='data') {
+    if(doc$metric_id=='core.execution.output_status'&&mode%in%c('suppressed-ledger','suppressed-ledger-row'))for(i in seq_along(doc$rows)) {
+     if(mode=='suppressed-ledger'||doc$rows[[i]]$dimensions$metric_id=='core.person.count') {
+      doc$rows[[i]]$state<-'suppressed';doc$rows[[i]]$reason_code<-'fixture.policy_suppressed';doc$rows[[i]]["values"]<-list(NULL)
+     }
+    }
     if(mode=='missing-ledger'&&doc$metric_id=='core.execution.output_status')doc$rows<-Filter(function(r)r$dimensions$metric_id!='core.person.count',doc$rows)
     if(mode=='missing-passport'&&doc$metric_id=='core.source.passport')doc$rows<-list()
     if(mode=='missing-summary'&&doc$metric_id=='core.measurement.numeric_summary')doc$rows<-Filter(function(r)!(r$row_kind=='summary'&&identical(r$values$n,'6')),doc$rows)
@@ -42,7 +52,8 @@ testArtifactRegressions <- function(bundleDir, evidenceDir) {
   }
   pointer$root<-rewrite(pointer$root);writeBin(f('.v2_bytes')(pointer),file.path(path,'publication.json'))
   message<-tryCatch({f('.v2_directory')(path);'ACCEPTED'},error=conditionMessage)
-  expected<-if(mode=='missing-ledger')'Incomplete output ledger' else if(mode=='missing-passport')'Missing projected singleton' else if(mode=='missing-summary')'Missing eligible summary' else if(startsWith(mode,'passport-'))'Passport context mismatch' else 'Observed counts exceed'
+  if(mode=='suppressed-ledger'){if(message!='ACCEPTED')stop(paste('Suppressed ledger rejected:',message),call.=FALSE);next}
+  expected<-if(mode=='suppressed-ledger-row')'Missing ledger entry payload' else if(mode=='missing-ledger')'Incomplete output ledger' else if(mode=='missing-passport')'Missing projected singleton' else if(mode=='missing-summary')'Missing eligible summary' else if(startsWith(mode,'passport-'))'Passport context mismatch' else 'Observed counts exceed'
   stopifnot(message!='ACCEPTED',grepl(expected,message,fixed=TRUE))
  }
  cat('PR16_REHASHED_LEDGER_PASSPORT_SUMMARY_AND_OBSERVED_REGRESSIONS_OK\n')

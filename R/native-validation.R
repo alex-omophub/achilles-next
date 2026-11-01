@@ -175,20 +175,21 @@
   .nv_need(identical(hash,lock$sha256[[basename(profilePath)]]),"Frozen profile integrity mismatch")
   list(profile=jsonlite::fromJSON(profilePath,simplifyVector=FALSE),profile_hash=hash)
 }
-.nv_legacy_assets <- local({
-  cache<-new.env(parent=emptyenv())
-  function(version) {
-    .nv_need(version%in%c('1.0.0','1.1.0'),'Unsupported contract')
-    if(exists(version,cache,inherits=FALSE)) return(get(version,cache))
-    dir<-system.file(paste0('contracts/',if(version=='1.0.0')'v1' else 'v1.1'),package='AchillesNext',mustWork=TRUE)
-    lock<-jsonlite::fromJSON(file.path(dir,'schema-lock.json'),simplifyVector=FALSE)
-    for(name in names(lock$sha256)) .nv_need(identical(digest::digest(file=file.path(dir,name),algo='sha256'),lock$sha256[[name]]),'Schema lock mismatch')
-    schema<-jsonlite::fromJSON(file.path(dir,'contract.schema.json'),simplifyVector=FALSE)
-    profilePath<-system.file('analysis/alpha-measurement-v1.json',package='AchillesNext',mustWork=TRUE)
-    result<-c(list(schema=schema),.nv_locked_profile(profilePath,system.file('analysis/manifest-lock.json',package='AchillesNext',mustWork=TRUE)))
-    assign(version,result,cache);result
-  }
-})
+# Package-owned runtime data has a namespace binding, so cached asset loaders
+# retain their normal namespace lexical environment for provenance checks.
+.validation_cache <- new.env(parent=emptyenv())
+.nv_legacy_assets <- function(version) {
+  .nv_need(version%in%c('1.0.0','1.1.0'),'Unsupported contract')
+  key<-paste0("legacy:",version)
+  if(exists(key,.validation_cache,inherits=FALSE)) return(get(key,.validation_cache,inherits=FALSE))
+  dir<-system.file(paste0('contracts/',if(version=='1.0.0')'v1' else 'v1.1'),package='AchillesNext',mustWork=TRUE)
+  lock<-jsonlite::fromJSON(file.path(dir,'schema-lock.json'),simplifyVector=FALSE)
+  for(name in names(lock$sha256)) .nv_need(identical(digest::digest(file=file.path(dir,name),algo='sha256'),lock$sha256[[name]]),'Schema lock mismatch')
+  schema<-jsonlite::fromJSON(file.path(dir,'contract.schema.json'),simplifyVector=FALSE)
+  profilePath<-system.file('analysis/alpha-measurement-v1.json',package='AchillesNext',mustWork=TRUE)
+  result<-c(list(schema=schema),.nv_locked_profile(profilePath,system.file('analysis/manifest-lock.json',package='AchillesNext',mustWork=TRUE)))
+  assign(key,result,.validation_cache);result
+}
 .nv_legacy_document <- function(kind,doc) {
   version<-doc$contract_version %||% if(kind=="context")"1.0.0" else NULL
   assets<-.nv_legacy_assets(version)
