@@ -45,6 +45,13 @@ candidates and exact grains. It plans full-history/all-concept work; complete co
 domain generation remains unimplemented. A small synthetic harness compares
 reference and transaction-private materialization with independent numerical oracles.
 
+`generatePopulationObservationBaseline()` computes and persists seven population
+and twelve observation-period outputs from PostgreSQL sources. The
+[baseline guide](docs/development/population-baseline.md) explains exact semantics,
+worker permissions and saved readback without CDM access. Its building release
+leaves the other 123 core outputs explicitly ungenerated and cannot be published
+as a complete core result.
+
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 
 ## Relationship to OHDSI

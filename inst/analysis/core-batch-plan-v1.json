@@ -34,7 +34,8 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_population_baseline",
+      "producer": "generatePopulationObservationBaseline"
     },
     {
       "id": "condition.classification",
@@ -569,7 +570,8 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_population_baseline",
+      "producer": "generatePopulationObservationBaseline"
     },
     {
       "id": "observation.outputs",
@@ -712,7 +714,8 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_population_baseline",
+      "producer": "generatePopulationObservationBaseline"
     },
     {
       "id": "condition.counts",

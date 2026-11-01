@@ -64,6 +64,17 @@ mid <- 'core.execution.output_status';v <- metadata[[mid]];v$coverage$scope_kind
 r <- obj(row_key='',dimensions=obj(metric_id='core.person.count'),row_kind='metadata',state='computed',reason_code=NULL,values=v,denominator_refs=list());add(mid,r,FALSE,'missing reduced coverage reason')
 r$values$coverage$reason_code <- 'fixture.reduced';add(mid,r,TRUE,'reduced coverage reason')
 # Exact arithmetic and codec ordering, including Java BigInteger fallback.
+for(name in c('gender_concept_id','race_concept_id','ethnicity_concept_id','year_of_birth','period_type_concept_id')) {
+ mid <- switch(name,gender_concept_id='core.person.gender_count',race_concept_id='core.person.race_count',ethnicity_concept_id='core.person.ethnicity_count',year_of_birth='core.person.birth_year_count',period_type_concept_id='core.observation_period.type_count')
+ for(value in c('null','0','-1','9007199254740993')) {
+  dims<-stats::setNames(list(value),name);values<-if(name=='period_type_concept_id')obj(record_count='1') else obj(person_count='1')
+  row<-obj(row_key='',dimensions=dims,row_kind='counts',state='computed',reason_code=NULL,values=values,denominator_refs=list())
+  add(mid,row,TRUE,'raw nullable identity preserved')
+ }
+ keys<-vapply(c('null','0','-1','9007199254740993'),f('.v2_component'),'',name=name)
+ stopifnot(!anyDuplicated(keys))
+}
+stopifnot(inherits(try(f('.v2_component')('null','year'),silent=TRUE),'try-error'))
 stopifnot(f('.nv_mul')(strrep('9',1100),paste0('1',strrep('0',1000)))==paste0(strrep('9',1100),strrep('0',1000)))
 values <- c('-10','-2','0','2','10');keys <- vapply(values,f('.v2_component'),'',name='integer')
 stopifnot(identical(order(keys,method='radix'),seq_along(values)))

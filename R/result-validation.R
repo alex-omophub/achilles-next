@@ -1,9 +1,11 @@
 # JDBC strings preserve NUMERIC exactly. Each cursor fetch is bounded; it never
 # uses DatabaseConnector's data-frame conversion for aggregate values.
 .store_commit <- function(jdbc) rJava::.jcall(jdbc, "V", "commit")
-.store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L) {
+.store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L, queryTimeoutSeconds = 60L) {
   .nv_need(identical(details$dbms, "postgresql"), "PostgreSQL is required")
   .nv_need(.string(schema) && grepl("^[a-z][a-z0-9_]{0,62}$", schema) && !grepl("^pg_|^public$|^information_schema$", schema), "Invalid results schema")
+  .nv_need(is.numeric(queryTimeoutSeconds)&&length(queryTimeoutSeconds)==1L&&!is.na(queryTimeoutSeconds)&&is.finite(queryTimeoutSeconds)&&
+    queryTimeoutSeconds>=1&&queryTimeoutSeconds<=2147483647&&queryTimeoutSeconds==floor(queryTimeoutSeconds),"Invalid store query timeout")
   connection <- DatabaseConnector::connect(details)
   on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
   jdbc <- connection@jConnection
@@ -15,14 +17,14 @@
   execute <- function(sql) {
     statement <- rJava::.jcall(jdbc, "Ljava/sql/Statement;", "createStatement")
     on.exit(rJava::.jcall(statement, "V", "close"))
-    rJava::.jcall(statement, "V", "setQueryTimeout", 60L)
+    rJava::.jcall(statement, "V", "setQueryTimeout", as.integer(queryTimeoutSeconds))
     invisible(rJava::.jcall(statement, "Z", "execute", sql))
   }
   stream <- function(sql, visit) {
     statement <- rJava::.jcall(jdbc, "Ljava/sql/Statement;", "createStatement")
     on.exit(rJava::.jcall(statement, "V", "close"))
     rJava::.jcall(statement, "V", "setFetchSize", 128L)
-    rJava::.jcall(statement, "V", "setQueryTimeout", 60L)
+    rJava::.jcall(statement, "V", "setQueryTimeout", as.integer(queryTimeoutSeconds))
     rs <- rJava::.jcall(statement, "Ljava/sql/ResultSet;", "executeQuery", sql)
     on.exit(rJava::.jcall(rs, "V", "close"), add = TRUE, after = FALSE)
     while (rJava::.jcall(rs, "Z", "next")) visit(rJava::.jcall(rs, "S", "getString", 1L))

@@ -3,14 +3,13 @@ Type: Package
 Title: Development Tracer for OMOP Characterization Results
 Version: 0.0.0.9000
 Authors@R: person("Alex", "Chen", email = "alex@omophub.com", role = c("aut", "cre"))
-Description: Computes exact counts, observation opportunity and bounded measurement
-    representations and reference distributions from marked synthetic PostgreSQL
-    fixtures and writes versioned aggregate bundles for a reusable React view.
-    Provides durable execution, approved synthetic publication, cancellation and
-    isolated recovery with conservative recomputation. Includes an experimental
-    complete-profile batch planner and transaction-scoped staging primitives
-    for developer evaluation. This development tracer
-    does not implement institutional execution or general input reuse.
+Description: Precomputes exact population demographics and observation baselines
+    from PostgreSQL OMOP sources into a restricted typed aggregate store. Includes
+    a separate bounded synthetic measurement tracer, versioned bundles, approved
+    publication tools and a reusable React view. Provides an experimental core
+    batch planner, transaction-private staging and conservative recomputation.
+    Complete multi-domain generation, general input reuse and production-scale
+    qualification are not yet implemented.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Depends: R (>= 4.2)

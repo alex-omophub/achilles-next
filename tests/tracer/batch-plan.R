@@ -7,7 +7,8 @@ main<-function() {
     identical(p,planCharacterizationBatch("cdm","fixture:batch","5.5")))
   assets<-AchillesNext:::.v2_assets();seen<-character();outputs<-character()
   for(m in p$modules) {
-    stopifnot(all(unlist(m$depends_on)%in%seen),m$source_access=="explicit_batch_only",m$execution=="not_implemented")
+    stopifnot(all(unlist(m$depends_on)%in%seen),m$source_access=="explicit_batch_only",
+      m$execution==if(m$id%in%c("person.demographics","observation.union","observation.outputs"))"available_in_population_baseline" else "not_implemented")
     seen<-c(seen,m$id);outputs<-c(outputs,unlist(m$metric_ids))
     for(g in m$grains) stopifnot(identical(g$grain,assets$metrics[[g$metric_id]]$grain),
       identical(g$population,assets$metrics[[g$metric_id]]$population),identical(g$dimensions,assets$metrics[[g$metric_id]]$dimensions))
