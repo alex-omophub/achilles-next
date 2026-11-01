@@ -41,18 +41,23 @@ context <- readDomainBaseline(
                 period_start = "2020-01-01", period_end = "2020-12-31"))
 ```
 
-The reader validates the saved baseline before streaming selected rows. Concept
+The reader validates the saved baseline once into a private temporary spool,
+then replays exact validated rows without a second database traversal. Concept
 paging queries a bounded indexed saved catalogue (up to 128 entries/page), and
 cursors bind the release/content revision/profile/domain. They are positions, not
 authentication tokens. All raw observed concepts are available, including those
 that only occur on unlinked or undated rows. Empty domains have empty catalogues
 and saved zero ALL capture totals. Calendar capture is precomputed for each raw
 concept and ALL over canonical months/years spanning finite events and valid
-observation intervals. Full-scope selectors have `"null"` boundaries, meaning all
+observation intervals. Domain full-scope selectors have `"null"` boundaries, meaning all
 recorded history; actual finite extent is separate telemetry, not a source release
 identity. Undated capture is a separate NULL-date bucket. Invalid finite-range
 source dates stay in full-scope/integrity/qualification counts and outside calendar
-counts. Unsupported exact date ranges require generation; there is no dynamic
+counts. Population observation outputs retain their observation-bound clipped
+periods and clipped/full-calendar labels. Additional canonical coverage and
+continuous-period rows support exact domain denominator scopes; coincident scopes
+are deduplicated. The separate population window is returned as metadata.
+Unsupported exact date ranges require generation; there is no dynamic
 clinical query or percentile synthesis. Summaries and histograms are whole-scope.
 Custom date-range generation and calendar-specific summaries are not implemented
 in this slice; they need a separately declared batch capability. Explicit metric
@@ -86,8 +91,11 @@ No clinical/source strings, device identifiers or patient IDs enter result rows.
 Counts and identities remain strings. NUMERIC/integer input values are preserved
 as exact decimal strings; floating source types are rejected pending an explicit
 precision adapter. Summaries use exact sum and rational mean plus empirical
-`x[ceil(p*n)]` quantiles over eligible physical rows. Frequency-weighted rank
-selection retains duplicate multiplicity. Zero is eligible for nonnegative
+`x[ceil(p*n)]` quantiles. The sample unit depends on the metric: recorded
+scalar/numeric and visit-duration summaries use eligible physical records;
+first-age summaries use one earliest dated age per linked PERSON/concept, by
+gender. Frequency-weighted rank selection preserves multiplicity within each
+metric's eligible sample, without weighting first ages by event frequency. Zero is eligible for nonnegative
 scalars; negative, non-finite and missing values are separate exclusions.
 Observation numeric summaries require a positive local Unit identity, preserve
 negative numeric values, and never pool units. Allowed groups with no eligible
@@ -102,8 +110,9 @@ accessible empty table is distinct. For conditional fields:
 
 - Procedure end precision is unsupported if either end column is absent. Available
   end-date integrity flags still run; absent fields are never queried.
-- Device unit distribution is unsupported if its unit fields are absent; quantity
-  still runs with a typed schema-absent unit distinct from NULL/zero.
+- Device unit distribution is unsupported unless all three unit fields exist.
+  Quantity still runs; it uses a typed schema-absent unit only when
+  `unit_concept_id` is absent, otherwise retaining that column's NULL/zero/ID tag.
 - Specimen visit-link presence is unsupported unless both link columns exist.
 - Observation source/date representation bits independently use `X` for absent
   columns; supported combinations, including zero cells, remain explicit.
@@ -116,7 +125,9 @@ accessible empty table is distinct. For conditional fields:
 The batch uses narrow private stages, merged-interval indexes and exact aggregate
 stages. It avoids event × observation joins, person × concept expansion and
 per-concept source queries. Calendar bucketing maps dates directly instead of
-joining every event to every period. Stage byte limits are checked after stages;
+joining every event to every period. Denominator targets are joined into the
+aggregate stream rather than fetched in per-cell queries; report stages have
+metric indexes for repeated metric extraction. Stage byte limits are checked after stages;
 they do not cap allocation/sort spill. Timeout, budget, schema failures and
 cancellation roll back the entire new release. Source changes require a new batch
 and release; existing saved results do not change. This is not a durable checkpoint
@@ -133,11 +144,16 @@ python3 tools/test_domain_baseline.py \
 ```
 
 The test creates disposable synthetic physical schema variants for declared CDM
-5.3/5.4/5.5, plus empty-domain and empty-source cases. An independent Python
-set/Decimal/integer-rank oracle checks every domain/density output. Installed R
+5.3/5.4/5.5, plus empty-domain and empty-source cases and an additional unobserved
+5.5 case. An independent Python
+set/Decimal/integer-rank oracle checks every domain/density output, cell states
+and reasons, unavailable CARE_SITE marginals and all 19 population outputs,
+including retained clipped scopes. Existing/in-checkout evidence paths are
+rejected without overwriting their contents. Installed R
 checks restricted saved reading, catalogue pagination, exact date/concept selection,
 source-denied fresh-process readback, conditional capabilities, atomic failures,
-backfill immutability and rejection by the full-profile gate. Synthetic capability
+backfill immutability and rejection by the full-profile gate. Routine CI uses the [compact calendar](ci.md) with the same report/edge coverage;
+the wider fixture remains available locally or by manual dispatch. Synthetic capability
 variants are not certification of every real CDM implementation or data scale.
 
 An optional `--legacy` comparison requires installed Achilles 1.7.2 and SqlRender

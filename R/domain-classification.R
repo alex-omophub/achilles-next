@@ -1,6 +1,6 @@
 .domain_prepare <- function(tx,schema,stage,person,intervals,cap) {
   assets<-.v2_assets();source<-paste0('"',schema,'"');tables<-list();counts<-list();unsupported<-list()
-  .population_need(tx$one(paste0("SELECT COUNT(*)::text FROM (SELECT concept_id FROM ",source,".concept GROUP BY concept_id HAVING COUNT(DISTINCT domain_id)>1) x"))=="0","Ambiguous local concept domains; generation rolled back")
+  .population_need(tx$one(paste0("SELECT COUNT(*)::text FROM (SELECT concept_id FROM ",source,".concept GROUP BY concept_id HAVING COUNT(DISTINCT domain_id)>1 OR (COUNT(domain_id)>0 AND COUNT(domain_id)<COUNT(*))) x"))=="0","Ambiguous local concept domains; generation rolled back")
   vocabulary<-stage("vocab",paste0("SELECT concept_id,MIN(domain_id) AS domain_id FROM ",source,".concept GROUP BY concept_id"),"concept_id")
   col<-function(domain,name,required=TRUE) {
     table<-assets$profile$domains[[domain]]$table;found<-cap$column(paste(table,name,sep="."),required)

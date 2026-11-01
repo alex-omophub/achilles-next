@@ -16,7 +16,7 @@ readDomainBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,m
     .v2_dimensions('core.condition.capture_count',.object(dimensions=c(.object(concept_tag=.object(kind='all')),period),row_kind='counts'))
   }
   .population_need(is.function(visit),'A streaming row visitor is required')
-  selected<-metricIds %||% ids;periodFound<-is.null(period)
+  selected<-unname(metricIds %||% ids)
   for(dimension in c(if(!is.null(conceptTag))'concept_tag',if(!is.null(period))'period_kind')) {
     supported<-vapply(selected,function(mid)dimension%in%unlist(.v2_assets()$rows[[mid]]$dimensions),TRUE)
     .population_need(is.null(metricIds)||all(supported),'Metric/selector grain not precomputed; generation is required')
@@ -24,14 +24,18 @@ readDomainBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,m
   }
   # Validation and emission share the same saved-results snapshot. Source
   # credentials, vocabulary resolution and clinical joins are never involved.
+  checkPeriods<-if(is.null(period))NULL else function(tx) {
+    available<-character()
+    tx$stream(paste0("SELECT metric_id FROM ",tx$schema,".achillesnext_aggregate_cell WHERE release_id=",.store_uuid(releaseId),
+      " AND metric_id IN (",paste(vapply(selected,.store_literal,""),collapse=","),") AND dimensions @> ",.store_literal(.json(period)),"::jsonb GROUP BY metric_id"),function(mid)available<<-c(available,mid))
+    .population_need(setequal(available,selected),'Period not precomputed for every selected metric; generation is required')
+  }
   context<-.baseline_read(connectionDetails,resultsSchema,releaseId,function(mid,row) {
-    if(!is.null(period)&&!is.null(row$dimensions$period_kind)&&identical(.json(row$dimensions[names(period)]),.json(period)))periodFound<<-TRUE
     if(!mid%in%selected)return(invisible(NULL))
     if(!is.null(conceptTag)&&(is.null(row$dimensions$concept_tag)||!identical(.json(conceptTag),.json(row$dimensions$concept_tag))))return(invisible(NULL))
     if(!is.null(period)&&(is.null(row$dimensions$period_kind)||!identical(.json(row$dimensions[names(period)]),.json(period))))return(invisible(NULL))
     visit(mid,row)
-  },TRUE)
-  .population_need(periodFound,'Period not precomputed; generation is required')
+  },TRUE,checkPeriods)
   c(context,.object(selection=.object(metric_ids=as.list(selected),concept_tag=conceptTag,period=period)))
 }
 

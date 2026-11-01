@@ -26,7 +26,7 @@ main<-function() {
   producerTables<-c('source_release','analysis_run','operation','result_release','dataset','aggregate_cell','denominator_edge')
   qualified<-function(names)paste0('"',results,'".achillesnext_',names)
   ex(paste0('GRANT USAGE ON SCHEMA "',results,'" TO achilles_next_runner; GRANT SELECT ON ',paste(qualified(c('profile_registry','validation_receipt',producerTables)),collapse=','),' TO achilles_next_runner; GRANT INSERT ON ',paste(qualified(producerTables),collapse=','),' TO achilles_next_runner; GRANT UPDATE ON ',paste(qualified(c('analysis_run','result_release')),collapse=','),' TO achilles_next_runner'))
-  snapshots<-list();saved<-list();baselineTemp<-q("SELECT count(*)::text AS n FROM pg_class WHERE relpersistence='t' AND relname~'^achillesnext_[0-9a-f]{32}_'")$N
+  snapshots<-list();saved<-list();careCases<-list();baselineTemp<-q("SELECT count(*)::text AS n FROM pg_class WHERE relpersistence='t' AND relname~'^achillesnext_[0-9a-f]{32}_'")$N
   makeSource<-function(case,index) {
     schema<-paste0('cdm_tiny_domain_',Sys.getpid(),'_',index);sources<<-c(sources,schema)
     ex(paste0('CREATE SCHEMA "',schema,'"; COMMENT ON SCHEMA "',schema,'" IS \'AchillesNext synthetic fixture sandbox v1: domain\''))
@@ -81,6 +81,17 @@ main<-function() {
       period=list(period_kind='calendar_month',period_start='2020-01-01',period_end='2020-01-31'));'accepted'},error=conditionMessage)
     stopifnot(grepl('generation is required',error,fixed=TRUE),emitted==0L)
   }
+  # Every selected metric must support the exact period, before any output.
+  for(metrics in list('observed.condition.capture_count',c('core.condition.capture_count','observed.condition.capture_count'))) {
+    emitted<-0L
+    error<-tryCatch({readDomainBaseline(env$fixtureConnection(),results,saved[[1]]$release,function(mid,row){emitted<<-emitted+1L},metrics,
+      period=list(period_kind='undated',period_start='null',period_end='null'));'accepted'},error=conditionMessage)
+    stopifnot(grepl('generation is required',error,fixed=TRUE),emitted==0L)
+  }
+  # Named R vectors have the same array-shaped selector metadata as plain input.
+  named<-readDomainBaseline(env$fixtureConnection(),results,saved[[1]]$release,function(mid,row){},
+    c(label='core.condition.capture_count'),list(kind='all'),list(period_kind='undated',period_start='null',period_end='null'))
+  stopifnot(is.null(names(named$selection$metric_ids)),grepl('"metric_ids":[',wire(named$selection),fixed=TRUE))
   # Required table/column/capability errors are atomic, never false empty data.
   case<-input[[3]];schema<-makeSource(case,100L)
   before<-q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_result_release'))$N
@@ -98,6 +109,9 @@ main<-function() {
   ex(paste0('INSERT INTO "',schema,'".concept VALUES(100,\'Drug\')'))
   fails(function()generate())
   ex(paste0('DELETE FROM "',schema,'".concept WHERE concept_id=100 AND domain_id=\'Drug\''))
+  for(id in c(100L,200L)) {
+    ex(paste0('INSERT INTO "',schema,'".concept VALUES(',id,',NULL)'));fails(function()generate());ex(paste0('DELETE FROM "',schema,'".concept WHERE concept_id=',id,' AND domain_id IS NULL'))
+  }
   ex(paste0('REVOKE SELECT ON "',schema,'".drug_exposure FROM achilles_next_runner'))
   fails(function()generate())
   ex(paste0('GRANT SELECT ON "',schema,'".drug_exposure TO achilles_next_runner'))
@@ -113,12 +127,15 @@ main<-function() {
   denied<-generate();deniedRows<-inspect(denied$release_id)$rows[['core.visit.care_setting_count']]
   stopifnot(all(vapply(Filter(function(r)r$dimensions$setting_kind=='place_of_service',deniedRows),function(r)r$state=='unavailable'&&is.null(r$values),TRUE)),
     all(vapply(Filter(function(r)r$dimensions$setting_kind!='place_of_service',deniedRows),function(r)r$state=='computed',TRUE)))
+  careCases[[length(careCases)+1L]]<-list(reason='capability.care_site_denied',rows=deniedRows)
   ex(paste0('GRANT SELECT ON "',schema,'".care_site TO achilles_next_runner; INSERT INTO "',schema,'".care_site VALUES(1,999)'))
   ambiguous<-generate();ambiguousRows<-inspect(ambiguous$release_id)$rows[['core.visit.care_setting_count']]
   stopifnot(any(vapply(ambiguousRows,function(r)identical(r$reason_code,'capability.care_site_ambiguous'),TRUE)))
+  careCases[[length(careCases)+1L]]<-list(reason='capability.care_site_ambiguous',rows=ambiguousRows)
   ex(paste0('DROP TABLE "',schema,'".care_site'))
   absent<-generate();absentRows<-inspect(absent$release_id)$rows[['core.visit.care_setting_count']]
   stopifnot(any(vapply(absentRows,function(r)r$state=='unsupported'&&is.null(r$values),TRUE)))
+  careCases[[length(careCases)+1L]]<-list(reason='capability.care_site_absent',rows=absentRows)
   # A new source row yields a new release; the old saved results stay unchanged.
   oldRows<-inspect(saved[[3]]$release)$rows
   ex(paste0('INSERT INTO "',saved[[3]]$schema,'".condition_occurrence SELECT * FROM "',saved[[3]]$schema,'".condition_occurrence LIMIT 1'))
@@ -134,7 +151,7 @@ main<-function() {
   error<-tryCatch({sealResultRelease(env$fixtureConnection('owner'),results,saved[[1]]$release);'accepted'},error=conditionMessage)
   stopifnot(error!='accepted',q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_current_publication'))$N=='0')
   stopifnot(identical(implementation,implementationIdentity(getwd())))
-  writeLines(wire(list(snapshots=snapshots,implementation=implementation,source_denied='passed',full_profile_gate='rejected',atomic_failures='passed')),file.path(out,'report.json'),useBytes=TRUE)
+  writeLines(wire(list(snapshots=snapshots,care_cases=careCases,implementation=implementation,source_denied='passed',full_profile_gate='rejected',atomic_failures='passed')),file.path(out,'report.json'),useBytes=TRUE)
   cat('PASS: 119 persisted outputs; bounded concept paging; source-denied saved selection; atomic failures; incomplete publication gate\n')
 }
 main()

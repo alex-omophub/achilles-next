@@ -9,7 +9,7 @@
 readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,releaseId,visit) {
   .baseline_read(connectionDetails,resultsSchema,releaseId,visit,FALSE)
 }
-.baseline_read <- function(connectionDetails,resultsSchema,releaseId,visit,domainMode) {
+.baseline_read <- function(connectionDetails,resultsSchema,releaseId,visit,domainMode,beforeEmit=NULL) {
   .population_need(is.function(visit),"A streaming row visitor is required")
   .store_transaction(connectionDetails,resultsSchema,function(tx) {
     id<-.store_uuid(releaseId);s<-tx$schema;assets<-.v2_assets();ids<-c(.population_ids(),if(domainMode).domain_ids() else character())
@@ -36,24 +36,50 @@ readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,re
       .domain_reconcile(tx,releaseId,datasets,telemetry$domain_totals)
       for(mid in ids)if(datasets[[mid]]$state=='unsupported') .population_need(identical(datasets[[mid]]$reason_code,telemetry$schema_conditional[[mid]]),'Unsupported dataset capability mismatch')
     }
-    # Validate all requested saved datasets before emitting rows, in one read snapshot.
-    for(mid in ids) {
-      count<-"0";last<-NULL;d<-datasets[[mid]]
-      .store_rows(tx,releaseId,mid,function(row,key) {
-        .population_need(is.null(last)||.v2_less(last,key),"Duplicate/unordered saved baseline row")
-        last<<-key;count<<-.nv_add(count,"1")
-        allowed<-if(d$state=="computed") row$state=="computed" ||
-          (row$row_kind=="summary" && row$state=="empty_population" && identical(row$values$n,"0")) else row$state==d$state
-        if(domainMode && mid=="core.visit.care_setting_count" && row$dimensions$setting_kind=="place_of_service" && !is.null(telemetry$care_reason))
-          allowed<-identical(row$state,if(telemetry$care_reason=='capability.care_site_absent')'unsupported' else 'unavailable')&&identical(row$reason_code,telemetry$care_reason)&&identical(row$dimensions$setting_concept_tag$kind,'schema_absent')&&is.null(row$values)
-        .population_need(allowed,"Saved row state is inconsistent with its baseline dataset")
-      })
-      .population_need(count==d$rows,"Saved baseline row count mismatch")
-    }
     .population_need(datasets[["core.person.count"]]$rows=="1","Saved PERSON singleton missing")
-    for(mid in ids).store_rows(tx,releaseId,mid,function(row,key)visit(mid,row))
+    # Reject unsupported selections before expensive row traversal. No visitor
+    # sees a row until every saved dataset has passed validation.
+    if(!is.null(beforeEmit))beforeEmit(tx)
+    .baseline_emit_rows(tx,releaseId,ids,datasets,visit,domainMode,telemetry$care_reason)
     c(context,.object(generated_metric_count=as.character(length(ids)),profile_complete=FALSE,publishable=FALSE,inventory=inventory,
-      scope=telemetry$request,observed_window=telemetry$observed_window,generation=.object(started_at=telemetry$started_at,ended_at=telemetry$ended_at),
+      scope=telemetry$request,observed_window=telemetry$observed_window,population_window=telemetry$population_window %||% telemetry$observed_window,generation=.object(started_at=telemetry$started_at,ended_at=telemetry$ended_at),
       consistency="single_repeatable_read_saved_results",reusable_source_identity=FALSE))
   },readOnly=TRUE)
+}
+
+# Validate once, then replay trusted locally serialized rows. The private spool
+# bounds memory and preserves exact strings/NULLs without a second database scan
+# or a second schema/denominator validation. It is deleted on every exit path.
+.baseline_emit_rows <- function(tx,releaseId,ids,datasets,visit,domainMode,careReason=NULL) {
+  folder<-tempfile("achillesnext-read-")
+  .population_need(dir.create(folder,mode="0700"),"Cannot create private read spool")
+  writer<-NULL;reader<-NULL
+  on.exit({
+    if(!is.null(writer))try(close(writer),silent=TRUE)
+    if(!is.null(reader))try(close(reader),silent=TRUE)
+    unlink(folder,recursive=TRUE)
+  },add=TRUE)
+  path<-file.path(folder,"rows");writer<-file(path,"wb");Sys.chmod(path,"0600");written<-"0"
+  for(mid in ids) {
+    count<-"0";last<-NULL;d<-datasets[[mid]]
+    .store_rows(tx,releaseId,mid,function(row,key) {
+      .population_need(is.null(last)||.v2_less(last,key),"Duplicate/unordered saved baseline row")
+      last<<-key;count<<-.nv_add(count,"1")
+      allowed<-if(d$state=="computed") row$state=="computed" ||
+        (row$row_kind=="summary" && row$state=="empty_population" && identical(row$values$n,"0")) else row$state==d$state
+      if(domainMode && mid=="core.visit.care_setting_count" && row$dimensions$setting_kind=="place_of_service" && !is.null(careReason))
+        allowed<-identical(row$state,if(careReason=='capability.care_site_absent')'unsupported' else 'unavailable')&&identical(row$reason_code,careReason)&&identical(row$dimensions$setting_concept_tag$kind,'schema_absent')&&is.null(row$values)
+      .population_need(allowed,"Saved row state is inconsistent with its baseline dataset")
+      serialize(list(metric_id=mid,row=row),writer,version=3,xdr=FALSE)
+      written<<-.nv_add(written,"1")
+    })
+    .population_need(count==d$rows,"Saved baseline row count mismatch")
+  }
+  close(writer);writer<-NULL;reader<-file(path,"rb");emitted<-"0"
+  while(emitted!=written) {
+    value<-unserialize(reader)
+    visit(value$metric_id,value$row)
+    emitted<-.nv_add(emitted,"1")
+  }
+  invisible(NULL)
 }
