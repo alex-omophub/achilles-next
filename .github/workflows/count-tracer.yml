@@ -150,6 +150,10 @@ jobs:
           Rscript tests/tracer/measurement.R tools/tracer_fixture_config.R "$MEASUREMENT_TEST_BUNDLES"
           ACHILLES_NEXT_TEST_NUMERIC_STRATEGY=weighted Rscript tests/tracer/measurement.R tools/tracer_fixture_config.R "$WEIGHTED_TEST_BUNDLES"
           python3 tools/benchmark/weighted_quantiles.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/weighted-quantile-parity"
+      - name: Check core batch planning and private staging
+        run: |
+          Rscript --vanilla tests/tracer/batch-plan.R
+          python3 tools/benchmark/batch_primitives.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/batch-primitives" --trials 1
       - name: Validate every generated bundle against the frozen contracts
         run: |
           npm run check --prefix packages/contracts

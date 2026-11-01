@@ -1,0 +1,2871 @@
+{
+  "format_version": "1.0.0",
+  "profile_sha256": "3a06e7a7a53c205e84a62d2ff1c7fab0860928f14ff6dd60cb7f00f12e60dbf2",
+  "modules": [
+    {
+      "id": "source.preflight",
+      "metric_ids": [],
+      "depends_on": [],
+      "source_access": "explicit_batch_only",
+      "role": "metadata_and_integrity",
+      "inputs": [
+        "schema_metadata",
+        "person.person_id"
+      ],
+      "grains": [],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "observation.union",
+      "metric_ids": [],
+      "depends_on": [
+        "person.demographics"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "interval_union",
+      "inputs": [
+        "person.person_id",
+        "observation_period.person_id",
+        "observation_period.observation_period_start_date",
+        "observation_period.observation_period_end_date"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "condition.classification",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "physical_row_bag",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_end_date",
+        "condition_occurrence.condition_occurrence_id",
+        "condition_occurrence.condition_source_concept_id",
+        "condition_occurrence.condition_source_value",
+        "condition_occurrence.condition_start_date",
+        "condition_occurrence.condition_status_concept_id",
+        "condition_occurrence.condition_type_concept_id",
+        "condition_occurrence.person_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "drug.classification",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "physical_row_bag",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "drug_exposure.days_supply",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_end_date",
+        "drug_exposure.drug_exposure_id",
+        "drug_exposure.drug_exposure_start_date",
+        "drug_exposure.drug_source_concept_id",
+        "drug_exposure.drug_source_value",
+        "drug_exposure.drug_type_concept_id",
+        "drug_exposure.person_id",
+        "drug_exposure.quantity",
+        "drug_exposure.refills",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "procedure.classification",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "physical_row_bag",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth",
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "procedure_occurrence.procedure_datetime",
+        "procedure_occurrence.procedure_end_date",
+        "procedure_occurrence.procedure_end_datetime",
+        "procedure_occurrence.procedure_occurrence_id",
+        "procedure_occurrence.procedure_source_concept_id",
+        "procedure_occurrence.procedure_source_value",
+        "procedure_occurrence.procedure_type_concept_id"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "visit.classification",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "physical_row_bag",
+      "inputs": [
+        "care_site.care_site_id",
+        "care_site.place_of_service_concept_id",
+        "concept.concept_id",
+        "concept.domain_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth",
+        "visit_occurrence.admitted_from_concept_id",
+        "visit_occurrence.care_site_id",
+        "visit_occurrence.discharged_to_concept_id",
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_end_date",
+        "visit_occurrence.visit_occurrence_id",
+        "visit_occurrence.visit_source_concept_id",
+        "visit_occurrence.visit_source_value",
+        "visit_occurrence.visit_start_date",
+        "visit_occurrence.visit_type_concept_id"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "device.classification",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "physical_row_bag",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_end_date",
+        "device_exposure.device_exposure_id",
+        "device_exposure.device_exposure_start_date",
+        "device_exposure.device_source_concept_id",
+        "device_exposure.device_source_value",
+        "device_exposure.device_type_concept_id",
+        "device_exposure.person_id",
+        "device_exposure.quantity",
+        "device_exposure.unit_concept_id",
+        "device_exposure.unit_source_concept_id",
+        "device_exposure.unit_source_value",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "observation.classification",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "physical_row_bag",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "observation.observation_id",
+        "observation.observation_source_concept_id",
+        "observation.observation_source_value",
+        "observation.observation_type_concept_id",
+        "observation.person_id",
+        "observation.qualifier_concept_id",
+        "observation.unit_concept_id",
+        "observation.value_as_concept_id",
+        "observation.value_as_date",
+        "observation.value_as_number",
+        "observation.value_as_string",
+        "observation.value_source_value",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "death.classification",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "physical_row_bag",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "death.cause_concept_id",
+        "death.cause_source_concept_id",
+        "death.cause_source_value",
+        "death.death_date",
+        "death.death_type_concept_id",
+        "death.person_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "specimen.classification",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "physical_row_bag",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth",
+        "specimen.anatomic_site_concept_id",
+        "specimen.disease_status_concept_id",
+        "specimen.person_id",
+        "specimen.quantity",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date",
+        "specimen.specimen_id",
+        "specimen.specimen_source_value",
+        "specimen.specimen_type_concept_id",
+        "specimen.unit_concept_id",
+        "specimen.visit_detail_id",
+        "specimen.visit_occurrence_id"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "measurement.classification",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "physical_row_bag",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "measurement.measurement_id",
+        "measurement.measurement_source_concept_id",
+        "measurement.measurement_source_value",
+        "measurement.measurement_type_concept_id",
+        "measurement.operator_concept_id",
+        "measurement.person_id",
+        "measurement.range_high",
+        "measurement.range_low",
+        "measurement.unit_concept_id",
+        "measurement.value_as_concept_id",
+        "measurement.value_as_number",
+        "measurement.value_source_value",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "measurement.presence",
+      "metric_ids": [],
+      "depends_on": [
+        "source.preflight",
+        "person.demographics"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "distinct_person_presence",
+      "inputs": [
+        "person.person_id",
+        "measurement.person_id"
+      ],
+      "grains": [],
+      "materialization_candidate": true,
+      "retention": "transaction_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "run.metadata",
+      "metric_ids": [
+        "core.source.passport",
+        "core.source.capabilities",
+        "core.execution.output_status",
+        "core.execution.timing"
+      ],
+      "depends_on": [
+        "source.preflight",
+        "observation.union",
+        "condition.classification",
+        "drug.classification",
+        "procedure.classification",
+        "visit.classification",
+        "device.classification",
+        "observation.classification",
+        "death.classification",
+        "specimen.classification",
+        "measurement.classification",
+        "measurement.presence",
+        "person.demographics",
+        "observation.outputs",
+        "condition.counts",
+        "condition.first_age",
+        "condition.person_histograms",
+        "drug.counts",
+        "drug.first_age",
+        "drug.person_histograms",
+        "procedure.counts",
+        "procedure.first_age",
+        "procedure.person_histograms",
+        "visit.counts",
+        "visit.first_age",
+        "visit.person_histograms",
+        "device.counts",
+        "device.first_age",
+        "device.person_histograms",
+        "observation.counts",
+        "observation.first_age",
+        "observation.person_histograms",
+        "death.counts",
+        "death.first_age",
+        "death.person_histograms",
+        "specimen.counts",
+        "specimen.first_age",
+        "specimen.person_histograms",
+        "measurement.counts",
+        "measurement.first_age",
+        "measurement.person_histograms",
+        "condition.specific",
+        "drug.specific",
+        "visit.specific",
+        "procedure.specific",
+        "device.specific",
+        "specimen.specific",
+        "observation.specific",
+        "measurement.specific",
+        "density.presence"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "capability_probes",
+        "cdm_source",
+        "operator_assertions",
+        "schema_metadata",
+        "vocabulary"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.source.passport",
+          "population": "source_context",
+          "grain": "source/release",
+          "dimensions": []
+        },
+        {
+          "metric_id": "core.source.capabilities",
+          "population": "source_context",
+          "grain": "table/column/probe",
+          "dimensions": [
+            "probe_id"
+          ]
+        },
+        {
+          "metric_id": "core.execution.output_status",
+          "population": "requested_outputs",
+          "grain": "metric/release",
+          "dimensions": [
+            "metric_id"
+          ]
+        },
+        {
+          "metric_id": "core.execution.timing",
+          "population": "requested_outputs",
+          "grain": "phase/operation/run",
+          "dimensions": [
+            "operation_id",
+            "phase"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "person.demographics",
+      "metric_ids": [
+        "core.person.gender_count",
+        "core.person.birth_year_count",
+        "core.person.race_count",
+        "core.person.ethnicity_count",
+        "core.person.count",
+        "core.person.birth_year_gender_count",
+        "core.person.race_ethnicity_count"
+      ],
+      "depends_on": [
+        "source.preflight"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "person.ethnicity_concept_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.race_concept_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.person.gender_count",
+          "population": "person_table",
+          "grain": "person/gender_concept_id",
+          "dimensions": [
+            "gender_concept_id"
+          ]
+        },
+        {
+          "metric_id": "core.person.birth_year_count",
+          "population": "person_table",
+          "grain": "person/year_of_birth",
+          "dimensions": [
+            "year_of_birth"
+          ]
+        },
+        {
+          "metric_id": "core.person.race_count",
+          "population": "person_table",
+          "grain": "person/race_concept_id",
+          "dimensions": [
+            "race_concept_id"
+          ]
+        },
+        {
+          "metric_id": "core.person.ethnicity_count",
+          "population": "person_table",
+          "grain": "person/ethnicity_concept_id",
+          "dimensions": [
+            "ethnicity_concept_id"
+          ]
+        },
+        {
+          "metric_id": "core.person.count",
+          "population": "person_table",
+          "grain": "source",
+          "dimensions": []
+        },
+        {
+          "metric_id": "core.person.birth_year_gender_count",
+          "population": "person_table",
+          "grain": "person/year_of_birth/gender_concept_id",
+          "dimensions": [
+            "year_of_birth",
+            "gender_concept_id"
+          ]
+        },
+        {
+          "metric_id": "core.person.race_ethnicity_count",
+          "population": "person_table",
+          "grain": "person/race_concept_id/ethnicity_concept_id",
+          "dimensions": [
+            "race_concept_id",
+            "ethnicity_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "observation.outputs",
+      "metric_ids": [
+        "core.observation_period.coverage_count",
+        "core.observation_period.year_gender_age_count",
+        "core.observation_period.continuous_person_count",
+        "core.observation_period.first_age_summary",
+        "core.observation_period.first_age_count",
+        "core.observation_period.first_interval_days_summary",
+        "core.observation_period.first_interval_30d_count",
+        "core.observation_period.person_interval_histogram",
+        "core.observation_period.boundary_month_count",
+        "core.observation_period.type_count",
+        "core.observation_period.total_days_histogram",
+        "core.observation_period.integrity_count"
+      ],
+      "depends_on": [
+        "person.demographics",
+        "observation.union"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.period_type_concept_id",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.observation_period.coverage_count",
+          "population": "observed_people",
+          "grain": "window/month/year",
+          "dimensions": [
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.year_gender_age_count",
+          "population": "observed_people",
+          "grain": "person/year/recorded gender/year-age decile",
+          "dimensions": [
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.continuous_person_count",
+          "population": "observed_people",
+          "grain": "person/full month or year",
+          "dimensions": [
+            "period_kind",
+            "period_start",
+            "period_end",
+            "full_calendar_period"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.first_age_summary",
+          "population": "people_with_valid_intervals",
+          "grain": "person at first merged start/gender",
+          "dimensions": [
+            "gender_concept_id"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.first_age_count",
+          "population": "people_with_valid_intervals",
+          "grain": "person at first merged start/approximate year-age/gender",
+          "dimensions": [
+            "year_age_or_unknown",
+            "gender_concept_id"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.first_interval_days_summary",
+          "population": "people_with_valid_intervals",
+          "grain": "first merged interval/person/gender/age decile",
+          "dimensions": [
+            "gender_concept_id",
+            "first_year_age_decile"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.first_interval_30d_count",
+          "population": "people_with_valid_intervals",
+          "grain": "person/first merged interval length bucket",
+          "dimensions": [
+            "floor_days_div_30"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.person_interval_histogram",
+          "population": "person_table",
+          "grain": "person/number of merged intervals",
+          "dimensions": [
+            "interval_count"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.boundary_month_count",
+          "population": "valid_observation_intervals",
+          "grain": "merged interval/start or end month",
+          "dimensions": [
+            "boundary_kind",
+            "month"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.type_count",
+          "population": "raw_observation_intervals",
+          "grain": "physical row/raw period type",
+          "dimensions": [
+            "period_type_concept_id"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.total_days_histogram",
+          "population": "person_table",
+          "grain": "person/total union days bucket",
+          "dimensions": [
+            "floor_days_div_30"
+          ]
+        },
+        {
+          "metric_id": "core.observation_period.integrity_count",
+          "population": "raw_observation_intervals",
+          "grain": "row/one ordered integrity category",
+          "dimensions": [
+            "reason"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "condition.counts",
+      "metric_ids": [
+        "core.condition.capture_count",
+        "core.condition.source_count",
+        "core.condition.type_count",
+        "core.condition.integrity_count",
+        "core.condition.observation_qualification_count",
+        "observed.condition.capture_count",
+        "observed.condition.year_gender_age_count"
+      ],
+      "depends_on": [
+        "condition.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_end_date",
+        "condition_occurrence.condition_occurrence_id",
+        "condition_occurrence.condition_source_concept_id",
+        "condition_occurrence.condition_source_value",
+        "condition_occurrence.condition_start_date",
+        "condition_occurrence.condition_type_concept_id",
+        "condition_occurrence.person_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.condition.capture_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/period; records and linked distinct people are separate measures",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.condition.source_count",
+          "population": "all_recorded_rows",
+          "grain": "standard concept/raw source representation/full scope",
+          "dimensions": [
+            "concept_tag",
+            "source_concept_tag",
+            "source_value_state"
+          ]
+        },
+        {
+          "metric_id": "core.condition.type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw type/full scope",
+          "dimensions": [
+            "concept_tag",
+            "type_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.condition.integrity_count",
+          "population": "all_recorded_rows",
+          "grain": "row/independent integrity flag",
+          "dimensions": [
+            "flag",
+            "present"
+          ]
+        },
+        {
+          "metric_id": "core.condition.observation_qualification_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/ordered observation-membership category/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "observed.condition.capture_count",
+          "population": "observed_rows",
+          "grain": "concept/period within recorded observation union",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "observed.condition.year_gender_age_count",
+          "population": "observed_year_people",
+          "grain": "person/concept/year/recorded gender/year-age decile",
+          "dimensions": [
+            "concept_tag",
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "condition.first_age",
+      "metric_ids": [
+        "core.condition.first_age_summary"
+      ],
+      "depends_on": [
+        "condition.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date",
+        "condition_occurrence.person_id",
+        "person.gender_concept_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.condition.first_age_summary",
+          "population": "linked_people_with_dated_records",
+          "grain": "person/concept first dated record/gender",
+          "dimensions": [
+            "concept_tag",
+            "gender_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "condition.person_histograms",
+      "metric_ids": [
+        "core.condition.frequency_histogram",
+        "core.condition.distinct_concepts_histogram"
+      ],
+      "depends_on": [
+        "condition.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_start_date",
+        "condition_occurrence.person_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.condition.frequency_histogram",
+          "population": "person_table",
+          "grain": "person/concept/physical event count in full scope",
+          "dimensions": [
+            "concept_tag",
+            "event_count"
+          ]
+        },
+        {
+          "metric_id": "core.condition.distinct_concepts_histogram",
+          "population": "person_table",
+          "grain": "person/domain/distinct concept count",
+          "dimensions": [
+            "concept_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "drug.counts",
+      "metric_ids": [
+        "core.drug.capture_count",
+        "core.drug.source_count",
+        "core.drug.type_count",
+        "core.drug.integrity_count",
+        "core.drug.observation_qualification_count",
+        "observed.drug.capture_count",
+        "observed.drug.year_gender_age_count"
+      ],
+      "depends_on": [
+        "drug.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_end_date",
+        "drug_exposure.drug_exposure_id",
+        "drug_exposure.drug_exposure_start_date",
+        "drug_exposure.drug_source_concept_id",
+        "drug_exposure.drug_source_value",
+        "drug_exposure.drug_type_concept_id",
+        "drug_exposure.person_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.drug.capture_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/period; records and linked distinct people are separate measures",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.drug.source_count",
+          "population": "all_recorded_rows",
+          "grain": "standard concept/raw source representation/full scope",
+          "dimensions": [
+            "concept_tag",
+            "source_concept_tag",
+            "source_value_state"
+          ]
+        },
+        {
+          "metric_id": "core.drug.type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw type/full scope",
+          "dimensions": [
+            "concept_tag",
+            "type_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.drug.integrity_count",
+          "population": "all_recorded_rows",
+          "grain": "row/independent integrity flag",
+          "dimensions": [
+            "flag",
+            "present"
+          ]
+        },
+        {
+          "metric_id": "core.drug.observation_qualification_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/ordered observation-membership category/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "observed.drug.capture_count",
+          "population": "observed_rows",
+          "grain": "concept/period within recorded observation union",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "observed.drug.year_gender_age_count",
+          "population": "observed_year_people",
+          "grain": "person/concept/year/recorded gender/year-age decile",
+          "dimensions": [
+            "concept_tag",
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "drug.first_age",
+      "metric_ids": [
+        "core.drug.first_age_summary"
+      ],
+      "depends_on": [
+        "drug.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date",
+        "drug_exposure.person_id",
+        "person.gender_concept_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.drug.first_age_summary",
+          "population": "linked_people_with_dated_records",
+          "grain": "person/concept first dated record/gender",
+          "dimensions": [
+            "concept_tag",
+            "gender_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "drug.person_histograms",
+      "metric_ids": [
+        "core.drug.frequency_histogram",
+        "core.drug.distinct_concepts_histogram"
+      ],
+      "depends_on": [
+        "drug.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.drug_exposure_start_date",
+        "drug_exposure.person_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.drug.frequency_histogram",
+          "population": "person_table",
+          "grain": "person/concept/physical event count in full scope",
+          "dimensions": [
+            "concept_tag",
+            "event_count"
+          ]
+        },
+        {
+          "metric_id": "core.drug.distinct_concepts_histogram",
+          "population": "person_table",
+          "grain": "person/domain/distinct concept count",
+          "dimensions": [
+            "concept_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "procedure.counts",
+      "metric_ids": [
+        "core.procedure.capture_count",
+        "core.procedure.source_count",
+        "core.procedure.type_count",
+        "core.procedure.integrity_count",
+        "core.procedure.observation_qualification_count",
+        "observed.procedure.capture_count",
+        "observed.procedure.year_gender_age_count"
+      ],
+      "depends_on": [
+        "procedure.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth",
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "procedure_occurrence.procedure_end_date",
+        "procedure_occurrence.procedure_occurrence_id",
+        "procedure_occurrence.procedure_source_concept_id",
+        "procedure_occurrence.procedure_source_value",
+        "procedure_occurrence.procedure_type_concept_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.procedure.capture_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/period; records and linked distinct people are separate measures",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.procedure.source_count",
+          "population": "all_recorded_rows",
+          "grain": "standard concept/raw source representation/full scope",
+          "dimensions": [
+            "concept_tag",
+            "source_concept_tag",
+            "source_value_state"
+          ]
+        },
+        {
+          "metric_id": "core.procedure.type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw type/full scope",
+          "dimensions": [
+            "concept_tag",
+            "type_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.procedure.integrity_count",
+          "population": "all_recorded_rows",
+          "grain": "row/independent integrity flag",
+          "dimensions": [
+            "flag",
+            "present"
+          ]
+        },
+        {
+          "metric_id": "core.procedure.observation_qualification_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/ordered observation-membership category/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "observed.procedure.capture_count",
+          "population": "observed_rows",
+          "grain": "concept/period within recorded observation union",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "observed.procedure.year_gender_age_count",
+          "population": "observed_year_people",
+          "grain": "person/concept/year/recorded gender/year-age decile",
+          "dimensions": [
+            "concept_tag",
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "procedure.first_age",
+      "metric_ids": [
+        "core.procedure.first_age_summary"
+      ],
+      "depends_on": [
+        "procedure.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "person.gender_concept_id",
+        "person.year_of_birth",
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.procedure.first_age_summary",
+          "population": "linked_people_with_dated_records",
+          "grain": "person/concept first dated record/gender",
+          "dimensions": [
+            "concept_tag",
+            "gender_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "procedure.person_histograms",
+      "metric_ids": [
+        "core.procedure.frequency_histogram",
+        "core.procedure.distinct_concepts_histogram"
+      ],
+      "depends_on": [
+        "procedure.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.procedure.frequency_histogram",
+          "population": "person_table",
+          "grain": "person/concept/physical event count in full scope",
+          "dimensions": [
+            "concept_tag",
+            "event_count"
+          ]
+        },
+        {
+          "metric_id": "core.procedure.distinct_concepts_histogram",
+          "population": "person_table",
+          "grain": "person/domain/distinct concept count",
+          "dimensions": [
+            "concept_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "visit.counts",
+      "metric_ids": [
+        "core.visit.capture_count",
+        "core.visit.source_count",
+        "core.visit.type_count",
+        "core.visit.integrity_count",
+        "core.visit.observation_qualification_count",
+        "observed.visit.capture_count",
+        "observed.visit.year_gender_age_count"
+      ],
+      "depends_on": [
+        "visit.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth",
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_end_date",
+        "visit_occurrence.visit_occurrence_id",
+        "visit_occurrence.visit_source_concept_id",
+        "visit_occurrence.visit_source_value",
+        "visit_occurrence.visit_start_date",
+        "visit_occurrence.visit_type_concept_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.visit.capture_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/period; records and linked distinct people are separate measures",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.visit.source_count",
+          "population": "all_recorded_rows",
+          "grain": "standard concept/raw source representation/full scope",
+          "dimensions": [
+            "concept_tag",
+            "source_concept_tag",
+            "source_value_state"
+          ]
+        },
+        {
+          "metric_id": "core.visit.type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw type/full scope",
+          "dimensions": [
+            "concept_tag",
+            "type_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.visit.integrity_count",
+          "population": "all_recorded_rows",
+          "grain": "row/independent integrity flag",
+          "dimensions": [
+            "flag",
+            "present"
+          ]
+        },
+        {
+          "metric_id": "core.visit.observation_qualification_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/ordered observation-membership category/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "observed.visit.capture_count",
+          "population": "observed_rows",
+          "grain": "concept/period within recorded observation union",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "observed.visit.year_gender_age_count",
+          "population": "observed_year_people",
+          "grain": "person/concept/year/recorded gender/year-age decile",
+          "dimensions": [
+            "concept_tag",
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "visit.first_age",
+      "metric_ids": [
+        "core.visit.first_age_summary"
+      ],
+      "depends_on": [
+        "visit.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "person.gender_concept_id",
+        "person.year_of_birth",
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.visit.first_age_summary",
+          "population": "linked_people_with_dated_records",
+          "grain": "person/concept first dated record/gender",
+          "dimensions": [
+            "concept_tag",
+            "gender_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "visit.person_histograms",
+      "metric_ids": [
+        "core.visit.frequency_histogram",
+        "core.visit.distinct_concepts_histogram"
+      ],
+      "depends_on": [
+        "visit.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_start_date"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.visit.frequency_histogram",
+          "population": "person_table",
+          "grain": "person/concept/physical event count in full scope",
+          "dimensions": [
+            "concept_tag",
+            "event_count"
+          ]
+        },
+        {
+          "metric_id": "core.visit.distinct_concepts_histogram",
+          "population": "person_table",
+          "grain": "person/domain/distinct concept count",
+          "dimensions": [
+            "concept_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "device.counts",
+      "metric_ids": [
+        "core.device.capture_count",
+        "core.device.source_count",
+        "core.device.type_count",
+        "core.device.integrity_count",
+        "core.device.observation_qualification_count",
+        "observed.device.capture_count",
+        "observed.device.year_gender_age_count"
+      ],
+      "depends_on": [
+        "device.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_end_date",
+        "device_exposure.device_exposure_id",
+        "device_exposure.device_exposure_start_date",
+        "device_exposure.device_source_concept_id",
+        "device_exposure.device_source_value",
+        "device_exposure.device_type_concept_id",
+        "device_exposure.person_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.device.capture_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/period; records and linked distinct people are separate measures",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.device.source_count",
+          "population": "all_recorded_rows",
+          "grain": "standard concept/raw source representation/full scope",
+          "dimensions": [
+            "concept_tag",
+            "source_concept_tag",
+            "source_value_state"
+          ]
+        },
+        {
+          "metric_id": "core.device.type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw type/full scope",
+          "dimensions": [
+            "concept_tag",
+            "type_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.device.integrity_count",
+          "population": "all_recorded_rows",
+          "grain": "row/independent integrity flag",
+          "dimensions": [
+            "flag",
+            "present"
+          ]
+        },
+        {
+          "metric_id": "core.device.observation_qualification_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/ordered observation-membership category/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "observed.device.capture_count",
+          "population": "observed_rows",
+          "grain": "concept/period within recorded observation union",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "observed.device.year_gender_age_count",
+          "population": "observed_year_people",
+          "grain": "person/concept/year/recorded gender/year-age decile",
+          "dimensions": [
+            "concept_tag",
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "device.first_age",
+      "metric_ids": [
+        "core.device.first_age_summary"
+      ],
+      "depends_on": [
+        "device.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date",
+        "device_exposure.person_id",
+        "person.gender_concept_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.device.first_age_summary",
+          "population": "linked_people_with_dated_records",
+          "grain": "person/concept first dated record/gender",
+          "dimensions": [
+            "concept_tag",
+            "gender_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "device.person_histograms",
+      "metric_ids": [
+        "core.device.frequency_histogram",
+        "core.device.distinct_concepts_histogram"
+      ],
+      "depends_on": [
+        "device.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "device_exposure.device_concept_id",
+        "device_exposure.device_exposure_start_date",
+        "device_exposure.person_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.device.frequency_histogram",
+          "population": "person_table",
+          "grain": "person/concept/physical event count in full scope",
+          "dimensions": [
+            "concept_tag",
+            "event_count"
+          ]
+        },
+        {
+          "metric_id": "core.device.distinct_concepts_histogram",
+          "population": "person_table",
+          "grain": "person/domain/distinct concept count",
+          "dimensions": [
+            "concept_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "observation.counts",
+      "metric_ids": [
+        "core.observation.capture_count",
+        "core.observation.source_count",
+        "core.observation.type_count",
+        "core.observation.integrity_count",
+        "core.observation.observation_qualification_count",
+        "observed.observation.capture_count",
+        "observed.observation.year_gender_age_count"
+      ],
+      "depends_on": [
+        "observation.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "observation.observation_id",
+        "observation.observation_source_concept_id",
+        "observation.observation_source_value",
+        "observation.observation_type_concept_id",
+        "observation.person_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.observation.capture_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/period; records and linked distinct people are separate measures",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.observation.source_count",
+          "population": "all_recorded_rows",
+          "grain": "standard concept/raw source representation/full scope",
+          "dimensions": [
+            "concept_tag",
+            "source_concept_tag",
+            "source_value_state"
+          ]
+        },
+        {
+          "metric_id": "core.observation.type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw type/full scope",
+          "dimensions": [
+            "concept_tag",
+            "type_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.observation.integrity_count",
+          "population": "all_recorded_rows",
+          "grain": "row/independent integrity flag",
+          "dimensions": [
+            "flag",
+            "present"
+          ]
+        },
+        {
+          "metric_id": "core.observation.observation_qualification_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/ordered observation-membership category/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "observed.observation.capture_count",
+          "population": "observed_rows",
+          "grain": "concept/period within recorded observation union",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "observed.observation.year_gender_age_count",
+          "population": "observed_year_people",
+          "grain": "person/concept/year/recorded gender/year-age decile",
+          "dimensions": [
+            "concept_tag",
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "observation.first_age",
+      "metric_ids": [
+        "core.observation.first_age_summary"
+      ],
+      "depends_on": [
+        "observation.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "observation.person_id",
+        "person.gender_concept_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.observation.first_age_summary",
+          "population": "linked_people_with_dated_records",
+          "grain": "person/concept first dated record/gender",
+          "dimensions": [
+            "concept_tag",
+            "gender_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "observation.person_histograms",
+      "metric_ids": [
+        "core.observation.frequency_histogram",
+        "core.observation.distinct_concepts_histogram"
+      ],
+      "depends_on": [
+        "observation.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "observation.observation_concept_id",
+        "observation.observation_date",
+        "observation.person_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.observation.frequency_histogram",
+          "population": "person_table",
+          "grain": "person/concept/physical event count in full scope",
+          "dimensions": [
+            "concept_tag",
+            "event_count"
+          ]
+        },
+        {
+          "metric_id": "core.observation.distinct_concepts_histogram",
+          "population": "person_table",
+          "grain": "person/domain/distinct concept count",
+          "dimensions": [
+            "concept_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "death.counts",
+      "metric_ids": [
+        "core.death.capture_count",
+        "core.death.source_count",
+        "core.death.type_count",
+        "core.death.integrity_count",
+        "core.death.observation_qualification_count",
+        "observed.death.capture_count",
+        "observed.death.year_gender_age_count"
+      ],
+      "depends_on": [
+        "death.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "death.cause_concept_id",
+        "death.cause_source_concept_id",
+        "death.cause_source_value",
+        "death.death_date",
+        "death.death_type_concept_id",
+        "death.person_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.death.capture_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/period; records and linked distinct people are separate measures",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.death.source_count",
+          "population": "all_recorded_rows",
+          "grain": "standard concept/raw source representation/full scope",
+          "dimensions": [
+            "concept_tag",
+            "source_concept_tag",
+            "source_value_state"
+          ]
+        },
+        {
+          "metric_id": "core.death.type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw type/full scope",
+          "dimensions": [
+            "concept_tag",
+            "type_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.death.integrity_count",
+          "population": "all_recorded_rows",
+          "grain": "row/independent integrity flag",
+          "dimensions": [
+            "flag",
+            "present"
+          ]
+        },
+        {
+          "metric_id": "core.death.observation_qualification_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/ordered observation-membership category/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "observed.death.capture_count",
+          "population": "observed_rows",
+          "grain": "concept/period within recorded observation union",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "observed.death.year_gender_age_count",
+          "population": "observed_year_people",
+          "grain": "person/concept/year/recorded gender/year-age decile",
+          "dimensions": [
+            "concept_tag",
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "death.first_age",
+      "metric_ids": [
+        "core.death.first_age_summary"
+      ],
+      "depends_on": [
+        "death.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "death.cause_concept_id",
+        "death.death_date",
+        "death.person_id",
+        "person.gender_concept_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.death.first_age_summary",
+          "population": "linked_people_with_dated_records",
+          "grain": "person/concept first dated record/gender",
+          "dimensions": [
+            "concept_tag",
+            "gender_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "death.person_histograms",
+      "metric_ids": [
+        "core.death.frequency_histogram",
+        "core.death.distinct_concepts_histogram"
+      ],
+      "depends_on": [
+        "death.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "death.cause_concept_id",
+        "death.death_date",
+        "death.person_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.death.frequency_histogram",
+          "population": "person_table",
+          "grain": "person/concept/physical event count in full scope",
+          "dimensions": [
+            "concept_tag",
+            "event_count"
+          ]
+        },
+        {
+          "metric_id": "core.death.distinct_concepts_histogram",
+          "population": "person_table",
+          "grain": "person/domain/distinct concept count",
+          "dimensions": [
+            "concept_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "specimen.counts",
+      "metric_ids": [
+        "core.specimen.capture_count",
+        "core.specimen.source_count",
+        "core.specimen.type_count",
+        "core.specimen.integrity_count",
+        "core.specimen.observation_qualification_count",
+        "observed.specimen.capture_count",
+        "observed.specimen.year_gender_age_count"
+      ],
+      "depends_on": [
+        "specimen.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth",
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date",
+        "specimen.specimen_id",
+        "specimen.specimen_source_value",
+        "specimen.specimen_type_concept_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.specimen.capture_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/period; records and linked distinct people are separate measures",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.specimen.source_count",
+          "population": "all_recorded_rows",
+          "grain": "standard concept/raw source representation/full scope",
+          "dimensions": [
+            "concept_tag",
+            "source_concept_tag",
+            "source_value_state"
+          ]
+        },
+        {
+          "metric_id": "core.specimen.type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw type/full scope",
+          "dimensions": [
+            "concept_tag",
+            "type_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.specimen.integrity_count",
+          "population": "all_recorded_rows",
+          "grain": "row/independent integrity flag",
+          "dimensions": [
+            "flag",
+            "present"
+          ]
+        },
+        {
+          "metric_id": "core.specimen.observation_qualification_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/ordered observation-membership category/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "observed.specimen.capture_count",
+          "population": "observed_rows",
+          "grain": "concept/period within recorded observation union",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "observed.specimen.year_gender_age_count",
+          "population": "observed_year_people",
+          "grain": "person/concept/year/recorded gender/year-age decile",
+          "dimensions": [
+            "concept_tag",
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "specimen.first_age",
+      "metric_ids": [
+        "core.specimen.first_age_summary"
+      ],
+      "depends_on": [
+        "specimen.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "person.gender_concept_id",
+        "person.year_of_birth",
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.specimen.first_age_summary",
+          "population": "linked_people_with_dated_records",
+          "grain": "person/concept first dated record/gender",
+          "dimensions": [
+            "concept_tag",
+            "gender_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "specimen.person_histograms",
+      "metric_ids": [
+        "core.specimen.frequency_histogram",
+        "core.specimen.distinct_concepts_histogram"
+      ],
+      "depends_on": [
+        "specimen.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "specimen.person_id",
+        "specimen.specimen_concept_id",
+        "specimen.specimen_date"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.specimen.frequency_histogram",
+          "population": "person_table",
+          "grain": "person/concept/physical event count in full scope",
+          "dimensions": [
+            "concept_tag",
+            "event_count"
+          ]
+        },
+        {
+          "metric_id": "core.specimen.distinct_concepts_histogram",
+          "population": "person_table",
+          "grain": "person/domain/distinct concept count",
+          "dimensions": [
+            "concept_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "measurement.counts",
+      "metric_ids": [
+        "core.measurement.capture_count",
+        "core.measurement.source_count",
+        "core.measurement.type_count",
+        "core.measurement.integrity_count",
+        "core.measurement.observation_qualification_count",
+        "observed.measurement.capture_count",
+        "observed.measurement.year_gender_age_count"
+      ],
+      "depends_on": [
+        "measurement.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "concept.concept_id",
+        "concept.domain_id",
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "measurement.measurement_id",
+        "measurement.measurement_source_concept_id",
+        "measurement.measurement_source_value",
+        "measurement.measurement_type_concept_id",
+        "measurement.person_id",
+        "observation_period.observation_period_end_date",
+        "observation_period.observation_period_start_date",
+        "observation_period.person_id",
+        "person.gender_concept_id",
+        "person.person_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.measurement.capture_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/period; records and linked distinct people are separate measures",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.source_count",
+          "population": "all_recorded_rows",
+          "grain": "standard concept/raw source representation/full scope",
+          "dimensions": [
+            "concept_tag",
+            "source_concept_tag",
+            "source_value_state"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw type/full scope",
+          "dimensions": [
+            "concept_tag",
+            "type_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.integrity_count",
+          "population": "all_recorded_rows",
+          "grain": "row/independent integrity flag",
+          "dimensions": [
+            "flag",
+            "present"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.observation_qualification_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/ordered observation-membership category/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "observed.measurement.capture_count",
+          "population": "observed_rows",
+          "grain": "concept/period within recorded observation union",
+          "dimensions": [
+            "concept_tag",
+            "period_kind",
+            "period_start",
+            "period_end"
+          ]
+        },
+        {
+          "metric_id": "observed.measurement.year_gender_age_count",
+          "population": "observed_year_people",
+          "grain": "person/concept/year/recorded gender/year-age decile",
+          "dimensions": [
+            "concept_tag",
+            "year",
+            "gender_concept_id",
+            "year_age_decile"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "measurement.first_age",
+      "metric_ids": [
+        "core.measurement.first_age_summary"
+      ],
+      "depends_on": [
+        "measurement.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "measurement.person_id",
+        "person.gender_concept_id",
+        "person.year_of_birth"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.measurement.first_age_summary",
+          "population": "linked_people_with_dated_records",
+          "grain": "person/concept first dated record/gender",
+          "dimensions": [
+            "concept_tag",
+            "gender_concept_id"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "measurement.person_histograms",
+      "metric_ids": [
+        "core.measurement.frequency_histogram",
+        "core.measurement.distinct_concepts_histogram"
+      ],
+      "depends_on": [
+        "measurement.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "measurement.measurement_concept_id",
+        "measurement.measurement_date",
+        "measurement.person_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.measurement.frequency_histogram",
+          "population": "person_table",
+          "grain": "person/concept/physical event count in full scope",
+          "dimensions": [
+            "concept_tag",
+            "event_count"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.distinct_concepts_histogram",
+          "population": "person_table",
+          "grain": "person/domain/distinct concept count",
+          "dimensions": [
+            "concept_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "condition.specific",
+      "metric_ids": [
+        "core.condition.status_type_count"
+      ],
+      "depends_on": [
+        "condition.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "condition_occurrence.condition_concept_id",
+        "condition_occurrence.condition_status_concept_id",
+        "condition_occurrence.condition_type_concept_id",
+        "condition_occurrence.person_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.condition.status_type_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/status_concept_tag/type_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "status_concept_tag",
+            "type_concept_tag"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "drug.specific",
+      "metric_ids": [
+        "core.drug.days_supply_summary",
+        "core.drug.refills_summary",
+        "core.drug.quantity_summary"
+      ],
+      "depends_on": [
+        "drug.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "drug_exposure.days_supply",
+        "drug_exposure.drug_concept_id",
+        "drug_exposure.person_id",
+        "drug_exposure.quantity",
+        "drug_exposure.refills"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.drug.days_supply_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept//full scope",
+          "dimensions": [
+            "concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.drug.refills_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept//full scope",
+          "dimensions": [
+            "concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.drug.quantity_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept//full scope",
+          "dimensions": [
+            "concept_tag"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "visit.specific",
+      "metric_ids": [
+        "core.visit.duration_summary",
+        "core.visit.care_setting_count"
+      ],
+      "depends_on": [
+        "visit.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "care_site.care_site_id",
+        "care_site.place_of_service_concept_id",
+        "visit_occurrence.admitted_from_concept_id",
+        "visit_occurrence.care_site_id",
+        "visit_occurrence.discharged_to_concept_id",
+        "visit_occurrence.person_id",
+        "visit_occurrence.visit_concept_id",
+        "visit_occurrence.visit_end_date",
+        "visit_occurrence.visit_start_date"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.visit.duration_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept//full scope",
+          "dimensions": [
+            "concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.visit.care_setting_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/setting_kind/setting_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "setting_kind",
+            "setting_concept_tag"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "procedure.specific",
+      "metric_ids": [
+        "core.procedure.end_precision_count"
+      ],
+      "depends_on": [
+        "procedure.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "procedure_occurrence.person_id",
+        "procedure_occurrence.procedure_concept_id",
+        "procedure_occurrence.procedure_date",
+        "procedure_occurrence.procedure_datetime",
+        "procedure_occurrence.procedure_end_date",
+        "procedure_occurrence.procedure_end_datetime"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.procedure.end_precision_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/reason/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "device.specific",
+      "metric_ids": [
+        "core.device.quantity_summary",
+        "core.device.unit_count"
+      ],
+      "depends_on": [
+        "device.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "device_exposure.device_concept_id",
+        "device_exposure.person_id",
+        "device_exposure.quantity",
+        "device_exposure.unit_concept_id",
+        "device_exposure.unit_source_concept_id",
+        "device_exposure.unit_source_value"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.device.quantity_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.device.unit_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/source_unit_presence/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag",
+            "source_unit_presence"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "specimen.specific",
+      "metric_ids": [
+        "core.specimen.quantity_summary",
+        "core.specimen.site_status_count",
+        "core.specimen.visit_link_presence_count"
+      ],
+      "depends_on": [
+        "specimen.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "specimen.anatomic_site_concept_id",
+        "specimen.disease_status_concept_id",
+        "specimen.person_id",
+        "specimen.quantity",
+        "specimen.specimen_concept_id",
+        "specimen.unit_concept_id",
+        "specimen.visit_detail_id",
+        "specimen.visit_occurrence_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.specimen.quantity_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.specimen.site_status_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/dimension_kind/dimension_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "dimension_kind",
+            "dimension_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.specimen.visit_link_presence_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/link_kind/present/full scope",
+          "dimensions": [
+            "concept_tag",
+            "link_kind",
+            "present"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "observation.specific",
+      "metric_ids": [
+        "core.observation.representation_count",
+        "core.observation.unit_count",
+        "core.observation.coded_value_count",
+        "core.observation.numeric_eligibility_count",
+        "core.observation.numeric_summary",
+        "core.observation.qualifier_count"
+      ],
+      "depends_on": [
+        "observation.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "observation.observation_concept_id",
+        "observation.person_id",
+        "observation.qualifier_concept_id",
+        "observation.unit_concept_id",
+        "observation.value_as_concept_id",
+        "observation.value_as_date",
+        "observation.value_as_number",
+        "observation.value_as_string",
+        "observation.value_source_value"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.observation.representation_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/representation_flags/full scope",
+          "dimensions": [
+            "concept_tag",
+            "representation_flags"
+          ]
+        },
+        {
+          "metric_id": "core.observation.unit_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.observation.coded_value_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/value_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "value_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.observation.numeric_eligibility_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/reason/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "core.observation.numeric_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.observation.qualifier_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/qualifier_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "qualifier_concept_tag"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "measurement.specific",
+      "metric_ids": [
+        "core.measurement.representation_count",
+        "core.measurement.unit_count",
+        "core.measurement.coded_value_count",
+        "core.measurement.numeric_eligibility_count",
+        "core.measurement.numeric_summary",
+        "core.measurement.operator_count",
+        "core.measurement.range_low_summary",
+        "core.measurement.range_high_summary",
+        "core.measurement.range_status_count"
+      ],
+      "depends_on": [
+        "measurement.classification"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "measurement.measurement_concept_id",
+        "measurement.operator_concept_id",
+        "measurement.person_id",
+        "measurement.range_high",
+        "measurement.range_low",
+        "measurement.unit_concept_id",
+        "measurement.value_as_concept_id",
+        "measurement.value_as_number",
+        "measurement.value_source_value"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.measurement.representation_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/representation_flags/full scope",
+          "dimensions": [
+            "concept_tag",
+            "representation_flags"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.unit_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.coded_value_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/value_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "value_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.numeric_eligibility_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/reason/full scope",
+          "dimensions": [
+            "concept_tag",
+            "reason"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.numeric_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/raw_operator_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag",
+            "raw_operator_tag"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.operator_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/raw_operator_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "raw_operator_tag"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.range_low_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.range_high_summary",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag"
+          ]
+        },
+        {
+          "metric_id": "core.measurement.range_status_count",
+          "population": "all_recorded_rows",
+          "grain": "concept/unit_concept_tag/raw_operator_tag/reason/full scope",
+          "dimensions": [
+            "concept_tag",
+            "unit_concept_tag",
+            "raw_operator_tag",
+            "reason"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    },
+    {
+      "id": "density.presence",
+      "metric_ids": [
+        "core.density.domain_presence_count",
+        "core.density.domain_count"
+      ],
+      "depends_on": [
+        "condition.classification",
+        "drug.classification",
+        "procedure.classification",
+        "visit.classification",
+        "device.classification",
+        "observation.classification",
+        "death.classification",
+        "specimen.classification",
+        "measurement.presence"
+      ],
+      "source_access": "explicit_batch_only",
+      "role": "aggregate",
+      "inputs": [
+        "condition_occurrence.person_id",
+        "death.person_id",
+        "device_exposure.person_id",
+        "drug_exposure.person_id",
+        "measurement.person_id",
+        "observation.person_id",
+        "person.person_id",
+        "procedure_occurrence.person_id",
+        "specimen.person_id",
+        "visit_occurrence.person_id"
+      ],
+      "grains": [
+        {
+          "metric_id": "core.density.domain_presence_count",
+          "population": "person_table",
+          "grain": "person/exact nine-domain presence pattern/full scope",
+          "dimensions": [
+            "presence_bits"
+          ]
+        },
+        {
+          "metric_id": "core.density.domain_count",
+          "population": "person_table",
+          "grain": "person/number of recorded domains",
+          "dimensions": [
+            "domain_count"
+          ]
+        }
+      ],
+      "materialization_candidate": false,
+      "retention": "aggregate_or_metadata_only",
+      "execution": "not_implemented"
+    }
+  ],
+  "rules": {
+    "concept_scope": "all_observed_concepts_no_concept_loop",
+    "source_access": "explicit_batch_only",
+    "distinct_people": "recompute_at_each_required_period_and_population",
+    "quantiles": "exact_integer_rank_at_concept_unit_operator_grain_never_average_percentiles",
+    "row_multiplicity": "physical_rows_preserved_even_with_duplicate_record_ids",
+    "observation_membership": "exists_in_valid_union_no_multiplicative_join",
+    "reuse": "same_transaction_verified_dependency_key_only",
+    "cross_run_reuse": "disabled_even_with_operator_assertions",
+    "serving": "saved_approved_results_only"
+  }
+}
