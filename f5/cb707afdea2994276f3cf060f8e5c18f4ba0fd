@@ -1,0 +1,24 @@
+tests/tracer/population-baseline.R
+  s_895f6ebe145fd3::t_14efaaeb35251d 58-73
+R/population-reader.R
+  s_895f6ebe145fd3::t_db4a40b17febab 38-40
+docs/development/population-baseline.md
+  s_895f6ebe145fd3::t_a19a47b26f2508 123,125-127,130-132
+  s_895f6ebe145fd3::t_695956a2f98f72 133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f5cb707afdea2994276f3cf060f8e5c18f4ba0fd",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
