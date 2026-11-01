@@ -1,0 +1,75 @@
+tests/tracer/baseline-reader-once.R
+  s_3e206b4a2cf4c3::t_b1408dcf58b537 1-26
+docs/development/domain-baseline.md
+  s_3e206b4a2cf4c3::t_4be0384264b551 52,56-60,94-98,113-115,128-130
+  s_3e206b4a2cf4c3::t_033a9465680d83 44-45,155-156
+  s_3e206b4a2cf4c3::t_e1f41739bf62f8 147-152
+tools/test_domain_baseline.py
+  s_3e206b4a2cf4c3::t_299ac6760f70e1 33,54-57,59-60,373,376,394
+  s_895f6ebe145fd3::t_4e3c11f36543a2 266-316,320-329,331-337,341-358,374-375,377,379,385,388,393
+  s_895f6ebe145fd3::t_2e1f682de700e4 58,61
+  s_3e206b4a2cf4c3::t_86d5c432cb6526 359-360
+tests/tracer/domain-review-offline.R
+  s_3e206b4a2cf4c3::t_e1f41739bf62f8 1-21
+docs/development/ci.md
+  s_3e206b4a2cf4c3::t_033a9465680d83 1-2,6-43
+  s_3e206b4a2cf4c3::t_ec22a3c5f76ffb 3-5
+tests/test_ci_runtime.py
+  s_3e206b4a2cf4c3::t_b1408dcf58b537 1-36
+tools/ci/install-r-dependencies.R
+  s_3e206b4a2cf4c3::t_299ac6760f70e1 1-5
+tests/test_domain_baseline_oracle.py
+  s_895f6ebe145fd3::t_2e1f682de700e4 59-69
+  s_3e206b4a2cf4c3::t_ee8e805826affa 1-58,70-88
+man/readDomainBaseline.Rd
+  s_3e206b4a2cf4c3::t_e1f41739bf62f8 18-19,25-26
+R/domain-baseline.R
+  s_895f6ebe145fd3::t_6e18bb63882563 35
+  s_3e206b4a2cf4c3::t_4be0384264b551 20-34,36-39,42,47-50
+.github/workflows/count-tracer.yml
+  s_3e206b4a2cf4c3::t_299ac6760f70e1 6-8,10-11,66-69,76-78,86,115,117-118,164-165,168-170,182-184
+  s_3e206b4a2cf4c3::t_ec22a3c5f76ffb 9,20
+  s_895f6ebe145fd3::t_2e1f682de700e4 140
+  s_3e206b4a2cf4c3::t_e1f41739bf62f8 166-167
+R/population-baseline.R
+  s_895f6ebe145fd3::t_5455fe9e49b429 104-105,112-114,116-125,149,151,163,173,181
+tools/ci/psql
+  s_3e206b4a2cf4c3::t_299ac6760f70e1 1-5
+tools/ci/r-dependency-spec.R
+  s_3e206b4a2cf4c3::t_299ac6760f70e1 1-8
+R/domain-reader.R
+  s_895f6ebe145fd3::t_5455fe9e49b429 19,27-32,38
+tests/tracer/domain-baseline.R
+  s_3e206b4a2cf4c3::t_ee8e805826affa 29,84-94,112-114,130,134,138,154
+R/domain-classification.R
+  s_895f6ebe145fd3::t_5455fe9e49b429 3
+R/population-reader.R
+  s_895f6ebe145fd3::t_5455fe9e49b429 12
+  s_3e206b4a2cf4c3::t_b1408dcf58b537 58-59,62-77
+  s_3e206b4a2cf4c3::t_299ac6760f70e1 40-43,45,49-57,60-61,78-84
+  s_895f6ebe145fd3::t_323868a4e7ee19 85
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "010e37ac06973f6caaf7caa76003d02fbbea5d95",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
