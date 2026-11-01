@@ -60,6 +60,8 @@ main<-function() {
       result<-batch(env$fixtureConnection(),plan,function(w) {
         permission<-w$aggregate("role.check",paste0("SELECT has_table_privilege(current_user,'",table('person'),"','SELECT')::text AS readable,has_table_privilege(current_user,'",table('person'),"','INSERT,UPDATE,DELETE')::text AS writable"))
         stopifnot(permission$READABLE=="true",permission$WRITABLE=="false")
+        settings<-w$aggregate("settings.check","SELECT current_setting('statement_timeout') AS statement_timeout,current_setting('lock_timeout') AS lock_timeout,current_setting('timezone') AS timezone")
+        stopifnot(settings$STATEMENT_TIMEOUT=="30s",settings$LOCK_TIMEOUT=="2s",settings$TIMEZONE=="UTC")
         interval<-if(mode=="shared")w$stage("observation.union",AchillesNext:::.batch_interval_sql(plan),indexColumns=c("person_id","start_date","end_date")) else NULL
         coverageSql<-paste0('WITH intervals AS (',if(mode=="shared")paste('SELECT * FROM',interval) else AchillesNext:::.batch_interval_sql(plan),') SELECT * FROM (',AchillesNext:::.batch_coverage_sql(plan),') coverage')
         coverage<-rows(w$aggregate("observation.coverage",coverageSql,if(mode=="shared")"observation.union" else character()))
@@ -85,6 +87,11 @@ main<-function() {
         }
         list(domains=output,coverage=coverage)
       },analyze=TRUE)
+      controls<-result$telemetry$statements[seq_len(3L)]
+      expected<-c("SET LOCAL statement_timeout=30000","SET LOCAL lock_timeout=2000","SET LOCAL timezone='UTC'")
+      stopifnot(identical(vapply(controls,function(s)s$sql_sha256,""),vapply(expected,AchillesNext:::.hash,"",USE.NAMES=FALSE)),
+        all(vapply(controls,function(s)s$kind=="execute" && s$state=="succeeded",TRUE)),
+        result$telemetry$statement_count==length(result$telemetry$statements))
       stopifnot(noTemps()==baseline)
       runs[[length(runs)+1L]]<-list(case=case$id,trial=trial,mode=mode,elapsed_ms=(proc.time()[["elapsed"]]-started)*1000,
         outputs=result$value$domains,coverage=result$value$coverage,telemetry=result$telemetry)

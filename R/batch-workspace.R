@@ -28,7 +28,8 @@
   rJava::.jcall(connection@jConnection,"V","setReadOnly",FALSE)
   on.exit(try(session$rollback(),silent=TRUE),add=TRUE,after=FALSE)
   session$execute(paste0("SET LOCAL statement_timeout=",as.integer(statementTimeoutMs)))
-  session$execute("SET LOCAL lock_timeout=2000; SET LOCAL timezone='UTC'")
+  session$execute("SET LOCAL lock_timeout=2000")
+  session$execute("SET LOCAL timezone='UTC'")
   snapshot<-session$query("SELECT pg_backend_pid()::text AS pid,txid_current_snapshot()::text AS snapshot")
   schemaIdentity<-session$query(paste0("SELECT encode(sha256(convert_to(COALESCE(string_agg(c.oid::text||':'||c.relname||':'||a.attnum::text||':'||a.attname||':'||a.atttypid::text||':'||a.atttypmod::text,',' ORDER BY c.oid,a.attnum),''),'UTF8')),'hex') AS hash FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_attribute a ON a.attrelid=c.oid WHERE n.nspname=",.store_literal(plan$source$cdm_schema)," AND a.attnum>0 AND NOT a.attisdropped"))$HASH
   person<-session$query(paste0('SELECT COUNT(*)::text AS records,COUNT(person_id)::text AS nonnull,COUNT(DISTINCT person_id)::text AS people FROM "',plan$source$cdm_schema,'".person'))

@@ -44,7 +44,7 @@ planCharacterizationBatch <- function(cdmSchema,sourceId,declaredCdmVersion,wind
   assets<-.batch_assets()
   modules<-lapply(assets$registry$modules,function(m) {
     m$materialization <- if(m$materialization_candidate && strategy=="shared") "evaluate_run_owned_temp" else "reference_recompute"
-    m$decision_reason <- if(m$materialization_candidate) "Explicit evaluation candidate; retain only after measured benefit, not an automatic optimizer decision" else "Aggregate at declared grains; no patient cube"
+    m$decision_reason <- if(m$materialization_candidate) "Explicit evaluation candidate; retain only after measured benefit, not an automatic optimizer decision" else "No shared-input materialization selected for this module"
     m
   })
   sql<-system.file("sql/postgresql",package="AchillesNext",mustWork=TRUE)
