@@ -6,6 +6,12 @@ main <- function() {
   e <- new.env(parent = globalenv()); sys.source(a[1], e)
   if (!dir.create(a[2], mode = "0700")) stop("Evidence directory must be new")
   root <- normalizePath(a[2])
+  # A deliberately unusable Node proves installed generation/publication does
+  # not call it. Java/JDBC remain the existing database dependencies.
+  nodeStub <- tempfile('no-node-');dir.create(nodeStub)
+  writeLines(c('#!/bin/sh','exit 77'),file.path(nodeStub,'node'));Sys.chmod(file.path(nodeStub,'node'),'0700')
+  oldPath <- Sys.getenv('PATH');Sys.setenv(PATH=paste(nodeStub,oldPath,sep=.Platform$path.sep))
+  on.exit({Sys.setenv(PATH=oldPath);unlink(nodeStub,recursive=TRUE)},add=TRUE)
   read <- function(path) jsonlite::fromJSON(path, simplifyVector = FALSE)
   fails <- function(work, text) stopifnot(grepl(text, tryCatch({work(); "accepted"}, error = conditionMessage), fixed = TRUE))
   run <- function(name, cfg = e$config, strategy = "reference") {

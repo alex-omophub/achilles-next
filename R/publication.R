@@ -1,14 +1,8 @@
 # Publication is a separate, explicit action over a validated local run.
 .publication_profile <- function() jsonlite::fromJSON(system.file("analysis/alpha-measurement-v1.json", package = "AchillesNext", mustWork = TRUE), simplifyVector = FALSE)
 .publication_validate <- function(path) {
-  node <- Sys.which("node")
-  if (!nzchar(node)) stop("Node.js 22.12 or newer is required for publication validation", call. = FALSE)
-  script <- system.file("validation/validate.mjs", package = "AchillesNext", mustWork = TRUE)
-  lock <- jsonlite::fromJSON(system.file("validation/validator-lock.json", package = "AchillesNext", mustWork = TRUE))
-  if (!identical(digest::digest(file = script, algo = "sha256"), lock$sha256)) stop("Installed validator integrity failed", call. = FALSE)
-  # Fixed diagnostic: never include raw validator exceptions, paths or values.
-  if (system2(node, c(shQuote(script), shQuote(normalizePath(path, mustWork = TRUE))), stdout = FALSE, stderr = FALSE) != 0L)
-    stop("Bundle validation failed", call. = FALSE)
+  # Fixed diagnostic: never include paths or payloads from validation exceptions.
+  tryCatch(.nv_legacy_directory(path), error = function(e) stop("Bundle validation failed", call. = FALSE))
   invisible(TRUE)
 }
 .publication_probes <- function(query, schema) {

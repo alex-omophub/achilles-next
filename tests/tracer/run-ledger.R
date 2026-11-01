@@ -91,15 +91,25 @@ main <- function() {
   # Finalization belongs to bundle.write. Real validator/write failures after
   # the initial export must remain failed operations with an explicit partial
   # staging path, including when reopened in another process.
-  node <- Sys.which("node"); stopifnot(nzchar(node))
-  bin <- file.path(a[2], "fault-bin"); dir.create(bin)
-  finalizationFault <- function(name, script, cause) {
+  finalizationFault <- function(name, fault, cause) {
     p <- make(name)
-    writeLines(c("#!/bin/sh", script), file.path(bin, "node")); Sys.chmod(file.path(bin, "node"), "0700")
-    oldPath <- Sys.getenv("PATH"); on.exit(Sys.setenv(PATH = oldPath), add = TRUE)
-    Sys.setenv(PATH = paste(normalizePath(bin), oldPath, sep = .Platform$path.sep))
-    r <- executeMeasurementRun(p, e$config$connectionDetails)
-    stopifnot(r$state$status == "failed", r$state$operations$bundle.write$status == "failed",
+    # Scope only the finalization write seam in test-owned function copies.
+    # The installed namespace/definition hashes and real native validator remain
+    # intact; replacing node no longer injects a runtime validation failure.
+    ns <- asNamespace("AchillesNext")
+    scope <- new.env(parent = ns)
+    for (id in c("executeMeasurementRun", ".run_control", ".publication_finalize")) {
+      fn <- get(id, ns); environment(fn) <- scope; assign(id, fn, scope)
+    }
+    injected <- FALSE
+    scope$.publication_write <- function(b, path) {
+      injected <<- TRUE
+      if (fault == "manifest-permission") Sys.chmod(file.path(path, "manifest.json"), "0400")
+      get(".publication_write", ns)(b, path)
+      if (fault == "invalid-payload") writeLines("{}", file.path(path, "terminology.json"))
+    }
+    r <- scope$executeMeasurementRun(p, e$config$connectionDetails)
+    stopifnot(injected, r$state$status == "failed", r$state$operations$bundle.write$status == "failed",
       r$state$operations$bundle.write$cause$code == cause,
       r$state$bundle$path == "staging/bundle", r$state$bundle$publication == "partial",
       grepl("unvalidated partial staging retained", r$state$bundle$reason, fixed = TRUE),
@@ -108,8 +118,8 @@ main <- function() {
     Sys.chmod(file.path(p, "staging/bundle/manifest.json"), "0600")
     p
   }
-  invalid <- finalizationFault("validation-failed", "exit 1", "bundle_validation_failed")
-  unwritable <- finalizationFault("manifest-write-failed", c('chmod 400 "$2/manifest.json"', paste("exec", shQuote(node), '"$@"')), "operation_error")
+  invalid <- finalizationFault("validation-failed", "invalid-payload", "bundle_validation_failed")
+  unwritable <- finalizationFault("manifest-write-failed", "manifest-permission", "operation_error")
   reopened <- file.path(a[2], "reopened-finalization.json")
   writeLines('library(AchillesNext); a<-commandArgs(TRUE); x<-lapply(a[1:2],inspectMeasurementRun); stopifnot(all(vapply(x,function(r) r$state$operations$bundle.write$status=="failed" && r$state$bundle$publication=="partial",TRUE))); writeLines(AchillesNext:::.json(x),a[3])', script)
   stopifnot(system2(file.path(R.home("bin"), "Rscript"), c("--vanilla", shQuote(script), shQuote(invalid), shQuote(unwritable), shQuote(reopened))) == 0L)

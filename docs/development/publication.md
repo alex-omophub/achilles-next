@@ -9,9 +9,9 @@ observation and measurement development generators retain their partial contract
 ## Generate → approve → view
 
 Use the marked fixture setup, trusted configuration and installed R package from
-[execution](execution-ledger.md). Publication and current resolution require
-Node.js 22.12 or newer. They use a bundled precompiled validator and need no npm,
-network, schema compilation or external service at runtime. Viewing a release
+[execution](execution-ledger.md). Publication and current resolution use native R validation against the frozen
+shipped schemas and semantic rules. They need no npm, Node, network, schema
+compilation or external service at runtime. Viewing a release
 uses the installed React/Recharts assets and requires neither Node nor Shiny.
 
 ```r
