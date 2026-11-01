@@ -1,0 +1,23 @@
+tests/tracer/batch-workspace.R
+  s_895f6ebe145fd3::t_a92639312fa4c2 63-64,90-94
+R/batch-workspace.R
+  s_895f6ebe145fd3::t_cefc3ccdccb8df 31-32
+R/batch-plan.R
+  s_895f6ebe145fd3::t_cefc3ccdccb8df 47
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "03b02366bb86b3b6342b94d507f54bb137ab475d",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
