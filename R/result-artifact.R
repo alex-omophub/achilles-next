@@ -60,11 +60,13 @@
     visit(d,raw)
     if(d$kind=="root") {
       .nv_need(expectedKind=="root" && d$rows=="0")
-      .v2_keys(doc,c(common,"kind","scope_kind","publication_state","eligible_for_current_pointer","expected_metric_count","generated_at","source_consistency","disclosure","catalogue","concepts","data","terminology"))
+      .v2_keys(doc,c(common,"kind","scope_kind","publication_state","eligible_for_current_pointer","expected_metric_count","generated_at","source_schema","source_consistency","disclosure","catalogue","concepts","data","terminology"))
       .nv_need(doc$publication_state=="ready" && isTRUE(doc$eligible_for_current_pointer) && doc$expected_metric_count=="142" && .nv_date(doc$generated_at,TRUE))
       .v2_keys(doc$disclosure,c("approval_id","policy","policy_sha256"));.nv_need(.string(doc$disclosure$approval_id))
       .v2_policy(doc$disclosure$policy)
       .nv_need(doc$disclosure$policy_sha256==.v2_hash(.v2_bytes(doc$disclosure$policy)) && doc$scope_kind==doc$disclosure$policy$scope_kind)
+      .v2_keys(doc$source_schema,c("sha256","declared_cdm_version"))
+      .nv_need(.string(doc$source_schema$sha256) && grepl("^[0-9a-f]{64}$",doc$source_schema$sha256) && .string(doc$source_schema$declared_cdm_version) && nchar(doc$source_schema$declared_cdm_version)<=256L)
       schema <- .v2_assets()$metadata;.nv_schema(doc$source_consistency,schema$`$defs`$consistency,schema)
       .nv_need(!doc$source_consistency$reusable,"No reusable source identity in this artifact contract")
       read(doc$catalogue,"metric_catalogue");read(doc$concepts,"concept_catalogue");read(doc$data,"data");read(doc$terminology,"terminology")
@@ -118,31 +120,38 @@
     list(lo=keys[[1]],hi=keys[[length(keys)]])
   }
   root <- read(pointer$root,"root")
-  capabilities <- list()
+  capabilities <- list();ledger <- list()
   .nv_need(setequal(names(catalogue),names(.v2_assets()$metrics)),"Incomplete catalogue")
   allowed <- .v2_policy(root$disclosure$policy)
   for(mid in names(catalogue)) {
     d <- catalogue[[mid]];.nv_need(d$rows==counts[[mid]],"Missing data coverage")
+    if(mid%in%c("core.person.count","core.source.passport") && d$state!="suppressed") .nv_need(d$rows=="1","Missing projected singleton")
+    if(mid=="core.execution.output_status" && d$state!="suppressed") .nv_need(d$rows=="142","Incomplete output ledger coverage")
     if(!mid %in% allowed) .nv_need(d$state=="suppressed" && d$rows=="0","Policy output leak")
   }
   # Disk-spooled second pass validates references without an in-memory row map.
   .v2_directory_entries(file.path(scratch,"rows"),function(name) {
     row <- .nv_json(readBin(spool(name),"raw",n=131073L));mid <- row$metric_id;row$metric_id <- NULL
+    targets <- list()
     for(ref in row$denominator_refs) {
       .nv_need(file.exists(spool(ref$row_key)),"Missing projected denominator")
       target <- .nv_json(readBin(spool(ref$row_key),"raw",n=131073L))
       .nv_need(target$metric_id==ref$metric_id && target$state!="suppressed" && identical(target$values[[ref$field]],ref$value),"Invalid projected denominator")
-      .v2_denominator_check(mid,row,function(id,key) {
-        .nv_need(id==target$metric_id&&key==target$row_key);target$dimensions
-      })
+      targets[[paste(ref$metric_id,ref$row_key,sep="|")]] <- target
     }
-    if(!length(row$denominator_refs)) .v2_denominator_check(mid,row,function(...)NULL)
+    .v2_denominator_check(mid,row,function(id,key) {
+      target <- targets[[paste(id,key,sep="|")]]
+      .nv_need(!is.null(target),"Missing projected denominator");target$dimensions
+    })
     d <- catalogue[[mid]]
     if(mid=="core.source.capabilities" && row$state!="suppressed") capabilities[[row$dimensions$probe_id]] <<- row$values
-    if(mid=="core.execution.output_status" && row$state!="suppressed") {
-      target <- catalogue[[row$dimensions$metric_id]]
-      .nv_need(row$values$state==target$state && identical(row$values$reason_code,target$reason_code) && identical(row$values$required,target$required),"Projected ledger mismatch")
+    if(mid=="core.execution.output_status") {
+      .nv_need(row$state=="computed" && !is.null(row$values),"Missing ledger entry payload")
+      ledger[[row$dimensions$metric_id]] <<- row$values
     }
+    if(mid=="core.source.passport" && row$state!="suppressed") .v2_passport_check(row$values,c(context,.object(
+      observed_schema_sha256=root$source_schema$sha256,declared_cdm_version=root$source_schema$declared_cdm_version,
+      consistency_basis=root$source_consistency$within_run)))
     if(row$state=="suppressed") suppressed[[mid]] <<- TRUE
     if(!is.null(row$values$record_count) && "concept_tag"%in%names(row$dimensions) &&
       (!grepl(".capture_count",mid,fixed=TRUE)||row$dimensions$period_kind=="full_scope")) accumulate(mid,row$dimensions$concept_tag,row$values$record_count)
@@ -153,10 +162,27 @@
       value <- .nv_json(readBin(spool(key),"raw",n=131073L))
       .nv_need(value$state!="suppressed" && identical(value$values$record_count %||% value$values$person_count,row$values$n),"Projected summary n does not reconcile")
     }
+    if(row$row_kind=="eligibility_counts" && row$state!="suppressed" && row$dimensions$eligibility_reason=="eligible") {
+      expected <- row;expected$row_kind <- "summary";expected$dimensions$eligibility_reason <- NULL
+      key <- .v2_row_identity(.v2_assets()$rows[[mid]],expected)
+      .nv_need(file.exists(spool(key)),"Missing eligible summary")
+      target <- .nv_json(readBin(spool(key),"raw",n=131073L))
+      .nv_need(target$state=="suppressed" || identical(target$values$n,row$values$record_count %||% row$values$person_count),"Projected eligible summary does not reconcile")
+    }
+    if(grepl("^observed[.][a-z_]+[.]capture_count$",mid) && row$state!="suppressed") {
+      core <- sub("^observed[.]","core.",mid)
+      if(!catalogue[[core]]$state%in%c("suppressed","unsupported")) {
+        key <- .v2_row_identity(.v2_assets()$rows[[core]],row)
+        .nv_need(file.exists(spool(key)),"Missing matching all-recorded cell")
+        target <- .nv_json(readBin(spool(key),"raw",n=131073L))
+        if(target$state!="suppressed") for(field in c("record_count","person_count")) .nv_need(.nv_unsigned_cmp(row$values[[field]],target$values[[field]])<=0L,"Observed counts exceed matching all-recorded counts")
+      }
+    }
     if(d$state=="suppressed") .nv_need(row$state=="suppressed")
     if(d$state%in%c("empty_source","empty_population")) .nv_need(row$state%in%c(d$state,"suppressed"))
   })
-  .v2_capability_check(catalogue,capabilities)
+  .v2_ledger_check(catalogue,ledger)
+  .v2_capability_check(catalogue,capabilities,requireEvidence=FALSE)
   available <- function(mid)!is.null(catalogue[[mid]]) && !catalogue[[mid]]$state%in%c("suppressed","unsupported") && !isTRUE(suppressed[[mid]])
   if(available("core.person.count")) for(mid in c("core.person.gender_count","core.person.birth_year_count","core.person.race_count","core.person.ethnicity_count","core.person.birth_year_gender_count","core.person.race_ethnicity_count","core.density.domain_count","core.density.domain_presence_count")) {
     if(available(mid)) .nv_need(sums[[mid]]==sums[["core.person.count"]],"Projected PERSON partition does not reconcile")

@@ -155,7 +155,7 @@
   },
   "first_year_age_decile": {
     "type": "string",
-    "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    "pattern": "^(unknown|[0-9]|1[0-3])$"
   },
   "flag": {
     "enum": [
@@ -202,18 +202,9 @@
     "pattern": "^[A-Za-z0-9._:-]{1,128}$"
   },
   "month": {
-    "anyOf": [
-      {
-        "type": "string",
-        "format": "date"
-      },
-      {
-        "enum": [
-          "null",
-          "undated"
-        ]
-      }
-    ]
+    "type": "string",
+    "format": "date",
+    "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-01$"
   },
   "operation_id": {
     "type": "string",
@@ -673,11 +664,11 @@
   },
   "year_age_decile": {
     "type": "string",
-    "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    "pattern": "^(unknown|[0-9]|1[0-3])$"
   },
   "year_age_or_unknown": {
     "type": "string",
-    "pattern": "^[A-Za-z0-9._:-]{1,128}$"
+    "pattern": "^(unknown|0|[1-9][0-9]?|1[0-2][0-9]|130)$"
   },
   "year_of_birth": {
     "type": "string",

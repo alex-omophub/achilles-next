@@ -5,9 +5,18 @@ refusing existing schemas and overlap with declared source schemas. It grants no
 serving access and never modifies CDM tables. Use a dedicated installer account.
 
 ```r
-initializeResultStore(connectionDetails, "achilles_results", "achilles_serve",
+initializeResultStore(connectionDetails, "achillesnext_results", "achillesnext_serve",
                       sourceSchemas = c("cdm", "vocabulary"))
 ```
+
+All persistent store tables, their partitions and serving views use the fixed
+`achillesnext_` prefix, for example `achillesnext_dataset`,
+`achillesnext_aggregate_cell` and `achillesnext_approved_pages`. Schema names are
+configurable; the recommended names are `achillesnext_results`,
+`achillesnext_serve` and, for future worker staging, `achillesnext_stage`.
+The prefix distinguishes these objects from legacy Achilles tables such as
+`achilles_results`. The installer creates new schemas; it does not rename existing
+experimental stores or legacy Achilles objects.
 
 The core numerical profile defines 142 domain results. **Domain generation for
 this profile is not implemented by these APIs.** The existing synthetic tracer
@@ -23,9 +32,9 @@ owned staging schema; the publisher reads only saved aggregates.
 
 ## Validate → project → export → select
 
-1. `sealResultRelease(details, "achilles_results", releaseId)` checks registered
+1. `sealResultRelease(details, "achillesnext_results", releaseId)` checks registered
    profile inventory, versions, populations, grains, required states and row counts.
-2. `validateResultRelease(details, "achilles_results", releaseId)` streams rows via
+2. `validateResultRelease(details, "achillesnext_results", releaseId)` streams rows via
    JDBC strings, checks closed row/metadata schemas, canonical keys and exact
    arithmetic, resolves denominators and checks implemented additive reconciliations.
    It issues a receipt bound to the sealed revision and profile, then validates the
@@ -39,7 +48,7 @@ policy <- list(id = "institution-approved", revision = "1",
                scope_kind = "restricted",
                allow_metrics = list("core.person.count"))
 publication <- publishResultRelease(
-  details, "achilles_results", releaseId,
+  details, "achillesnext_results", releaseId,
   exportDir = "/approved/new-publication", accessScopeId = "internal-research",
   approvalId = "institutional-review-reference", policy = policy,
   institutionalPolicy = function(candidate) {
@@ -77,6 +86,8 @@ audience context. The root contains bounded catalogue, concept, data and termino
 references. Index nodes have at most 128 children and eight levels; data/catalogue
 pages have at most 2,048 rows. Limits are 256 KiB for root/index, 1 MiB for catalogues,
 4 MiB for data and 64 KiB per row. Producers split pages rather than truncate values.
+The root also binds the observed schema hash and declared CDM version so a saved
+source passport can be checked against its publication context.
 Counts, decimals and IDs remain strings; summaries retain exact `(sum,n)` means.
 An unavailable/unsupported optional CARE_SITE marginal has NULL values and a
 reason; it is never encoded as a zero or as a failed required domain output.
@@ -92,8 +103,9 @@ context, references and applicable reconciliations. Disk spooling bounds validat
 memory; temporary space scales with aggregate size. No Node process is used.
 
 Grant a dedicated gateway principal USAGE on the serving schema and SELECT only
-on `approved_pages`/`approved_current`, plus an enabled `audience_grant` for that
-principal and scope. Give it no CDM, staging or base-results access. Views check
+on `achillesnext_approved_pages`/`achillesnext_approved_current`, plus an enabled
+`achillesnext_audience_grant` for that principal and scope. Give it no CDM,
+staging or base-results access. Views check
 invoking CURRENT_USER. A trusted host authorizes each user/request and supplies a
 pinned publication, source, root hash and scope; client context is not a grant.
 

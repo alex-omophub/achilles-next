@@ -77,6 +77,8 @@
     if (!is.null(schema$minLength)) .nv_need(nchar(x,type="chars")>=schema$minLength)
     if (!is.null(schema$maxLength)) .nv_need(nchar(x,type="chars")<=schema$maxLength)
     if (!is.null(schema$pattern)) .nv_need(grepl(schema$pattern,x,perl=TRUE))
+    if (identical(schema$format,"date-time") && root$`$id` %in% c("urn:achilles-next:contracts:1","urn:achilles-next:contracts:1.1"))
+      .nv_need(grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{3}Z$",x),"Legacy timestamps require UTC milliseconds")
     if (!is.null(schema$format)) .nv_need(.nv_date(x,identical(schema$format,"date-time")),"Invalid calendar value")
   }
   if(is.numeric(x) && length(x)==1L) {
@@ -167,6 +169,12 @@
   }
   out
 }
+.nv_locked_profile <- function(profilePath, lockPath) {
+  lock <- jsonlite::fromJSON(lockPath,simplifyVector=FALSE)
+  hash <- digest::digest(file=profilePath,algo="sha256")
+  .nv_need(identical(hash,lock$sha256[[basename(profilePath)]]),"Frozen profile integrity mismatch")
+  list(profile=jsonlite::fromJSON(profilePath,simplifyVector=FALSE),profile_hash=hash)
+}
 .nv_legacy_assets <- local({
   cache<-new.env(parent=emptyenv())
   function(version) {
@@ -177,12 +185,14 @@
     for(name in names(lock$sha256)) .nv_need(identical(digest::digest(file=file.path(dir,name),algo='sha256'),lock$sha256[[name]]),'Schema lock mismatch')
     schema<-jsonlite::fromJSON(file.path(dir,'contract.schema.json'),simplifyVector=FALSE)
     profilePath<-system.file('analysis/alpha-measurement-v1.json',package='AchillesNext',mustWork=TRUE)
-    result<-list(schema=schema,profile=jsonlite::fromJSON(profilePath,simplifyVector=FALSE),profile_hash=digest::digest(file=profilePath,algo='sha256'))
+    result<-c(list(schema=schema),.nv_locked_profile(profilePath,system.file('analysis/manifest-lock.json',package='AchillesNext',mustWork=TRUE)))
     assign(version,result,cache);result
   }
 })
 .nv_legacy_document <- function(kind,doc) {
-  assets<-.nv_legacy_assets(doc$contract_version)
+  version<-doc$contract_version %||% if(kind=="context")"1.0.0" else NULL
+  assets<-.nv_legacy_assets(version)
+  .nv_need(!is.null(assets$schema$`$defs`[[kind]]),"Unknown document kind")
   .nv_schema(doc,assets$schema$`$defs`[[kind]],assets$schema)
   if(kind=='result') .nv_result(doc)
   if(kind=='bundle') {

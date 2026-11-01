@@ -89,7 +89,7 @@
     .store_rows(tx,c$release_id,mid,function(row,key) pages$add(row,paste0(mid,"|",key)))
     desc <- pages$finish()
     # The page tree carries the exact range, not a truncated metric label.
-    bounds <- .store_decode(tx$one(paste0("SELECT jsonb_build_object('lo',min(sort_key COLLATE \"C\"),'hi',max(sort_key COLLATE \"C\"))::text FROM ",tx$schema,".aggregate_cell WHERE release_id=",.store_uuid(c$release_id)," AND metric_id=",.store_literal(mid))))
+    bounds <- .store_decode(tx$one(paste0("SELECT jsonb_build_object('lo',min(sort_key COLLATE \"C\"),'hi',max(sort_key COLLATE \"C\"))::text FROM ",tx$schema,".achillesnext_aggregate_cell WHERE release_id=",.store_uuid(c$release_id)," AND metric_id=",.store_literal(mid))))
     data$add(desc,paste0(mid,"|",bounds$lo),paste0(mid,"|",bounds$hi))
   }
   # Flat saved concept browse is built only from retained typed dimensions. No
@@ -101,7 +101,7 @@
     # Use the same signed-integer/C-order codec as data selectors. Source IDs
     # are never sorted as ordinary decimal strings ("10" before "2").
     code <- "CASE WHEN left(tag->>'value',1)='-' THEN 'I0'||lpad((999999-length(substr(tag->>'value',2)))::text,6,'0')||':'||translate(substr(tag->>'value',2),'0123456789','9876543210') ELSE 'I1'||lpad(length(tag->>'value')::text,6,'0')||':'||(tag->>'value') END"
-    sql <- paste0("WITH tags AS (SELECT DISTINCT CASE WHEN jsonb_typeof(v.value)='object' THEN v.value ELSE jsonb_build_object('kind','id','value',v.value#>>'{}') END AS tag FROM ",tx$schema,".aggregate_cell c CROSS JOIN LATERAL jsonb_each(c.dimensions) v WHERE c.release_id=",.store_uuid(c$release_id)," AND c.metric_id IN (",ids,") AND c.state<>'suppressed' AND ((right(v.key,4)='_tag' AND v.value->>'kind'='id') OR (right(v.key,11)='_concept_id' AND jsonb_typeof(v.value)='string'))) SELECT jsonb_build_object('tag',tag,'key',",code,")::text FROM tags ORDER BY (",code,") COLLATE \"C\"")
+    sql <- paste0("WITH tags AS (SELECT DISTINCT CASE WHEN jsonb_typeof(v.value)='object' THEN v.value ELSE jsonb_build_object('kind','id','value',v.value#>>'{}') END AS tag FROM ",tx$schema,".achillesnext_aggregate_cell c CROSS JOIN LATERAL jsonb_each(c.dimensions) v WHERE c.release_id=",.store_uuid(c$release_id)," AND c.metric_id IN (",ids,") AND c.state<>'suppressed' AND ((right(v.key,4)='_tag' AND v.value->>'kind'='id') OR (right(v.key,11)='_concept_id' AND jsonb_typeof(v.value)='string'))) SELECT jsonb_build_object('tag',tag,'key',",code,")::text FROM tags ORDER BY (",code,") COLLATE \"C\"")
     tx$stream(sql,function(text) {
       item <- .store_decode(text);tag <- item$tag;key <- .v2_component(tag,"concept_tag")
       .nv_need(identical(key,item$key),"Concept index codec mismatch")
@@ -110,7 +110,7 @@
     })
   }
   root <- c(context,.object(kind="root",scope_kind=policy$scope_kind,publication_state="ready",eligible_for_current_pointer=TRUE,
-    expected_metric_count="142",generated_at=.stamp(),source_consistency=.object(within_run=c$consistency_basis,reusable=FALSE,reason_code="source.reuse_not_asserted"),
+    expected_metric_count="142",generated_at=.stamp(),source_schema=.object(sha256=c$observed_schema_sha256,declared_cdm_version=c$declared_cdm_version),source_consistency=.object(within_run=c$consistency_basis,reusable=FALSE,reason_code="source.reuse_not_asserted"),
     disclosure=.object(approval_id=approvalId,policy=policy,policy_sha256=.v2_hash(.v2_bytes(policy))),
     catalogue=catalogue$finish(),concepts=concepts$finish(),data=data$finish(),terminology=terms$finish()))
   descriptor <- emit(root,"root","0")
@@ -139,17 +139,19 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
   .nv_need(is.function(institutionalPolicy),"An explicit institutional policy callback is required")
   .v2_policy(policy)
   if(!is.null(expectedRevision)) .nv_need(.v2_count(expectedRevision) && nchar(expectedRevision)<=18L,"Invalid expected revision")
-  parent <- normalizePath(dirname(exportDir),mustWork=TRUE);destination <- file.path(parent,basename(exportDir))
+  parent <- tryCatch(normalizePath(dirname(exportDir),mustWork=TRUE),error=function(e)stop("Export parent directory is unavailable",call.=FALSE))
+  destination <- file.path(parent,basename(exportDir))
   lock <- file.path(parent,paste0(".achilles-export-lock-",.hash(destination)))
-  .nv_need(dir.create(lock,mode="0700"),"Export destination is locked")
+  .nv_need(dir.create(lock,mode="0700",showWarnings=FALSE),"Export destination is locked")
   on.exit(unlink(lock,recursive=TRUE),add=TRUE)
   .nv_need(!file.exists(destination),"Export directory must be new")
-  stage <- tempfile(".achilles-export-",tmpdir=parent);.nv_need(dir.create(stage,mode="0700"));dir.create(file.path(stage,"objects"),mode="0700")
+  stage <- tempfile(".achilles-export-",tmpdir=parent);.nv_need(dir.create(stage,mode="0700",showWarnings=FALSE))
   finished <- FALSE;ownsDestination <- FALSE
   on.exit(if(!finished) {
     unlink(stage,recursive=TRUE)
     if(ownsDestination) unlink(destination,recursive=TRUE)
   },add=TRUE)
+  .nv_need(dir.create(file.path(stage,"objects"),mode="0700",showWarnings=FALSE),"Cannot prepare export objects")
   result <- tryCatch(.store_transaction(connectionDetails,resultsSchema,function(tx) {
     validated <- .store_validate(tx,releaseId);.nv_need(validated$context$state=="validated","Validate the release before publication")
     pub <- .store_new_uuid();root <- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage)
@@ -158,15 +160,15 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
       approval_id=approvalId,policy=policy,root=root)
     approved <- tryCatch(isTRUE(institutionalPolicy(candidate)),error=function(e)FALSE)
     .nv_need(approved,"Institutional policy did not approve the candidate")
-    receipt <- tx$one(paste0("SELECT receipt_id::text FROM ",tx$schema,".validation_receipt WHERE release_id=",.store_uuid(releaseId)," AND passed AND content_revision=",validated$context$content_revision," AND profile_sha256=",.store_literal(validated$context$profile_sha256)," ORDER BY validated_at DESC LIMIT 1"))
-    tx$execute(paste0("INSERT INTO ",tx$schema,".publication VALUES (",.store_uuid(pub),",",.store_uuid(releaseId),",",.store_uuid(receipt),",",.store_literal(accessScopeId),",",.store_literal(.v2_hash(.v2_bytes(policy))),",",.store_literal(approvalId),",",.store_literal(root$sha256),",'building',now(),null)"))
+    receipt <- tx$one(paste0("SELECT receipt_id::text FROM ",tx$schema,".achillesnext_validation_receipt WHERE release_id=",.store_uuid(releaseId)," AND passed AND content_revision=",validated$context$content_revision," AND profile_sha256=",.store_literal(validated$context$profile_sha256)," ORDER BY validated_at DESC LIMIT 1"))
+    tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_publication VALUES (",.store_uuid(pub),",",.store_uuid(releaseId),",",.store_uuid(receipt),",",.store_literal(accessScopeId),",",.store_literal(.v2_hash(.v2_bytes(policy))),",",.store_literal(approvalId),",",.store_literal(root$sha256),",'building',now(),null)"))
     # Walk validated reachable objects; never enumerate or reserialize payloads.
     .v2_directory(stage,function(desc,bytes) {
       hex <- paste(sprintf("%02x",as.integer(bytes)),collapse="")
-      tx$execute(paste0("INSERT INTO ",tx$schema,".page_object VALUES (",.store_uuid(pub),",",.store_literal(desc$sha256),",",.store_literal(desc$kind),",decode('",hex,"','hex'))"))
+      tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_page_object VALUES (",.store_uuid(pub),",",.store_literal(desc$sha256),",",.store_literal(desc$kind),",decode('",hex,"','hex'))"))
     })
-    tx$execute(paste0("UPDATE ",tx$schema,".publication SET state='ready',approved_at=now() WHERE publication_id=",.store_uuid(pub)))
-    .nv_need(!file.exists(destination) && file.rename(stage,destination),"Cannot finalize approved export")
+    tx$execute(paste0("UPDATE ",tx$schema,".achillesnext_publication SET state='ready',approved_at=now() WHERE publication_id=",.store_uuid(pub)))
+    .nv_need(!file.exists(destination) && suppressWarnings(file.rename(stage,destination)),"Cannot finalize approved export")
     ownsDestination <<- TRUE
     # The pointer lock covers only the final CAS, after all validation/file I/O.
     revision <- if(is.null(expectedRevision)) NULL else tx$one(paste0("SELECT ",tx$schema,".promote_publication(",.store_uuid(pub),",",expectedRevision,"::bigint)::text"))

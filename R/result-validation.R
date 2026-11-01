@@ -45,13 +45,13 @@
   paste(substr(h,1,8),substr(h,9,12),paste0("4",substr(h,14,16)),paste0("8",substr(h,18,20)),substr(h,21,32),sep="-")
 }
 .store_decode <- function(x) .nv_json(charToRaw(enc2utf8(x)))
-.store_context <- function(tx, releaseId) {
+.store_context <- function(tx, releaseId, exclusive = FALSE) {
   id <- .store_uuid(releaseId); s <- tx$schema
   .store_decode(tx$one(paste0("SELECT jsonb_build_object('release_id',r.release_id::text,'run_id',a.run_id::text,",
     "'state',r.state,'content_revision',r.content_revision::text,'source_id',s.source_id,'observed_schema_sha256',s.observed_schema_sha256,'declared_cdm_version',s.declared_cdm_version,",
     "'source_release_id',s.source_release_id::text,'profile_id',a.profile_id,'profile_revision',a.profile_revision,",
     "'profile_sha256',a.profile_sha256,'run_state',a.state,'consistency_basis',a.consistency_basis)::text FROM ",
-    s,".result_release r JOIN ",s,".analysis_run a USING(run_id) JOIN ",s,".source_release s USING(source_release_id) WHERE r.release_id=",id," FOR SHARE OF r")))
+    s,".achillesnext_result_release r JOIN ",s,".achillesnext_analysis_run a USING(run_id) JOIN ",s,".achillesnext_source_release s USING(source_release_id) WHERE r.release_id=",id,if(exclusive)" FOR UPDATE OF r" else " FOR SHARE OF r")))
 }
 .v2_dataset <- function(d) {
   m <- .v2_assets()$metrics[[d$metric_id]]; registry <- .v2_assets()$rows[[d$metric_id]]
@@ -61,7 +61,7 @@
   .nv_need(identical(d$definition_sha256, .v2_hash(.v2_bytes(m))), "Metric definition hash mismatch")
   .nv_need(isTRUE(d$required) && .v2_count(d$rows))
   .nv_need(d$state %in% c("computed", "empty_source", "empty_population", "suppressed", "unsupported"), "Incomplete dataset")
-  .nv_need(d$state!="unsupported" || d$metric_id!="core.device.quantity_summary","Quantity is required even when unit columns are absent")
+  .nv_need(d$state!="unsupported" || !d$metric_id%in%c("core.device.quantity_summary","core.visit.care_setting_count"),"Required base marginals cannot be unsupported")
   .nv_need(if (d$state == "computed") is.null(d$reason_code) else .string(d$reason_code) && grepl("^[a-z0-9_.:-]{1,96}$", d$reason_code))
   .v2_keys(d$conditional_support, c("state", "reason_code"))
   .nv_need(d$conditional_support$state %in% c("supported", "schema_absent"))
@@ -80,7 +80,7 @@
   tx$stream(paste0("SELECT jsonb_build_object('metric_id',metric_id,'version',metric_version,'population',population_id,",
     "'grain',grain_id,'row_schema_id',row_schema_id,'definition_sha256',definition_sha256,'state',state,'reason_code',reason_code,",
     "'required',required,'conditional_support',conditional_support,'rows',row_count::text,'completeness',completeness)::text FROM ",s,
-    ".dataset WHERE release_id=",.store_uuid(releaseId)," ORDER BY metric_id COLLATE \"C\""), function(x) {
+    ".achillesnext_dataset WHERE release_id=",.store_uuid(releaseId)," ORDER BY metric_id COLLATE \"C\""), function(x) {
       .nv_need(nchar(x,type="bytes") <= 65536L && length(result) < 142L)
       d <- .store_decode(x); .v2_dataset(d); result[[d$metric_id]] <<- d
     })
@@ -93,8 +93,8 @@
   fields <- paste(vapply(names(numeric), function(k) paste0(.store_literal(k),",c.",numeric[[k]],"::text"),""), collapse=",")
   sql <- paste0("SELECT jsonb_build_object('row_key',c.row_key,'dimensions',c.dimensions,'state',c.state,'reason_code',c.reason_code,",
     "'payload_kind',c.payload_kind,'route_key',c.route_key,'sort_key',c.sort_key,'metadata',c.metadata_value,'numeric',jsonb_build_object(",fields,"),",
-    "'denominator_refs',COALESCE((SELECT jsonb_agg(jsonb_build_object('measure',e.measure_key,'metric_id',e.target_metric_id,'row_key',e.target_row_key,'field',e.target_measure_key,",
-    "'value',CASE e.target_measure_key WHEN 'record_count' THEN t.record_count::text WHEN 'person_count' THEN t.person_count::text WHEN 'person_days' THEN t.person_days::text WHEN 'interval_count' THEN t.interval_count::text WHEN 'n' THEN t.n::text END) ORDER BY e.measure_key) FROM ",s,".denominator_edge e JOIN ",s,".aggregate_cell t ON (t.release_id,t.metric_id,t.row_key)=(e.release_id,e.target_metric_id,e.target_row_key) WHERE (e.release_id,e.metric_id,e.row_key)=(c.release_id,c.metric_id,c.row_key)), '[]'::jsonb))::text FROM ",s,".aggregate_cell c WHERE c.release_id=",.store_uuid(releaseId)," AND c.metric_id=",.store_literal(metricId)," ORDER BY c.route_key COLLATE \"C\",c.sort_key COLLATE \"C\"")
+    "'denominator_refs',COALESCE((SELECT jsonb_agg(jsonb_build_object('measure',e.measure_key,'metric_id',e.target_metric_id,'row_key',e.target_row_key,'field',e.target_measure_key,'target_dimensions',t.dimensions,",
+    "'value',CASE e.target_measure_key WHEN 'record_count' THEN t.record_count::text WHEN 'person_count' THEN t.person_count::text WHEN 'person_days' THEN t.person_days::text WHEN 'interval_count' THEN t.interval_count::text WHEN 'n' THEN t.n::text END) ORDER BY e.measure_key) FROM ",s,".achillesnext_denominator_edge e JOIN ",s,".achillesnext_aggregate_cell t ON (t.release_id,t.metric_id,t.row_key)=(e.release_id,e.target_metric_id,e.target_row_key) WHERE (e.release_id,e.metric_id,e.row_key)=(c.release_id,c.metric_id,c.row_key)), '[]'::jsonb))::text FROM ",s,".achillesnext_aggregate_cell c WHERE c.release_id=",.store_uuid(releaseId)," AND c.metric_id=",.store_literal(metricId)," ORDER BY c.route_key COLLATE \"C\",c.sort_key COLLATE \"C\"")
   sql <- paste0("SELECT CASE WHEN octet_length(doc)<=131072 THEN doc ELSE NULL END FROM (",sub("::text FROM", "::text AS doc FROM",sql,fixed=TRUE),") bounded")
   tx$stream(sql,function(text) {
     .nv_need(.string(text) && nchar(text,type="bytes") <= 131072L, "Stored row resource limit")
@@ -112,24 +112,31 @@
       .nv_need(all(vapply(numeric[setdiff(names(numeric),c(keys,"mean_numerator","mean_denominator"))],is.null,TRUE)),"Unexpected stored value")
       numeric[keys]
     }
-    row <- .object(row_key=c$row_key,dimensions=c$dimensions,row_kind=kind,state=c$state,reason_code=c$reason_code,values=values,denominator_refs=c$denominator_refs)
+    targets <- c$denominator_refs
+    refs <- lapply(targets,function(ref) {ref$target_dimensions <- NULL;ref})
+    row <- .object(row_key=c$row_key,dimensions=c$dimensions,row_kind=kind,state=c$state,reason_code=c$reason_code,values=values,denominator_refs=refs)
     sort <- .v2_row(metricId,row)
+    .v2_denominator_check(metricId,row,function(id,key) {
+      matches <- Filter(function(ref)identical(ref$metric_id,id)&&identical(ref$row_key,key),targets)
+      .nv_need(length(matches)>0L,"Missing streamed denominator dimensions")
+      matches[[1]]$target_dimensions
+    })
     .nv_need(identical(sort,c$sort_key),"Stored sort key mismatch")
     .nv_need(identical(c$route_key,"A"),"This exporter requires the registered ALL route")
     visit(row,sort)
   })
 }
-.store_validate <- function(tx, releaseId) {
-  context <- .store_context(tx,releaseId); assets <- .v2_assets()
+.store_validate <- function(tx, releaseId, exclusive = FALSE) {
+  context <- .store_context(tx,releaseId,exclusive); assets <- .v2_assets()
   .nv_need(context$state %in% c("sealed","validated") && context$run_state=="succeeded", "A sealed successful release is required")
   .nv_need(context$profile_id==assets$profile$profile_id && context$profile_revision==assets$profile$revision && context$profile_sha256==assets$hash, "Unregistered runtime profile")
   s <- tx$schema; id <- .store_uuid(releaseId)
-  .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".operation WHERE run_id=",.store_uuid(context$run_id)," AND state NOT IN ('succeeded','skipped')"))=="0","Incomplete operations")
+  .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_operation WHERE run_id=",.store_uuid(context$run_id)," AND state NOT IN ('succeeded','skipped')"))=="0","Incomplete operations")
   datasets <- .store_datasets(tx,releaseId)
   # Every edge must resolve to an unsuppressed exact measure. Source/target
   # dimensions and declared population are checked below, independently of FK.
-  .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".denominator_edge e JOIN ",s,".aggregate_cell c ON (c.release_id,c.metric_id,c.row_key)=(e.release_id,e.metric_id,e.row_key) JOIN ",s,".aggregate_cell t ON (t.release_id,t.metric_id,t.row_key)=(e.release_id,e.target_metric_id,e.target_row_key) WHERE e.release_id=",id," AND (c.state='suppressed' OR t.state='suppressed')"))=="0","Suppressed denominator endpoint")
-  capabilities <- list()
+  .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_denominator_edge e JOIN ",s,".achillesnext_aggregate_cell c ON (c.release_id,c.metric_id,c.row_key)=(e.release_id,e.metric_id,e.row_key) JOIN ",s,".achillesnext_aggregate_cell t ON (t.release_id,t.metric_id,t.row_key)=(e.release_id,e.target_metric_id,e.target_row_key) WHERE e.release_id=",id," AND (c.state='suppressed' OR t.state='suppressed')"))=="0","Suppressed denominator endpoint")
+  capabilities <- list();ledger <- list()
   for(mid in names(datasets)) {
     count <- "0"; last <- NULL; d <- datasets[[mid]]
     .store_rows(tx,releaseId,mid,function(row,key) {
@@ -137,20 +144,18 @@
       last <<- key; count <<- .nv_add(count,"1")
       if(d$state=="suppressed") .nv_need(row$state=="suppressed")
       if(d$state %in% c("empty_source","empty_population")) .nv_need(row$state %in% c(d$state,"suppressed"))
-      .store_denominators(tx,releaseId,mid,row)
       if(mid=="core.source.capabilities" && row$state!="suppressed") capabilities[[row$dimensions$probe_id]] <<- row$values
-      if(mid=="core.execution.output_status" && row$state!="suppressed") {
-        target <- datasets[[row$dimensions$metric_id]]
-        .nv_need(row$values$state==target$state && identical(row$values$reason_code,target$reason_code) && identical(row$values$required,target$required),"Output ledger mismatch")
+      if(mid=="core.execution.output_status") {
+        .nv_need(row$state=="computed" && !is.null(row$values),"Missing ledger entry payload")
+        ledger[[row$dimensions$metric_id]] <<- row$values
       }
-      if(mid=="core.source.passport" && row$state!="suppressed") {
-        .nv_need(row$values$source_id==context$source_id && row$values$profile$id==context$profile_id && row$values$profile$revision==context$profile_revision && row$values$profile$sha256==context$profile_sha256 && row$values$observed_schema$sha256==context$observed_schema_sha256 && row$values$declared_cdm_version==context$declared_cdm_version && row$values$consistency$within_run==context$consistency_basis,"Passport context mismatch")
-      }
+      if(mid=="core.source.passport" && row$state!="suppressed") .v2_passport_check(row$values,context)
     })
     .nv_need(count==d$rows,"Dataset row count mismatch")
     if(mid=="core.execution.output_status" && d$state!="suppressed") .nv_need(count=="142","Missing output ledger rows")
     if(mid %in% c("core.person.count","core.source.passport") && d$state!="suppressed") .nv_need(count=="1","Missing singleton")
   }
+  .v2_ledger_check(datasets,ledger)
   .v2_capability_check(datasets,capabilities)
   .store_summary_checks(tx,releaseId,datasets)
   .store_domain_reconcile(tx,releaseId,datasets)
@@ -184,15 +189,12 @@
   }
   invisible(TRUE)
 }
-.store_denominators <- function(tx,releaseId,mid,row) {
-  .v2_denominator_check(mid,row,function(id,key) .store_decode(tx$one(paste0("SELECT dimensions::text FROM ",tx$schema,".aggregate_cell WHERE release_id=",.store_uuid(releaseId)," AND metric_id=",.store_literal(id)," AND row_key=",.store_literal(key)))))
-}
 .store_reconcile <- function(tx, releaseId) {
   # Additive PERSON partitions are checked in NUMERIC on the database; these
   # checks cannot round large counts through an R/Java floating-point adapter.
   s <- tx$schema; id <- .store_uuid(releaseId)
   for(mid in c("core.person.gender_count","core.person.birth_year_count","core.person.race_count","core.person.ethnicity_count","core.person.birth_year_gender_count","core.person.race_ethnicity_count","core.density.domain_count","core.density.domain_presence_count")) {
-    .nv_need(tx$one(paste0("SELECT CASE WHEN EXISTS(SELECT 1 FROM ",s,".dataset WHERE release_id=",id," AND metric_id IN (",.store_literal(mid),",'core.person.count') AND state='suppressed') THEN 'ok' WHEN (SELECT COALESCE(sum(person_count),0) FROM ",s,".aggregate_cell WHERE release_id=",id," AND metric_id=",.store_literal(mid),")=(SELECT person_count FROM ",s,".aggregate_cell WHERE release_id=",id," AND metric_id='core.person.count') THEN 'ok' ELSE 'invalid' END"))=="ok","PERSON partition does not reconcile")
+    .nv_need(tx$one(paste0("SELECT CASE WHEN EXISTS(SELECT 1 FROM ",s,".achillesnext_dataset WHERE release_id=",id," AND metric_id IN (",.store_literal(mid),",'core.person.count') AND state='suppressed') THEN 'ok' WHEN (SELECT COALESCE(sum(person_count),0) FROM ",s,".achillesnext_aggregate_cell WHERE release_id=",id," AND metric_id=",.store_literal(mid),")=(SELECT person_count FROM ",s,".achillesnext_aggregate_cell WHERE release_id=",id," AND metric_id='core.person.count') THEN 'ok' ELSE 'invalid' END"))=="ok","PERSON partition does not reconcile")
   }
 }
 #' Validate a sealed aggregate release using native R
@@ -201,13 +203,13 @@
 #' @export
 validateResultRelease <- function(connectionDetails, resultsSchema, releaseId) {
   tryCatch(.store_transaction(connectionDetails,resultsSchema,function(tx) {
-    validated <- .store_validate(tx,releaseId); c <- validated$context
+    validated <- .store_validate(tx,releaseId,exclusive=TRUE); c <- validated$context
     if(c$state=="validated") return(invisible(c))
     receipt <- .store_new_uuid()
     report <- .v2_hash(.v2_bytes(.object(release_id=releaseId,content_revision=c$content_revision,profile_sha256=c$profile_sha256,validator_version="native-2.0.0",passed=TRUE)))
-    tx$execute(paste0("INSERT INTO ",tx$schema,".validation_receipt VALUES (",.store_uuid(receipt),",",.store_uuid(releaseId),",",c$content_revision,",'native-2.0.0',",.store_literal(c$profile_sha256),",true,now(),",.store_literal(report),"); UPDATE ",tx$schema,".result_release SET state='validated' WHERE release_id=",.store_uuid(releaseId)))
+    tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_validation_receipt VALUES (",.store_uuid(receipt),",",.store_uuid(releaseId),",",c$content_revision,",'native-2.0.0',",.store_literal(c$profile_sha256),",true,now(),",.store_literal(report),"); UPDATE ",tx$schema,".achillesnext_result_release SET state='validated' WHERE release_id=",.store_uuid(releaseId)))
     invisible(c)
-  }),error=function(e) stop("Aggregate release validation failed",call.=FALSE))
+  },isolation=2L),error=function(e) stop("Aggregate release validation failed",call.=FALSE))
 }
 
 .store_summary_checks <- function(tx,releaseId,datasets) {
@@ -217,8 +219,10 @@ validateResultRelease <- function(connectionDetails, resultsSchema, releaseId) {
     # Each exact summary binds its included n to the eligible category under
     # precisely the same declared dimensions, including unit/operator strata.
     where <- paste0(" release_id=",rid," AND metric_id=",.store_literal(mid))
-    invalid <- tx$one(paste0("SELECT count(*)::text FROM ",s,".aggregate_cell a WHERE a.",trimws(where)," AND a.payload_kind='summary' AND a.state<>'suppressed' AND NOT EXISTS (SELECT 1 FROM ",s,".aggregate_cell e WHERE (e.release_id,e.metric_id)=(a.release_id,a.metric_id) AND e.payload_kind='counts' AND e.state<>'suppressed' AND e.dimensions-'eligibility_reason'=a.dimensions AND e.dimensions->>'eligibility_reason'='eligible' AND COALESCE(e.record_count,e.person_count)=a.n)"))
+    invalid <- tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_aggregate_cell a WHERE a.",trimws(where)," AND a.payload_kind='summary' AND a.state<>'suppressed' AND NOT EXISTS (SELECT 1 FROM ",s,".achillesnext_aggregate_cell e WHERE (e.release_id,e.metric_id)=(a.release_id,a.metric_id) AND e.payload_kind='counts' AND e.state<>'suppressed' AND e.dimensions-'eligibility_reason'=a.dimensions AND e.dimensions->>'eligibility_reason'='eligible' AND COALESCE(e.record_count,e.person_count)=a.n)"))
     .nv_need(invalid=="0","Summary eligibility does not reconcile")
+    invalid <- tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_aggregate_cell e WHERE e.",trimws(where)," AND e.payload_kind='counts' AND e.state<>'suppressed' AND e.dimensions->>'eligibility_reason'='eligible' AND NOT EXISTS (SELECT 1 FROM ",s,".achillesnext_aggregate_cell a WHERE (a.release_id,a.metric_id)=(e.release_id,e.metric_id) AND a.payload_kind='summary' AND a.dimensions=e.dimensions-'eligibility_reason' AND (a.state='suppressed' OR a.n=COALESCE(e.record_count,e.person_count)))"))
+    .nv_need(invalid=="0","Missing eligible summary")
   }
 }
 
@@ -232,21 +236,24 @@ validateResultRelease <- function(connectionDetails, resultsSchema, releaseId) {
       mid <- paste0("core.",domain,".",suffix);if(!available(mid)) next
       # Suppressed facts cannot be used to manufacture a reconciliation. The
       # approved projection may suppress whole outputs; it never recomputes them.
-      skipped <- tx$one(paste0("SELECT count(*)::text FROM ",s,".aggregate_cell WHERE release_id=",rid," AND metric_id IN (",.store_literal(mid),",",.store_literal(capture),") AND state='suppressed'"))!="0"
+      skipped <- tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_aggregate_cell WHERE release_id=",rid," AND metric_id IN (",.store_literal(mid),",",.store_literal(capture),") AND state='suppressed'"))!="0"
       if(skipped) next
-      txcheck <- tx$one(paste0("WITH parts AS (SELECT dimensions->'concept_tag' AS tag,sum(record_count) AS n FROM ",s,".aggregate_cell WHERE release_id=",rid," AND metric_id=",.store_literal(mid)," GROUP BY 1), totals AS (SELECT dimensions->'concept_tag' AS tag,sum(record_count) AS n,count(*) AS cells FROM ",s,".aggregate_cell WHERE release_id=",rid," AND metric_id=",.store_literal(capture)," AND dimensions->>'period_kind'='full_scope' GROUP BY 1) SELECT count(*)::text FROM parts p FULL JOIN totals t USING(tag) WHERE p.n IS DISTINCT FROM t.n OR t.cells<>1"))
+      txcheck <- tx$one(paste0("WITH parts AS (SELECT dimensions->'concept_tag' AS tag,sum(record_count) AS n FROM ",s,".achillesnext_aggregate_cell WHERE release_id=",rid," AND metric_id=",.store_literal(mid)," GROUP BY 1), totals AS (SELECT dimensions->'concept_tag' AS tag,sum(record_count) AS n,count(*) AS cells FROM ",s,".achillesnext_aggregate_cell WHERE release_id=",rid," AND metric_id=",.store_literal(capture)," AND dimensions->>'period_kind'='full_scope' GROUP BY 1) SELECT count(*)::text FROM parts p FULL JOIN totals t USING(tag) WHERE p.n IS DISTINCT FROM t.n OR t.cells<>1"))
       .nv_need(txcheck=="0","Domain record partitions do not reconcile")
     }
     observed <- paste0("observed.",domain,".capture_count")
     if(available(observed)) {
-      bad <- tx$one(paste0("SELECT count(*)::text FROM ",s,".aggregate_cell a LEFT JOIN ",s,".aggregate_cell b ON b.release_id=a.release_id AND b.metric_id=",.store_literal(capture)," AND b.dimensions=a.dimensions WHERE a.release_id=",rid," AND a.metric_id=",.store_literal(observed)," AND a.state<>'suppressed' AND (b.row_key IS NULL OR (b.state<>'suppressed' AND (a.record_count>b.record_count OR a.person_count>b.person_count)))"))
+      bad <- tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_aggregate_cell a LEFT JOIN ",s,".achillesnext_aggregate_cell b ON b.release_id=a.release_id AND b.metric_id=",.store_literal(capture)," AND b.dimensions=a.dimensions WHERE a.release_id=",rid," AND a.metric_id=",.store_literal(observed)," AND a.state<>'suppressed' AND (b.row_key IS NULL OR (b.state<>'suppressed' AND (a.record_count>b.record_count OR a.person_count>b.person_count)))"))
       .nv_need(bad=="0","Observed counts exceed matching all-recorded counts")
     }
   }
 }
 
-.v2_capability_check <- function(datasets,capabilities) {
-  if(datasets[["core.source.capabilities"]]$state=="suppressed")return(invisible(TRUE))
+.v2_capability_check <- function(datasets,capabilities, requireEvidence = TRUE) {
+  if(datasets[["core.source.capabilities"]]$state=="suppressed") {
+    .nv_need(!requireEvidence,"Capability inventory is required for source validation")
+    return(invisible(TRUE))
+  }
   metrics <- .v2_assets()$metrics
   probes <- unique(unlist(lapply(metrics,function(m)c(unlist(m$inputs),unlist(m$conditional_inputs),unlist(m$input_aliases)))))
   .nv_need(setequal(names(capabilities),probes),"Incomplete capability inventory")
@@ -259,5 +266,23 @@ validateResultRelease <- function(connectionDetails, resultsSchema, releaseId) {
       .nv_need(any(vapply(alternatives,function(p)capabilities[[p]]$state%in%c("available","available_empty"),TRUE)),"Required input is not readable")
     }
   }
+  invisible(TRUE)
+}
+
+.v2_ledger_check <- function(datasets,ledger) {
+  if(datasets[["core.execution.output_status"]]$state=="suppressed")return(invisible(TRUE))
+  .nv_need(setequal(names(ledger),names(.v2_assets()$metrics)),"Incomplete output ledger coverage")
+  for(mid in names(ledger)) {
+    v <- ledger[[mid]];target <- datasets[[mid]]
+    .nv_need(identical(v$state,target$state) && identical(v$reason_code,target$reason_code) && identical(v$required,target$required),"Output ledger mismatch")
+  }
+  invisible(TRUE)
+}
+.v2_passport_check <- function(v,c) {
+  .nv_need(identical(v$source_id,c$source_id) && identical(v$profile$id,c$profile_id) &&
+    identical(v$profile$revision,c$profile_revision) && identical(v$profile$sha256,c$profile_sha256) &&
+    identical(v$observed_schema$sha256,c$observed_schema_sha256) &&
+    identical(v$declared_cdm_version,c$declared_cdm_version) &&
+    identical(v$consistency$within_run,c$consistency_basis),"Passport context mismatch")
   invisible(TRUE)
 }

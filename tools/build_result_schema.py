@@ -36,7 +36,10 @@ dimensions = {}
 for name in sorted(all_dims):
     if name in enums: schema = {'enum': enums[name]}
     elif name.endswith('_tag'): schema = tag
-    elif name in ['period_start','period_end','month']:
+    elif name == 'month': schema = {'type':'string','format':'date','pattern':r'^[0-9]{4}-(0[1-9]|1[0-2])-01$'}
+    elif name in ['first_year_age_decile','year_age_decile']: schema = string(r'^(unknown|[0-9]|1[0-3])$')
+    elif name == 'year_age_or_unknown': schema = string(r'^(unknown|0|[1-9][0-9]?|1[0-2][0-9]|130)$')
+    elif name in ['period_start','period_end']:
         schema = {'anyOf': [{'type':'string','format':'date'}, {'enum':['null','undated']}]}
     elif name in ['year','year_of_birth','event_count','concept_count','interval_count','domain_count','floor_days_div_30'] or name.endswith('_concept_id'): schema = integer
     elif name in ['present','full_calendar_period']: schema = {'enum':['true','false']}
@@ -63,6 +66,20 @@ for metric in registry['metrics']:
             name = 'values.'+str(len(value_variants))
             value_variants[signature] = name;definitions[name] = values
         row = obj({'row_key':ref('wire_sha256'),'dimensions':obj({d:ref('dimension.'+d) for d in names}),'row_kind':{'const':kind},'state':ref('wire_state'),'reason_code':ref('wire_reason'),'values':nullable(ref(value_variants[signature])),'denominator_refs':{'type':'array','maxItems':2,'items':ref('wire_ref')}})
+        opaque_states = ['suppressed','unsupported','unavailable']
+        row['allOf'] = [
+            {'if': {'properties': {'state': {'enum':opaque_states}}},
+             'then': {'properties': {'values':{'type':'null'},'denominator_refs':{'maxItems':0}}},
+             'else': {'properties': {'values':ref(value_variants[signature])}}},
+            {'if': {'properties': {'state': {'const':'computed'}}},
+             'then': {'properties': {'reason_code':{'type':'null'}}},
+             'else': {'properties': {'reason_code':string(r'^[a-z0-9_.:-]{1,96}$')}}}
+        ]
+        if metric['id'] == 'core.visit.care_setting_count':
+            row['allOf'].append({'if':{'properties':{'state':{'enum':['unsupported','unavailable']}}},
+                'then':{'properties':{'dimensions':{'properties':{'setting_kind':{'const':'place_of_service'}}}}}})
+        else:
+            row['properties']['state'] = {'enum':['computed','empty_source','empty_population','suppressed']}
         kinds.append(row)
     variants.append(obj({'metric_id':{'const':metric['id']},'row':{'oneOf':kinds}}))
 schema = {'$schema':'https://json-schema.org/draft/2020-12/schema','$id':'urn:achilles-next:rows:2.0.0','$defs':definitions,'oneOf':variants}

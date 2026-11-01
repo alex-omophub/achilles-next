@@ -50,6 +50,19 @@ for(state in c('unsupported','unavailable')) {
  add(mid,row,TRUE,state)
  bad <- row;bad$values <- obj(record_count='0',person_count='0');add(mid,bad,FALSE,'unavailable is not zero')
 }
+# Review regressions shared with the independent validator.
+for(month in c('null','undated','2020-01-15')) {
+ mid <- 'core.observation_period.boundary_month_count';r <- obj(row_key='',dimensions=obj(boundary_kind='start',month=month),row_kind='counts',state='computed',reason_code=NULL,values=obj(interval_count='1',person_count='1'),denominator_refs=list())
+ add(mid,r,FALSE,'invalid month anchor')
+}
+for(age in c('14','99')) {
+ mid <- 'core.observation_period.year_gender_age_count';r <- obj(row_key='',dimensions=obj(year='2020',gender_concept_id='0',year_age_decile=age),row_kind='counts',state='computed',reason_code=NULL,values=obj(person_count='1'),denominator_refs=list())
+ add(mid,r,FALSE,'invalid age decile')
+}
+mid <- 'core.observation_period.first_age_count';r <- obj(row_key='',dimensions=obj(year_age_or_unknown='131',gender_concept_id='0'),row_kind='counts',state='computed',reason_code=NULL,values=obj(person_count='1'),denominator_refs=list());add(mid,r,FALSE,'invalid year age')
+mid <- 'core.execution.output_status';v <- metadata[[mid]];v$coverage$scope_kind <- 'declared_reduced';v$coverage$excluded_record_count <- '2'
+r <- obj(row_key='',dimensions=obj(metric_id='core.person.count'),row_kind='metadata',state='computed',reason_code=NULL,values=v,denominator_refs=list());add(mid,r,FALSE,'missing reduced coverage reason')
+r$values$coverage$reason_code <- 'fixture.reduced';add(mid,r,TRUE,'reduced coverage reason')
 # Exact arithmetic and codec ordering, including Java BigInteger fallback.
 stopifnot(f('.nv_mul')(strrep('9',1100),paste0('1',strrep('0',1000)))==paste0(strrep('9',1100),strrep('0',1000)))
 values <- c('-10','-2','0','2','10');keys <- vapply(values,f('.v2_component'),'',name='integer')

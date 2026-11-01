@@ -1,10 +1,10 @@
 #' Read one immutable approved database page
 #'
 #' A trusted host supplies the complete pinned context. The database principal
-#' must have SELECT on the approved_pages view and an enabled audience grant.
+#' must have SELECT on the achillesnext_approved_pages view and an enabled audience grant.
 #' This function reads no CDM or aggregate tables and never resolves current.
 #' @param connectionDetails PostgreSQL serving-principal connection details.
-#' @param servingSchema Schema containing approved_pages.
+#' @param servingSchema Schema containing achillesnext_approved_pages.
 #' @param sourceId Expected source identity.
 #' @param publicationId Pinned publication UUID.
 #' @param accessScopeId Expected institution-controlled audience.
@@ -24,7 +24,7 @@ readResultObject <- function(connectionDetails,servingSchema,sourceId,publicatio
     }
     sha <- if(is.null(descriptor))rootSha256 else descriptor$sha256
     kind <- if(is.null(descriptor))"root" else descriptor$kind
-    text <- tx$one(paste0("SELECT encode(payload,'hex') FROM ",tx$schema,".approved_pages WHERE publication_id=",.store_uuid(publicationId),
+    text <- tx$one(paste0("SELECT encode(payload,'hex') FROM ",tx$schema,".achillesnext_approved_pages WHERE publication_id=",.store_uuid(publicationId),
       " AND source_id=",.store_literal(sourceId)," AND scope_id=",.store_literal(accessScopeId)," AND root_sha256=",.store_literal(rootSha256),
       " AND sha256=",.store_literal(sha)," AND kind=",.store_literal(kind)," AND octet_length(payload)<=",.v2_limit(kind)))
     at <- seq.int(1L,nchar(text),2L);bytes <- as.raw(strtoi(substring(text,at,at+1L),16L))

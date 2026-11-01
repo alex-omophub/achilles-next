@@ -7,12 +7,14 @@ import addFormats from 'ajv-formats';
 import {canonical} from './index.mjs';
 const assets=fileURLToPath(new URL('../../../inst/contracts/v2/',import.meta.url));
 const ajv=new Ajv2020({strict:false,allErrors:false});addFormats(ajv);
+ajv.addFormat('date',value=>/^\d{4}-\d{2}-\d{2}$/.test(value)&&value.slice(0,4)!=='0000'&&!Number.isNaN(Date.parse(`${value}T00:00:00.000Z`))&&new Date(`${value}T00:00:00.000Z`).toISOString().slice(0,10)===value);
 const validate=ajv.compile(JSON.parse(readFileSync(`${assets}row.schema.json`,'utf8')));
 const registry=JSON.parse(readFileSync(`${assets}rows.json`,'utf8'));
 const metrics=new Map(registry.metrics.map(m=>[m.id,m]));
 const need=(test,message)=>{if(!test)throw new Error(message);};
 const exact=x=>{const neg=x.startsWith('-'),p=x.replace(/^-/,'').split('.');return {n:BigInt(`${neg?'-':''}${p.join('')}`),scale:p[1]?.length??0};};
 function cmp(a,b,multiplier='1') {a=exact(a);b=exact(b);const scale=Math.max(a.scale,b.scale);a.n*=BigInt(multiplier);return a.n*10n**BigInt(scale-a.scale)-b.n*10n**BigInt(scale-b.scale);}
+export const matchesSavedRowSchema=(metricId,row)=>validate({metric_id:metricId,row});
 export function validateSavedRow(metricId,row) {
   need(validate({metric_id:metricId,row}),'Row schema rejected');
   const metric=metrics.get(metricId);
@@ -38,7 +40,7 @@ export function validateSavedRow(metricId,row) {
     }
   }
   if(row.row_kind==='metadata') {
-    const coverage=x=>{need(x.complete===true,'Incomplete coverage');if(x.scope_kind==='standard_full')need(x.excluded_record_count==='0','Excluded full-scope rows');};
+    const coverage=x=>{need(x.complete===true,'Incomplete coverage');if(x.scope_kind==='declared_reduced')need(x.reason_code!==null,'Reduced coverage reason');if(x.scope_kind==='standard_full')need(x.excluded_record_count==='0','Excluded full-scope rows');};
     const identity=x=>need(x.state==='known'?x.value!==null&&x.basis!==null&&x.assertion_id!==null&&x.reason_code===null:x.value===null&&x.reason_code!==null,'Identity assertion');
     if(metricId==='core.source.passport') {identity(v.source_release);identity(v.vocabulary_release);coverage(v.coverage);need(v.generation.started_at<=v.generation.ended_at,'Generation order');need(!v.consistency.reusable||v.consistency.within_run==='verified_immutable_source','Reuse consistency');}
     if(metricId==='core.source.capabilities')need(['available','available_empty'].includes(v.state)?v.reason_code===null:v.reason_code!==null,'Capability reason');
@@ -49,6 +51,12 @@ export function validateSavedRow(metricId,row) {
   const d=row.dimensions;
   if(d.representation_flags!==undefined)need((metricId.includes('measurement')?/^[01]{3}$/:/^[01]{4}[01X]$/).test(d.representation_flags),'Representation flags');
   if(d.presence_bits!==undefined)need(/^[01]{9}$/.test(d.presence_bits),'Domain mask');
+  if(d.month!==undefined)need(/^\d{4}-(0[1-9]|1[0-2])-01$/.test(d.month),'Month anchor');
+  for(const key of ['first_year_age_decile','year_age_decile','year_age_or_unknown'])if(d[key]!==undefined&&d[key]!=='unknown')need(/^(0|[1-9][0-9]*)$/.test(d[key])&&BigInt(d[key])<=BigInt(key==='year_age_or_unknown'?130:13),'Age bound');
+  if(['core.measurement.numeric_summary','core.observation.numeric_summary','core.measurement.range_low_summary','core.measurement.range_high_summary'].includes(metricId)&&row.row_kind==='summary') {
+    need(d.unit_concept_tag.kind==='id'&&/^[1-9][0-9]*$/.test(d.unit_concept_tag.value),'Numeric unit');
+    if(metricId==='core.measurement.numeric_summary')need(d.raw_operator_tag.kind==='null'||(d.raw_operator_tag.kind==='id'&&d.raw_operator_tag.value==='0'),'Numeric operator');
+  }
   if(d.period_kind!==undefined) {
     if(d.period_kind==='undated'||(d.period_kind==='full_scope'&&d.period_start==='null'))need(d.period_start==='null'&&d.period_end==='null','Undated period');
     else {need(/^\d{4}-\d{2}-\d{2}$/.test(d.period_start)&&d.period_start<=d.period_end,'Period bounds');

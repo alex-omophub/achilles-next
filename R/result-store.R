@@ -38,7 +38,7 @@ initializeResultStore <- function(connectionDetails, resultsSchema, servingSchem
     hex <- paste(sprintf("%02x", as.integer(bytes)), collapse = "")
     register <- paste0("WITH input AS (SELECT decode('", hex, "','hex') AS b), parsed AS ",
       "(SELECT b,convert_from(b,'UTF8')::jsonb AS d FROM input) INSERT INTO \"", resultsSchema,
-      "\".profile_registry SELECT encode(sha256(b),'hex'),d->>'profile_id',d->>'revision',b,d FROM parsed")
+      "\".achillesnext_profile_registry SELECT encode(sha256(b),'hex'),d->>'profile_id',d->>'revision',b,d FROM parsed")
     rJava::.jcall(statement, "Z", "execute", register)
     rJava::.jcall(jdbc, "V", "commit")
     committed <- TRUE
