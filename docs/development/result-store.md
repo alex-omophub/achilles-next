@@ -20,8 +20,10 @@ experimental stores or legacy Achilles objects.
 
 The core numerical profile defines 142 domain results. These storage APIs do not
 compute domain results. The separate [baseline producer](population-baseline.md)
-generates 19 population/observation outputs into a building core release; other
-domains remain ungenerated. The existing synthetic tracer
+generates 19 population/observation outputs into a building core release. The
+[domain producer](domain-baseline.md) accounts for 119 outputs with explicit
+conditional support states, saved concept/time selection and paging. Other
+measurement and metadata outputs remain ungenerated. The existing synthetic tracer
 continues to generate its frozen 15-output format. These are separately versioned
 storage/publication APIs for an already populated core-profile release.
 

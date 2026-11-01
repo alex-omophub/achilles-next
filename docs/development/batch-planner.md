@@ -4,10 +4,11 @@
 142-result core profile. It connects to no database and runs no clinical SQL.
 The plan enumerates 51 topologically ordered logical modules, their dependencies,
 physical input columns, output populations and exact grains. Logical modules are
-not promises of one SQL statement each. Full domain result generation is not yet
+not promises of one SQL statement each. Complete core result generation is not yet
 implemented; the plan explicitly reports `planning_only`. Population/observation
-kernels identify `available_in_population_baseline`; other modules report
-`not_implemented`. The existing 15-output development tracer remains separate.
+kernels identify `available_in_population_baseline`; the eight-domain/density
+kernels and measurement presence identify `available_in_domain_baseline` in the
+[domain producer](domain-baseline.md). Other modules report `not_implemented`. The existing 15-output development tracer remains separate.
 
 ```r
 plan <- planCharacterizationBatch(

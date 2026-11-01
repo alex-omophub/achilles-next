@@ -150,7 +150,7 @@
   }
   if("representation_flags"%in%names(d)) {
     n <- if(grepl("measurement",id,fixed=TRUE))3L else 5L
-    .nv_need(grepl(paste0("^[01]{",n,"}$"),d$representation_flags) || (n==5L && grepl("^[01]{4}X$",d$representation_flags)),"Invalid representation flags")
+    .nv_need(grepl(if(n==3L)"^[01]{3}$" else "^[01]{2}[01X][01][01X]$",d$representation_flags),"Invalid representation flags")
   }
   if("presence_bits"%in%names(d)) .nv_need(grepl("^[01]{9}$",d$presence_bits),"Invalid domain presence mask")
   if("period_kind"%in%names(d)) {

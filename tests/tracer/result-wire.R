@@ -63,6 +63,11 @@ mid <- 'core.observation_period.first_age_count';r <- obj(row_key='',dimensions=
 mid <- 'core.execution.output_status';v <- metadata[[mid]];v$coverage$scope_kind <- 'declared_reduced';v$coverage$excluded_record_count <- '2'
 r <- obj(row_key='',dimensions=obj(metric_id='core.person.count'),row_kind='metadata',state='computed',reason_code=NULL,values=v,denominator_refs=list());add(mid,r,FALSE,'missing reduced coverage reason')
 r$values$coverage$reason_code <- 'fixture.reduced';add(mid,r,TRUE,'reduced coverage reason')
+# Conditional observation source/date flags are independently schema-absent.
+for(flags in c('00X0X','11X10','0000X','11111','0X000','X0000','000X0','000XX')) {
+ mid<-'core.observation.representation_count';row<-obj(row_key='',dimensions=obj(concept_tag=obj(kind='id',value='1'),representation_flags=flags),row_kind='counts',state='computed',reason_code=NULL,values=obj(record_count='1',person_count='1'),denominator_refs=list())
+ add(mid,row,flags%in%c('00X0X','11X10','0000X','11111'),'conditional representation flag positions')
+}
 # Exact arithmetic and codec ordering, including Java BigInteger fallback.
 for(name in c('gender_concept_id','race_concept_id','ethnicity_concept_id','year_of_birth','period_type_concept_id')) {
  mid <- switch(name,gender_concept_id='core.person.gender_count',race_concept_id='core.person.race_count',ethnicity_concept_id='core.person.ethnicity_count',year_of_birth='core.person.birth_year_count',period_type_concept_id='core.observation_period.type_count')

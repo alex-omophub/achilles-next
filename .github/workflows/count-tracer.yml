@@ -3,6 +3,12 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      full_calendar:
+        description: Run the wider synthetic domain calendar (60-minute budget)
+        type: boolean
+        default: false
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -11,7 +17,7 @@ permissions:
 jobs:
   tracer:
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: ${{ inputs.full_calendar && 60 || 30 }}
     services:
       postgres:
         image: postgres:17.11
@@ -57,14 +63,19 @@ jobs:
           sudo apt-get install -y --no-install-recommends libpcre2-dev liblzma-dev libbz2-dev zlib1g-dev libicu-dev libtirpc-dev
           # setup-java changes JAVA_HOME, but R keeps its build-time JNI paths.
           sudo env JAVA_HOME="$JAVA_HOME" "$(command -v R)" CMD javareconf
+      - name: Fingerprint R dependency declarations
+        run: |
+          mkdir -p .local
+          Rscript --vanilla tools/ci/r-dependency-spec.R DESCRIPTION .local/r-dependency-spec.txt
       - name: Restore compiled R dependencies
         id: r-deps-cache
         uses: actions/cache/restore@v5
         with:
           path: ${{ env.R_LIBS }}
           # Exact matches only: rJava embeds JDK paths in its compiled library.
-          # Bump v1 to refresh dependencies without changing their declarations.
-          key: tracer-r-deps-v1-${{ runner.os }}-${{ runner.arch }}-ubuntu22.04-temurin-${{ steps.java.outputs.version }}-${{ hashFiles('DESCRIPTION', 'tests/tracer/runtime-lock.json', '.github/workflows/count-tracer.yml') }}
+          # Package prose and unrelated workflow edits do not invalidate this cache.
+          # Bump v2 only to refresh compiled dependencies without changing inputs.
+          key: tracer-r-deps-v2-${{ runner.os }}-${{ runner.arch }}-ubuntu22.04-temurin-${{ steps.java.outputs.version }}-${{ hashFiles('.local/r-dependency-spec.txt', 'tools/ci/install-r-dependencies.R', 'tests/tracer/runtime-lock.json') }}
       - name: Restore pinned JDBC driver
         uses: actions/cache@v5
         with:
@@ -72,12 +83,7 @@ jobs:
           key: tracer-jdbc-v1-${{ hashFiles('tests/tracer/runtime-lock.json') }}
       - name: Install R dependencies on a cache miss
         if: steps.r-deps-cache.outputs.cache-hit != 'true'
-        shell: Rscript {0}
-        run: |
-          dir.create(Sys.getenv('R_LIBS'), recursive=TRUE, showWarnings=FALSE)
-          .libPaths(c(Sys.getenv('R_LIBS'), .libPaths()))
-          install.packages(c('remotes', 'jsonlite', 'digest', 'httpuv'), repos='https://cloud.r-project.org')
-          remotes::install_version('DatabaseConnector', version='6.3.2', upgrade='never', repos='https://cloud.r-project.org')
+        run: Rscript --vanilla tools/ci/install-r-dependencies.R
       - name: Verify R dependencies, JNI and JDBC on every run
         shell: Rscript {0}
         run: |
@@ -106,13 +112,10 @@ jobs:
           mkdir -p .local/bin
           chmod 700 .local
           docker pull postgres:17.10
-          cat > .local/bin/psql <<'PSQL'
-          #!/bin/sh
-          exec docker run --rm -i --network host \
+          docker run --detach --rm --name achillesnext-psql-client --network host \
             --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" --workdir "$GITHUB_WORKSPACE" \
-            --env PGCLIENTENCODING --env PGOPTIONS --env PGPASSFILE --env PGSERVICEFILE \
-            postgres:17.10 psql "$@"
-          PSQL
+            --entrypoint sleep postgres:17.10 infinity
+          cp tools/ci/psql .local/bin/psql
           chmod +x .local/bin/psql
           echo "$GITHUB_WORKSPACE/.local/bin" >> "$GITHUB_PATH"
           printf '127.0.0.1:5432:*:postgres:synthetic-ci-only\n' > .local/admin.pgpass
@@ -134,6 +137,7 @@ jobs:
           R CMD INSTALL --library="$R_LIBS" .
           Rscript --vanilla tests/tracer/native-validation.R .
           Rscript --vanilla tests/tracer/result-validation-offline.R
+          Rscript --vanilla tests/tracer/baseline-reader-once.R
           Rscript --vanilla tests/tracer/result-wire.R "$RUNNER_TEMP/v2-corpus.json"
           node packages/contracts/tools/validate-v2-corpus.mjs "$RUNNER_TEMP/v2-corpus.json"
           Rscript --vanilla tests/tracer/result-store.R tools/tracer_fixture_config.R
@@ -156,6 +160,14 @@ jobs:
           python3 tools/benchmark/batch_primitives.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/batch-primitives" --trials 1
       - name: Verify persisted population and observation baseline
         run: python3 tools/test_population_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/population-baseline"
+      - name: Verify eight-domain generation and saved concept/time selection
+        env:
+          COMPACT_DOMAIN_CALENDAR: ${{ inputs.full_calendar && '0' || '1' }}
+        run: |
+          Rscript --vanilla tests/tracer/domain-review-offline.R
+          calendar_args=()
+          if [ "$COMPACT_DOMAIN_CALENDAR" = 1 ]; then calendar_args+=(--compact-calendar); fi
+          python3 tools/test_domain_baseline.py "${calendar_args[@]}" --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/domain-baseline"
       - name: Validate every generated bundle against the frozen contracts
         run: |
           npm run check --prefix packages/contracts
@@ -167,3 +179,6 @@ jobs:
           PUBLICATION_TEST_BUNDLES="$RUNNER_TEMP/publication" npm test --prefix packages/tracer
           export PUBLICATION_TEST_BUNDLES="$RUNNER_TEMP/publication"
           python3 -m unittest discover -s tests -p 'test_*.py'
+      - name: Stop the persistent psql client
+        if: always()
+        run: docker rm -f achillesnext-psql-client || true

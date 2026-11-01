@@ -1,0 +1,5 @@
+#!/bin/sh
+# Use one pinned client container per job, instead of one container per query.
+exec docker exec -i \
+  --env PGCLIENTENCODING --env PGOPTIONS --env PGPASSFILE --env PGSERVICEFILE \
+  achillesnext-psql-client psql "$@"

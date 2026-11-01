@@ -1,9 +1,9 @@
 WITH coverage AS (
   SELECT p.period_kind,p.period_start,p.period_end,p.full_calendar_period,
     COUNT(DISTINCT i.person_id)::text AS n,
-    COALESCE(SUM(CASE WHEN i.person_id IS NULL THEN 0 ELSE (LEAST(i.end_date,p.period_end)-GREATEST(i.start_date,p.period_start)+1)::numeric END),0)::text AS days,
-    COUNT(DISTINCT i.person_id) FILTER(WHERE i.start_date<=p.period_start AND i.end_date>=p.period_end)::text AS continuous
-  FROM {{periods}} p LEFT JOIN {{intervals}} i ON i.start_date<=p.period_end AND i.end_date>=p.period_start
+    COALESCE(SUM(CASE WHEN i.person_id IS NULL THEN 0 ELSE (LEAST(i.end_date,COALESCE(p.period_end,i.end_date))-GREATEST(i.start_date,COALESCE(p.period_start,i.start_date))+1)::numeric END),0)::text AS days,
+    COUNT(DISTINCT i.person_id) FILTER(WHERE i.start_date<=COALESCE(p.period_start,(SELECT MIN(start_date) FROM {{intervals}})) AND i.end_date>=COALESCE(p.period_end,(SELECT MAX(end_date) FROM {{intervals}})))::text AS continuous
+  FROM {{periods}} p LEFT JOIN {{intervals}} i ON (p.period_kind='full_scope' AND p.period_start IS NULL) OR (i.start_date<=p.period_end AND i.end_date>=p.period_start)
   GROUP BY p.period_kind,p.period_start,p.period_end,p.full_calendar_period
 ), year_people AS (
   SELECT jsonb_build_object('year',EXTRACT(YEAR FROM y.period_start)::integer::text,'gender_concept_id',COALESCE(p.gender_concept_id::text,'null'),

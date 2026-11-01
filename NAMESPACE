@@ -22,3 +22,7 @@ export(readResultObject)
 export(planCharacterizationBatch)
 export(generatePopulationObservationBaseline)
 export(readPopulationObservationBaseline)
+
+export(generateDomainBaseline)
+export(readDomainBaseline)
+export(listDomainConcepts)

@@ -69,7 +69,7 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "drug.classification",
@@ -105,7 +105,7 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "procedure.classification",
@@ -140,7 +140,7 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "visit.classification",
@@ -178,7 +178,7 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "device.classification",
@@ -215,7 +215,7 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "observation.classification",
@@ -254,7 +254,7 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "death.classification",
@@ -285,7 +285,7 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "specimen.classification",
@@ -322,7 +322,7 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "measurement.classification",
@@ -379,7 +379,7 @@
       "grains": [],
       "materialization_candidate": true,
       "retention": "transaction_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "run.metadata",
@@ -825,7 +825,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "condition.first_age",
@@ -857,7 +857,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "condition.person_histograms",
@@ -896,7 +896,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "drug.counts",
@@ -1006,7 +1006,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "drug.first_age",
@@ -1038,7 +1038,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "drug.person_histograms",
@@ -1077,7 +1077,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "procedure.counts",
@@ -1187,7 +1187,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "procedure.first_age",
@@ -1219,7 +1219,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "procedure.person_histograms",
@@ -1258,7 +1258,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "visit.counts",
@@ -1368,7 +1368,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "visit.first_age",
@@ -1400,7 +1400,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "visit.person_histograms",
@@ -1439,7 +1439,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "device.counts",
@@ -1549,7 +1549,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "device.first_age",
@@ -1581,7 +1581,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "device.person_histograms",
@@ -1620,7 +1620,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "observation.counts",
@@ -1729,7 +1729,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "observation.first_age",
@@ -1761,7 +1761,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "observation.person_histograms",
@@ -1800,7 +1800,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "death.counts",
@@ -1908,7 +1908,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "death.first_age",
@@ -1940,7 +1940,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "death.person_histograms",
@@ -1979,7 +1979,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "specimen.counts",
@@ -2087,7 +2087,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "specimen.first_age",
@@ -2119,7 +2119,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "specimen.person_histograms",
@@ -2158,7 +2158,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "measurement.counts",
@@ -2370,7 +2370,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "drug.specific",
@@ -2419,7 +2419,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "visit.specific",
@@ -2465,7 +2465,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "procedure.specific",
@@ -2498,7 +2498,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "device.specific",
@@ -2542,7 +2542,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "specimen.specific",
@@ -2599,7 +2599,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "observation.specific",
@@ -2685,7 +2685,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     },
     {
       "id": "measurement.specific",
@@ -2857,7 +2857,7 @@
       ],
       "materialization_candidate": false,
       "retention": "aggregate_or_metadata_only",
-      "execution": "not_implemented"
+      "execution": "available_in_domain_baseline"
     }
   ],
   "rules": {
