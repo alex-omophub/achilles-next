@@ -55,6 +55,22 @@ main<-function() {
     saved[[length(saved)+1L]]<-list(schema=schema,release=generated$release_id)
     stopifnot(q("SELECT count(*)::text AS n FROM pg_class WHERE relpersistence='t' AND relname~'^achillesnext_[0-9a-f]{32}_'")$N==baselineTemp)
   }
+  # A building baseline has no policy suppression. A valid wire row is not
+  # necessarily a valid producer row inside a computed baseline dataset.
+  mid<-'core.observation_period.boundary_month_count'
+  original<-snapshots[[1]]$rows[[mid]][[1]]
+  target<-paste0(' WHERE release_id=',lit(saved[[1]]$release),' AND metric_id=',lit(mid),' AND row_key=',lit(original$row_key))
+  for(state in c('suppressed','empty_source','empty_population')) {
+    value<-if(state=='suppressed')'NULL' else '0'
+    ex(paste0('UPDATE "',results,'".achillesnext_aggregate_cell SET state=',lit(state),",reason_code='fixture.invalid_baseline_state',interval_count=",value,',person_count=',value,target))
+    emitted<-0L
+    error<-tryCatch({readPopulationObservationBaseline(env$fixtureConnection(),results,saved[[1]]$release,function(mid,row){emitted<<-emitted+1L});'accepted'},error=conditionMessage)
+    stopifnot(grepl('Saved row state is inconsistent',error,fixed=TRUE),emitted==0L)
+    ex(paste0('UPDATE "',results,"\".achillesnext_aggregate_cell SET state='computed',reason_code=NULL,interval_count=",original$values$interval_count,',person_count=',original$values$person_count,target))
+  }
+  # Genuine all-ineligible summaries remain readable in a computed dataset.
+  stopifnot(any(vapply(snapshots[[1]]$rows[['core.observation_period.first_age_summary']],function(row)row$row_kind=='summary'&&row$state=='empty_population'&&identical(row$values$n,'0'),TRUE)))
+  inspect(saved[[1]]$release)
   # Source access is revoked while saved readback is replayed in a fresh process.
   for(v in saved)ex(paste0('REVOKE ALL ON SCHEMA "',v$schema,'" FROM achilles_next_runner'))
   script<-file.path(out,'offline-reader.R')

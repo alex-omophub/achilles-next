@@ -35,7 +35,9 @@ readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,re
       .store_rows(tx,releaseId,mid,function(row,key) {
         .population_need(is.null(last)||.v2_less(last,key),"Duplicate/unordered saved baseline row")
         last<<-key;count<<-.nv_add(count,"1")
-        if(d$state%in%c("empty_source","empty_population")) .population_need(row$state==d$state,"Saved empty dataset contains nonempty rows")
+        allowed<-if(d$state=="computed") row$state=="computed" ||
+          (row$row_kind=="summary" && row$state=="empty_population" && identical(row$values$n,"0")) else row$state==d$state
+        .population_need(allowed,"Saved row state is inconsistent with its baseline dataset")
       })
       .population_need(count==d$rows,"Saved baseline row count mismatch")
     }

@@ -120,11 +120,16 @@ to have no base-results/CDM access.
 After installing the package and configuring the marked synthetic sandbox/JDBC:
 
 ```sh
+population_proof_root="$(mktemp -d "${TMPDIR:-/tmp}/achillesnext-population.XXXXXX")"
 python3 tools/test_population_baseline.py \
-  --config tools/tracer_fixture_config.R --output-dir /new/private/population-proof
-Rscript --vanilla tests/tracer/result-wire.R /tmp/population-row-corpus.json
-node packages/contracts/tools/validate-v2-corpus.mjs /tmp/population-row-corpus.json
+  --config tools/tracer_fixture_config.R --output-dir "$population_proof_root/baseline"
+Rscript --vanilla tests/tracer/result-wire.R "$population_proof_root/row-corpus.json"
+node packages/contracts/tools/validate-v2-corpus.mjs "$population_proof_root/row-corpus.json"
 ```
+
+The temporary parent is private and writable; the baseline child does not exist
+yet, as required by the harness. Keep it outside the checkout and retain or remove
+the temporary evidence after review.
 
 The independent Python day-set/integer-rank oracle checks all 19 results, states
 and denominators for eight tiny cases under three declared schema versions.
