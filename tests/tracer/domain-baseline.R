@@ -55,6 +55,16 @@ main<-function() {
     writeLines(wire(list(snapshots=snapshots,implementation=implementation)),file.path(out,'partial-report.json'),useBytes=TRUE)
     cat('GENERATED ',case$case,' ',case$version,'\n',sep='')
   }
+  # Budget checks use the small empty-source release to keep CI inexpensive.
+  emptyIndex<-which(vapply(input,function(c)c$case=='empty_source'&&c$version=='5.5',TRUE))[1]
+  mid<-'core.person.count';sample<-snapshots[[emptyIndex]]$rows[[mid]][[1]]
+  size<-length(serialize(list(metric_id=mid,row=sample),NULL,version=3,xdr=FALSE));emitted<-0L
+  readDomainBaseline(env$fixtureConnection(),results,saved[[emptyIndex]]$release,function(id,row){stopifnot(identical(wire(row),wire(sample)));emitted<<-emitted+1L},mid,maxSpoolBytes=size)
+  stopifnot(emitted==1L)
+  emitted<-0L
+  error<-tryCatch({readDomainBaseline(env$fixtureConnection(),results,saved[[emptyIndex]]$release,function(...){emitted<<-emitted+1L},mid,maxSpoolBytes=size-1L);'accepted'},error=conditionMessage)
+  stopifnot(grepl('Read spool byte limit exceeded',error,fixed=TRUE),emitted==0L,
+    length(Sys.glob(file.path(tempdir(),'achillesnext-read-*')))==0L)
   # Page exact stored concept identities, including NULL/0/unknown, but not ALL.
   page<-listDomainConcepts(env$fixtureConnection(),results,saved[[1]]$release,'condition',2)
   tags<-page$concepts;cursor<-page$next_cursor

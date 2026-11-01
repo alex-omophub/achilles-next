@@ -2,13 +2,17 @@
 \alias{readPopulationObservationBaseline}
 \title{Stream saved restricted population and observation aggregates}
 \usage{
-readPopulationObservationBaseline(connectionDetails, resultsSchema, releaseId, visit)
+readPopulationObservationBaseline(connectionDetails, resultsSchema, releaseId, visit,
+  maxSpoolBytes = 64 * 1024^2)
 }
 \arguments{
 \item{connectionDetails}{PostgreSQL credentials with SELECT on restricted results;
 no CDM permission is needed.}
 \item{resultsSchema}{Restricted results schema.}
 \item{releaseId}{UUID returned by the population/observation generator.}
+\item{maxSpoolBytes}{Maximum total private spool bytes, a nonnegative integer
+up to 2^53; default 64 MiB. Exceeding the limit fails before visitor output and
+removes the spool.}
 \item{visit}{Function called with metric ID and each exact saved row.}
 }
 \description{Checks the generated baseline inventory and numerical rows, then

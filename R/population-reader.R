@@ -3,14 +3,16 @@
 #' @param resultsSchema Restricted results schema.
 #' @param releaseId UUID returned by the population/observation generator.
 #' @param visit Function called with metric ID and each exact saved row.
+#' @param maxSpoolBytes Total private spool byte limit; nonnegative integer.
 #' @return Source/profile/inventory/scope metadata. This is restricted building
 #'   release readback, not an approved publication or UI provider.
 #' @export
-readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,releaseId,visit) {
-  .baseline_read(connectionDetails,resultsSchema,releaseId,visit,FALSE)
+readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,maxSpoolBytes=64*1024^2) {
+  .baseline_read(connectionDetails,resultsSchema,releaseId,visit,FALSE,maxSpoolBytes=maxSpoolBytes)
 }
-.baseline_read <- function(connectionDetails,resultsSchema,releaseId,visit,domainMode,beforeEmit=NULL) {
+.baseline_read <- function(connectionDetails,resultsSchema,releaseId,visit,domainMode,beforeEmit=NULL,maxSpoolBytes=64*1024^2,select=NULL) {
   .population_need(is.function(visit),"A streaming row visitor is required")
+  .baseline_spool_limit(maxSpoolBytes)
   .store_transaction(connectionDetails,resultsSchema,function(tx) {
     id<-.store_uuid(releaseId);s<-tx$schema;assets<-.v2_assets();ids<-c(.population_ids(),if(domainMode).domain_ids() else character())
     context<-.store_decode(tx$one(paste0("SELECT jsonb_build_object('release_id',r.release_id::text,'run_id',a.run_id::text,'source_id',src.source_id,",
@@ -40,7 +42,7 @@ readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,re
     # Reject unsupported selections before expensive row traversal. No visitor
     # sees a row until every saved dataset has passed validation.
     if(!is.null(beforeEmit))beforeEmit(tx)
-    .baseline_emit_rows(tx,releaseId,ids,datasets,visit,domainMode,telemetry$care_reason)
+    .baseline_emit_rows(tx,releaseId,ids,datasets,visit,domainMode,telemetry$care_reason,maxSpoolBytes,select)
     c(context,.object(generated_metric_count=as.character(length(ids)),profile_complete=FALSE,publishable=FALSE,inventory=inventory,
       scope=telemetry$request,observed_window=telemetry$observed_window,population_window=telemetry$population_window %||% telemetry$observed_window,generation=.object(started_at=telemetry$started_at,ended_at=telemetry$ended_at),
       consistency="single_repeatable_read_saved_results",reusable_source_identity=FALSE))
@@ -50,7 +52,11 @@ readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,re
 # Validate once, then replay trusted locally serialized rows. The private spool
 # bounds memory and preserves exact strings/NULLs without a second database scan
 # or a second schema/denominator validation. It is deleted on every exit path.
-.baseline_emit_rows <- function(tx,releaseId,ids,datasets,visit,domainMode,careReason=NULL) {
+.baseline_spool_limit <- function(value) {
+  .population_need(is.numeric(value)&&length(value)==1L&&!is.na(value)&&is.finite(value)&&value>=0&&value<=2^53&&value==floor(value),"Invalid read spool byte limit")
+}
+.baseline_emit_rows <- function(tx,releaseId,ids,datasets,visit,domainMode,careReason=NULL,maxSpoolBytes=64*1024^2,select=NULL) {
+  .baseline_spool_limit(maxSpoolBytes)
   folder<-tempfile("achillesnext-read-")
   .population_need(dir.create(folder,mode="0700"),"Cannot create private read spool")
   writer<-NULL;reader<-NULL
@@ -59,7 +65,7 @@ readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,re
     if(!is.null(reader))try(close(reader),silent=TRUE)
     unlink(folder,recursive=TRUE)
   },add=TRUE)
-  path<-file.path(folder,"rows");writer<-file(path,"wb");Sys.chmod(path,"0600");written<-"0"
+  path<-file.path(folder,"rows");writer<-file(path,"wb");Sys.chmod(path,"0600");written<-"0";bytes<-0
   for(mid in ids) {
     count<-"0";last<-NULL;d<-datasets[[mid]]
     .store_rows(tx,releaseId,mid,function(row,key) {
@@ -70,8 +76,12 @@ readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,re
       if(domainMode && mid=="core.visit.care_setting_count" && row$dimensions$setting_kind=="place_of_service" && !is.null(careReason))
         allowed<-identical(row$state,if(careReason=='capability.care_site_absent')'unsupported' else 'unavailable')&&identical(row$reason_code,careReason)&&identical(row$dimensions$setting_concept_tag$kind,'schema_absent')&&is.null(row$values)
       .population_need(allowed,"Saved row state is inconsistent with its baseline dataset")
-      serialize(list(metric_id=mid,row=row),writer,version=3,xdr=FALSE)
-      written<<-.nv_add(written,"1")
+      if(is.null(select)||isTRUE(select(mid,row))) {
+        payload<-serialize(list(metric_id=mid,row=row),NULL,version=3,xdr=FALSE)
+        .population_need(length(payload)<=maxSpoolBytes-bytes,"Read spool byte limit exceeded; no rows emitted")
+        writeBin(payload,writer);bytes<<-bytes+length(payload)
+        written<<-.nv_add(written,"1")
+      }
     })
     .population_need(count==d$rows,"Saved baseline row count mismatch")
   }

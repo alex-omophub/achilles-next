@@ -3,13 +3,18 @@
 \title{Stream exact saved domain baseline rows without source access}
 \usage{
 readDomainBaseline(connectionDetails, resultsSchema, releaseId, visit,
-  metricIds = NULL, conceptTag = NULL, period = NULL)
+  metricIds = NULL, conceptTag = NULL, period = NULL,
+  maxSpoolBytes = 64 * 1024^2)
 }
 \arguments{
 \item{connectionDetails}{PostgreSQL credentials with SELECT on restricted results.}
 \item{resultsSchema}{Restricted result schema.}
 \item{releaseId}{UUID returned by \code{generateDomainBaseline}.}
 \item{visit}{Function called with a metric identifier and each saved exact row.}
+\item{maxSpoolBytes}{Maximum total private spool bytes, a nonnegative integer
+up to 2^53. The default is 64 MiB. Only selected rows consume this budget; all
+saved datasets are still validated. Exceeding it fails before any visitor output
+and removes the spool.}
 \item{metricIds}{Optional nonempty character subset of generated metric IDs.}
 \item{conceptTag}{Optional typed concept selector, e.g. \code{list(kind="all")},
 \code{list(kind="null")} or \code{list(kind="id", value="123")}.}

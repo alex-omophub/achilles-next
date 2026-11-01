@@ -167,3 +167,8 @@ record counts, interpolated distributions and all-recorded counts have different
 semantics and are not parity targets. Specimen is checked against the independent
 oracle; no equivalent legacy report is claimed. This optional comparison adds no
 runtime dependency to AchillesNext and is separate from the default CI oracle.
+
+Reader spools store only selected rows and are capped at 64 MiB by default
+(`maxSpoolBytes`). Every saved dataset is still validated before emission.
+A budget failure emits no rows and removes the temporary spool; operators can
+explicitly raise the limit for larger approved local workloads.

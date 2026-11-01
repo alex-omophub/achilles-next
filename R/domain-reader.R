@@ -7,7 +7,7 @@
 #' @return Restricted baseline metadata and the exact saved selection. This is
 #'   not an approved provider. Unsupported date grains require new generation.
 #' @export
-readDomainBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,metricIds=NULL,conceptTag=NULL,period=NULL) {
+readDomainBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,metricIds=NULL,conceptTag=NULL,period=NULL,maxSpoolBytes=64*1024^2) {
   ids<-c(.population_ids(),.domain_ids())
   .population_need(is.null(metricIds)||(is.character(metricIds)&&length(metricIds)>0L&&!anyDuplicated(metricIds)&&all(metricIds%in%ids)),"Choose generated baseline metric IDs")
   if(!is.null(conceptTag)){.v2_component(conceptTag,'concept_tag');.population_need(conceptTag$kind!='schema_absent','Invalid concept selector')}
@@ -30,12 +30,13 @@ readDomainBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,m
       " AND metric_id IN (",paste(vapply(selected,.store_literal,""),collapse=","),") AND dimensions @> ",.store_literal(.json(period)),"::jsonb GROUP BY metric_id"),function(mid)available<<-c(available,mid))
     .population_need(setequal(available,selected),'Period not precomputed for every selected metric; generation is required')
   }
-  context<-.baseline_read(connectionDetails,resultsSchema,releaseId,function(mid,row) {
-    if(!mid%in%selected)return(invisible(NULL))
-    if(!is.null(conceptTag)&&(is.null(row$dimensions$concept_tag)||!identical(.json(conceptTag),.json(row$dimensions$concept_tag))))return(invisible(NULL))
-    if(!is.null(period)&&(is.null(row$dimensions$period_kind)||!identical(.json(row$dimensions[names(period)]),.json(period))))return(invisible(NULL))
-    visit(mid,row)
-  },TRUE,checkPeriods)
+  selectRow<-function(mid,row) {
+    if(!mid%in%selected)return(FALSE)
+    if(!is.null(conceptTag)&&(is.null(row$dimensions$concept_tag)||!identical(.json(conceptTag),.json(row$dimensions$concept_tag))))return(FALSE)
+    if(!is.null(period)&&(is.null(row$dimensions$period_kind)||!identical(.json(row$dimensions[names(period)]),.json(period))))return(FALSE)
+    TRUE
+  }
+  context<-.baseline_read(connectionDetails,resultsSchema,releaseId,visit,TRUE,checkPeriods,maxSpoolBytes,selectRow)
   c(context,.object(selection=.object(metric_ids=as.list(selected),concept_tag=conceptTag,period=period)))
 }
 

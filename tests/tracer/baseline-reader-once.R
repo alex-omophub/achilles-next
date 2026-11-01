@@ -23,4 +23,22 @@ stopifnot(grepl('Saved row state is inconsistent',error,fixed=TRUE),emitted==0L,
 bad<-FALSE
 error<-tryCatch({emit(NULL,'unused',ids,datasets,function(...)stop('visitor stopped'),FALSE);NULL},error=conditionMessage)
 stopifnot(error=='visitor stopped',identical(spools(),before))
-cat('ONE_DATABASE_PASS_EXACT_PRIVATE_REPLAY_LATE_FAILURE_NO_EMISSION_AND_CLEANUP_OK\n')
+# Exact aggregate byte budget: fail before emission and clean up on overflow.
+size<-length(serialize(list(metric_id='first',row=row),NULL,version=3,xdr=FALSE))
+reads<-character();emitted<-0L
+error<-tryCatch({emit(NULL,'unused',ids,datasets,function(...){emitted<<-emitted+1L},FALSE,maxSpoolBytes=size);NULL},error=conditionMessage)
+stopifnot(grepl('Read spool byte limit exceeded',error,fixed=TRUE),emitted==0L,identical(spools(),before))
+reads<-character();emitted<-0L
+emit(NULL,'unused',ids,datasets,function(mid,value){stopifnot(mid=='first',identical(value,row));emitted<<-emitted+1L},FALSE,
+  maxSpoolBytes=size,select=function(mid,row)mid=='first')
+stopifnot(identical(reads,ids),emitted==1L,identical(spools(),before))
+# Discarded rows still undergo validation, including a late invalid dataset.
+bad<-TRUE;emitted<-0L
+error<-tryCatch({emit(NULL,'unused',ids,datasets,function(...){emitted<<-emitted+1L},FALSE,
+  maxSpoolBytes=size,select=function(mid,row)mid=='first');NULL},error=conditionMessage)
+stopifnot(grepl('Saved row state is inconsistent',error,fixed=TRUE),emitted==0L,identical(spools(),before))
+bad<-FALSE
+for(limit in list(-1,0.5,NA_real_,Inf,2^54,'100')) {
+ stopifnot(inherits(try(emit(NULL,'unused',ids,datasets,function(...){},FALSE,maxSpoolBytes=limit),silent=TRUE),'try-error'),identical(spools(),before))
+}
+cat('ONE_PASS_EXACT_REPLAY_SELECTION_BUDGET_LATE_FAILURE_NO_EMISSION_AND_CLEANUP_OK\n')

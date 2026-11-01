@@ -29,6 +29,8 @@ class CiRuntimeTests(unittest.TestCase):
             result=subprocess.run(['sh',str(ROOT/'tools/ci/psql'),'-X','-c','SELECT 1'],input='input unchanged',capture_output=True,text=True,env=env,check=True)
             value=json.loads(result.stdout);self.assertEqual(value['args'][:2],['exec','-i'])
             self.assertIn('achillesnext-psql-client',value['args']);self.assertNotIn('run',value['args'])
+            pairs=[value['args'][i:i+2] for i in range(len(value['args'])-1)]
+            self.assertIn(['--env','PGOPTIONS'],pairs)
             self.assertEqual(value['args'][-4:],['psql','-X','-c','SELECT 1'])
             self.assertEqual(value['options'],'-c timezone=UTC');self.assertEqual(value['input'],'input unchanged')
 

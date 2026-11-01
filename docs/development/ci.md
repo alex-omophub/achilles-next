@@ -41,3 +41,8 @@ lazy UI provider.
 Local timing evidence does not establish hosted-runner speed or large-CDM
 performance. Compare step durations on the next user-pushed run; no extra remote
 benchmark or scheduled workflow is started automatically.
+
+Reader spools store only selected rows and are capped at 64 MiB by default
+(`maxSpoolBytes`). Every saved dataset is still validated before emission.
+A budget failure emits no rows and removes the temporary spool; operators can
+explicitly raise the limit for larger approved local workloads.
