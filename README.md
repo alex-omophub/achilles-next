@@ -39,6 +39,12 @@ The [v1 result/provider/embed contracts](docs/contracts/v1.md) add versioned sch
 
 The [synthetic PostgreSQL reference benchmark](docs/benchmark/reference.md) checks pinned legacy counts/distributions against an independent oracle and captures separate execution/export timings on fixture and deterministic cardinality workloads.
 
+The experimental [core batch planner](docs/development/batch-planner.md) enumerates
+all 142 frozen core results across 51 dependency nodes, with explicit shared-input
+candidates and exact grains. It plans full-history/all-concept work; complete core
+domain generation remains unimplemented. A small synthetic harness compares
+reference and transaction-private materialization with independent numerical oracles.
+
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 
 ## Relationship to OHDSI

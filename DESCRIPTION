@@ -7,7 +7,9 @@ Description: Computes exact counts, observation opportunity and bounded measurem
     representations and reference distributions from marked synthetic PostgreSQL
     fixtures and writes versioned aggregate bundles for a reusable React view.
     Provides durable execution, approved synthetic publication, cancellation and
-    isolated recovery with conservative recomputation. This development tracer
+    isolated recovery with conservative recomputation. Includes an experimental
+    complete-profile batch planner and transaction-scoped staging primitives
+    for developer evaluation. This development tracer
     does not implement institutional execution or general input reuse.
 License: Apache License (>= 2)
 Encoding: UTF-8
