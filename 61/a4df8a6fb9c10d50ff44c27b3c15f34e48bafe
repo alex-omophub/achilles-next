@@ -1,0 +1,43 @@
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_87e22beaca5257 32-33
+tests/tracer/baseline-reader-once.R
+  s_895f6ebe145fd3::t_c0f3c310a4163a 26-44
+tests/tracer/domain-baseline.R
+  s_3e206b4a2cf4c3::t_c01c63a470a0d6 58-67
+man/readPopulationObservationBaseline.Rd
+  s_3e206b4a2cf4c3::t_70ca59823f2e4f 5-6,13-15
+R/population-reader.R
+  s_895f6ebe145fd3::t_87e22beaca5257 6,10-11,13,15,45,55-59,68,79-84
+R/domain-reader.R
+  s_895f6ebe145fd3::t_87e22beaca5257 10,33-39
+man/readDomainBaseline.Rd
+  s_3e206b4a2cf4c3::t_70ca59823f2e4f 6-7,14-17
+docs/development/domain-baseline.md
+  s_3e206b4a2cf4c3::t_70ca59823f2e4f 170-174
+docs/development/ci.md
+  s_3e206b4a2cf4c3::t_70ca59823f2e4f 44-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "61a4df8a6fb9c10d50ff44c27b3c15f34e48bafe",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
