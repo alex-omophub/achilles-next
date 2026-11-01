@@ -5,7 +5,8 @@
 The plan enumerates 51 topologically ordered logical modules, their dependencies,
 physical input columns, output populations and exact grains. Logical modules are
 not promises of one SQL statement each. Full domain result generation is not yet
-implemented; the plan explicitly reports `planning_only` and each module reports
+implemented; the plan explicitly reports `planning_only`. Population/observation
+kernels identify `available_in_population_baseline`; other modules report
 `not_implemented`. The existing 15-output development tracer remains separate.
 
 ```r

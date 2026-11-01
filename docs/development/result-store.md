@@ -18,8 +18,10 @@ The prefix distinguishes these objects from legacy Achilles tables such as
 `achilles_results`. The installer creates new schemas; it does not rename existing
 experimental stores or legacy Achilles objects.
 
-The core numerical profile defines 142 domain results. **Domain generation for
-this profile is not implemented by these APIs.** The existing synthetic tracer
+The core numerical profile defines 142 domain results. These storage APIs do not
+compute domain results. The separate [baseline producer](population-baseline.md)
+generates 19 population/observation outputs into a building core release; other
+domains remain ungenerated. The existing synthetic tracer
 continues to generate its frozen 15-output format. These are separately versioned
 storage/publication APIs for an already populated core-profile release.
 

@@ -146,8 +146,15 @@
     ]
   },
   "ethnicity_concept_id": {
-    "type": "string",
-    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+    "anyOf": [
+      {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+      },
+      {
+        "const": "null"
+      }
+    ]
   },
   "event_count": {
     "type": "string",
@@ -184,8 +191,15 @@
     ]
   },
   "gender_concept_id": {
-    "type": "string",
-    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+    "anyOf": [
+      {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+      },
+      {
+        "const": "null"
+      }
+    ]
   },
   "interval_count": {
     "type": "string",
@@ -247,8 +261,15 @@
     ]
   },
   "period_type_concept_id": {
-    "type": "string",
-    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+    "anyOf": [
+      {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+      },
+      {
+        "const": "null"
+      }
+    ]
   },
   "phase": {
     "enum": [
@@ -316,8 +337,15 @@
     ]
   },
   "race_concept_id": {
-    "type": "string",
-    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+    "anyOf": [
+      {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+      },
+      {
+        "const": "null"
+      }
+    ]
   },
   "raw_operator_tag": {
     "oneOf": [
@@ -671,7 +699,14 @@
     "pattern": "^(unknown|0|[1-9][0-9]?|1[0-2][0-9]|130)$"
   },
   "year_of_birth": {
-    "type": "string",
-    "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+    "anyOf": [
+      {
+        "type": "string",
+        "pattern": "^(0|[1-9][0-9]*|-[1-9][0-9]*)$"
+      },
+      {
+        "const": "null"
+      }
+    ]
   }
 }

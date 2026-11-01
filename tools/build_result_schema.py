@@ -41,7 +41,9 @@ for name in sorted(all_dims):
     elif name == 'year_age_or_unknown': schema = string(r'^(unknown|0|[1-9][0-9]?|1[0-2][0-9]|130)$')
     elif name in ['period_start','period_end']:
         schema = {'anyOf': [{'type':'string','format':'date'}, {'enum':['null','undated']}]}
-    elif name in ['year','year_of_birth','event_count','concept_count','interval_count','domain_count','floor_days_div_30'] or name.endswith('_concept_id'): schema = integer
+    elif name in ['year_of_birth','gender_concept_id','race_concept_id','ethnicity_concept_id','period_type_concept_id']:
+        schema = {'anyOf': [integer, {'const': 'null'}]}
+    elif name in ['year','event_count','concept_count','interval_count','domain_count','floor_days_div_30'] or name.endswith('_concept_id'): schema = integer
     elif name in ['present','full_calendar_period']: schema = {'enum':['true','false']}
     elif name in ['presence_bits','representation_flags']: schema = string(r'^[01X]{1,16}$')
     else: schema = string(r'^[A-Za-z0-9._:-]{1,128}$')

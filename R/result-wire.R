@@ -38,6 +38,7 @@
   }
   integer <- name %in% c("integer", "year", "year_of_birth", "event_count", "concept_count", "interval_count", "domain_count", "floor_days_div_30") || grepl("_concept_id$", name)
   if (integer) {
+    if(x=="null" && name%in%c("year_of_birth","gender_concept_id","race_concept_id","ethnicity_concept_id","period_type_concept_id")) return("N")
     .nv_need(grepl("^(0|[1-9][0-9]*|-[1-9][0-9]*)$", x), "Invalid integer dimension")
     neg <- startsWith(x, "-"); digits <- sub("^-", "", x); n <- nchar(digits)
     .nv_need(n <= 512L)
