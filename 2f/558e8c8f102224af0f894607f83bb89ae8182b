@@ -1,0 +1,40 @@
+tests/tracer/source-store-offline.R
+  s_895f6ebe145fd3::t_2e19d39d892bad 1-57
+docs/development/source-store-boundaries.md
+  s_895f6ebe145fd3::t_f6a873493d9718 1-168
+R/profile-source.R
+  s_3e206b4a2cf4c3::t_f488bef2603bce 1-28,41-44
+  s_3e206b4a2cf4c3::t_8d7acafd095a7f 29-40
+docs/development/registered-analyses.md
+  s_895f6ebe145fd3::t_23985c0b99cca7 89-91
+docs/development/result-store.md
+  s_895f6ebe145fd3::t_cf3745109f22cf 7-10
+R/profile-generation.R
+  s_3e206b4a2cf4c3::t_f488bef2603bce 57-59,73-74
+.github/workflows/count-tracer.yml
+  s_3e206b4a2cf4c3::t_8d7acafd095a7f 161
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2f558e8c8f102224af0f894607f83bb89ae8182b",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
