@@ -1,5 +1,8 @@
 # CI runtime and coverage
 
+The [conformance guide](conformance.md) groups the contributor commands by
+compatibility and safety boundary, including saved-bundle viewer checks.
+
 The PostgreSQL workflow uses a 30-minute budget for routine runs and a 60-minute
 budget only for an explicitly requested wider manual run. It runs one job per
 pull request or main push and cancels
@@ -46,3 +49,10 @@ Reader spools store only selected rows and are capped at 64 MiB by default
 (`maxSpoolBytes`). Every saved dataset is still validated before emission.
 A budget failure emits no rows and removes the temporary spool; operators can
 explicitly raise the limit for larger approved local workloads.
+
+The measurement baseline adds one step to this same cached job, with no additional
+runtime installation or job. Its default smoke uses the 5.5 adversarial and
+empty-source fixtures and compares weighted summaries with physical-row reference
+sorting. Run `tools/test_measurement_baseline.py --full-matrix` locally for the
+5.3/5.4 schemas, empty-domain and unobserved cases. This is a numerical/safety
+suite, not a timing benchmark or production-scale qualification.

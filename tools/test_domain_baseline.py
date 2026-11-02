@@ -89,7 +89,7 @@ def physical(case, version):
             if d['record_id']:r[d['record_id']]=e['id']
             if d['end_date'] in r:r[d['end_date']]=e['end']
             if domain=='condition':r['condition_status_concept_id']=e['coded']
-            if domain=='drug':r.update(days_supply=None if e['value'] in [None,'NaN','Infinity'] else str(int(Decimal(e['value']))),refills='0',quantity=e['value'])
+            if domain=='drug':r.update(days_supply=None if e['value'] is None or not Decimal(e['value']).is_finite() else str(int(Decimal(e['value']))),refills='0',quantity=e['value'])
             if domain=='visit':
                 r.update(care_site_id='1' if e['id'] in ['0','1'] else '999')
                 for col in r:
@@ -117,7 +117,9 @@ def physical(case, version):
     return dict(columns=dict(columns),tables=tables)
 
 
-def oracle(case,version):
+def oracle(case,version,domain_names=None,metric_specs=None,physical_model=None):
+    domain_names = DOMAINS if domain_names is None else domain_names
+    metric_specs = METRICS if metric_specs is None else metric_specs
     # Build observation membership independently as day sets, not SQL islands.
     people={p['person_id']:p for p in case['person']};days=defaultdict(set)
     from datetime import timedelta
@@ -131,7 +133,7 @@ def oracle(case,version):
     if dates:
         for kind,lo,hi,_ in periods(date(min(dates).year,1,1),date(max(dates).year,12,31)):
             if kind=='calendar_year' or (kind=='calendar_month' and (lo.year,lo.month)>=(min(dates).year,min(dates).month) and (lo.year,lo.month)<=(max(dates).year,max(dates).month)):scopes.append((kind,lo,hi,True))
-    output={m['id']:{} for m in METRICS}
+    output={m['id']:{} for m in metric_specs}
     def put(mid,dims,values):
         key=canon(dims)
         assert key not in output[mid],(mid,dims)
@@ -156,9 +158,9 @@ def oracle(case,version):
             v=None if e[key] is None else Decimal(e[key]);reason='value_missing' if v is None else 'value_non_finite' if not v.is_finite() else 'value_negative' if v<0 else 'eligible'
             groups[canon(dim(e))].append((reason,v))
         summary(mid,groups,REASONS['nonnegative_scalar_order'],'record_count')
-    model=physical(case,version)
+    model=physical(case,version) if physical_model is None else physical_model
     density=Counter()
-    for domain in DOMAINS:
+    for domain in domain_names:
         core='core.'+domain+'.';observed='observed.'+domain+'.';d=PROFILE['domains'][domain];rows=[]
         for e,r in zip(case['events'],model['tables'][d['table']]):
             x=dict(e);x['record']=r
