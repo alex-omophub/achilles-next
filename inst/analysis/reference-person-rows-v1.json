@@ -1,0 +1,31 @@
+{
+  "profile_sha256": "2cd3423e5ad4bb9a51fe7a12583d808a2a12aac6ce4ba8894b4ca5baed572baf",
+  "metrics": [
+    {
+      "id": "example.person.count",
+      "version": "1.0.0",
+      "dimensions": [],
+      "row_schema_id": "v2:example.person.count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    },
+    {
+      "id": "example.person.gender_count",
+      "version": "1.0.0",
+      "dimensions": [
+        "gender_concept_id"
+      ],
+      "row_schema_id": "v2:example.person.gender_count:1.0.0",
+      "value_keys_by_row_kind": {
+        "counts": [
+          "person_count"
+        ]
+      },
+      "extra_dimensions_by_row_kind": {}
+    }
+  ]
+}

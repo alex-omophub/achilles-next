@@ -1,6 +1,6 @@
 # A typed write seam for trusted aggregate producers; never accepts patient rows.
-.store_put_row <- function(tx,releaseId,metricId,row) {
-  key<-.v2_row(metricId,row)
+.store_put_row <- function(tx,releaseId,metricId,row,assets = .v2_assets()) {
+  key<-.v2_row(metricId,row,assets)
   columns<-c(record_count="record_count",person_count="person_count",person_days="person_days",interval_count="interval_count",
     n="n",sum="sum_value",min="minimum",max="maximum",p10="p10",p25="p25",p50="p50",p75="p75",p90="p90")
   columns<-columns[names(columns)%in%names(row$values)]

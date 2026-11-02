@@ -157,7 +157,9 @@ jobs:
       - name: Check core batch planning and private staging
         run: |
           Rscript --vanilla tests/tracer/analysis-definitions.R
+          Rscript --vanilla tests/tracer/registered-profile-offline.R
           Rscript --vanilla tests/tracer/batch-plan.R
+          python3 tools/test_result_serving.py --test-script registered-profile --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/registered-profile" --admin-host 127.0.0.1 --admin-user postgres
           python3 tools/benchmark/batch_primitives.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/batch-primitives" --trials 1
       - name: Verify persisted population and observation baseline
         run: python3 tools/test_population_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/population-baseline"

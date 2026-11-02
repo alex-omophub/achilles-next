@@ -31,7 +31,7 @@ readResultObject <- function(connectionDetails,servingSchema,sourceId,publicatio
     .nv_need(.v2_hash(bytes)==sha && (is.null(descriptor)||as.character(length(bytes))==descriptor$bytes))
     doc <- .nv_json(bytes)
     .nv_need(doc$contract_version=="2.0.0"&&doc$publication_id==publicationId&&doc$source_id==sourceId&&doc$access_scope_id==accessScopeId)
-    .nv_need(doc$profile_sha256==.v2_assets()$hash)
+    invisible(.profile_context(doc))
     bytes
   },readOnly=TRUE),error=function(e)stop("Approved result page unavailable or invalid",call.=FALSE))
 }

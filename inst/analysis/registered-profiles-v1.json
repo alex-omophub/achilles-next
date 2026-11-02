@@ -1,0 +1,22 @@
+{
+  "format_version": "1.0.0",
+  "profiles": {
+    "reference-person-v1": {
+      "revision": "1.0.0",
+      "profile": "analysis/reference-person-v1.json",
+      "rows": "analysis/reference-person-rows-v1.json",
+      "analysis": "analysis/reference-person-definitions-v1.json",
+      "producer_sql": "sql/postgresql/reference-person-v1.sql",
+      "check_sql": "sql/postgresql/reference-person-check-v1.sql",
+      "singletons": [
+        "example.person.count"
+      ],
+      "partitions": [
+        {
+          "metric_id": "example.person.gender_count",
+          "target_metric_id": "example.person.count"
+        }
+      ]
+    }
+  }
+}

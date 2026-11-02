@@ -1,0 +1,51 @@
+{
+  "profile_id": "reference-person-v1",
+  "revision": "1.0.0",
+  "metrics": [
+    {
+      "id": "example.person.count",
+      "version": "1.0.0",
+      "family": "person_count",
+      "population": "person_table",
+      "grain": "source",
+      "dimensions": [],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "COUNT(DISTINCT person_id); null/duplicate PERSON IDs fail PERSON-dependent metrics; zero on an accessible empty PERSON table.",
+      "denominator": null,
+      "inputs": [
+        "person.person_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    },
+    {
+      "id": "example.person.gender_count",
+      "version": "1.0.0",
+      "family": "person_count",
+      "population": "person_table",
+      "grain": "person/gender_concept_id",
+      "dimensions": [
+        "gender_concept_id"
+      ],
+      "fields": [
+        "person_count"
+      ],
+      "calculation": "Count unique PERSON members by the raw recorded gender_concept_id; NULL, 0 and other values remain distinct. No demographic imputation.",
+      "denominator": "example.person.count",
+      "inputs": [
+        "person.gender_concept_id",
+        "person.person_id"
+      ],
+      "conditional_inputs": [],
+      "input_aliases": {},
+      "precision": "contract:exact-values",
+      "empty_and_missing": "contract:availability-and-completeness",
+      "availability": "required_when_table_readable"
+    }
+  ]
+}

@@ -30,9 +30,10 @@ the frozen profile hash and participates in batch/run planning identity. Updatin
 executable definitions invalidates old execution plans; saved results continue to
 use their declared frozen profile and row contracts.
 
-The registry is installed package data. This does not provide a public custom
-analysis/plugin API, remote schema loading, measurement generation or a new engine
-adapter. Changes to the registry require package code review and compatibility
+The core registry is installed package data. A separate
+[registered contribution example](registered-analyses.md) demonstrates a bounded
+PERSON-count extension. Neither registry provides remote schema/code loading,
+measurement generation or a new engine adapter. Changes to the registry require package code review and compatibility
 checks, rather than editing installed files.
 
 After installing the package from the checkout, run the focused offline checks:
