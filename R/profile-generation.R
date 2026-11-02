@@ -54,44 +54,26 @@ generateAnalysisProfile <- function(connectionDetails,cdmSchema,sourceId,results
   .store_transaction(connectionDetails,resultsSchema,function(tx) {
     s <- tx$schema;lit <- .store_literal
     .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_profile_registry WHERE profile_sha256=",lit(assets$hash)))=="1","Install the registered profile in the result store first")
-    schemaHash <- .profile_preflight(tx,assets,cdmSchema)
-    check <- .store_decode(tx$one(.profile_sql(assets$entry$check_sql,cdmSchema)))
-    .analysis_keys(check,c("valid","source_count"));.nv_need(isTRUE(check$valid)&&.v2_count(check$source_count),"Invalid registered source membership")
-    empty <- check$source_count=="0";state <- if(empty)"empty_source" else "computed";reason <- if(empty)"source.empty" else NULL
+    sourcePort <- .profile_source(list(one=tx$one,stream=tx$stream),assets,cdmSchema,plan$metric_order,maxRows)
+    schemaHash <- sourcePort$schema_sha256
+    empty <- sourcePort$source_count=="0";state <- if(empty)"empty_source" else "computed";reason <- if(empty)"source.empty" else NULL
     release <- .store_new_uuid();run <- .store_new_uuid();source <- .store_new_uuid()
     unknown <- .object(state="unknown",value=NULL,basis=NULL,assertion_id=NULL,reason_code="source.no_verified_release")
     tx$execute(paste0("INSERT INTO ",s,".achillesnext_source_release VALUES (",.store_uuid(source),",",lit(sourceId),",",lit(.json(unknown)),"::jsonb,",lit(.json(unknown)),"::jsonb,",lit(schemaHash),",",lit(declaredCdmVersion),",now())"))
     tx$execute(paste0("INSERT INTO ",s,".achillesnext_analysis_run(run_id,source_release_id,request_sha256,profile_id,profile_revision,profile_sha256,state,consistency_basis,started_at) VALUES (",
       .store_uuid(run),",",.store_uuid(source),",",lit(plan$plan_sha256),",",lit(profileId),",",lit(assets$profile$revision),",",lit(assets$hash),",'running','single_repeatable_read',now())"))
     tx$execute(paste0("INSERT INTO ",s,".achillesnext_result_release VALUES (",.store_uuid(release),",",.store_uuid(run),",'building',",length(assets$metrics),",0,NULL)"))
-    counts <- stats::setNames(rep(list("0"),length(assets$metrics)),names(assets$metrics));targets <- list();seen <- 0L
     for(mid in names(assets$metrics)) {
       m <- assets$metrics[[mid]]
       values <- c(.store_uuid(release),vapply(c(mid,m$version,m$population,m$grain,assets$rows[[mid]]$row_schema_id,.v2_hash(.v2_bytes(m)),state),lit,""),
         if(is.null(reason))"NULL" else lit(reason),"true","'{\"state\":\"supported\",\"reason_code\":null}'::jsonb","0","'{\"scope_kind\":\"standard_full\",\"complete\":true,\"excluded_record_count\":\"0\",\"reason_code\":null}'::jsonb")
       tx$execute(paste0("INSERT INTO ",s,".achillesnext_dataset VALUES (",paste(values,collapse=","),")"))
     }
-    order <- paste(vapply(seq_along(plan$metric_order),function(i)paste0("WHEN ",lit(plan$metric_order[[i]])," THEN ",i),""),collapse=" ")
-    sql <- paste0("SELECT doc FROM (",.profile_sql(assets$entry$producer_sql,cdmSchema),") q(doc) ORDER BY CASE doc::jsonb->>'metric_id' ",order," ELSE 2147483647 END")
     writer<-.store_writer(tx,release,assets)
-    tx$stream(sql,function(text) {
-      seen <<- seen+1L;.nv_need(seen<=maxRows && nchar(text,type="bytes")<=65536L,"Registered aggregate resource limit")
-      item <- .store_decode(text);.analysis_keys(item,c("metric_id","dimensions","row_kind","values"));mid <- item$metric_id
-      .nv_need(.string(mid)&&mid%in%names(assets$metrics),"Unregistered generated metric")
-      row <- .object(row_key="",dimensions=item$dimensions,row_kind=item$row_kind,state=state,reason_code=reason,values=item$values,denominator_refs=list())
-      spec <- .analysis_denominator(mid,row,assets,forKey=TRUE)
-      if(!is.null(spec)) {
-        target <- targets[[spec$metric_id]];.nv_need(!is.null(target),"Missing generated singleton dependency")
-        row$denominator_refs <- lapply(spec$measures,function(m).object(measure=m$source,metric_id=spec$metric_id,row_key=target$row_key,field=m$target,value=target$values[[m$target]]))
-        .v2_denominator_check(mid,row,function(id,key)target$dimensions,assets)
-      }
-      row$row_key <- .v2_row_identity(assets$rows[[mid]],row);writer$add(mid,row)
-      counts[[mid]] <<- .nv_add(counts[[mid]],"1")
-      if(mid%in%assets$singletons) {.nv_need(counts[[mid]]=="1","Duplicate generated singleton");targets[[mid]] <<- row}
-    })
+    generated <- .profile_consume(sourcePort,writer,assets)
+    counts <- generated$counts;seen <- generated$seen
     persistence<-writer$finish()
     for(mid in names(counts)) tx$execute(paste0("UPDATE ",s,".achillesnext_dataset SET row_count=",counts[[mid]]," WHERE release_id=",.store_uuid(release)," AND metric_id=",lit(mid)))
-    .nv_need(all(vapply(counts[assets$singletons],function(n)n=="1",TRUE)),"Missing generated singleton")
     .profile_store_checks(tx,release,NULL,assets)
     tx$execute(paste0("INSERT INTO ",s,".achillesnext_operation VALUES (",.store_uuid(run),",'registered.generate',",lit(.hash(.json(plan$definitions))),",'succeeded','[]',",lit(.json(.object(persistence=persistence))),"::jsonb); UPDATE ",s,".achillesnext_analysis_run SET state='succeeded',finished_at=now() WHERE run_id=",.store_uuid(run)))
     list(release_id=release,profile_id=profileId,state="building",publishable=FALSE,aggregate_rows=as.character(seen),profile_complete=TRUE)

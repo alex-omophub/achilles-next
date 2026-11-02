@@ -4,6 +4,10 @@
 refusing existing schemas and overlap with declared source schemas. It grants no
 serving access and never modifies CDM tables. Use a dedicated installer account.
 
+The [source/store boundary guide](source-store-boundaries.md) describes the
+implemented transaction topology, internal aggregate interfaces and exact numeric
+requirements for future source adapters. Only the PostgreSQL path is implemented.
+
 ```r
 initializeResultStore(connectionDetails, "achillesnext_results", "achillesnext_serve",
                       sourceSchemas = c("cdm", "vocabulary"))
