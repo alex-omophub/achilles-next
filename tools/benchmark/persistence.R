@@ -11,6 +11,7 @@ main<-function() {
   on.exit(DatabaseConnector::disconnect(connection),add=TRUE)
   metadata<-rJava::.jcall(connection@jConnection,"Ljava/sql/DatabaseMetaData;","getMetaData")
   runtime<-list(R=R.version.string,platform=R.version$platform,architecture=Sys.info()[["machine"]],
+    database_connector=as.character(utils::packageVersion("DatabaseConnector")),
     java=rJava::.jcall("java/lang/System","S","getProperty","java.version"),
     jdbc_driver=rJava::.jcall(metadata,"S","getDriverVersion"),logical_cpus=parallel::detectCores())
   harness<-stats::setNames(lapply(c("tools/benchmark/persistence.R","tools/benchmark/persistence.py"),function(p)digest::digest(file=p,algo="sha256")),c("R","python"))
