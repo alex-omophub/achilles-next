@@ -1,5 +1,8 @@
 # Eight-domain baseline and concept/time reports
 
+Numerical aggregates use the shared [bounded persistence writer](persistence.md),
+with metric-boundary flushes for denominator visibility and generation telemetry.
+
 `generateDomainBaseline()` batch-generates the 100 frozen condition, drug,
 procedure, visit, device, observation, death, specimen and density outputs, with
 19 population/observation dependencies in the same repeatable-read transaction.

@@ -84,6 +84,9 @@ transaction, checks unique/non-null PERSON membership and accepts exact integer
 source columns. `maxRows` bounds transferred aggregate rows; it is not a limit on
 the source database's scan or sort. Per-statement timeouts are explicit.
 
+Writes use the shared [bounded numerical persistence](persistence.md) path;
+flushing a batch does not publish it or create a durable source checkpoint.
+
 Publication reads saved aggregates only. Existing `readResultObject()` accepts
 the complete pinned source/publication/scope/root context through an approved
 serving role and validates the registered profile identity. Generation is always

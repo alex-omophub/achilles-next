@@ -157,6 +157,7 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
       if(present){.v2_dataset(d);datasets[[mid]]<-d}
       tx$execute(paste0("INSERT INTO ",s,".achillesnext_dataset VALUES (",paste(c(.store_uuid(release),vapply(c(mid,m$version,m$population,m$grain,d$row_schema_id,d$definition_sha256,state),lit,""),if(is.null(reason))"NULL" else lit(reason),"true",paste0(lit(.json(d$conditional_support)),"::jsonb"),count,paste0(lit(.json(d$completeness)),"::jsonb")),collapse=","),")"))
     }
+    writer<-.store_writer(tx,release)
     for(mid in c("core.person.count",setdiff(ids,"core.person.count"))) {
       tick();d<-datasets[[mid]]
       tx$stream(.domain_stream_sql(tx,release,output,mid),function(text) {
@@ -170,15 +171,18 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
           }
         }
         row$denominator_refs<-.domain_denominators(mid,row,v$denominator)
-        row$row_key<-.v2_row_identity(assets$rows[[mid]],row);.store_put_row(tx,release,mid,row)
+        row$row_key<-.v2_row_identity(assets$rows[[mid]],row);writer$add(mid,row)
       })
+      # Subsequent metric queries may join these persisted denominator targets.
+      writer$flush()
     }
+    persistence<-writer$finish()
     .population_reconcile(tx,release,datasets,totals)
     if(domainMode).domain_reconcile(tx,release,datasets,domains$counts)
     ended<-.stamp();telemetry<-.object(request=plan$scope,producer_request=requested,source_schema=cdmSchema,observed_window=effective,totals=totals,domain_totals=if(domainMode)domains$counts else NULL,started_at=started,ended_at=ended,
       population_window=populationEffective,schema_conditional=if(domainMode)domains$unsupported else NULL,care_reason=if(domainMode)domains$care_reason else NULL,
       definitions=plan$definitions,stages=stageTimings,peak_intermediate_bytes=format(peak,scientific=FALSE,trim=TRUE),
-      resource_limits=.object(statement_timeout_ms=as.character(statementTimeoutMs),max_stage_bytes=format(maxStageBytes,scientific=FALSE,trim=TRUE)),reusable=FALSE)
+      resource_limits=.object(statement_timeout_ms=as.character(statementTimeoutMs),max_stage_bytes=format(maxStageBytes,scientific=FALSE,trim=TRUE)),persistence=persistence,reusable=FALSE)
     tx$execute(paste0("INSERT INTO ",s,".achillesnext_operation VALUES (",.store_uuid(run),",",lit(if(domainMode)"domain_baseline.generate" else "population_observation.generate"),",",lit(.hash(.json(plan$definitions))),",'succeeded','[]',",lit(.json(telemetry)),"::jsonb)"))
     tx$execute(paste0("UPDATE ",s,".achillesnext_analysis_run SET state='succeeded',finished_at=",lit(ended),"::timestamptz WHERE run_id=",.store_uuid(run)))
     tick();.object(release_id=release,run_id=run,profile_id=assets$profile$profile_id,profile_sha256=assets$hash,state="building",generated_metrics=as.list(ids),expected_metric_count="142",generated_metric_count=as.character(length(ids)),publishable=FALSE)

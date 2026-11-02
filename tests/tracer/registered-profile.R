@@ -2,6 +2,7 @@
 library(AchillesNext)
 source("tools/benchmark/implementation_identity.R")
 source("tests/tracer/artifact-inventory.R")
+source("tests/tracer/persistence-safety.R")
 main <- function() {
   args <- commandArgs(TRUE);stopifnot(length(args)==2L)
   implementationIdentity(getwd())
@@ -60,6 +61,7 @@ main <- function() {
     rows <- list();f(".v2_directory")(directory,function(d,b){doc <- f(".nv_json")(b);if(doc$kind=="data")rows[[doc$metric_id]] <<- c(rows[[doc$metric_id]],doc$rows)});rows
   }
   compare(collect(approved$export_dir))
+  testPersistenceSafety(owner,results,generated$release_id,normalizePath(args[[1]]),normalizePath(Sys.getenv("R_LIBS")),out,ex,q)
   concepts <- character();f(".v2_directory")(approved$export_dir,function(d,b){doc <- f(".nv_json")(b);if(doc$kind=="concept_catalogue")concepts <<- c(concepts,vapply(doc$entries,function(e)e$concept_tag$value,""))})
   stopifnot(setequal(concepts,c("-1","0","9007199254740993")))
   before <- q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_result_release'))$N
