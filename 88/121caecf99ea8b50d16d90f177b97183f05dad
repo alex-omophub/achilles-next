@@ -1,0 +1,48 @@
+R/result-producer.R
+  s_895f6ebe145fd3::t_a6ec882f3dda4a 1-3,9,11-12,15-27
+tools/benchmark/persistence.py
+  s_895f6ebe145fd3::t_0342c111340d1c 19-24
+  s_895f6ebe145fd3::t_623cbc00cc12f1 1-18,25-44
+tools/benchmark/persistence.R
+  s_895f6ebe145fd3::t_623cbc00cc12f1 1-7,9-11,17-58,63-65,70-78,80-97,110-112
+  s_895f6ebe145fd3::t_7cecb533e70cd7 106
+  s_895f6ebe145fd3::t_0342c111340d1c 8
+  s_895f6ebe145fd3::t_3be92e32bbb6ad 12-16,59-62,66-69,98-105,107-109
+  s_895f6ebe145fd3::t_7391cc72aca36f 79
+R/result-writer.R
+  s_895f6ebe145fd3::t_a6ec882f3dda4a 1-45
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_2b8755ebe39c00 161
+R/population-baseline.R
+  s_895f6ebe145fd3::t_524c9ef727454d 160,174,176-177,179,185
+tests/tracer/persistence-safety.R
+  s_895f6ebe145fd3::t_69cba5957b0fc5 1-91
+tests/tracer/registered-profile.R
+  s_895f6ebe145fd3::t_69cba5957b0fc5 5,64
+docs/development/persistence.md
+  s_895f6ebe145fd3::t_fcd2d4979e1129 1-70
+R/profile-generation.R
+  s_895f6ebe145fd3::t_524c9ef727454d 76,88,92,96
+tests/tracer/persistence-offline.R
+  s_895f6ebe145fd3::t_2b8755ebe39c00 1-40
+docs/development/registered-analyses.md
+  s_895f6ebe145fd3::t_fcd2d4979e1129 87-89
+docs/development/domain-baseline.md
+  s_895f6ebe145fd3::t_fcd2d4979e1129 3-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "88121caecf99ea8b50d16d90f177b97183f05dad",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
