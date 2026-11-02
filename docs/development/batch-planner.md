@@ -10,6 +10,10 @@ kernels identify `available_in_population_baseline`; the eight-domain/density
 kernels and measurement presence identify `available_in_domain_baseline` in the
 [domain producer](domain-baseline.md). Other modules report `not_implemented`. The existing 15-output development tracer remains separate.
 
+The plan binds the installed [executable analysis definitions](analysis-definitions.md)
+by hash. Typed denominator rules drive joins, reference validation and output-policy
+dependencies; explanatory prose does not select executable behavior.
+
 ```r
 plan <- planCharacterizationBatch(
   cdmSchema = "cdm", sourceId = "local-source", declaredCdmVersion = "5.5")

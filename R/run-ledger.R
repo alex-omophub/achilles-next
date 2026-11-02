@@ -14,6 +14,7 @@
   .object(package = as.character(utils::packageVersion("AchillesNext")), R = as.character(getRversion()),
     dependencies = stats::setNames(lapply(c("DatabaseConnector", "rJava", "jsonlite", "digest"), function(p) as.character(utils::packageVersion(p))), c("DatabaseConnector", "rJava", "jsonlite", "digest")),
     implementation_sha256 = .hash(.json(stats::setNames(bindings, ids))),
+    analysis_definitions_sha256 = .v2_assets()$analysis$hash,
     sql_sha256 = stats::setNames(lapply(paths, function(p) digest::digest(file = file.path(sql, p), algo = "sha256")), paths))
 }
 .run_atomic <- function(value, path) {

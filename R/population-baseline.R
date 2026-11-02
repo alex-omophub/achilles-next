@@ -157,7 +157,6 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
       if(present){.v2_dataset(d);datasets[[mid]]<-d}
       tx$execute(paste0("INSERT INTO ",s,".achillesnext_dataset VALUES (",paste(c(.store_uuid(release),vapply(c(mid,m$version,m$population,m$grain,d$row_schema_id,d$definition_sha256,state),lit,""),if(is.null(reason))"NULL" else lit(reason),"true",paste0(lit(.json(d$conditional_support)),"::jsonb"),count,paste0(lit(.json(d$completeness)),"::jsonb")),collapse=","),")"))
     }
-    personKey<-.v2_row_identity(assets$rows[["core.person.count"]],.object(row_kind="counts",dimensions=.object()))
     for(mid in c("core.person.count",setdiff(ids,"core.person.count"))) {
       tick();d<-datasets[[mid]]
       tx$stream(.domain_stream_sql(tx,release,output,mid),function(text) {
@@ -165,13 +164,12 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
         v$values<-lapply(v$values,.baseline_normalize)
         if(v$row_kind=="summary"&&v$values$n=="0"){state<-"empty_population";reason<-"summary.no_eligible"}
         row<-.object(row_key="",dimensions=v$dimensions,row_kind=v$row_kind,state=state,reason_code=reason,values=v$values,denominator_refs=list())
-        if(startsWith(mid,"core.person.")&&mid!="core.person.count")row$denominator_refs<-list(.object(measure="person_count",metric_id="core.person.count",row_key=personKey,field="person_count",value=totals$person_count))
         if(domainMode && mid%in%.domain_ids()) {
           if(mid=="core.visit.care_setting_count" && v$dimensions$setting_kind=="place_of_service" && !is.null(domains$care_reason)) {
             row$state<-if(domains$care_reason=="capability.care_site_absent")"unsupported" else "unavailable";row$reason_code<-domains$care_reason;row['values']<-list(NULL)
           }
-          row$denominator_refs<-.domain_denominators(mid,row,v$denominator)
         }
+        row$denominator_refs<-.domain_denominators(mid,row,v$denominator)
         row$row_key<-.v2_row_identity(assets$rows[[mid]],row);.store_put_row(tx,release,mid,row)
       })
     }

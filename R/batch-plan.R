@@ -49,7 +49,7 @@ planCharacterizationBatch <- function(cdmSchema,sourceId,declaredCdmVersion,wind
   })
   sql<-system.file("sql/postgresql",package="AchillesNext",mustWork=TRUE)
   files<-sort(list.files(sql,pattern="^batch-.*[.]sql$",full.names=TRUE))
-  definitions<-.object(registry_sha256=assets$hash,runtime=.run_definitions(),
+  definitions<-.object(registry_sha256=assets$hash,analysis_definitions_sha256=.v2_assets()$analysis$hash,runtime=.run_definitions(),
     sql_sha256=stats::setNames(lapply(files,function(f)digest::digest(file=f,algo="sha256")),basename(files)))
   plan<-.object(format_version="1.0.0",engine="postgresql",source=.object(source_id=sourceId,cdm_schema=cdmSchema,declared_cdm_version=declaredCdmVersion),
     profile=.object(id=assets$profile$profile_id,revision=assets$profile$revision,sha256=assets$registry$profile_sha256),definitions=definitions,

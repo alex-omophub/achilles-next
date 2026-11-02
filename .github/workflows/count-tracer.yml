@@ -156,6 +156,7 @@ jobs:
           python3 tools/benchmark/weighted_quantiles.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/weighted-quantile-parity"
       - name: Check core batch planning and private staging
         run: |
+          Rscript --vanilla tests/tracer/analysis-definitions.R
           Rscript --vanilla tests/tracer/batch-plan.R
           python3 tools/benchmark/batch_primitives.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/batch-primitives" --trials 1
       - name: Verify persisted population and observation baseline

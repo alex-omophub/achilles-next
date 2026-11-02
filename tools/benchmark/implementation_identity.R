@@ -34,7 +34,13 @@ implementationIdentity <- function(root, installed = asNamespace("AchillesNext")
   sqlHash <- function(base) stats::setNames(lapply(sqlNames, function(p) digest::digest(file = file.path(base, p), algo = "sha256")), sqlNames)
   sqlSource <- sqlHash(sourceSql); sqlInstalled <- sqlHash(installedSql)
   if (!identical(sqlSource, sqlInstalled)) stop("Installed SQL differs from checkout; reinstall AchillesNext", call. = FALSE)
+  analysisNames <- c("analysis-definition-lock.json", "core-analysis-definitions-v1.json")
+  analysisHash <- function(base) stats::setNames(lapply(analysisNames, function(p) digest::digest(file=file.path(base,p),algo="sha256")),analysisNames)
+  analysisSource <- analysisHash(file.path(root,"inst/analysis"))
+  analysisInstalled <- analysisHash(system.file("analysis",package="AchillesNext",mustWork=TRUE))
+  if (!identical(analysisSource,analysisInstalled)) stop("Installed analysis definitions differ from checkout; reinstall AchillesNext",call.=FALSE)
   list(method = "UTF-8 canonical deparse of function formals/body and namespace constants with explicit controls, compared in the same R runtime; function environments verified; excludes bytecode/dependency implementations",
     source_files_sha256 = fileHashes, source_bindings_sha256 = sourceHashes,
-    installed_bindings_sha256 = installedHashes, installed_sql_sha256 = sqlInstalled)
+    installed_bindings_sha256 = installedHashes, installed_sql_sha256 = sqlInstalled,
+    installed_analysis_sha256 = analysisInstalled)
 }
