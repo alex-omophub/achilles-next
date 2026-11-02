@@ -127,7 +127,7 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
       outputs<-c(outputs,stage("density",.domain_density(person,domains$tables[.domain_names()],domains$measurement),"metric_id"))
     }
     output<-paste0("(",paste(paste("SELECT * FROM",outputs),collapse=" UNION ALL "),") output")
-    if(measurementMode).population_need(.nv_unsigned_cmp(tx$one(paste("SELECT count(*)::text FROM",output)),as.character(maxAggregateRows))<=0,"Aggregate row budget exceeded; generation rolled back")
+    if(measurementMode).population_need(.nv_unsigned_cmp(tx$one(paste("SELECT count(*)::text FROM",output)),format(maxAggregateRows,scientific=FALSE,trim=TRUE))<=0,"Aggregate row budget exceeded; generation rolled back")
     totals<-list(person_count=integrity$person_count,raw_observation_count=tx$one(paste("SELECT count(*)::text FROM",raw)),
       merged_interval_count=tx$one(paste("SELECT count(*)::text FROM",intervals)))
     unknown<-.object(state="unknown",value=NULL,basis=NULL,assertion_id=NULL,reason_code="source.no_verified_release")

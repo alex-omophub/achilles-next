@@ -1,5 +1,8 @@
 # CI runtime and coverage
 
+The [conformance guide](conformance.md) groups the contributor commands by
+compatibility and safety boundary, including saved-bundle viewer checks.
+
 The PostgreSQL workflow uses a 30-minute budget for routine runs and a 60-minute
 budget only for an explicitly requested wider manual run. It runs one job per
 pull request or main push and cancels

@@ -15,7 +15,7 @@ readMeasurementBaseline(connectionDetails, resultsSchema, releaseId, visit,
 up to 2^53. The default is 64 MiB. Only selected rows consume this budget; all
 saved datasets are still validated. Exceeding it fails before any visitor output
 and removes the spool.}
-\item{metricIds}{Optional nonempty character subset of generated metric IDs.}
+\item{metricIds}{Optional nonempty character subset of the 138 generated metric IDs.}
 \item{conceptTag}{Optional typed concept selector, e.g. \code{list(kind="all")},
 \code{list(kind="null")} or \code{list(kind="id", value="123")}.}
 \item{period}{Optional exact saved selector with string fields period_kind,

@@ -79,6 +79,7 @@ listDomainConcepts <- function(connectionDetails,resultsSchema,releaseId,domain,
 
 #' Stream saved restricted measurement/domain aggregates without CDM access
 #' @inheritParams readDomainBaseline
+#' @param metricIds Optional subset of the 138 generated metric identifiers.
 #' @return Validated restricted metadata and saved selection across 138 outputs;
 #'   this is not an approved publication/provider.
 #' @export

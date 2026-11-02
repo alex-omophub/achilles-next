@@ -117,6 +117,20 @@ def oracle(case,version):
             for name,num,den in [('p10',1,10),('p25',1,4),('p50',1,2),('p75',3,4),('p90',9,10)]:values[name]=base.dec(good[(n*num+den-1)//den-1]) if n else None
             put(suffix,json.loads(d),values)
             for reason in reasons:put(suffix,dict(json.loads(d),eligibility_reason=reason),dict(record_count=str(sum(r==reason for r,v in samples))))
+    # Boundary summaries pool only known units. All other raw unit groups
+    # retain sparse first-match exclusions, without a fictitious summary or
+    # eligible=0 row that would require a summary companion under this schema.
+    for suffix,key in [('range_low_summary','low'),('range_high_summary','high')]:
+        excluded=Counter()
+        for e in case['events']:
+            if known(e):continue
+            reason=('bound_missing' if e[key] is None else 'bound_non_finite' if not finite(e[key]) else
+                    'unit_null' if e['unit'] is None else 'unit_zero' if e['unit']=='0' else 'unit_unrecognized')
+            d=dict(dim(e),unit_concept_tag=base.tag(e['unit']),eligibility_reason=reason)
+            excluded[base.canon(d)]+=1
+        for d,n in excluded.items():put(suffix,json.loads(d),dict(record_count=str(n)))
+        total=sum(int(v['record_count']) for d,v in result[core+suffix].items() if 'eligibility_reason' in json.loads(d))
+        assert total==len(case['events']),(suffix,'boundary exclusions must account for every physical row')
     return result
 
 

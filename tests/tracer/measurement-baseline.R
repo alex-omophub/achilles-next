@@ -47,7 +47,7 @@ main<-function() {
   }
   for(index in seq_along(input)) {
     case<-input[[index]];schema<-makeSource(case,index)
-    generated<-generateMeasurementBaseline(env$fixtureConnection(),schema,paste0('fixture:measurement:',case$case),results,case$version)
+    generated<-generateMeasurementBaseline(env$fixtureConnection(),schema,paste0('fixture:measurement:',case$case),results,case$version,maxAggregateRows=1e6)
     snap<-inspect(generated$release_id);snapshots[[length(snapshots)+1L]]<-c(list(case=case$case,version=case$version),snap)
     saved[[length(saved)+1L]]<-list(schema=schema,release=generated$release_id)
     stopifnot(q("SELECT count(*)::text AS n FROM pg_class WHERE relpersistence='t' AND relname~'^achillesnext_[0-9a-f]{32}_'")$N==baselineTemp)
@@ -96,7 +96,8 @@ main<-function() {
   script<-file.path(out,'saved-reader.R')
   writeLines(c('library(AchillesNext);a<-commandArgs(TRUE);e<-new.env();sys.source(a[1],e);n<-0L;',
     'x<-readMeasurementBaseline(e$fixtureConnection(),a[2],a[3],function(mid,row){n<<-n+1L},"core.measurement.numeric_summary");stopifnot(n>0L,!x$publishable);',
-    'p<-listDomainConcepts(e$fixtureConnection(),a[2],a[3],"measurement",1L);stopifnot(length(p$concepts)==1L);cat("SOURCE_DENIED_MEASUREMENT_READ_OK\n")'),script)
+    'p<-listDomainConcepts(e$fixtureConnection(),a[2],a[3],"measurement",1L);stopifnot(length(p$concepts)==1L);cat("SOURCE_DENIED_MEASUREMENT_READ_OK\\n")'),script)
+  stopifnot(length(readLines(script))==3L);parse(script)
   stopifnot(system2(file.path(R.home('bin'),'Rscript'),c('--vanilla',shQuote(script),shQuote(normalizePath(args[1])),results,ref$release_id),stdout=file.path(out,'fresh-read.log'),stderr=file.path(out,'fresh-read-error.log'))==0L)
   error<-tryCatch({sealResultRelease(env$fixtureConnection('owner'),results,ref$release_id);'accepted'},error=conditionMessage)
   stopifnot(error!='accepted',q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_current_publication'))$N=='0')

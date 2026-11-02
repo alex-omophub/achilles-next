@@ -57,7 +57,7 @@ with this all-recorded baseline.
 | Representation | All eight supported numeric/coded/source-text presence combinations per observed raw concept, including zero-count combinations. Numeric presence includes non-finite values; source text trims only U+0020 spaces. |
 | Units, coded values, operators | Separate NULL, zero and every raw signed ID. No unit conversion, vocabulary roll-up or pooling of operator strata. |
 | Numeric eligibility and summary | Exact values by known positive Unit-domain concept and separate NULL/zero operators. Summary eligibility follows the frozen order: missing numeric, non-finite, unit NULL, unit zero, unknown/wrong-domain unit, nonzero operator, eligible. |
-| Range low/high summaries | Independent exact finite boundary summaries within known-unit strata, regardless of result/other-bound presence, operator or reversed paired bounds. They describe recorded boundaries, not valid clinical intervals. |
+| Range low/high summaries | Independent exact finite boundary summaries within known-unit strata, regardless of result/other-bound presence, operator or reversed paired bounds. Other raw unit strata retain their first-match boundary exclusions as eligibility-only rows. They describe recorded boundaries, not valid clinical intervals. |
 | Range status | Same-row value/unit/operator/bounds. Ordered exclusive reasons: missing/non-finite value; unavailable unit; explicit operator; both/one bounds missing; non-finite bound; reversed bounds; below/within/above. Endpoints are inclusive. No normal-range harmonization or clinical normality claim. |
 
 The capture/observed, age, histogram and integrity families account for ten
@@ -86,8 +86,10 @@ unit/operator strata with no eligible values retain n=0 and NULL statistics.
 Unobserved unit/operator cross-products and monthly summaries are not invented.
 
 Set-based source-private stages are shared across reports. The result writer uses
-the [bounded persistence path](persistence.md); no frequency rows, patient IDs,
-source text or individual measurements are written to results. The current
+the [bounded persistence path](persistence.md). Intermediate numeric-value
+frequencies, patient IDs, source text and individual measurements stay private
+to source execution. Event-frequency and distinct-concept histograms are saved
+aggregate outputs. The current
 [source/store topology](source-store-boundaries.md) remains one PostgreSQL database.
 Warehouse adapters and remote aggregate transfer remain unimplemented.
 

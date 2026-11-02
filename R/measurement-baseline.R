@@ -15,7 +15,7 @@ generateMeasurementBaseline <- function(connectionDetails,cdmSchema,sourceId,res
   .nv_need(is.numeric(maxAggregateRows)&&length(maxAggregateRows)==1L&&is.finite(maxAggregateRows)&&maxAggregateRows>=1&&
     maxAggregateRows<=1000000&&maxAggregateRows==floor(maxAggregateRows),"Invalid aggregate row budget")
   .baseline_generate(connectionDetails,cdmSchema,sourceId,resultsSchema,declaredCdmVersion,NULL,maxStageBytes,check,
-    statementTimeoutMs,TRUE,TRUE,numericStrategy,maxAggregateRows)
+    statementTimeoutMs,TRUE,TRUE,numericStrategy,maxAggregateRows=as.integer(maxAggregateRows))
 }
 .measurement_reports <- function(table,person,periods,cap,numericStrategy) {
   parts<-list(.domain_reports("measurement",table,person,periods,cap));core<-"core.measurement."
@@ -45,6 +45,13 @@ generateMeasurementBaseline <- function(connectionDetails,cdmSchema,sourceId,res
     value<-paste0("range_",bound)
     reason<-paste0("CASE WHEN ",value," IS NULL THEN 'bound_missing' WHEN ",value,"::text IN ('NaN','Infinity','-Infinity') THEN 'bound_non_finite' WHEN unit_id IS NULL THEN 'unit_null' WHEN unit_id=0 THEN 'unit_zero' WHEN NOT known_unit THEN 'unit_unrecognized' ELSE 'eligible' END")
     sample(paste0(value,"_summary"),dims(concept,"'unit_concept_tag',unit_tag"),value,reason,"known_unit",reasons$range_boundary_order)
+    # Excluded raw unit groups cannot carry a summary (NULL/zero units are not
+    # valid summary dimensions). Keep their actual first-match exclusions as
+    # eligibility-only rows, without an eligible=0 summary companion.
+    parts[[length(parts)+1L]]<-paste0("SELECT ",.store_literal(paste0(core,value,"_summary")),
+      ",'eligibility_counts',dimensions,jsonb_build_object('record_count',COUNT(*)::text) FROM (SELECT ",
+      dims(concept,"'unit_concept_tag',unit_tag",paste0("'eligibility_reason',",reason)),
+      " AS dimensions FROM ",table," WHERE NOT known_unit) excluded GROUP BY dimensions")
   }
   sql<-paste(readLines(system.file("sql/postgresql/measurement-summary.sql",package="AchillesNext",mustWork=TRUE),warn=FALSE),collapse="\n")
   ranks<-if(numericStrategy=="weighted")"SELECT metric_id,dimensions,value,SUM(frequency) OVER(PARTITION BY metric_id,dimensions ORDER BY value ROWS UNBOUNDED PRECEDING) AS rank FROM (SELECT metric_id,dimensions,value,COUNT(*)::numeric AS frequency FROM eligible GROUP BY metric_id,dimensions,value) f" else
