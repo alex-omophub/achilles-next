@@ -86,6 +86,9 @@ the source database's scan or sort. Per-statement timeouts are explicit.
 
 Writes use the shared [bounded numerical persistence](persistence.md) path;
 flushing a batch does not publish it or create a durable source checkpoint.
+The internal [source/store interfaces](source-store-boundaries.md) separate the
+registered aggregate stream from typed row ingestion. The current deployment
+still uses one PostgreSQL transaction; warehouse adapters remain unimplemented.
 
 Publication reads saved aggregates only. Existing `readResultObject()` accepts
 the complete pinned source/publication/scope/root context through an approved
