@@ -24,5 +24,8 @@ export(generatePopulationObservationBaseline)
 export(readPopulationObservationBaseline)
 
 export(generateDomainBaseline)
+export(generateAnalysisProfile)
+export(planAnalysisProfile)
+export(registerAnalysisProfile)
 export(readDomainBaseline)
 export(listDomainConcepts)

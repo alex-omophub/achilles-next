@@ -45,6 +45,10 @@ candidates and exact grains. It plans full-history/all-concept work; complete co
 generation remains incomplete. A small synthetic harness compares
 reference and transaction-private materialization with independent numerical oracles.
 
+The separate [registered analysis example](docs/development/registered-analyses.md)
+demonstrates a two-report contribution through generation, approval and saved
+readback. It preserves the core inventory and does not complete core generation.
+
 `generatePopulationObservationBaseline()` computes and persists seven population
 and twelve observation-period outputs from PostgreSQL sources. The
 [baseline guide](docs/development/population-baseline.md) explains exact semantics,

@@ -30,9 +30,9 @@
   }
   list(add=function(desc,lo,hi)add(.object(lower_key=lo,upper_key=hi,object=desc)),finish=finish)
 }
-.v2_pages <- function(kind, context, emit, metricId=NULL) {
+.v2_pages <- function(kind, context, emit, metricId=NULL,assets=.v2_assets()) {
   tree <- .v2_tree(kind,context,emit); rows <- list(); keys <- character(); bytes <- 0L
-  envelope <- function(rs) c(context,.object(kind=kind),if(kind=="data") .object(metric_id=metricId,metric_version=.v2_assets()$metrics[[metricId]]$version,rows=rs) else .object(entries=rs))
+  envelope <- function(rs) c(context,.object(kind=kind),if(kind=="data") .object(metric_id=metricId,metric_version=assets$metrics[[metricId]]$version,rows=rs) else .object(entries=rs))
   flush <- function() {
     if(!length(rows)) return(invisible(NULL))
     d <- emit(envelope(rows),kind,as.character(length(rows)));tree$add(d,keys[[1]],keys[[length(keys)]])
@@ -46,17 +46,17 @@
   }
   list(add=add,finish=function(){flush();tree$finish()})
 }
-.v2_policy <- function(policy) {
+.v2_policy <- function(policy,assets=.v2_assets()) {
   .v2_keys(policy,c("id","revision","scope_kind","allow_metrics"))
   .nv_need(.string(policy$id) && grepl("^[a-z0-9_.:-]{1,96}$",policy$id) && .string(policy$revision) && nchar(policy$revision)<=96L)
   .nv_need(policy$scope_kind %in% c("restricted","distributable"))
   .nv_need(.nv_array(policy$allow_metrics) && all(vapply(policy$allow_metrics,.string,TRUE)) && !anyDuplicated(unlist(policy$allow_metrics)))
-  allow <- unlist(policy$allow_metrics);.nv_need(all(allow %in% names(.v2_assets()$metrics)))
+  allow <- unlist(policy$allow_metrics);.nv_need(all(allow %in% names(assets$metrics)))
   # A policy omitting a denominator omits dependent outputs as well. Values are
   # physically absent, never hidden only by the renderer.
   repeat {
     nextAllow <- Filter(function(mid) {
-      d <- .analysis_dependency(mid)
+      d <- .analysis_dependency(mid,assets)
       is.null(d) || d %in% allow
     },allow)
     if(setequal(nextAllow,allow)) break
@@ -64,11 +64,11 @@
   }
   # Source output-status metadata describes the entire source inventory. A
   # partial projection uses its own catalogue and omits that source ledger.
-  if(length(allow)<length(.v2_assets()$metrics)) allow <- setdiff(allow,"core.execution.output_status")
+  if(length(allow)<length(assets$metrics)) allow <- setdiff(allow,"core.execution.output_status")
   allow
 }
 .store_build_pages <- function(tx, validated, publicationId, scopeId, approvalId, policy, directory) {
-  allow <- .v2_policy(policy);c <- validated$context;datasets <- validated$datasets
+  assets <- validated$assets %||% .v2_assets();allow <- .v2_policy(policy,assets);c <- validated$context;datasets <- validated$datasets
   context <- .object(contract_version="2.0.0",publication_id=publicationId,release_id=c$release_id,source_id=c$source_id,
     profile_id=c$profile_id,profile_revision=c$profile_revision,profile_sha256=c$profile_sha256,access_scope_id=scopeId)
   emit <- function(doc,kind,rows) {
@@ -78,15 +78,15 @@
     .nv_need(!file.exists(path),"Duplicate page coverage")
     writeBin(raw,path);Sys.chmod(path,"0600");d
   }
-  catalogue <- .v2_pages("metric_catalogue",context,emit)
+  catalogue <- .v2_pages("metric_catalogue",context,emit,assets=assets)
   data <- .v2_tree("data",context,emit)
   for(mid in sort(names(datasets),method="radix")) {
     d <- datasets[[mid]]
     if(!mid %in% allow) {d$state <- "suppressed";d$reason_code <- "policy.output_omitted";d$rows <- "0"}
     catalogue$add(d,mid)
     if(d$rows=="0") next
-    pages <- .v2_pages("data",context,emit,mid)
-    .store_rows(tx,c$release_id,mid,function(row,key) pages$add(row,paste0(mid,"|",key)))
+    pages <- .v2_pages("data",context,emit,mid,assets)
+    .store_rows(tx,c$release_id,mid,function(row,key) pages$add(row,paste0(mid,"|",key)),assets)
     desc <- pages$finish()
     # The page tree carries the exact range, not a truncated metric label.
     bounds <- .store_decode(tx$one(paste0("SELECT jsonb_build_object('lo',min(sort_key COLLATE \"C\"),'hi',max(sort_key COLLATE \"C\"))::text FROM ",tx$schema,".achillesnext_aggregate_cell WHERE release_id=",.store_uuid(c$release_id)," AND metric_id=",.store_literal(mid))))
@@ -94,14 +94,14 @@
   }
   # Flat saved concept browse is built only from retained typed dimensions. No
   # vocabulary/source lookups at publication or viewing time, and no raw text.
-  concepts <- .v2_pages("concept_catalogue",context,emit)
-  terms <- .v2_pages("terminology",context,emit)
+  concepts <- .v2_pages("concept_catalogue",context,emit,assets=assets)
+  terms <- .v2_pages("terminology",context,emit,assets=assets)
   if(length(allow)) {
     ids <- paste(vapply(allow,.store_literal,""),collapse=",")
     # Use the same signed-integer/C-order codec as data selectors. Source IDs
     # are never sorted as ordinary decimal strings ("10" before "2").
     code <- "CASE WHEN left(tag->>'value',1)='-' THEN 'I0'||lpad((999999-length(substr(tag->>'value',2)))::text,6,'0')||':'||translate(substr(tag->>'value',2),'0123456789','9876543210') ELSE 'I1'||lpad(length(tag->>'value')::text,6,'0')||':'||(tag->>'value') END"
-    sql <- paste0("WITH tags AS (SELECT DISTINCT CASE WHEN jsonb_typeof(v.value)='object' THEN v.value ELSE jsonb_build_object('kind','id','value',v.value#>>'{}') END AS tag FROM ",tx$schema,".achillesnext_aggregate_cell c CROSS JOIN LATERAL jsonb_each(c.dimensions) v WHERE c.release_id=",.store_uuid(c$release_id)," AND c.metric_id IN (",ids,") AND c.state<>'suppressed' AND ((right(v.key,4)='_tag' AND v.value->>'kind'='id') OR (right(v.key,11)='_concept_id' AND jsonb_typeof(v.value)='string'))) SELECT jsonb_build_object('tag',tag,'key',",code,")::text FROM tags ORDER BY (",code,") COLLATE \"C\"")
+    sql <- paste0("WITH tags AS (SELECT DISTINCT CASE WHEN jsonb_typeof(v.value)='object' THEN v.value ELSE jsonb_build_object('kind','id','value',v.value#>>'{}') END AS tag FROM ",tx$schema,".achillesnext_aggregate_cell c CROSS JOIN LATERAL jsonb_each(c.dimensions) v WHERE c.release_id=",.store_uuid(c$release_id)," AND c.metric_id IN (",ids,") AND c.state<>'suppressed' AND ((right(v.key,4)='_tag' AND v.value->>'kind'='id') OR (right(v.key,11)='_concept_id' AND jsonb_typeof(v.value)='string' AND v.value#>>'{}'<>'null'))) SELECT jsonb_build_object('tag',tag,'key',",code,")::text FROM tags ORDER BY (",code,") COLLATE \"C\"")
     tx$stream(sql,function(text) {
       item <- .store_decode(text);tag <- item$tag;key <- .v2_component(tag,"concept_tag")
       .nv_need(identical(key,item$key),"Concept index codec mismatch")
@@ -110,7 +110,7 @@
     })
   }
   root <- c(context,.object(kind="root",scope_kind=policy$scope_kind,publication_state="ready",eligible_for_current_pointer=TRUE,
-    expected_metric_count="142",generated_at=.stamp(),source_schema=.object(sha256=c$observed_schema_sha256,declared_cdm_version=c$declared_cdm_version),source_consistency=.object(within_run=c$consistency_basis,reusable=FALSE,reason_code="source.reuse_not_asserted"),
+    expected_metric_count=as.character(length(assets$metrics)),generated_at=.stamp(),source_schema=.object(sha256=c$observed_schema_sha256,declared_cdm_version=c$declared_cdm_version),source_consistency=.object(within_run=c$consistency_basis,reusable=FALSE,reason_code="source.reuse_not_asserted"),
     disclosure=.object(approval_id=approvalId,policy=policy,policy_sha256=.v2_hash(.v2_bytes(policy))),
     catalogue=catalogue$finish(),concepts=concepts$finish(),data=data$finish(),terminology=terms$finish()))
   descriptor <- emit(root,"root","0")
@@ -120,7 +120,7 @@
 }
 #' Publish an approved projection and exact-byte export
 #'
-#' Validates the sealed core-profile release, builds bounded immutable pages,
+#' Validates the sealed registered-profile release, builds bounded immutable pages,
 #' requires institutional approval, exports and optionally advances database current.
 #' No source/CDM SQL is executed. Output directories must be new.
 #' @inheritParams initializeResultStore
@@ -137,7 +137,6 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
   .nv_need(.string(accessScopeId) && grepl("^[a-z0-9_.:-]{1,128}$",accessScopeId),"Invalid audience identifier")
   .nv_need(.string(approvalId) && grepl("^[A-Za-z0-9_.:-]{1,128}$",approvalId),"Invalid approval identifier")
   .nv_need(is.function(institutionalPolicy),"An explicit institutional policy callback is required")
-  .v2_policy(policy)
   if(!is.null(expectedRevision)) .nv_need(.v2_count(expectedRevision) && nchar(expectedRevision)<=18L,"Invalid expected revision")
   parent <- tryCatch(normalizePath(dirname(exportDir),mustWork=TRUE),error=function(e)stop("Export parent directory is unavailable",call.=FALSE))
   destination <- file.path(parent,basename(exportDir))

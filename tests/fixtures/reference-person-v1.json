@@ -1,0 +1,20 @@
+{
+  "profile_id": "reference-person-v1",
+  "people": [
+    {"person_id":"1","gender_concept_id":"0"},
+    {"person_id":"2","gender_concept_id":null},
+    {"person_id":"3","gender_concept_id":"9007199254740993"},
+    {"person_id":"4","gender_concept_id":"0"},
+    {"person_id":"9007199254740993","gender_concept_id":"-1"},
+    {"person_id":"6","gender_concept_id":null}
+  ],
+  "expected": {
+    "example.person.count": [{"dimensions":{},"values":{"person_count":"6"}}],
+    "example.person.gender_count": [
+      {"dimensions":{"gender_concept_id":"null"},"values":{"person_count":"2"}},
+      {"dimensions":{"gender_concept_id":"-1"},"values":{"person_count":"1"}},
+      {"dimensions":{"gender_concept_id":"0"},"values":{"person_count":"2"}},
+      {"dimensions":{"gender_concept_id":"9007199254740993"},"values":{"person_count":"1"}}
+    ]
+  }
+}

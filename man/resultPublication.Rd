@@ -13,7 +13,7 @@ publishResultRelease(connectionDetails, resultsSchema, releaseId,
 \arguments{
 \item{connectionDetails}{PostgreSQL DatabaseConnector connection details for a trusted validator/publisher.}
 \item{resultsSchema}{Installed aggregate schema.}
-\item{releaseId}{UUID of a sealed release using the installed core profile.}
+\item{releaseId}{UUID of a sealed release using an installed registered profile.}
 \item{bundleDir}{Directory containing publication.json and content-addressed objects.}
 \item{exportDir}{New approved artifact directory; its parent must exist.}
 \item{accessScopeId}{Institution-controlled audience identifier.}

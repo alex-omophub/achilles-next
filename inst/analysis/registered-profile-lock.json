@@ -1,0 +1,10 @@
+{
+  "sha256": {
+    "analysis/registered-profiles-v1.json": "a4e9459b132ebdaba7943dd3b5bec9187769e90bed20dd6e2521330b3261e34b",
+    "analysis/reference-person-v1.json": "2cd3423e5ad4bb9a51fe7a12583d808a2a12aac6ce4ba8894b4ca5baed572baf",
+    "analysis/reference-person-rows-v1.json": "9886bea7f7c5ab32185ad2681ed16bd9fa5c5460315867818583430256ba9889",
+    "analysis/reference-person-definitions-v1.json": "424c352099ff9118a4b87a5ade9cafd72bc4c40add8ae881b3a13415bc98ce37",
+    "sql/postgresql/reference-person-v1.sql": "1e5adf204c95a7a9d20401bee279ed25a7270dc9f57267e39c1188b904316c4e",
+    "sql/postgresql/reference-person-check-v1.sql": "fbfc3e3fc35a181b0dc2bd7a3191f4e6c33b16d901f6cc22dcb75175e813d4f8"
+  }
+}

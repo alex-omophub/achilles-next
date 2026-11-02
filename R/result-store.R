@@ -40,6 +40,9 @@ initializeResultStore <- function(connectionDetails, resultsSchema, servingSchem
       "(SELECT b,convert_from(b,'UTF8')::jsonb AS d FROM input) INSERT INTO \"", resultsSchema,
       "\".achillesnext_profile_registry SELECT encode(sha256(b),'hex'),d->>'profile_id',d->>'revision',b,d FROM parsed")
     rJava::.jcall(statement, "Z", "execute", register)
+    for(id in names(.profile_registry()$profiles)) {
+      rJava::.jcall(statement,"Z","execute",.profile_registration_sql(paste0('"',resultsSchema,'"'),id))
+    }
     rJava::.jcall(jdbc, "V", "commit")
     committed <- TRUE
   }, error = function(e) stop("Result store installation failed; transaction rolled back", call. = FALSE))

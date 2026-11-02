@@ -18,6 +18,7 @@ def main():
     parser.add_argument('--admin-host', default='/tmp')
     parser.add_argument('--admin-user')
     parser.add_argument('--port', type=int, default=5432)
+    parser.add_argument('--test-script', choices=['result-export', 'registered-profile'], default='result-export')
     args = parser.parse_args()
     admin = Postgres(args.state, admin=True, host=args.admin_host, port=args.port, admin_user=args.admin_user)
     if admin.value(f"SELECT shobj_description(oid,'pg_database') FROM pg_database WHERE datname={literal(DB)}") != MARKER:
@@ -37,7 +38,7 @@ def main():
             env = os.environ.copy()
             env['ACHILLES_NEXT_SERVING_FIXTURE'] = str(path)
             env['ACHILLES_NEXT_FIXTURE_STATE'] = str(args.state.resolve())
-            test = Path(__file__).resolve().parents[1] / 'tests/tracer/result-export.R'
+            test = Path(__file__).resolve().parents[1] / f'tests/tracer/{args.test_script}.R'
             subprocess.run(['Rscript', str(test), str(args.config.resolve()), str(args.output_dir.resolve())], env=env, check=True)
     except Exception:
         # No SQL/credential-bearing exception is printed by this admin harness.

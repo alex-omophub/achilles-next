@@ -55,8 +55,8 @@
     "'profile_sha256',a.profile_sha256,'run_state',a.state,'consistency_basis',a.consistency_basis)::text FROM ",
     s,".achillesnext_result_release r JOIN ",s,".achillesnext_analysis_run a USING(run_id) JOIN ",s,".achillesnext_source_release s USING(source_release_id) WHERE r.release_id=",id,if(exclusive)" FOR UPDATE OF r" else " FOR SHARE OF r")))
 }
-.v2_dataset <- function(d) {
-  m <- .v2_assets()$metrics[[d$metric_id]]; registry <- .v2_assets()$rows[[d$metric_id]]
+.v2_dataset <- function(d, assets = .v2_assets()) {
+  m <- assets$metrics[[d$metric_id]]; registry <- assets$rows[[d$metric_id]]
   .nv_need(!is.null(m), "Unknown dataset")
   .v2_keys(d, c("metric_id", "version", "population", "grain", "row_schema_id", "definition_sha256", "state", "reason_code", "required", "conditional_support", "rows", "completeness"))
   .nv_need(identical(d$version, m$version) && identical(d$population, m$population) && identical(d$grain, m$grain) && identical(d$row_schema_id, registry$row_schema_id))
@@ -69,7 +69,7 @@
   .nv_need(d$conditional_support$state %in% c("supported", "schema_absent"))
   if (d$state == "unsupported" || (d$state=="suppressed" && d$conditional_support$state=="schema_absent")) .nv_need(m$availability != "required_when_table_readable" && d$conditional_support$state == "schema_absent" && .string(d$conditional_support$reason_code) && d$rows == "0") else
     .nv_need(d$conditional_support$state == "supported" && is.null(d$conditional_support$reason_code))
-  schema <- .v2_assets()$metadata
+  schema <- assets$metadata
   .nv_schema(d$completeness, schema$`$defs`$coverage, schema)
   .nv_need(isTRUE(d$completeness$complete) && d$completeness$scope_kind %in% c("standard_full", "schema_conditional"))
   .nv_need(identical(d$completeness$excluded_record_count, "0") ||
@@ -77,18 +77,18 @@
       is.null(d$completeness$excluded_record_count) && .string(d$completeness$reason_code)), "Incomplete full-profile coverage")
   invisible(TRUE)
 }
-.store_datasets <- function(tx, releaseId) {
+.store_datasets <- function(tx, releaseId, assets = .v2_assets()) {
   result <- list(); s <- tx$schema
   tx$stream(paste0("SELECT jsonb_build_object('metric_id',metric_id,'version',metric_version,'population',population_id,",
     "'grain',grain_id,'row_schema_id',row_schema_id,'definition_sha256',definition_sha256,'state',state,'reason_code',reason_code,",
     "'required',required,'conditional_support',conditional_support,'rows',row_count::text,'completeness',completeness)::text FROM ",s,
     ".achillesnext_dataset WHERE release_id=",.store_uuid(releaseId)," ORDER BY metric_id COLLATE \"C\""), function(x) {
-      .nv_need(nchar(x,type="bytes") <= 65536L && length(result) < 142L)
-      d <- .store_decode(x); .v2_dataset(d); result[[d$metric_id]] <<- d
+      .nv_need(nchar(x,type="bytes") <= 65536L && length(result) < length(assets$metrics))
+      d <- .store_decode(x); .v2_dataset(d,assets); result[[d$metric_id]] <<- d
     })
-  .nv_need(setequal(names(result), names(.v2_assets()$metrics)), "Incomplete metric inventory"); result
+  .nv_need(setequal(names(result), names(assets$metrics)), "Incomplete metric inventory"); result
 }
-.store_rows <- function(tx, releaseId, metricId, visit) {
+.store_rows <- function(tx, releaseId, metricId, visit, assets = .v2_assets()) {
   # Exact values cast to text at the server; scale normalization below never
   # passes through floating point. A correlated edge lookup is index bounded.
   s <- tx$schema; numeric <- c(record_count="record_count",person_count="person_count",person_days="person_days",interval_count="interval_count",n="n",sum="sum_value",min="minimum",max="maximum",p10="p10",p25="p25",p50="p50",p75="p75",p90="p90")
@@ -100,7 +100,7 @@
   sql <- paste0("SELECT CASE WHEN octet_length(doc)<=131072 THEN doc ELSE NULL END FROM (",sub("::text FROM", "::text AS doc FROM",sql,fixed=TRUE),") bounded")
   tx$stream(sql,function(text) {
     .nv_need(.string(text) && nchar(text,type="bytes") <= 131072L, "Stored row resource limit")
-    c <- .store_decode(text); registry <- .v2_assets()$rows[[metricId]]
+    c <- .store_decode(text); registry <- assets$rows[[metricId]]
     kind <- if(c$payload_kind=="counts" && "eligibility_reason" %in% names(c$dimensions)) "eligibility_counts" else c$payload_kind
     keys <- unlist(registry$value_keys_by_row_kind[[kind]])
     .nv_need(length(keys)>0L, "Unknown payload kind")
@@ -117,24 +117,24 @@
     targets <- c$denominator_refs
     refs <- lapply(targets,function(ref) {ref$target_dimensions <- NULL;ref})
     row <- .object(row_key=c$row_key,dimensions=c$dimensions,row_kind=kind,state=c$state,reason_code=c$reason_code,values=values,denominator_refs=refs)
-    sort <- .v2_row(metricId,row)
+    sort <- .v2_row(metricId,row,assets)
     .v2_denominator_check(metricId,row,function(id,key) {
       matches <- Filter(function(ref)identical(ref$metric_id,id)&&identical(ref$row_key,key),targets)
       .nv_need(length(matches)>0L,"Missing streamed denominator dimensions")
       matches[[1]]$target_dimensions
-    })
+    },assets)
     .nv_need(identical(sort,c$sort_key),"Stored sort key mismatch")
     .nv_need(identical(c$route_key,"A"),"This exporter requires the registered ALL route")
     visit(row,sort)
   })
 }
 .store_validate <- function(tx, releaseId, exclusive = FALSE) {
-  context <- .store_context(tx,releaseId,exclusive); assets <- .v2_assets()
+  context <- .store_context(tx,releaseId,exclusive); assets <- .profile_context(context)
   .nv_need(context$state %in% c("sealed","validated") && context$run_state=="succeeded", "A sealed successful release is required")
   .nv_need(context$profile_id==assets$profile$profile_id && context$profile_revision==assets$profile$revision && context$profile_sha256==assets$hash, "Unregistered runtime profile")
   s <- tx$schema; id <- .store_uuid(releaseId)
   .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_operation WHERE run_id=",.store_uuid(context$run_id)," AND state NOT IN ('succeeded','skipped')"))=="0","Incomplete operations")
-  datasets <- .store_datasets(tx,releaseId)
+  datasets <- .store_datasets(tx,releaseId,assets)
   # Every edge must resolve to an unsuppressed exact measure. Source/target
   # dimensions and declared population are checked below, independently of FK.
   .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_denominator_edge e JOIN ",s,".achillesnext_aggregate_cell c ON (c.release_id,c.metric_id,c.row_key)=(e.release_id,e.metric_id,e.row_key) JOIN ",s,".achillesnext_aggregate_cell t ON (t.release_id,t.metric_id,t.row_key)=(e.release_id,e.target_metric_id,e.target_row_key) WHERE e.release_id=",id," AND (c.state='suppressed' OR t.state='suppressed')"))=="0","Suppressed denominator endpoint")
@@ -152,22 +152,24 @@
         ledger[[row$dimensions$metric_id]] <<- row$values
       }
       if(mid=="core.source.passport" && row$state!="suppressed") .v2_passport_check(row$values,context)
-    })
+    },assets)
     .nv_need(count==d$rows,"Dataset row count mismatch")
     if(mid=="core.execution.output_status" && d$state!="suppressed") .nv_need(count=="142","Missing output ledger rows")
-    if(mid %in% c("core.person.count","core.source.passport") && d$state!="suppressed") .nv_need(count=="1","Missing singleton")
+    if(mid %in% assets$singletons && d$state!="suppressed") .nv_need(count=="1","Missing singleton")
   }
-  .v2_ledger_check(datasets,ledger)
-  .v2_capability_check(datasets,capabilities)
-  .store_summary_checks(tx,releaseId,datasets)
-  .store_domain_reconcile(tx,releaseId,datasets)
-  .store_reconcile(tx,releaseId)
-  list(context=context,datasets=datasets)
+  if(isTRUE(assets$is_core)) {
+    .v2_ledger_check(datasets,ledger)
+    .v2_capability_check(datasets,capabilities)
+    .store_summary_checks(tx,releaseId,datasets)
+    .store_domain_reconcile(tx,releaseId,datasets)
+    .store_reconcile(tx,releaseId)
+  } else .profile_store_checks(tx,releaseId,datasets,assets)
+  list(context=context,datasets=datasets,assets=assets)
 }
 # ASCII keys only; comparison must not inherit the user's locale.
 .v2_less <- function(a,b) !identical(a,b) && identical(order(c(a,b),method="radix"),c(1L,2L))
-.v2_denominator_check <- function(mid, row, lookup) {
-  spec <- .analysis_denominator(mid, row)
+.v2_denominator_check <- function(mid, row, lookup, assets = .v2_assets()) {
+  spec <- .analysis_denominator(mid, row, assets)
   measures <- if(is.null(spec)) character() else vapply(spec$measures,function(m)m$source,"")
   .nv_need(length(row$denominator_refs)==length(measures),"Missing or unexpected denominator")
   seen <- character()
@@ -192,7 +194,7 @@
 }
 #' Validate a sealed aggregate release using native R
 #' @inheritParams initializeResultStore
-#' @param releaseId UUID of a sealed release using the shipped core profile.
+#' @param releaseId UUID of a sealed release using an installed registered profile.
 #' @export
 validateResultRelease <- function(connectionDetails, resultsSchema, releaseId) {
   tryCatch(.store_transaction(connectionDetails,resultsSchema,function(tx) {

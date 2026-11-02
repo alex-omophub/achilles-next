@@ -1,0 +1,32 @@
+{
+  "format_version": "1.0.0",
+  "profile_sha256": "2cd3423e5ad4bb9a51fe7a12583d808a2a12aac6ce4ba8894b4ca5baed572baf",
+  "rules": {
+    "all_people": {
+      "row_kind": "counts",
+      "when": {},
+      "dimensions": {},
+      "key_defaults": {},
+      "match": "exact",
+      "measures": [
+        {
+          "source": "person_count",
+          "target": "person_count"
+        }
+      ]
+    }
+  },
+  "analyses": {
+    "example.person.count": {
+      "population": "person_table",
+      "denominator": null
+    },
+    "example.person.gender_count": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "example.person.count"
+      }
+    }
+  }
+}
