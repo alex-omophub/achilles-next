@@ -1,0 +1,44 @@
+man/generateAnalysisProfile.Rd
+  s_895f6ebe145fd3::t_f807d26dadf8be 10
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_4afe605ed01887 4,14-22
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_f807d26dadf8be 162
+tests/tracer/result-export.R
+  s_895f6ebe145fd3::t_1e7a18cd10ac82 10,113
+tests/tracer/registered-profile.R
+  s_895f6ebe145fd3::t_c791689013aa6c 30
+  s_895f6ebe145fd3::t_8c2a2881254a7c 4,29,31,39-42,45-47,53
+man/planAnalysisProfile.Rd
+  s_895f6ebe145fd3::t_f807d26dadf8be 8
+docs/development/registered-analyses.md
+  s_895f6ebe145fd3::t_4afe605ed01887 103
+  s_895f6ebe145fd3::t_f807d26dadf8be 44,49-71,73-74,77-82,102,104-105,109-110
+  s_895f6ebe145fd3::t_c791689013aa6c 75-76
+R/result-artifact.R
+  s_895f6ebe145fd3::t_f807d26dadf8be 64-65
+tests/tracer/artifact-inventory.R
+  s_895f6ebe145fd3::t_4afe605ed01887 1-16,18-21
+  s_895f6ebe145fd3::t_846c395acca0b4 17
+R/profile-generation.R
+  s_895f6ebe145fd3::t_f807d26dadf8be 9,14
+tests/tracer/registered-profile-offline.R
+  s_895f6ebe145fd3::t_e9a30c0f38f9c7 13-14
+  s_895f6ebe145fd3::t_4afe605ed01887 7-12,15
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2d30be61f6d5a1c56fcc9d4d7738721a3743aca7",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
