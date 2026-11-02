@@ -10,7 +10,7 @@ listDomainConcepts(connectionDetails, resultsSchema, releaseId, domain,
 \item{resultsSchema}{Restricted result schema.}
 \item{releaseId}{UUID of a saved building domain baseline release.}
 \item{domain}{One of condition, drug, procedure, visit, device, observation,
-death or specimen.}
+death, specimen or measurement.}
 \item{pageSize}{Integer from 1 to 128.}
 \item{cursor}{NULL for the first page or the returned next_cursor. Bound to the
 release, content revision, profile and domain.}

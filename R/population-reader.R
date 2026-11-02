@@ -10,11 +10,11 @@
 readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,maxSpoolBytes=64*1024^2) {
   .baseline_read(connectionDetails,resultsSchema,releaseId,visit,FALSE,maxSpoolBytes=maxSpoolBytes)
 }
-.baseline_read <- function(connectionDetails,resultsSchema,releaseId,visit,domainMode,beforeEmit=NULL,maxSpoolBytes=64*1024^2,select=NULL) {
+.baseline_read <- function(connectionDetails,resultsSchema,releaseId,visit,domainMode,beforeEmit=NULL,maxSpoolBytes=64*1024^2,select=NULL,measurementMode=FALSE) {
   .population_need(is.function(visit),"A streaming row visitor is required")
   .baseline_spool_limit(maxSpoolBytes)
   .store_transaction(connectionDetails,resultsSchema,function(tx) {
-    id<-.store_uuid(releaseId);s<-tx$schema;assets<-.v2_assets();ids<-c(.population_ids(),if(domainMode).domain_ids() else character())
+    id<-.store_uuid(releaseId);s<-tx$schema;assets<-.v2_assets();ids<-c(.population_ids(),if(domainMode).domain_ids(measurementMode) else character())
     context<-.store_decode(tx$one(paste0("SELECT jsonb_build_object('release_id',r.release_id::text,'run_id',a.run_id::text,'source_id',src.source_id,",
       "'profile_id',a.profile_id,'profile_sha256',a.profile_sha256,'profile_revision',a.profile_revision,'request_sha256',a.request_sha256,'state',r.state,'run_state',a.state,'expected_metric_count',r.expected_metric_count::text)::text ",
       "FROM ",s,".achillesnext_result_release r JOIN ",s,".achillesnext_analysis_run a USING(run_id) JOIN ",s,".achillesnext_source_release src USING(source_release_id) WHERE r.release_id=",id)))
@@ -30,7 +30,7 @@ readPopulationObservationBaseline <- function(connectionDetails,resultsSchema,re
       })
     .population_need(setequal(names(inventory),names(assets$metrics))&&setequal(names(datasets),ids),"Incomplete saved baseline inventory")
     .population_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_aggregate_cell WHERE release_id=",id," AND metric_id NOT IN (",paste(vapply(ids,.store_literal,""),collapse=","),")"))=="0","Ungenerated outputs contain unexpected facts")
-    telemetry<-.store_decode(tx$one(paste0("SELECT telemetry::text FROM ",s,".achillesnext_operation WHERE run_id=",.store_uuid(context$run_id)," AND operation_id=",.store_literal(if(domainMode)"domain_baseline.generate" else "population_observation.generate")," AND state='succeeded'")))
+    telemetry<-.store_decode(tx$one(paste0("SELECT telemetry::text FROM ",s,".achillesnext_operation WHERE run_id=",.store_uuid(context$run_id)," AND operation_id=",.store_literal(if(measurementMode)"measurement_baseline.generate" else if(domainMode)"domain_baseline.generate" else "population_observation.generate")," AND state='succeeded'")))
     .population_need(identical(.json(telemetry$producer_request$requested_metric_ids),.json(as.list(ids)))&&
       identical(.hash(.json(telemetry$producer_request)),context$request_sha256),"Saved requested-work identity mismatch")
     .population_reconcile(tx,releaseId,datasets,telemetry$totals)

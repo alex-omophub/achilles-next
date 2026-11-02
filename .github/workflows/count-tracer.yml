@@ -159,6 +159,7 @@ jobs:
           Rscript --vanilla tests/tracer/analysis-definitions.R
           Rscript --vanilla tests/tracer/registered-profile-offline.R
           Rscript --vanilla tests/tracer/source-store-offline.R
+          Rscript --vanilla tests/tracer/measurement-baseline-offline.R
           Rscript --vanilla tests/tracer/persistence-offline.R "$RUNNER_TEMP/v2-corpus.json"
           Rscript --vanilla tests/tracer/batch-plan.R
           PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_result_serving.py --test-script registered-profile --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/registered-profile" --admin-host 127.0.0.1 --admin-user postgres
@@ -173,6 +174,8 @@ jobs:
           calendar_args=()
           if [ "$COMPACT_DOMAIN_CALENDAR" = 1 ]; then calendar_args+=(--compact-calendar); fi
           python3 tools/test_domain_baseline.py "${calendar_args[@]}" --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/domain-baseline"
+      - name: Verify whole-source measurements and exact summary parity
+        run: python3 tools/test_measurement_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/measurement-baseline"
       - name: Validate every generated bundle against the frozen contracts
         run: |
           npm run check --prefix packages/contracts

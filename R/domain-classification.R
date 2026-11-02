@@ -1,4 +1,4 @@
-.domain_prepare <- function(tx,schema,stage,person,intervals,cap) {
+.domain_prepare <- function(tx,schema,stage,person,intervals,cap,measurementMode=FALSE) {
   assets<-.v2_assets();source<-paste0('"',schema,'"');tables<-list();counts<-list();unsupported<-list()
   .population_need(tx$one(paste0("SELECT COUNT(*)::text FROM (SELECT concept_id FROM ",source,".concept GROUP BY concept_id HAVING COUNT(DISTINCT domain_id)>1 OR (COUNT(domain_id)>0 AND COUNT(domain_id)<COUNT(*))) x"))=="0","Ambiguous local concept domains; generation rolled back")
   vocabulary<-stage("vocab",paste0("SELECT concept_id,MIN(domain_id) AS domain_id FROM ",source,".concept GROUP BY concept_id"),"concept_id")
@@ -21,7 +21,7 @@
     if(tx$one(paste0("SELECT count(*)::text FROM (SELECT care_site_id FROM ",source,".care_site WHERE care_site_id IS NOT NULL GROUP BY care_site_id HAVING COUNT(*)>1) x"))!="0")careReason<-"capability.care_site_ambiguous" else
       care<-stage("care",paste0("SELECT care_site_id,place_of_service_concept_id FROM ",source,".care_site"),"care_site_id")
   }
-  for(domain in .domain_names()) {
+  for(domain in .domain_names(measurementMode)) {
     d<-assets$profile$domains[[domain]];mid<-paste0("core.",domain,".")
     e<-function(name,default="NULL::bigint",required=TRUE)if(is.null(name))default else col(domain,name,required) %||% default
     date<-e(d$event_date);end<-e(d$end_date,"NULL::date",domain!="procedure")
@@ -68,6 +68,16 @@
       fields$representation_flags<-paste(flags,collapse="||")
       fields$known_unit<-paste0("EXISTS(SELECT 1 FROM ",vocabulary," v WHERE v.concept_id=",fields$unit_id," AND v.concept_id>0 AND v.domain_id='Unit')")
     }
+    if(domain=="measurement") {
+      fields$value_as_number<-paste0(e('value_as_number'),"::numeric");fields$value_concept_tag<-.domain_tag(e('value_as_concept_id'))
+      fields$unit_id<-e('unit_concept_id');fields$unit_tag<-.domain_tag(fields$unit_id)
+      fields$operator_id<-e('operator_concept_id');fields$operator_tag<-.domain_tag(fields$operator_id)
+      fields$range_low<-paste0(e('range_low'),"::numeric");fields$range_high<-paste0(e('range_high'),"::numeric")
+      fields$representation_flags<-paste(c(paste0("(",e('value_as_number')," IS NOT NULL)::integer::text"),
+        paste0("(",e('value_as_concept_id')," IS NOT NULL AND ",e('value_as_concept_id'),"<>0)::integer::text"),
+        paste0("(",e('value_source_value')," IS NOT NULL AND btrim(",e('value_source_value'),",' ')<>'')::integer::text")),collapse="||")
+      fields$known_unit<-paste0("EXISTS(SELECT 1 FROM ",vocabulary," v WHERE v.concept_id=",fields$unit_id," AND v.concept_id>0 AND v.domain_id='Unit')")
+    }
     raw<-stage(paste0(domain,"raw"),paste0("SELECT ",paste(paste0(unlist(fields),' AS "',names(fields),'"'),collapse=",")," FROM ",source,'."',d$table,'" e'))
     classification<-paste0("SELECT r.*,",.domain_tag('r.concept_id')," AS concept_tag,p.year_of_birth,p.gender_concept_id,p.person_id IS NOT NULL AS linked,",
       "(r.event_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31') IS TRUE AS valid_date,",
@@ -78,6 +88,6 @@
     counts[[domain]]<-.store_decode(tx$one(paste0("SELECT jsonb_build_object('raw',COUNT(*)::text,'linked',COUNT(*) FILTER(WHERE linked)::text,'observed',COUNT(*) FILTER(WHERE observed)::text,'start',MIN(event_date) FILTER(WHERE valid_date)::text,'end',MAX(event_date) FILTER(WHERE valid_date)::text)::text FROM ",tables[[domain]])))
     tx$execute(paste("DROP TABLE",raw))
   }
-  measurement<-stage("measurepresence",paste0("SELECT DISTINCT m.person_id FROM ",source,".measurement m JOIN ",person," p USING(person_id)"),"person_id")
+  measurement<-if(measurementMode)tables$measurement else stage("measurepresence",paste0("SELECT DISTINCT m.person_id FROM ",source,".measurement m JOIN ",person," p USING(person_id)"),"person_id")
   list(tables=tables,counts=counts,unsupported=unsupported,care_reason=careReason,measurement=measurement)
 }

@@ -8,7 +8,10 @@
 #'   not an approved provider. Unsupported date grains require new generation.
 #' @export
 readDomainBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,metricIds=NULL,conceptTag=NULL,period=NULL,maxSpoolBytes=64*1024^2) {
-  ids<-c(.population_ids(),.domain_ids())
+  .domain_read(connectionDetails,resultsSchema,releaseId,visit,metricIds,conceptTag,period,maxSpoolBytes,FALSE)
+}
+.domain_read <- function(connectionDetails,resultsSchema,releaseId,visit,metricIds,conceptTag,period,maxSpoolBytes,measurementMode) {
+  ids<-c(.population_ids(),.domain_ids(measurementMode))
   .population_need(is.null(metricIds)||(is.character(metricIds)&&length(metricIds)>0L&&!anyDuplicated(metricIds)&&all(metricIds%in%ids)),"Choose generated baseline metric IDs")
   if(!is.null(conceptTag)){.v2_component(conceptTag,'concept_tag');.population_need(conceptTag$kind!='schema_absent','Invalid concept selector')}
   if(!is.null(period)) {
@@ -36,26 +39,27 @@ readDomainBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,m
     if(!is.null(period)&&(is.null(row$dimensions$period_kind)||!identical(.json(row$dimensions[names(period)]),.json(period))))return(FALSE)
     TRUE
   }
-  context<-.baseline_read(connectionDetails,resultsSchema,releaseId,visit,TRUE,checkPeriods,maxSpoolBytes,selectRow)
+  context<-.baseline_read(connectionDetails,resultsSchema,releaseId,visit,TRUE,checkPeriods,maxSpoolBytes,selectRow,measurementMode)
   c(context,.object(selection=.object(metric_ids=as.list(selected),concept_tag=conceptTag,period=period)))
 }
 
 #' Page through a saved domain's raw concept identities
 #' @inheritParams readPopulationObservationBaseline
 #' @param domain One of condition, drug, procedure, visit, device, observation,
-#'   death or specimen.
+#'   death, specimen or measurement.
 #' @param pageSize Integer from 1 to 128.
 #' @param cursor NULL for the first page; otherwise the previous next_cursor.
 #' @return A bounded list of typed concept tags and a release/revision-bound
 #'   next_cursor, or NULL at the end. No patient/source strings or live labels.
 #' @export
 listDomainConcepts <- function(connectionDetails,resultsSchema,releaseId,domain,pageSize=64L,cursor=NULL) {
-  .population_need(.string(domain)&&domain%in%.domain_names(),'Unknown baseline domain')
+  .population_need(.string(domain)&&domain%in%.domain_names(TRUE),'Unknown baseline domain')
   .population_need(is.numeric(pageSize)&&length(pageSize)==1L&&!is.na(pageSize)&&pageSize==floor(pageSize)&&pageSize>=1&&pageSize<=128,'Invalid catalogue page size')
   .store_transaction(connectionDetails,resultsSchema,function(tx) {
     id<-.store_uuid(releaseId);s<-tx$schema;mid<-paste0('core.',domain,'.capture_count')
-    context<-.store_decode(tx$one(paste0("SELECT jsonb_build_object('revision',r.content_revision::text,'state',r.state,'run_state',a.state,'profile',a.profile_sha256,'request',a.request_sha256,'producer',o.telemetry->'producer_request')::text FROM ",s,".achillesnext_result_release r JOIN ",s,".achillesnext_analysis_run a USING(run_id) JOIN ",s,".achillesnext_operation o ON o.run_id=a.run_id AND o.operation_id='domain_baseline.generate' AND o.state='succeeded' WHERE r.release_id=",id)))
+    context<-.store_decode(tx$one(paste0("SELECT jsonb_build_object('revision',r.content_revision::text,'state',r.state,'run_state',a.state,'profile',a.profile_sha256,'request',a.request_sha256,'producer',o.telemetry->'producer_request')::text FROM ",s,".achillesnext_result_release r JOIN ",s,".achillesnext_analysis_run a USING(run_id) JOIN ",s,".achillesnext_operation o ON o.run_id=a.run_id AND o.operation_id IN ('domain_baseline.generate','measurement_baseline.generate') AND o.state='succeeded' WHERE r.release_id=",id)))
     .population_need(context$state=='building'&&context$run_state=='succeeded'&&context$profile==.v2_assets()$hash&&.hash(.json(context$producer))==context$request,'Expected a saved domain baseline')
+    .population_need(mid%in%unlist(context$producer$requested_metric_ids),'Domain was not generated; generation is required')
     binding<-.hash(.json(.object(release_id=releaseId,revision=context$revision,metric_id=mid,profile=context$profile)))
     after<-NULL
     if(!is.null(cursor)) {
@@ -71,4 +75,13 @@ listDomainConcepts <- function(connectionDetails,resultsSchema,releaseId,domain,
     more<-length(tags)>pageSize;if(more)tags<-tags[seq_len(pageSize)]
     .object(release_id=releaseId,domain=domain,concepts=tags,next_cursor=if(more).object(binding=binding,after=keys[pageSize]) else NULL)
   },readOnly=TRUE)
+}
+
+#' Stream saved restricted measurement/domain aggregates without CDM access
+#' @inheritParams readDomainBaseline
+#' @return Validated restricted metadata and saved selection across 138 outputs;
+#'   this is not an approved publication/provider.
+#' @export
+readMeasurementBaseline <- function(connectionDetails,resultsSchema,releaseId,visit,metricIds=NULL,conceptTag=NULL,period=NULL,maxSpoolBytes=64*1024^2) {
+  .domain_read(connectionDetails,resultsSchema,releaseId,visit,metricIds,conceptTag,period,maxSpoolBytes,TRUE)
 }

@@ -60,9 +60,15 @@ as a complete core result.
 outputs with the same 19 population dependencies, for 119 of 142 outputs accounted
 for. The [domain guide](docs/development/domain-baseline.md) covers batch generation,
 exact concept/month/year selection and paged raw concept catalogues without CDM
-access. Conditional unsupported fields retain explicit states. Measurement and
-metadata generation remain pending; these restricted building releases cannot be
+access. Conditional unsupported fields retain explicit states. These restricted building releases cannot be
 published as complete core results or opened in the v1 tracer viewer.
+
+`generateMeasurementBaseline()` adds all nineteen whole-source measurement
+outputs, bringing the restricted baseline to 138 of 142 outputs. The
+[measurement baseline guide](docs/development/measurement-baseline.md) describes
+representations, units/operators, exact numeric and reference-range summaries,
+and saved readback. Four metadata outputs and complete core publication remain
+pending. The earlier synthetic measurement tracer and its viewer stay separate.
 
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 

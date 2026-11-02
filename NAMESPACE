@@ -29,3 +29,6 @@ export(planAnalysisProfile)
 export(registerAnalysisProfile)
 export(readDomainBaseline)
 export(listDomainConcepts)
+
+export(generateMeasurementBaseline)
+export(readMeasurementBaseline)

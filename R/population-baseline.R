@@ -62,7 +62,7 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
   .baseline_generate(connectionDetails,cdmSchema,sourceId,resultsSchema,declaredCdmVersion,window,maxStageBytes,check,statementTimeoutMs,FALSE)
 }
 .baseline_generate <- function(connectionDetails,cdmSchema,sourceId,resultsSchema,declaredCdmVersion,
-  window,maxStageBytes,check,statementTimeoutMs,domainMode) {
+  window,maxStageBytes,check,statementTimeoutMs,domainMode,measurementMode=FALSE,numericStrategy="weighted",maxAggregateRows=NULL) {
   plan<-planCharacterizationBatch(cdmSchema,sourceId,declaredCdmVersion,window,"shared")
   .population_need(nchar(sourceId,type="bytes")<=256L && .batch_identifier(resultsSchema) && resultsSchema!="public" && resultsSchema!=cdmSchema,"Invalid baseline source/results configuration")
   .population_need(is.numeric(maxStageBytes)&&length(maxStageBytes)==1L&&is.finite(maxStageBytes)&&maxStageBytes>=0&&maxStageBytes<=2^53,"Invalid intermediate byte budget")
@@ -70,16 +70,17 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
   .population_need(is.numeric(statementTimeoutMs)&&length(statementTimeoutMs)==1L&&!is.na(statementTimeoutMs)&&is.finite(statementTimeoutMs)&&
     statementTimeoutMs>=1&&statementTimeoutMs<=2147483647&&statementTimeoutMs==floor(statementTimeoutMs),"Invalid statement timeout")
   tick<-function()if(!is.null(check))check()
-  tick();started<-.stamp();assets<-.v2_assets();ids<-c(.population_ids(),if(domainMode).domain_ids() else character())
-  requested<-.object(producer_id=if(domainMode)"domain_baseline" else "population_observation_baseline",producer_revision="1.0.0",plan_sha256=plan$plan_sha256,
+  tick();started<-.stamp();assets<-.v2_assets();ids<-c(.population_ids(),if(domainMode).domain_ids(measurementMode) else character())
+  requested<-.object(producer_id=if(measurementMode)"measurement_baseline" else if(domainMode)"domain_baseline" else "population_observation_baseline",producer_revision="1.0.0",plan_sha256=plan$plan_sha256,
     requested_metric_ids=as.list(ids),scope=plan$scope)
+  if(measurementMode)requested$numeric_strategy<-numericStrategy
   requestHash<-.hash(.json(requested))
   tryCatch(.store_transaction(connectionDetails,resultsSchema,function(tx) {
     tick();tx$execute(paste0("SET LOCAL statement_timeout=",as.integer(statementTimeoutMs)));tx$execute("SET LOCAL lock_timeout=2000")
     tx$execute("SET LOCAL timezone='UTC'");tx$execute("SET LOCAL datestyle='ISO,YMD'");tx$execute("SET LOCAL standard_conforming_strings=on")
     .population_need(tx$one(paste0("SELECT count(*)::text FROM ",tx$schema,".achillesnext_profile_registry WHERE profile_sha256=",.store_literal(assets$hash)))=="1","Install the matching core profile in the result store first")
     schemaHash<-.population_preflight(tx,cdmSchema)
-    cap<-if(domainMode).domain_preflight(tx,cdmSchema) else NULL
+    cap<-if(domainMode).domain_preflight(tx,cdmSchema,measurementMode) else NULL
     if(domainMode)schemaHash<-.hash(paste0(schemaHash,cap$hash))
     release<-.store_new_uuid();run<-.store_new_uuid();sourceRelease<-.store_new_uuid()
     prefix<-paste0("achillesnext_",gsub("-","",run,fixed=TRUE));stages<-character();stageTimings<-list();peak<-0
@@ -103,7 +104,7 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
     bounds<-.store_decode(tx$one(paste0("SELECT jsonb_build_object('start',min(start_date)::text,'end',max(end_date)::text)::text FROM ",intervals)))
     populationEffective<-window %||% bounds
     populationPeriods<-stage("populationperiods",.population_sql("periods",lapply(populationEffective,function(v)if(is.null(v))"NULL" else paste0("DATE ",.store_literal(v)))))
-    domains<-if(domainMode).domain_prepare(tx,cdmSchema,stage,person,intervals,cap) else NULL
+    domains<-if(domainMode).domain_prepare(list(one=tx$one,execute=tx$execute),cdmSchema,stage,person,intervals,cap,measurementMode) else NULL
     if(domainMode) {
       starts<-c(bounds$start,unlist(lapply(domains$counts,function(x)x$start)));ends<-c(bounds$end,unlist(lapply(domains$counts,function(x)x$end)))
       bounds<-list(start=if(length(starts))min(starts) else NULL,end=if(length(ends))max(ends) else NULL)
@@ -121,10 +122,12 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
     }
     outputs<-c(stage("population",populationSql,"metric_id"))
     if(domainMode) {
-      for(domain in .domain_names())outputs<-c(outputs,stage(paste0(domain,"reports"),.domain_reports(domain,domains$tables[[domain]],person,periods,cap),"metric_id"))
-      outputs<-c(outputs,stage("density",.domain_density(person,domains$tables,domains$measurement),"metric_id"))
+      for(domain in .domain_names(measurementMode))outputs<-c(outputs,stage(paste0(domain,"reports"),
+        if(domain=="measurement").measurement_reports(domains$tables[[domain]],person,periods,cap,numericStrategy) else .domain_reports(domain,domains$tables[[domain]],person,periods,cap),"metric_id"))
+      outputs<-c(outputs,stage("density",.domain_density(person,domains$tables[.domain_names()],domains$measurement),"metric_id"))
     }
     output<-paste0("(",paste(paste("SELECT * FROM",outputs),collapse=" UNION ALL "),") output")
+    if(measurementMode).population_need(.nv_unsigned_cmp(tx$one(paste("SELECT count(*)::text FROM",output)),as.character(maxAggregateRows))<=0,"Aggregate row budget exceeded; generation rolled back")
     totals<-list(person_count=integrity$person_count,raw_observation_count=tx$one(paste("SELECT count(*)::text FROM",raw)),
       merged_interval_count=tx$one(paste("SELECT count(*)::text FROM",intervals)))
     unknown<-.object(state="unknown",value=NULL,basis=NULL,assertion_id=NULL,reason_code="source.no_verified_release")
@@ -139,7 +142,7 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
       base<-if(startsWith(mid,"core.person.") || mid%in%c("core.observation_period.person_interval_histogram","core.observation_period.total_days_histogram"))totals$person_count else if(mid%in%c("core.observation_period.type_count","core.observation_period.integrity_count"))totals$raw_observation_count else totals$merged_interval_count
       state<-if(!present)"not_requested" else if(base!="0")"computed" else if(totals$person_count=="0" || mid%in%c("core.observation_period.type_count","core.observation_period.integrity_count"))"empty_source" else "empty_population"
       conditionalReason<-if(domainMode)domains$unsupported[[mid]] else NULL
-      if(domainMode && mid%in%.domain_ids()) {
+      if(domainMode && mid%in%.domain_ids(measurementMode)) {
         domain<-strsplit(mid,".",fixed=TRUE)[[1]][2]
         base<-if(domain=="density")totals$person_count else domains$counts[[domain]]$raw
         state<-if(!is.null(conditionalReason))"unsupported" else if(base=="0")"empty_source" else "computed"
@@ -157,15 +160,17 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
       if(present){.v2_dataset(d);datasets[[mid]]<-d}
       tx$execute(paste0("INSERT INTO ",s,".achillesnext_dataset VALUES (",paste(c(.store_uuid(release),vapply(c(mid,m$version,m$population,m$grain,d$row_schema_id,d$definition_sha256,state),lit,""),if(is.null(reason))"NULL" else lit(reason),"true",paste0(lit(.json(d$conditional_support)),"::jsonb"),count,paste0(lit(.json(d$completeness)),"::jsonb")),collapse=","),")"))
     }
-    writer<-.store_writer(tx,release)
+    writer<-.store_writer(tx,release);writtenRows<-0L
     for(mid in c("core.person.count",setdiff(ids,"core.person.count"))) {
       tick();d<-datasets[[mid]]
       tx$stream(.domain_stream_sql(tx,release,output,mid),function(text) {
-        tick();v<-.store_decode(text);state<-d$state;reason<-d$reason_code
+        tick();writtenRows<<-writtenRows+1L
+        if(measurementMode).population_need(writtenRows<=maxAggregateRows,"Aggregate row budget exceeded; generation rolled back")
+        v<-.store_decode(text);state<-d$state;reason<-d$reason_code
         v$values<-lapply(v$values,.baseline_normalize)
         if(v$row_kind=="summary"&&v$values$n=="0"){state<-"empty_population";reason<-"summary.no_eligible"}
         row<-.object(row_key="",dimensions=v$dimensions,row_kind=v$row_kind,state=state,reason_code=reason,values=v$values,denominator_refs=list())
-        if(domainMode && mid%in%.domain_ids()) {
+        if(domainMode && mid%in%.domain_ids(measurementMode)) {
           if(mid=="core.visit.care_setting_count" && v$dimensions$setting_kind=="place_of_service" && !is.null(domains$care_reason)) {
             row$state<-if(domains$care_reason=="capability.care_site_absent")"unsupported" else "unavailable";row$reason_code<-domains$care_reason;row['values']<-list(NULL)
           }
@@ -182,8 +187,8 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
     ended<-.stamp();telemetry<-.object(request=plan$scope,producer_request=requested,source_schema=cdmSchema,observed_window=effective,totals=totals,domain_totals=if(domainMode)domains$counts else NULL,started_at=started,ended_at=ended,
       population_window=populationEffective,schema_conditional=if(domainMode)domains$unsupported else NULL,care_reason=if(domainMode)domains$care_reason else NULL,
       definitions=plan$definitions,stages=stageTimings,peak_intermediate_bytes=format(peak,scientific=FALSE,trim=TRUE),
-      resource_limits=.object(statement_timeout_ms=as.character(statementTimeoutMs),max_stage_bytes=format(maxStageBytes,scientific=FALSE,trim=TRUE)),persistence=persistence,reusable=FALSE)
-    tx$execute(paste0("INSERT INTO ",s,".achillesnext_operation VALUES (",.store_uuid(run),",",lit(if(domainMode)"domain_baseline.generate" else "population_observation.generate"),",",lit(.hash(.json(plan$definitions))),",'succeeded','[]',",lit(.json(telemetry)),"::jsonb)"))
+      resource_limits=.object(statement_timeout_ms=as.character(statementTimeoutMs),max_stage_bytes=format(maxStageBytes,scientific=FALSE,trim=TRUE),max_aggregate_rows=if(measurementMode)as.character(maxAggregateRows) else NULL),persistence=persistence,reusable=FALSE)
+    tx$execute(paste0("INSERT INTO ",s,".achillesnext_operation VALUES (",.store_uuid(run),",",lit(if(measurementMode)"measurement_baseline.generate" else if(domainMode)"domain_baseline.generate" else "population_observation.generate"),",",lit(.hash(.json(plan$definitions))),",'succeeded','[]',",lit(.json(telemetry)),"::jsonb)"))
     tx$execute(paste0("UPDATE ",s,".achillesnext_analysis_run SET state='succeeded',finished_at=",lit(ended),"::timestamptz WHERE run_id=",.store_uuid(run)))
     tick();.object(release_id=release,run_id=run,profile_id=assets$profile$profile_id,profile_sha256=assets$hash,state="building",generated_metrics=as.list(ids),expected_metric_count="142",generated_metric_count=as.character(length(ids)),publishable=FALSE)
   },queryTimeoutSeconds=ceiling(statementTimeoutMs/1000)+1),error=function(e){if(inherits(e,"AchillesPopulationFailure"))stop(e);stop(if(domainMode)"Domain baseline generation failed; transaction rolled back" else "Population/observation generation failed; transaction rolled back",call.=FALSE)})

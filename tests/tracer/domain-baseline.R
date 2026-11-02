@@ -73,6 +73,8 @@ main<-function() {
     tags<-c(tags,page$concepts);cursor<-page$next_cursor
   }
   stopifnot(length(tags)==7L,any(vapply(tags,function(t)t$kind=='null',TRUE)),!any(vapply(tags,function(t)t$kind=='all',TRUE)))
+  error<-tryCatch({listDomainConcepts(env$fixtureConnection(),results,saved[[1]]$release,'measurement');'accepted'},error=conditionMessage)
+  stopifnot(grepl('Domain was not generated',error,fixed=TRUE))
   page<-listDomainConcepts(env$fixtureConnection(),results,saved[[1]]$release,'condition',1)
   error<-tryCatch({listDomainConcepts(env$fixtureConnection(),results,saved[[2]]$release,'condition',1,page$next_cursor);'accepted'},error=conditionMessage)
   stopifnot(error!='accepted')

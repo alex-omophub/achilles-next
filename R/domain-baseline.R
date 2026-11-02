@@ -50,7 +50,7 @@ generateDomainBaseline <- function(connectionDetails,cdmSchema,sourceId,resultsS
 }
 .domain_reconcile <- function(tx,release,datasets,totals) {
   s<-tx$schema;rid<-.store_uuid(release)
-  for(domain in .domain_names()) {
+  for(domain in intersect(.domain_names(TRUE),names(totals))) {
     mid<-paste0('core.',domain,'.capture_count')
     cells<-paste0('(SELECT * FROM ',s,'.achillesnext_aggregate_cell WHERE release_id=',rid,' AND metric_id=',.store_literal(mid),')')
     .population_need(tx$one(paste0("WITH cells AS ",cells,", totals AS (SELECT dimensions-'concept_tag' AS dims,record_count,person_count FROM cells WHERE dimensions->'concept_tag'->>'kind'='all'), parts AS (SELECT dimensions-'concept_tag' AS dims,sum(record_count) AS n FROM cells WHERE dimensions->'concept_tag'->>'kind'<>'all' GROUP BY 1) SELECT count(*)::text FROM totals t FULL JOIN parts p USING(dims) WHERE t.record_count IS DISTINCT FROM COALESCE(p.n,0) OR t.person_count>t.record_count"))=='0','Domain ALL record totals do not reconcile')
