@@ -73,6 +73,7 @@ generateAnalysisProfile <- function(connectionDetails,cdmSchema,sourceId,results
     }
     order <- paste(vapply(seq_along(plan$metric_order),function(i)paste0("WHEN ",lit(plan$metric_order[[i]])," THEN ",i),""),collapse=" ")
     sql <- paste0("SELECT doc FROM (",.profile_sql(assets$entry$producer_sql,cdmSchema),") q(doc) ORDER BY CASE doc::jsonb->>'metric_id' ",order," ELSE 2147483647 END")
+    writer<-.store_writer(tx,release,assets)
     tx$stream(sql,function(text) {
       seen <<- seen+1L;.nv_need(seen<=maxRows && nchar(text,type="bytes")<=65536L,"Registered aggregate resource limit")
       item <- .store_decode(text);.analysis_keys(item,c("metric_id","dimensions","row_kind","values"));mid <- item$metric_id
@@ -84,14 +85,15 @@ generateAnalysisProfile <- function(connectionDetails,cdmSchema,sourceId,results
         row$denominator_refs <- lapply(spec$measures,function(m).object(measure=m$source,metric_id=spec$metric_id,row_key=target$row_key,field=m$target,value=target$values[[m$target]]))
         .v2_denominator_check(mid,row,function(id,key)target$dimensions,assets)
       }
-      row$row_key <- .v2_row_identity(assets$rows[[mid]],row);.store_put_row(tx,release,mid,row,assets)
+      row$row_key <- .v2_row_identity(assets$rows[[mid]],row);writer$add(mid,row)
       counts[[mid]] <<- .nv_add(counts[[mid]],"1")
       if(mid%in%assets$singletons) {.nv_need(counts[[mid]]=="1","Duplicate generated singleton");targets[[mid]] <<- row}
     })
+    persistence<-writer$finish()
     for(mid in names(counts)) tx$execute(paste0("UPDATE ",s,".achillesnext_dataset SET row_count=",counts[[mid]]," WHERE release_id=",.store_uuid(release)," AND metric_id=",lit(mid)))
     .nv_need(all(vapply(counts[assets$singletons],function(n)n=="1",TRUE)),"Missing generated singleton")
     .profile_store_checks(tx,release,NULL,assets)
-    tx$execute(paste0("INSERT INTO ",s,".achillesnext_operation VALUES (",.store_uuid(run),",'registered.generate',",lit(.hash(.json(plan$definitions))),",'succeeded','[]','{}'); UPDATE ",s,".achillesnext_analysis_run SET state='succeeded',finished_at=now() WHERE run_id=",.store_uuid(run)))
+    tx$execute(paste0("INSERT INTO ",s,".achillesnext_operation VALUES (",.store_uuid(run),",'registered.generate',",lit(.hash(.json(plan$definitions))),",'succeeded','[]',",lit(.json(.object(persistence=persistence))),"::jsonb); UPDATE ",s,".achillesnext_analysis_run SET state='succeeded',finished_at=now() WHERE run_id=",.store_uuid(run)))
     list(release_id=release,profile_id=profileId,state="building",publishable=FALSE,aggregate_rows=as.character(seen),profile_complete=TRUE)
   },queryTimeoutSeconds=queryTimeoutSeconds)
 }
