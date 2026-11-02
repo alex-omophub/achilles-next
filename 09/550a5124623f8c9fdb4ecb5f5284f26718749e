@@ -1,0 +1,114 @@
+man/resultPublication.Rd
+  s_895f6ebe145fd3::t_6e7bf3c18ca3e5 16
+docs/development/analysis-definitions.md
+  s_895f6ebe145fd3::t_6e7bf3c18ca3e5 33-36
+R/result-artifact.R
+  s_895f6ebe145fd3::t_f7abd37d31b887 108
+  s_895f6ebe145fd3::t_5f8e3ccc4262e8 55
+  s_895f6ebe145fd3::t_3c8e4c81ffa311 56-57
+  s_3e206b4a2cf4c3::t_a7d636f7121527 38,64,66,70,92,96,124-125,128,145,160,167,175,184-187
+R/run-ledger.R
+  s_895f6ebe145fd3::t_f7abd37d31b887 18
+man/generateAnalysisProfile.Rd
+  s_895f6ebe145fd3::t_5f8e3ccc4262e8 1-18
+tests/tracer/registered-profile-reader.R
+  s_895f6ebe145fd3::t_9fcd7d357ff2df 1-18
+docs/development/registered-analyses.md
+  s_895f6ebe145fd3::t_8926976b267ff5 1-85
+tests/tracer/implementation-identity.R
+  s_895f6ebe145fd3::t_f25f6c8d963ab0 14
+  s_3e206b4a2cf4c3::t_bd2979d419ac97 42
+R/result-store.R
+  s_895f6ebe145fd3::t_66d15329219514 43,45
+  s_895f6ebe145fd3::t_6d83af8d079bbb 44
+man/registerAnalysisProfile.Rd
+  s_895f6ebe145fd3::t_6d83af8d079bbb 1-11
+README.md
+  s_895f6ebe145fd3::t_a66d073b5053b4 48-51
+R/profile-generation.R
+  s_895f6ebe145fd3::t_dd5a9663e1a780 92
+  s_895f6ebe145fd3::t_6d83af8d079bbb 94
+  s_895f6ebe145fd3::t_e02433baaa1f11 1-91,93,95-97
+NAMESPACE
+  s_895f6ebe145fd3::t_dd5a9663e1a780 27-28
+  s_895f6ebe145fd3::t_6d83af8d079bbb 29
+man/planAnalysisProfile.Rd
+  s_895f6ebe145fd3::t_5f8e3ccc4262e8 1-12
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_02dd36db5cb08a 160,162
+tools/benchmark/implementation_identity.R
+  s_3e206b4a2cf4c3::t_bd2979d419ac97 37-38
+tests/fixtures/reference-person-v1.json
+  s_895f6ebe145fd3::t_9fcd7d357ff2df 1-20
+tests/tracer/registered-profile-offline.R
+  s_895f6ebe145fd3::t_f25f6c8d963ab0 10
+  s_895f6ebe145fd3::t_02dd36db5cb08a 1-9,11-30
+inst/sql/postgresql/reference-person-v1.sql
+  s_895f6ebe145fd3::t_f68be0e1d33597 1-13
+inst/analysis/registered-profile-lock.json
+  s_895f6ebe145fd3::t_f89a5e3bcb2343 8
+  s_3e206b4a2cf4c3::t_a74c84dbd49f59 1-7,9-10
+tests/tracer/registered-profile.R
+  s_895f6ebe145fd3::t_012e8c4eae0dde 11,24-27,32-36
+  s_895f6ebe145fd3::t_7b302e1e527f56 52-53
+  s_895f6ebe145fd3::t_9fcd7d357ff2df 1-10,12-23,28-31,37-40,43-51,54-72,74-83
+  s_895f6ebe145fd3::t_52b82a299f8501 73
+  s_895f6ebe145fd3::t_6364e3830332ae 41-42
+R/registered-profiles.R
+  s_895f6ebe145fd3::t_5f8e3ccc4262e8 84-88
+  s_895f6ebe145fd3::t_dd5a9663e1a780 41,58-65,68
+  s_895f6ebe145fd3::t_f7abd37d31b887 1-40,42-57,66-67,69-83,89-94
+  s_895f6ebe145fd3::t_6d83af8d079bbb 95-115
+tools/test_result_serving.py
+  s_895f6ebe145fd3::t_9fcd7d357ff2df 21,41
+inst/sql/postgresql/reference-person-check-v1.sql
+  s_895f6ebe145fd3::t_f68be0e1d33597 1,4
+  s_895f6ebe145fd3::t_66d15329219514 2-3
+R/result-validation.R
+  s_895f6ebe145fd3::t_6e7bf3c18ca3e5 197
+  s_895f6ebe145fd3::t_5f8e3ccc4262e8 132
+  s_3e206b4a2cf4c3::t_9d749bd989ef6b 58-59,72,80,86-87,89,91,103,120,125,137,155,158,160-167,171-172
+R/result-export.R
+  s_895f6ebe145fd3::t_6e7bf3c18ca3e5 123
+  s_895f6ebe145fd3::t_f7abd37d31b887 33
+  s_895f6ebe145fd3::t_7b302e1e527f56 104
+  s_3e206b4a2cf4c3::t_295b8a6efbd6c8 35,49,54,59,67,71,81,88-89,97-98,113
+R/result-reader.R
+  s_895f6ebe145fd3::t_5f8e3ccc4262e8 34
+R/result-producer.R
+  s_3e206b4a2cf4c3::t_735702abaa3a1e 2-3
+R/result-wire.R
+  s_3e206b4a2cf4c3::t_77f7e962e4dfba 18-19,65-66,87-88,92,95,100,123,129-131,145
+inst/analysis/reference-person-definitions-v1.json
+  s_3e206b4a2cf4c3::t_a7478b968ea581 1-32
+inst/analysis/reference-person-rows-v1.json
+  s_3e206b4a2cf4c3::t_babcaedd608c57 1-31
+inst/analysis/reference-person-v1.json
+  s_3e206b4a2cf4c3::t_0b6f1f296d3570 1-51
+inst/analysis/registered-profiles-v1.json
+  s_3e206b4a2cf4c3::t_3e32911a5d04f0 1-22
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "09550a5124623f8c9fdb4ecb5f5284f26718749e",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
