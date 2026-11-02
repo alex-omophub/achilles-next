@@ -1,0 +1,46 @@
+tests/tracer/measurement-baseline-offline.R
+  s_895f6ebe145fd3::t_7dafaa8664870b 17-26
+R/domain-reader.R
+  s_895f6ebe145fd3::t_9d9908470ac51c 82
+tests/tracer/measurement-baseline.R
+  s_3e206b4a2cf4c3::t_2f2de2f47aabdd 50,99-100
+R/population-baseline.R
+  s_895f6ebe145fd3::t_9d9908470ac51c 130
+docs/development/measurement-baseline.md
+  s_895f6ebe145fd3::t_7dafaa8664870b 60,89-92
+R/measurement-baseline.R
+  s_895f6ebe145fd3::t_9d9908470ac51c 18,48-54
+man/readMeasurementBaseline.Rd
+  s_895f6ebe145fd3::t_9d9908470ac51c 18
+tools/test_measurement_baseline.py
+  s_3e206b4a2cf4c3::t_2f2de2f47aabdd 120-133
+docs/development/ci.md
+  s_895f6ebe145fd3::t_7dc8b8f8d568cb 3-5
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_495b7f9e57a33a 107-108
+  s_895f6ebe145fd3::t_7dc8b8f8d568cb 1-106,109-115
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c207f36cec4cff5b8a003c9ca0a27f8e01d2a2a3",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
