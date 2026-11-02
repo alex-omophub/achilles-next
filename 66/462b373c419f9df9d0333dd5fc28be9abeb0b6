@@ -1,0 +1,56 @@
+docs/development/analysis-definitions.md
+  s_895f6ebe145fd3::t_c2738574514f38 1-48
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_c2738574514f38 159
+R/result-wire.R
+  s_895f6ebe145fd3::t_2bf12f4fe86417 19
+R/result-export.R
+  s_895f6ebe145fd3::t_2bf12f4fe86417 59-60
+R/result-validation.R
+  s_895f6ebe145fd3::t_83e911d36c2b6f 170-171,175-177,180
+tests/tracer/analysis-definitions.R
+  s_895f6ebe145fd3::t_55a1f190f94f4e 11
+  s_895f6ebe145fd3::t_3aced2afc408d5 77-86
+  s_895f6ebe145fd3::t_c2738574514f38 1-10,12-24,31-76,87-113
+  s_895f6ebe145fd3::t_d4cb674cf1fad7 25-30
+docs/development/batch-planner.md
+  s_895f6ebe145fd3::t_7cbc3920559e05 13-16
+R/population-baseline.R
+  s_895f6ebe145fd3::t_b194b42a9dd618 172
+R/batch-plan.R
+  s_895f6ebe145fd3::t_2bf12f4fe86417 52
+R/analysis-definitions.R
+  s_895f6ebe145fd3::t_e14d9c43cab669 3-6,8,16,21-24,27-28,31-32,36,44,48
+  s_895f6ebe145fd3::t_5a9cd72cc63811 102
+  s_895f6ebe145fd3::t_2bf12f4fe86417 1-2,7,9-15,17-20,25-26,29-30,33-35,37-43,45-47,49-101,103-108
+R/run-ledger.R
+  s_895f6ebe145fd3::t_2bf12f4fe86417 17
+R/domain-baseline.R
+  s_895f6ebe145fd3::t_e14d9c43cab669 30-32
+  s_895f6ebe145fd3::t_83e911d36c2b6f 21,24-28,40-44,48
+  s_895f6ebe145fd3::t_b194b42a9dd618 23
+inst/analysis/analysis-definition-lock.json
+  s_895f6ebe145fd3::t_cf3490ef50c2c2 1-5
+inst/analysis/core-analysis-definitions-v1.json
+  s_895f6ebe145fd3::t_4ca8fe5d211e0b 1-863
+tests/tracer/implementation-identity.R
+  s_895f6ebe145fd3::t_105525a94ed93b 33-48
+tools/benchmark/implementation_identity.R
+  s_895f6ebe145fd3::t_c4c9824de1d827 37-41,44-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "66462b373c419f9df9d0333dd5fc28be9abeb0b6",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
