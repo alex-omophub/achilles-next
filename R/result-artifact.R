@@ -61,7 +61,8 @@
     if(d$kind=="root") {
       .nv_need(expectedKind=="root" && d$rows=="0")
       .v2_keys(doc,c(common,"kind","scope_kind","publication_state","eligible_for_current_pointer","expected_metric_count","generated_at","source_schema","source_consistency","disclosure","catalogue","concepts","data","terminology"))
-      .nv_need(doc$publication_state=="ready" && isTRUE(doc$eligible_for_current_pointer) && doc$expected_metric_count==as.character(length(assets$metrics)) && .nv_date(doc$generated_at,TRUE))
+      .nv_need(doc$publication_state=="ready" && isTRUE(doc$eligible_for_current_pointer) && .nv_date(doc$generated_at,TRUE))
+      .nv_need(identical(doc$expected_metric_count,as.character(length(assets$metrics))),"Invalid expected metric count")
       .v2_keys(doc$disclosure,c("approval_id","policy","policy_sha256"));.nv_need(.string(doc$disclosure$approval_id))
       .v2_policy(doc$disclosure$policy,assets)
       .nv_need(doc$disclosure$policy_sha256==.v2_hash(.v2_bytes(doc$disclosure$policy)) && doc$scope_kind==doc$disclosure$policy$scope_kind)

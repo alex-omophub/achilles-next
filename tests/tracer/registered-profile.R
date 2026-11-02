@@ -1,6 +1,7 @@
 # Independent fixture -> registered SQL -> guarded store -> approved pages -> read.
 library(AchillesNext)
 source("tools/benchmark/implementation_identity.R")
+source("tests/tracer/artifact-inventory.R")
 main <- function() {
   args <- commandArgs(TRUE);stopifnot(length(args)==2L)
   implementationIdentity(getwd())
@@ -25,7 +26,9 @@ main <- function() {
   # appends definitions; it must not migrate or modify the original core profile.
   ex(paste0('DELETE FROM "',results,'".achillesnext_profile_registry WHERE profile_id=',lit(fixture$profile_id)))
   coreHash <- q(paste0('SELECT profile_sha256 AS h FROM "',results,'".achillesnext_profile_registry'))$H
-  ex(paste0('GRANT USAGE ON SCHEMA "',source,'","',results,'" TO achilles_next_runner; GRANT SELECT ON "',source,'".person TO achilles_next_runner; GRANT SELECT ON ALL TABLES IN SCHEMA "',results,'" TO achilles_next_runner'))
+  ex(paste0('GRANT USAGE ON SCHEMA "',source,'","',results,'" TO achilles_next_runner; GRANT SELECT(person_id,gender_concept_id) ON "',source,'".person TO achilles_next_runner'))
+  reads <- paste0('"',results,'".achillesnext_',c("profile_registry","aggregate_cell","dataset","analysis_run","result_release","validation_receipt"))
+  ex(paste0("GRANT SELECT ON ",paste(reads,collapse=",")," TO achilles_next_runner"))
   tables <- paste0('"',results,'".achillesnext_',c("source_release","analysis_run","operation","result_release","dataset","aggregate_cell","denominator_edge"))
   ex(paste0("GRANT INSERT ON ",paste(tables,collapse=",")," TO achilles_next_runner; GRANT UPDATE ON ",paste(tables[c(2,4,5)],collapse=",")," TO achilles_next_runner"))
   generate <- function(...) generateAnalysisProfile(runner,source,"fixture:registered",results,"5.5",fixture$profile_id,...)
@@ -33,13 +36,21 @@ main <- function() {
   stopifnot(identical(registerAnalysisProfile(owner,results,fixture$profile_id),assets$hash),
     identical(registerAnalysisProfile(owner,results,fixture$profile_id),assets$hash))
   rejects(function()registerAnalysisProfile(runner,results,fixture$profile_id))
+  ex(paste0('REVOKE SELECT ON "',results,'".achillesnext_profile_registry FROM achilles_next_runner'))
+  message <- tryCatch({generate();"ACCEPTED"},error=conditionMessage)
+  stopifnot(grepl("permission denied",message,fixed=TRUE))
+  ex(paste0('GRANT SELECT ON "',results,'".achillesnext_profile_registry TO achilles_next_runner'))
   stopifnot(q(paste0('SELECT profile_sha256 AS h FROM "',results,'".achillesnext_profile_registry WHERE profile_id=\'core-characterization-v2\''))$H==coreHash)
   generated <- generate();stopifnot(generated$profile_complete,generated$aggregate_rows=="5",!generated$publishable)
+  boundaryId <- strrep("\u00e9",128)
+  generateAnalysisProfile(runner,source,boundaryId,results,"5.5",fixture$profile_id)
+  stopifnot(q(paste0('SELECT octet_length(source_id)::text AS n FROM "',results,'".achillesnext_source_release WHERE source_id=',lit(boundaryId)))$N=="256")
   sealResultRelease(owner,results,generated$release_id);validateResultRelease(owner,results,generated$release_id)
   policy <- o(id="fixture-registered",revision="1",scope_kind="restricted",allow_metrics=as.list(names(assets$metrics)))
   approved <- publishResultRelease(owner,results,generated$release_id,file.path(out,"approved"),"fixture-registered","synthetic-review",policy,function(candidate)TRUE,"0")
   validateResultArtifact(approved$export_dir)
   root <- f(".v2_directory")(approved$export_dir);stopifnot(root$expected_metric_count=="2")
+  testArtifactInventory(approved$export_dir,out)
   compare <- function(rows) {
     stopifnot(setequal(names(rows),names(fixture$expected)))
     normalize <- function(rs)sort(vapply(rs,function(r)wire(o(dimensions=r$dimensions,values=r$values)),""),method="radix")

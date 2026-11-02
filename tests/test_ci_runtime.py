@@ -1,6 +1,7 @@
 """Check CI cost controls without installing dependencies or starting Docker."""
 import json
 import os
+import shlex
 from pathlib import Path
 import subprocess
 import tempfile
@@ -10,6 +11,15 @@ ROOT=Path(__file__).resolve().parents[1]
 
 
 class CiRuntimeTests(unittest.TestCase):
+    def test_serving_workflow_invocations_pass_admin_credentials(self):
+        workflow=(ROOT/'.github/workflows/count-tracer.yml').read_text()
+        commands=[shlex.split(line.strip()) for line in workflow.splitlines()
+                  if 'python3 tools/test_result_serving.py' in line]
+        self.assertGreaterEqual(len(commands),2)
+        for args in commands:
+            self.assertIn('PGPASSFILE=$GITHUB_WORKSPACE/.local/admin.pgpass',args[:args.index('python3')])
+            self.assertEqual(args[args.index('--admin-user')+1],'postgres')
+
     def test_dependency_fingerprint_ignores_prose_but_tracks_imports(self):
         with tempfile.TemporaryDirectory() as folder:
             folder=Path(folder);description=folder/'DESCRIPTION';out=folder/'spec';original=(ROOT/'DESCRIPTION').read_text()

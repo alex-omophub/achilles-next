@@ -41,16 +41,45 @@ validateResultRelease(ownerDetails, "results", run$release_id)
 policy <- list(id="local-policy", revision="1", scope_kind="restricted",
   allow_metrics=list("example.person.count", "example.person.gender_count"))
 approved <- publishResultRelease(ownerDetails, "results", run$release_id,
-  "/new/export", "local-audience", "local-review-record", policy,
+  tempfile("registered-export-"), "local-audience", "local-review-record", policy,
   institutionalPolicy=function(candidate) approveLocally(candidate))
 validateResultArtifact(approved$export_dir)
 ```
 
-`ownerDetails`, `runnerDetails` and `approveLocally()` are institution-supplied;
+After granting an institution-controlled serving role access to the approved
+views and audience, read the pinned root and data pages using that role:
+
+```r
+readPage <- function(descriptor=NULL) {
+  bytes <- readResultObject(servingDetails, "serving", "local-source",
+    approved$publication_id, "local-audience", approved$root$sha256, descriptor)
+  jsonlite::fromJSON(rawToChar(bytes), simplifyVector=FALSE)
+}
+readData <- function(descriptor) {
+  page <- readPage(descriptor)
+  if (page$kind == "index") {
+    lapply(page$children, function(child) readData(child$object))
+  } else {
+    stopifnot(page$kind == "data")
+    list(metric_id=page$metric_id, rows=page$rows)
+  }
+}
+root <- readPage()
+savedCounts <- readData(root$data)
+```
+
+`ownerDetails`, `runnerDetails`, `servingDetails` and `approveLocally()` are institution-supplied;
 the example does not grant permissions or supply an approval policy. The generator
-requires SELECT on the declared source columns, INSERT on its result tables and
-UPDATE on dataset row counts and run/release state. Registration requires INSERT
-on the profile registry. It executes a bounded aggregate stream in a repeatable-read
+requires schema USAGE and SELECT on the declared source columns. In the results
+schema it needs SELECT on `achillesnext_profile_registry`, `achillesnext_aggregate_cell`,
+`achillesnext_dataset`, `achillesnext_analysis_run`, `achillesnext_result_release`
+and `achillesnext_validation_receipt`
+for definition checks, reconciliation and write guards; INSERT on its result
+tables; and UPDATE on dataset row counts and run/release state. Registration requires
+INSERT on the profile registry. The serving role needs schema USAGE, SELECT on
+`achillesnext_approved_pages` and an enabled audience grant; it needs no CDM access.
+The source ID must fit the store's 1–256 UTF-8 byte limit.
+Generation executes a bounded aggregate stream in a repeatable-read
 transaction, checks unique/non-null PERSON membership and accepts exact integer
 source columns. `maxRows` bounds transferred aggregate rows; it is not a limit on
 the source database's scan or sort. Per-statement timeouts are explicit.
@@ -70,11 +99,15 @@ and report mappings remain separate work.
 
 After installing the package:
 
+Provision the marked fixtures first using the
+[fixture setup instructions](count-tracer.md#developer-setup). Run from the checkout
+root; `mktemp` below creates a writable parent and the output directory itself is new.
+
 ```sh
 Rscript --vanilla tests/tracer/registered-profile-offline.R
 python3 tools/test_result_serving.py --test-script registered-profile \
-  --state /private/marked-fixture-state --config tools/tracer_fixture_config.R \
-  --output-dir /new/private/reference-proof
+  --state .local/postgresql --config tools/tracer_fixture_config.R \
+  --output-dir "$(mktemp -d)/reference-proof"
 ```
 
 The integration harness refuses an unmarked database. It uses disposable schemas

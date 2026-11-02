@@ -7,7 +7,7 @@
 \arguments{
 \item{connectionDetails}{PostgreSQL DatabaseConnector connection details.}
 \item{cdmSchema}{Source schema identifier.}
-\item{sourceId}{Institution-controlled source identifier.}
+\item{sourceId}{Institution-controlled source identifier, 1 to 256 UTF-8 bytes.}
 \item{resultsSchema}{Initialized writable aggregate schema, separate from source.}
 \item{declaredCdmVersion}{Declared CDM version: 5.3, 5.4 or 5.5.}
 \item{profileId}{ID of a separately installed profile.}

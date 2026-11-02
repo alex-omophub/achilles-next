@@ -6,12 +6,12 @@
 #' Plan an installed registered analysis profile
 #' @param profileId ID of a separately installed profile.
 #' @param cdmSchema Source schema identifier.
-#' @param sourceId Institution-controlled source identifier.
+#' @param sourceId Institution-controlled source identifier, 1 to 256 UTF-8 bytes.
 #' @param declaredCdmVersion Declared CDM version, 5.3, 5.4 or 5.5.
 #' @return A deterministic source-free plan with profile and executable identities.
 #' @export
 planAnalysisProfile <- function(profileId,cdmSchema,sourceId,declaredCdmVersion) {
-  .nv_need(.batch_identifier(cdmSchema) && .string(sourceId) && nchar(sourceId,type="bytes")<=512L &&
+  .nv_need(.batch_identifier(cdmSchema) && .string(sourceId) && nchar(enc2utf8(sourceId),type="bytes")%in%1:256 &&
     .string(declaredCdmVersion) && declaredCdmVersion%in%c("5.3","5.4","5.5"),"Invalid analysis source configuration")
   assets <- .profile_assets(profileId);.nv_need(!isTRUE(assets$is_core),"Use the core characterization planner for this profile")
   pending <- names(assets$metrics);order <- character()

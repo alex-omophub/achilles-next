@@ -4,6 +4,15 @@ local({
   a <- f(".profile_assets")("reference-person-v1");core <- f(".v2_assets")()
   stopifnot(length(a$metrics)==2L,length(core$metrics)==142L,!a$is_core,core$is_core)
   rejects <- function(work)stopifnot(inherits(try(work(),silent=TRUE),"try-error"))
+  for(source in c(strrep("x",256),strrep("\u00e9",128))) {
+    stopifnot(identical(planAnalysisProfile(a$profile$profile_id,"cdm",source,"5.5")$source$source_id,source))
+  }
+  for(source in c("",strrep("x",257),paste0(strrep("\u00e9",128),"x"))) {
+    rejects(function()planAnalysisProfile(a$profile$profile_id,"cdm",source,"5.5"))
+    # Invalid source IDs must fail before touching connection details or storage.
+    message <- tryCatch({generateAnalysisProfile(NULL,"cdm",source,"results","5.5",a$profile$profile_id);"ACCEPTED"},error=conditionMessage)
+    stopifnot(identical(message,"Invalid analysis source configuration"))
+  }
   for(id in c("unknown","https://invalid/profile","../reference-person-v1"))rejects(function()planAnalysisProfile(id,"cdm","fixture","5.5"))
   rejects(function()f(".profile_assets")("reference-person-v1","unsupported"))
   rejects(function()f(".profile_assets")("reference-person-v1",hash=strrep("a",64)))
