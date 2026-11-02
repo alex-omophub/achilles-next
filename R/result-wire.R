@@ -16,6 +16,7 @@
   ids <- vapply(profile$metrics, function(m) m$id, "")
   .nv_need(identical(ids, vapply(rows$metrics, function(m) m$id, "")))
   result <- list(profile = profile, hash = rows$profile_sha256,
+    analysis = .analysis_load(profile, rows, rows$profile_sha256),
     metrics = stats::setNames(profile$metrics, ids), rows = stats::setNames(rows$metrics, ids),
     metadata = jsonlite::fromJSON(file("contracts/v2/metadata.schema.json"), simplifyVector = FALSE),
     dimensions = jsonlite::fromJSON(file("contracts/v2/dimensions.json"), simplifyVector = FALSE))

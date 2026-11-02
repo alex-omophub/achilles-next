@@ -167,26 +167,17 @@
 # ASCII keys only; comparison must not inherit the user's locale.
 .v2_less <- function(a,b) !identical(a,b) && identical(order(c(a,b),method="radix"),c(1L,2L))
 .v2_denominator_check <- function(mid, row, lookup) {
-  m <- .v2_assets()$metrics[[mid]];dims <- row$dimensions
-  target <- NULL;targetDims <- .object();measures <- "person_count";partial <- FALSE
-  if(!is.null(m$denominator) && row$state!="suppressed" && row$row_kind=="counts") {
-    target <- strsplit(m$denominator," ",fixed=TRUE)[[1]][1]
-    if(grepl("for full-scope",m$denominator,fixed=TRUE) && !identical(dims$period_kind,"full_scope")) target <- NULL
-    if(grepl("same period",m$denominator,fixed=TRUE)) targetDims <- dims[c("period_kind","period_start","period_end")]
-    if(grepl("same year/gender/age",m$denominator,fixed=TRUE)) targetDims <- dims[c("year","gender_concept_id","year_age_decile")]
-    if(grepl("in full scope",m$denominator,fixed=TRUE)) {
-      targetDims <- c(dims["concept_tag"],.object(period_kind="full_scope"));partial <- TRUE
-      measures <- c("record_count","person_count")
-    }
-  }
-  if(is.null(target)) measures <- character()
+  spec <- .analysis_denominator(mid, row)
+  measures <- if(is.null(spec)) character() else vapply(spec$measures,function(m)m$source,"")
   .nv_need(length(row$denominator_refs)==length(measures),"Missing or unexpected denominator")
   seen <- character()
   for(ref in row$denominator_refs) {
-    .nv_need(ref$metric_id==target && ref$measure%in%measures && ref$field==ref$measure && !ref$measure%in%seen,"Wrong denominator population")
+    .nv_need(ref$metric_id==spec$metric_id && ref$measure%in%measures && !ref$measure%in%seen,"Wrong denominator population")
+    binding <- spec$measures[[match(ref$measure,measures)]]
+    .nv_need(identical(ref$field,binding$target),"Wrong denominator measure")
     seen <- c(seen,ref$measure)
     targetDimensions <- lookup(ref$metric_id,ref$row_key)
-    .nv_need(identical(.json(if(partial)targetDimensions[names(targetDims)] else targetDimensions),.json(targetDims)),"Wrong denominator dimensions")
+    .nv_need(identical(.json(if(spec$match=="subset")targetDimensions[names(spec$dimensions)] else targetDimensions),.json(spec$dimensions)),"Wrong denominator dimensions")
     .nv_need(.nv_unsigned_cmp(row$values[[ref$measure]],ref$value)<=0,"Numerator exceeds denominator")
   }
   invisible(TRUE)

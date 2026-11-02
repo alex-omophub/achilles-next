@@ -1,0 +1,863 @@
+{
+  "format_version": "1.0.0",
+  "profile_sha256": "3a06e7a7a53c205e84a62d2ff1c7fab0860928f14ff6dd60cb7f00f12e60dbf2",
+  "rules": {
+    "all_people": {
+      "row_kind": "counts",
+      "when": {},
+      "dimensions": {},
+      "key_defaults": {},
+      "match": "exact",
+      "measures": [
+        {
+          "source": "person_count",
+          "target": "person_count"
+        }
+      ]
+    },
+    "full_scope_people": {
+      "row_kind": "counts",
+      "when": {
+        "period_kind": "full_scope"
+      },
+      "dimensions": {},
+      "key_defaults": {},
+      "match": "exact",
+      "measures": [
+        {
+          "source": "person_count",
+          "target": "person_count"
+        }
+      ]
+    },
+    "same_period_people": {
+      "row_kind": "counts",
+      "when": {},
+      "dimensions": {
+        "period_kind": {
+          "source": "period_kind"
+        },
+        "period_start": {
+          "source": "period_start"
+        },
+        "period_end": {
+          "source": "period_end"
+        }
+      },
+      "key_defaults": {},
+      "match": "exact",
+      "measures": [
+        {
+          "source": "person_count",
+          "target": "person_count"
+        }
+      ]
+    },
+    "same_year_gender_age_people": {
+      "row_kind": "counts",
+      "when": {},
+      "dimensions": {
+        "year": {
+          "source": "year"
+        },
+        "gender_concept_id": {
+          "source": "gender_concept_id"
+        },
+        "year_age_decile": {
+          "source": "year_age_decile"
+        }
+      },
+      "key_defaults": {},
+      "match": "exact",
+      "measures": [
+        {
+          "source": "person_count",
+          "target": "person_count"
+        }
+      ]
+    },
+    "concept_full_scope": {
+      "row_kind": "counts",
+      "when": {},
+      "dimensions": {
+        "concept_tag": {
+          "source": "concept_tag"
+        },
+        "period_kind": {
+          "constant": "full_scope"
+        }
+      },
+      "key_defaults": {
+        "period_start": "null",
+        "period_end": "null"
+      },
+      "match": "subset",
+      "measures": [
+        {
+          "source": "record_count",
+          "target": "record_count"
+        },
+        {
+          "source": "person_count",
+          "target": "person_count"
+        }
+      ]
+    }
+  },
+  "analyses": {
+    "core.source.passport": {
+      "population": "source_context",
+      "denominator": null
+    },
+    "core.source.capabilities": {
+      "population": "source_context",
+      "denominator": null
+    },
+    "core.execution.output_status": {
+      "population": "requested_outputs",
+      "denominator": null
+    },
+    "core.execution.timing": {
+      "population": "requested_outputs",
+      "denominator": null
+    },
+    "core.person.gender_count": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.person.birth_year_count": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.person.race_count": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.person.ethnicity_count": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.person.count": {
+      "population": "person_table",
+      "denominator": null
+    },
+    "core.person.birth_year_gender_count": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.person.race_ethnicity_count": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.observation_period.coverage_count": {
+      "population": "observed_people",
+      "denominator": null
+    },
+    "core.observation_period.year_gender_age_count": {
+      "population": "observed_people",
+      "denominator": null
+    },
+    "core.observation_period.continuous_person_count": {
+      "population": "observed_people",
+      "denominator": null
+    },
+    "core.observation_period.first_age_summary": {
+      "population": "people_with_valid_intervals",
+      "denominator": null
+    },
+    "core.observation_period.first_age_count": {
+      "population": "people_with_valid_intervals",
+      "denominator": null
+    },
+    "core.observation_period.first_interval_days_summary": {
+      "population": "people_with_valid_intervals",
+      "denominator": null
+    },
+    "core.observation_period.first_interval_30d_count": {
+      "population": "people_with_valid_intervals",
+      "denominator": null
+    },
+    "core.observation_period.person_interval_histogram": {
+      "population": "person_table",
+      "denominator": null
+    },
+    "core.observation_period.boundary_month_count": {
+      "population": "valid_observation_intervals",
+      "denominator": null
+    },
+    "core.observation_period.type_count": {
+      "population": "raw_observation_intervals",
+      "denominator": null
+    },
+    "core.observation_period.total_days_histogram": {
+      "population": "person_table",
+      "denominator": null
+    },
+    "core.observation_period.integrity_count": {
+      "population": "raw_observation_intervals",
+      "denominator": null
+    },
+    "core.condition.capture_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "full_scope_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.condition.source_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.condition.type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.condition.first_age_summary": {
+      "population": "linked_people_with_dated_records",
+      "denominator": null
+    },
+    "core.condition.frequency_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.condition.distinct_concepts_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.condition.integrity_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.condition.observation_qualification_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "concept_full_scope",
+        "metric_id": "core.condition.capture_count"
+      }
+    },
+    "observed.condition.capture_count": {
+      "population": "observed_rows",
+      "denominator": {
+        "rule": "same_period_people",
+        "metric_id": "core.observation_period.coverage_count"
+      }
+    },
+    "observed.condition.year_gender_age_count": {
+      "population": "observed_year_people",
+      "denominator": {
+        "rule": "same_year_gender_age_people",
+        "metric_id": "core.observation_period.year_gender_age_count"
+      }
+    },
+    "core.drug.capture_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "full_scope_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.drug.source_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.drug.type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.drug.first_age_summary": {
+      "population": "linked_people_with_dated_records",
+      "denominator": null
+    },
+    "core.drug.frequency_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.drug.distinct_concepts_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.drug.integrity_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.drug.observation_qualification_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "concept_full_scope",
+        "metric_id": "core.drug.capture_count"
+      }
+    },
+    "observed.drug.capture_count": {
+      "population": "observed_rows",
+      "denominator": {
+        "rule": "same_period_people",
+        "metric_id": "core.observation_period.coverage_count"
+      }
+    },
+    "observed.drug.year_gender_age_count": {
+      "population": "observed_year_people",
+      "denominator": {
+        "rule": "same_year_gender_age_people",
+        "metric_id": "core.observation_period.year_gender_age_count"
+      }
+    },
+    "core.procedure.capture_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "full_scope_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.procedure.source_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.procedure.type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.procedure.first_age_summary": {
+      "population": "linked_people_with_dated_records",
+      "denominator": null
+    },
+    "core.procedure.frequency_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.procedure.distinct_concepts_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.procedure.integrity_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.procedure.observation_qualification_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "concept_full_scope",
+        "metric_id": "core.procedure.capture_count"
+      }
+    },
+    "observed.procedure.capture_count": {
+      "population": "observed_rows",
+      "denominator": {
+        "rule": "same_period_people",
+        "metric_id": "core.observation_period.coverage_count"
+      }
+    },
+    "observed.procedure.year_gender_age_count": {
+      "population": "observed_year_people",
+      "denominator": {
+        "rule": "same_year_gender_age_people",
+        "metric_id": "core.observation_period.year_gender_age_count"
+      }
+    },
+    "core.visit.capture_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "full_scope_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.visit.source_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.visit.type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.visit.first_age_summary": {
+      "population": "linked_people_with_dated_records",
+      "denominator": null
+    },
+    "core.visit.frequency_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.visit.distinct_concepts_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.visit.integrity_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.visit.observation_qualification_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "concept_full_scope",
+        "metric_id": "core.visit.capture_count"
+      }
+    },
+    "observed.visit.capture_count": {
+      "population": "observed_rows",
+      "denominator": {
+        "rule": "same_period_people",
+        "metric_id": "core.observation_period.coverage_count"
+      }
+    },
+    "observed.visit.year_gender_age_count": {
+      "population": "observed_year_people",
+      "denominator": {
+        "rule": "same_year_gender_age_people",
+        "metric_id": "core.observation_period.year_gender_age_count"
+      }
+    },
+    "core.device.capture_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "full_scope_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.device.source_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.device.type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.device.first_age_summary": {
+      "population": "linked_people_with_dated_records",
+      "denominator": null
+    },
+    "core.device.frequency_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.device.distinct_concepts_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.device.integrity_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.device.observation_qualification_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "concept_full_scope",
+        "metric_id": "core.device.capture_count"
+      }
+    },
+    "observed.device.capture_count": {
+      "population": "observed_rows",
+      "denominator": {
+        "rule": "same_period_people",
+        "metric_id": "core.observation_period.coverage_count"
+      }
+    },
+    "observed.device.year_gender_age_count": {
+      "population": "observed_year_people",
+      "denominator": {
+        "rule": "same_year_gender_age_people",
+        "metric_id": "core.observation_period.year_gender_age_count"
+      }
+    },
+    "core.observation.capture_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "full_scope_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.observation.source_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.observation.type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.observation.first_age_summary": {
+      "population": "linked_people_with_dated_records",
+      "denominator": null
+    },
+    "core.observation.frequency_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.observation.distinct_concepts_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.observation.integrity_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.observation.observation_qualification_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "concept_full_scope",
+        "metric_id": "core.observation.capture_count"
+      }
+    },
+    "observed.observation.capture_count": {
+      "population": "observed_rows",
+      "denominator": {
+        "rule": "same_period_people",
+        "metric_id": "core.observation_period.coverage_count"
+      }
+    },
+    "observed.observation.year_gender_age_count": {
+      "population": "observed_year_people",
+      "denominator": {
+        "rule": "same_year_gender_age_people",
+        "metric_id": "core.observation_period.year_gender_age_count"
+      }
+    },
+    "core.death.capture_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "full_scope_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.death.source_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.death.type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.death.first_age_summary": {
+      "population": "linked_people_with_dated_records",
+      "denominator": null
+    },
+    "core.death.frequency_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.death.distinct_concepts_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.death.integrity_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.death.observation_qualification_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "concept_full_scope",
+        "metric_id": "core.death.capture_count"
+      }
+    },
+    "observed.death.capture_count": {
+      "population": "observed_rows",
+      "denominator": {
+        "rule": "same_period_people",
+        "metric_id": "core.observation_period.coverage_count"
+      }
+    },
+    "observed.death.year_gender_age_count": {
+      "population": "observed_year_people",
+      "denominator": {
+        "rule": "same_year_gender_age_people",
+        "metric_id": "core.observation_period.year_gender_age_count"
+      }
+    },
+    "core.specimen.capture_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "full_scope_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.specimen.source_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.specimen.type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.specimen.first_age_summary": {
+      "population": "linked_people_with_dated_records",
+      "denominator": null
+    },
+    "core.specimen.frequency_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.specimen.distinct_concepts_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.specimen.integrity_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.specimen.observation_qualification_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "concept_full_scope",
+        "metric_id": "core.specimen.capture_count"
+      }
+    },
+    "observed.specimen.capture_count": {
+      "population": "observed_rows",
+      "denominator": {
+        "rule": "same_period_people",
+        "metric_id": "core.observation_period.coverage_count"
+      }
+    },
+    "observed.specimen.year_gender_age_count": {
+      "population": "observed_year_people",
+      "denominator": {
+        "rule": "same_year_gender_age_people",
+        "metric_id": "core.observation_period.year_gender_age_count"
+      }
+    },
+    "core.measurement.capture_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "full_scope_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.measurement.source_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.first_age_summary": {
+      "population": "linked_people_with_dated_records",
+      "denominator": null
+    },
+    "core.measurement.frequency_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.measurement.distinct_concepts_histogram": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.measurement.integrity_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.observation_qualification_count": {
+      "population": "all_recorded_rows",
+      "denominator": {
+        "rule": "concept_full_scope",
+        "metric_id": "core.measurement.capture_count"
+      }
+    },
+    "observed.measurement.capture_count": {
+      "population": "observed_rows",
+      "denominator": {
+        "rule": "same_period_people",
+        "metric_id": "core.observation_period.coverage_count"
+      }
+    },
+    "observed.measurement.year_gender_age_count": {
+      "population": "observed_year_people",
+      "denominator": {
+        "rule": "same_year_gender_age_people",
+        "metric_id": "core.observation_period.year_gender_age_count"
+      }
+    },
+    "core.condition.status_type_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.drug.days_supply_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.drug.refills_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.drug.quantity_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.visit.duration_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.visit.care_setting_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.procedure.end_precision_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.device.quantity_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.device.unit_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.specimen.quantity_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.specimen.site_status_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.specimen.visit_link_presence_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.observation.representation_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.observation.unit_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.observation.coded_value_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.observation.numeric_eligibility_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.observation.numeric_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.representation_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.unit_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.coded_value_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.numeric_eligibility_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.numeric_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.observation.qualifier_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.operator_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.range_low_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.range_high_summary": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.measurement.range_status_count": {
+      "population": "all_recorded_rows",
+      "denominator": null
+    },
+    "core.density.domain_presence_count": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    },
+    "core.density.domain_count": {
+      "population": "person_table",
+      "denominator": {
+        "rule": "all_people",
+        "metric_id": "core.person.count"
+      }
+    }
+  }
+}

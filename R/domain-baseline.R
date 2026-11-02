@@ -18,18 +18,18 @@ generateDomainBaseline <- function(connectionDetails,cdmSchema,sourceId,resultsS
   if(x=='-0')'0' else x
 }
 .domain_stream_sql <- function(tx,release,output,mid) {
-  definition<-.v2_assets()$metrics[[mid]]$denominator
+  rule<-.analysis_rule(mid)
   join<-"";denominator<-"NULL"
-  if(mid%in%.domain_ids()&&!is.null(definition)) {
-    target<-strsplit(definition,' ',fixed=TRUE)[[1]][1];dimensions<-"'{}'::jsonb";condition<-"o.row_kind='counts'"
-    pick<-function(keys)paste0("jsonb_build_object(",paste(vapply(keys,function(k)paste0(.store_literal(k),",o.dimensions->",.store_literal(k)),""),collapse=","),")")
-    if(grepl('for full-scope',definition,fixed=TRUE))condition<-paste0(condition," AND o.dimensions->>'period_kind'='full_scope'")
-    if(grepl('same period',definition,fixed=TRUE))dimensions<-pick(c('period_kind','period_start','period_end'))
-    if(grepl('same year/gender/age',definition,fixed=TRUE))dimensions<-pick(c('year','gender_concept_id','year_age_decile'))
-    if(grepl('in full scope',definition,fixed=TRUE))dimensions<-"jsonb_build_object('concept_tag',o.dimensions->'concept_tag','period_kind','full_scope','period_start','null','period_end','null')"
-    join<-paste0(" LEFT JOIN ",tx$schema,".achillesnext_aggregate_cell d ON d.release_id=",.store_uuid(release)," AND d.metric_id=",.store_literal(target),
+  if(!is.null(rule)) {
+    condition<-paste0("o.row_kind=",.store_literal(rule$row_kind))
+    for(k in names(rule$when))condition<-paste0(condition," AND o.dimensions->>",.store_literal(k),"=",.store_literal(rule$when[[k]]))
+    bindings<-c(lapply(rule$dimensions,function(b)if(!is.null(b$source))paste0("o.dimensions->",.store_literal(b$source)) else .store_literal(b$constant)),lapply(rule$key_defaults,.store_literal))
+    dimensions<-if(!length(bindings))"'{}'::jsonb" else paste0("jsonb_build_object(",paste(vapply(names(bindings),function(k)paste0(.store_literal(k),",",bindings[[k]]),""),collapse=","),")")
+    join<-paste0(" LEFT JOIN ",tx$schema,".achillesnext_aggregate_cell d ON d.release_id=",.store_uuid(release)," AND d.metric_id=",.store_literal(rule$metric_id),
       " AND d.route_key='A' AND d.payload_kind='counts' AND d.dimensions=",dimensions," AND ",condition)
-    denominator<-"CASE WHEN d.row_key IS NOT NULL THEN jsonb_build_object('metric_id',d.metric_id,'row_key',d.row_key,'dimensions',d.dimensions,'values',jsonb_build_object('person_count',d.person_count::text,'record_count',d.record_count::text)) END"
+    fields<-unique(vapply(rule$measures,function(m)m$target,""))
+    values<-paste(vapply(fields,function(m)paste0(.store_literal(m),",d.",m,"::text"),""),collapse=",")
+    denominator<-paste0("CASE WHEN d.row_key IS NOT NULL THEN jsonb_build_object('metric_id',d.metric_id,'row_key',d.row_key,'dimensions',d.dimensions,'values',jsonb_build_object(",values,")) END")
   }
   paste0("SELECT jsonb_build_object('row_kind',o.row_kind,'dimensions',o.dimensions,'values',o.values,'denominator',",denominator,
     ")::text FROM (SELECT * FROM ",output,") o",join," WHERE o.metric_id=",.store_literal(mid))
@@ -37,17 +37,15 @@ generateDomainBaseline <- function(connectionDetails,cdmSchema,sourceId,resultsS
 # Target identity and values travel with the streamed row. This function has no
 # connection/transaction argument and performs zero per-cell database lookups.
 .domain_denominators <- function(mid,row,target) {
-  definition<-.v2_assets()$metrics[[mid]]$denominator
-  if(is.null(definition)||row$row_kind!='counts'||row$state%in%c('unsupported','unavailable'))return(list())
-  dims<-row$dimensions;targetId<-strsplit(definition,' ',fixed=TRUE)[[1]][1];targetDims<-.object();measures<-'person_count'
-  if(grepl('for full-scope',definition,fixed=TRUE)&&dims$period_kind!='full_scope')return(list())
-  if(grepl('same period',definition,fixed=TRUE))targetDims<-dims[c('period_kind','period_start','period_end')]
-  if(grepl('same year/gender/age',definition,fixed=TRUE))targetDims<-dims[c('year','gender_concept_id','year_age_decile')]
-  if(grepl('in full scope',definition,fixed=TRUE)){targetDims<-c(dims['concept_tag'],.object(period_kind='full_scope',period_start='null',period_end='null'));measures<-c('record_count','person_count')}
+  if(row$state%in%c('unsupported','unavailable'))return(list())
+  spec<-.analysis_denominator(mid,row,forKey=TRUE)
+  if(is.null(spec))return(list())
+  targetId<-spec$metric_id;targetDims<-spec$dimensions
+  measures<-vapply(spec$measures,function(m)m$target,"")
   key<-.v2_row_identity(.v2_assets()$rows[[targetId]],.object(row_kind='counts',dimensions=targetDims))
   .population_need(!is.null(target)&&identical(target$metric_id,targetId)&&identical(target$row_key,key)&&identical(.json(target$dimensions),.json(targetDims)),"Missing or mismatched streamed denominator")
   .population_need(all(vapply(target$values[measures],.v2_count,TRUE)),"Invalid streamed denominator counts")
-  refs<-lapply(measures,function(measure).object(measure=measure,metric_id=targetId,row_key=key,field=measure,value=target$values[[measure]]))
+  refs<-lapply(spec$measures,function(m).object(measure=m$source,metric_id=targetId,row_key=key,field=m$target,value=target$values[[m$target]]))
   row$denominator_refs<-refs;.v2_denominator_check(mid,row,function(id,key)targetDims);refs
 }
 .domain_reconcile <- function(tx,release,datasets,totals) {

@@ -56,8 +56,8 @@
   # physically absent, never hidden only by the renderer.
   repeat {
     nextAllow <- Filter(function(mid) {
-      d <- .v2_assets()$metrics[[mid]]$denominator
-      is.null(d) || strsplit(d," ",fixed=TRUE)[[1]][1] %in% allow
+      d <- .analysis_dependency(mid)
+      is.null(d) || d %in% allow
     },allow)
     if(setequal(nextAllow,allow)) break
     allow <- nextAllow
