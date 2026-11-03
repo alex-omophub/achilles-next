@@ -12,6 +12,7 @@ Configure the pinned JDBC driver directory as described in the fixture guide.
 No private planning files are required.
 
 ```sh
+set -e
 mkdir -p .local/R-library
 R CMD INSTALL --library=.local/R-library .
 export R_LIBS="$PWD/.local/R-library"
@@ -54,6 +55,7 @@ complete: four metadata outputs still block publication. The
 Use a new output child for each compatibility command:
 
 ```sh
+set -e
 Rscript --vanilla tests/tracer/postgresql.R tools/tracer_fixture_config.R "$evidence_dir/count"
 Rscript --vanilla tests/tracer/observation.R tools/tracer_fixture_config.R "$evidence_dir/observation"
 Rscript --vanilla tests/tracer/measurement.R tools/tracer_fixture_config.R "$evidence_dir/measurement-reference"
@@ -83,6 +85,7 @@ With contributor npm dependencies installed, validate generated bundles before
 enabling their provider/viewer tests:
 
 ```sh
+set -e
 for folder in count observation measurement-reference measurement-weighted; do
   for bundle in "$evidence_dir/$folder"/*; do
     node packages/contracts/tools/validate.mjs "$bundle"
@@ -97,6 +100,7 @@ export WEIGHTED_TEST_BUNDLES="$evidence_dir/measurement-weighted"
 export PUBLICATION_TEST_BUNDLES="$evidence_dir/publication"
 export ACHILLES_NEXT_VIEWER_TEST_LIBRARY="$R_LIBS"
 npm test --prefix packages/tracer
+unset ACHILLES_NEXT_TEST_STATE
 python3 -m unittest discover -s tests -p 'test_*.py'
 ```
 
