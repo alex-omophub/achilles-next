@@ -46,10 +46,13 @@ keep the implementation fixed while a suite runs.
 | `tools/test_result_serving.py --test-script registered-profile` | Registered count profile through generation, persistence, validation, approval and source-denied reads, including rollback and seal/write races |
 | `tools/test_population_baseline.py` / `test_domain_baseline.py` | Independent population/eight-domain oracles, schema availability, saved selection and incomplete-publication rejection |
 | `tools/test_measurement_baseline.py` | Independent 138-output baseline oracle, measurement representations/ranges, exact strategy parity and source-denied saved selections |
+| `tools/test_core_characterization.py` | Independent complete candidate expectations across numeric and metadata outputs, native source-denied validation and late metadata-budget rollback |
 
 Older tracer and complete fixture workflows retain their own populations and wire
 versions. Their success does not make the 138-output whole-source core release
-complete: four metadata outputs still block publication. The
+complete: that entry point omits four metadata outputs. The separate
+[complete candidate generator](core-characterization.md) supplies these outputs
+and can be sealed and natively validated. The
 [measurement guide](measurement-baseline.md) distinguishes these profiles.
 
 Use a new output child for each compatibility command:

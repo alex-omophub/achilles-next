@@ -16,8 +16,10 @@ Open-source OMOP data characterization and exploration with reproducible aggrega
 
 AchillesNext is in early development. The R package installs from source and
 computes synthetic PostgreSQL person/observation counts and a bounded measurement
-reference report, with an installed local React viewer. The complete analytical profile and production
-host integration remain under development. See the count-tracer guide for the
+reference report, with an installed local React viewer. A separate PostgreSQL
+batch generator now produces complete restricted core candidates with saved metadata.
+Full refresh orchestration and production host integration remain under development.
+See the count-tracer guide for the
 tested fixture scope, installation and limitations.
 
 ## Intended capabilities
@@ -42,7 +44,7 @@ The [synthetic PostgreSQL reference benchmark](docs/benchmark/reference.md) chec
 The experimental [core batch planner](docs/development/batch-planner.md) enumerates
 all 142 frozen core results across 51 dependency nodes, with explicit shared-input
 candidates and exact grains. It plans full-history/all-concept work; complete core
-generation remains incomplete. A small synthetic harness compares
+generation is available through the [complete candidate generator](docs/development/core-characterization.md); full refresh orchestration remains incomplete. A small synthetic harness compares
 reference and transaction-private materialization with independent numerical oracles.
 
 The separate [registered analysis example](docs/development/registered-analyses.md)
@@ -67,13 +69,13 @@ published as complete core results or opened in the v1 tracer viewer.
 outputs, bringing the restricted baseline to 138 of 142 outputs. The
 [measurement baseline guide](docs/development/measurement-baseline.md) describes
 representations, units/operators, exact numeric and reference-range summaries,
-and saved readback. Four metadata outputs and complete core publication remain
+and saved readback. That entry point retains its partial baseline boundary. The separate
+[complete candidate generator](docs/development/core-characterization.md) adds the four real metadata outputs and supports sealing/native validation. Full refresh orchestration and integrated publication qualification remain
 pending. The earlier synthetic measurement tracer and its viewer stay separate.
 
 The [refresh contracts](docs/development/refresh.md) add source-free
 `planCharacterizationRefresh()` requests and a read-only `inspectResultStore()`
-version probe. A full refresh worker and the four remaining metadata reports
-remain under development.
+version probe. Full refresh orchestration remains under development.
 
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 

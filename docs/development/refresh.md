@@ -3,8 +3,9 @@
 `planCharacterizationRefresh()` creates a source-free request for a complete
 core-characterization refresh. `inspectResultStore()` separately reads an existing
 restricted store's version marker. These are planning/readiness tools: the full
-refresh worker and four remaining metadata generators are not implemented yet.
-The current measurement generator still accounts for 138 of 142 outputs.
+refresh worker is not implemented yet. The separate [candidate generator](core-characterization.md)
+produces all 142 outputs, including metadata; the older measurement baseline still
+accounts for 138 of 142 outputs.
 
 ```r
 plan <- planCharacterizationRefresh(
@@ -28,8 +29,9 @@ The probe requires exactly one `2.0.0` marker. It reads at most two bounded mark
 values in a read-only transaction and fails on missing, denied, duplicate, NULL,
 oversized or unsupported markers. It never repairs, initializes or migrates a
 store. A matching marker is a precondition, not structural/content validation or
-evidence that worker writes will succeed. Existing generation/publication APIs
-do not automatically invoke this diagnostic. Serving-only approved-page readers
+evidence that worker writes will succeed. The complete candidate generator checks
+the marker before generation; older partial-baseline and publication APIs do not
+automatically invoke this diagnostic. Serving-only approved-page readers
 do not need SELECT on the version table.
 
 ## Required refresh lifecycle
@@ -108,4 +110,4 @@ schema/source-ID limits and bounded marker handling. The marked PostgreSQL harne
 uses a disposable reader with only version-table access and no CDM privileges. It
 rejects denied/absent/empty/future/duplicate/NULL/oversized markers, creates no result
 candidate or current pointer, and cleans up its owned schemas/role. The same small
-checks run within the existing cached CI job, with no new dependencies.
+checks run in the cached compatibility suite, with no new dependencies.

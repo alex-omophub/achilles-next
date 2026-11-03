@@ -41,7 +41,7 @@ class CiRuntimeTests(unittest.TestCase):
         core=['request.R','native-validation.R','result-validation-offline.R','baseline-reader-once.R','result-wire.R','result-store.R',
               'implementation-identity.R','recovery-offline.R','run-ledger-offline.R','recovery.R','publication.R','run-ledger.R',
               'postgresql.R','observation.R','quantile-request.R','measurement.R','measurement.R','analysis-definitions.R',
-              'registered-profile-offline.R','source-store-offline.R','measurement-baseline-offline.R','refresh-contract-offline.R',
+              'registered-profile-offline.R','source-store-offline.R','measurement-baseline-offline.R','refresh-contract-offline.R','core-metadata-offline.R',
               'persistence-offline.R','batch-plan.R']
         expected=Counter(('tests/tracer/'+name,'compatibility') for name in core)
         expected.update({('tools/test_result_serving.py','compatibility'):3,
@@ -50,8 +50,12 @@ class CiRuntimeTests(unittest.TestCase):
                          ('tests/tracer/domain-review-offline.R','domain'):1,
                          ('tools/test_population_baseline.py','domain'):1,
                          ('tools/test_domain_baseline.py','domain'):1,
-                         ('tools/test_measurement_baseline.py','measurement'):1})
+                         ('tools/test_measurement_baseline.py','measurement'):1,
+                         ('tools/test_core_characterization.py','measurement'):1})
         self.assertEqual(Counter((path,suite) for path,args,suite in assignments),expected)
+        complete=[args for path,args,suite in assignments if path=='tools/test_core_characterization.py']
+        self.assertEqual(len(complete),1)
+        self.assertIn('--full-matrix',shlex.split(complete[0]))
         measurements=[args for path,args,suite in assignments if path=='tests/tracer/measurement.R']
         self.assertTrue(any('MEASUREMENT_TEST_BUNDLES' in args for args in measurements))
         self.assertTrue(any('WEIGHTED_TEST_BUNDLES' in args for args in measurements))

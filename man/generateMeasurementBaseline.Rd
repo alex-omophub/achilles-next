@@ -36,7 +36,8 @@ boundaries and same-row reference status follow the frozen eligibility rules.
 Unsupported required types, missing columns, resource limits or cancellation roll
 back the entire candidate. No float casts or silent scope truncation. Stage byte
 limits are checked after allocation; statement timeouts do not bound peak disk.
-Four metadata outputs remain unimplemented, so the release is not publishable.}
+This entry point omits the four metadata outputs, so its release is not publishable.
+Use \code{generateCharacterizationCandidate} for all 142 outputs.}
 \value{Restricted building release identity with 138 of 142 outputs accounted
 for, including explicit schema-conditional unsupported states.}
 \seealso{\code{readMeasurementBaseline}, \code{listDomainConcepts},
