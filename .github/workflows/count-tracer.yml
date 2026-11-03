@@ -15,7 +15,13 @@ concurrency:
 permissions:
   contents: read
 jobs:
-  tracer:
+  integration:
+    name: integration (${{ matrix.suite }})
+    strategy:
+      fail-fast: true
+      max-parallel: 3
+      matrix:
+        suite: [compatibility, domain, measurement]
     runs-on: ubuntu-22.04
     timeout-minutes: ${{ inputs.full_calendar && 60 || 30 }}
     services:
@@ -39,6 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
+        if: matrix.suite == 'compatibility'
         with:
           node-version: '24.11.1'
           cache: npm
@@ -55,6 +62,7 @@ jobs:
           r-version: '4.2.3'
           use-public-rspm: true
       - name: Check portable Gregorian request dates
+        if: matrix.suite == 'compatibility'
         run: Rscript --vanilla tests/tracer/request.R
       - name: Register the selected JDK with R
         run: |
@@ -125,16 +133,20 @@ jobs:
           PGPASSFILE: ${{ github.workspace }}/.local/admin.pgpass
         run: python3 tools/postgresql_fixtures.py setup --host 127.0.0.1 --admin-user postgres
       - name: Rebuild and verify the shipped viewer before R installation
+        if: matrix.suite == 'compatibility'
         run: |
           npm ci --prefix packages/tracer --ignore-scripts --no-audit --no-fund
           npm run package-viewer --prefix packages/tracer
           python3 tools/check_viewer_assets.py
           git diff --exit-code -- inst/viewer inst/validation
       - name: Install contracts dependencies before generator validation
+        if: matrix.suite == 'compatibility'
         run: npm ci --prefix packages/contracts --ignore-scripts --no-audit --no-fund
-      - name: Install package and build real count bundles
+      - name: Install the current R package
+        run: R CMD INSTALL --library="$R_LIBS" .
+      - name: Verify native contracts and core publication
+        if: matrix.suite == 'compatibility'
         run: |
-          R CMD INSTALL --library="$R_LIBS" .
           Rscript --vanilla tests/tracer/native-validation.R .
           Rscript --vanilla tests/tracer/result-validation-offline.R
           Rscript --vanilla tests/tracer/baseline-reader-once.R
@@ -142,12 +154,21 @@ jobs:
           node packages/contracts/tools/validate-v2-corpus.mjs "$RUNNER_TEMP/v2-corpus.json"
           Rscript --vanilla tests/tracer/result-store.R tools/tracer_fixture_config.R
           PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_result_serving.py --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/result-export" --admin-host 127.0.0.1 --admin-user postgres
+      - name: Verify implementation and recovery
+        if: matrix.suite == 'compatibility'
+        run: |
           Rscript --vanilla tests/tracer/implementation-identity.R
           Rscript --vanilla tests/tracer/recovery-offline.R
           Rscript --vanilla tests/tracer/run-ledger-offline.R
           Rscript --vanilla tests/tracer/recovery.R tools/tracer_fixture_config.R "$RUNNER_TEMP/recovery"
+      - name: Verify fixture publication and execution ledger
+        if: matrix.suite == 'compatibility'
+        run: |
           Rscript --vanilla tests/tracer/publication.R tools/tracer_fixture_config.R "$RUNNER_TEMP/publication"
           Rscript --vanilla tests/tracer/run-ledger.R tools/tracer_fixture_config.R "$RUNNER_TEMP/execution-ledger"
+      - name: Build count, observation and measurement tracer bundles
+        if: matrix.suite == 'compatibility'
+        run: |
           Rscript tests/tracer/postgresql.R tools/tracer_fixture_config.R "$TRACER_TEST_BUNDLES"
           Rscript tests/tracer/observation.R tools/tracer_fixture_config.R "$OBSERVATION_TEST_BUNDLES"
           Rscript --vanilla tests/tracer/quantile-request.R
@@ -155,6 +176,7 @@ jobs:
           ACHILLES_NEXT_TEST_NUMERIC_STRATEGY=weighted Rscript tests/tracer/measurement.R tools/tracer_fixture_config.R "$WEIGHTED_TEST_BUNDLES"
           python3 tools/benchmark/weighted_quantiles.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/weighted-quantile-parity"
       - name: Check core batch planning and private staging
+        if: matrix.suite == 'compatibility'
         run: |
           Rscript --vanilla tests/tracer/analysis-definitions.R
           Rscript --vanilla tests/tracer/registered-profile-offline.R
@@ -167,8 +189,10 @@ jobs:
           PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_result_serving.py --test-script refresh-contract --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/refresh-contract" --admin-host 127.0.0.1 --admin-user postgres
           python3 tools/benchmark/batch_primitives.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/batch-primitives" --trials 1
       - name: Verify persisted population and observation baseline
+        if: matrix.suite == 'domain'
         run: python3 tools/test_population_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/population-baseline"
       - name: Verify eight-domain generation and saved concept/time selection
+        if: matrix.suite == 'domain'
         env:
           COMPACT_DOMAIN_CALENDAR: ${{ inputs.full_calendar && '0' || '1' }}
         run: |
@@ -177,14 +201,17 @@ jobs:
           if [ "$COMPACT_DOMAIN_CALENDAR" = 1 ]; then calendar_args+=(--compact-calendar); fi
           python3 tools/test_domain_baseline.py "${calendar_args[@]}" --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/domain-baseline"
       - name: Verify whole-source measurements and exact summary parity
+        if: matrix.suite == 'measurement'
         run: python3 tools/test_measurement_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/measurement-baseline"
       - name: Validate every generated bundle against the frozen contracts
+        if: matrix.suite == 'compatibility'
         run: |
           npm run check --prefix packages/contracts
           for bundle in "$TRACER_TEST_BUNDLES"/* "$OBSERVATION_TEST_BUNDLES"/* "$MEASUREMENT_TEST_BUNDLES"/* "$WEIGHTED_TEST_BUNDLES"/*; do
             node packages/contracts/tools/validate.mjs "$bundle"
           done
       - name: Check generated results and the installed local viewer
+        if: matrix.suite == 'compatibility'
         run: |
           PUBLICATION_TEST_BUNDLES="$RUNNER_TEMP/publication" npm test --prefix packages/tracer
           export PUBLICATION_TEST_BUNDLES="$RUNNER_TEMP/publication"
@@ -192,3 +219,14 @@ jobs:
       - name: Stop the persistent psql client
         if: always()
         run: docker rm -f achillesnext-psql-client || true
+  # Keep the existing required check name; all distinct suites must pass.
+  tracer:
+    if: always()
+    needs: integration
+    runs-on: ubuntu-22.04
+    timeout-minutes: 1
+    steps:
+      - name: Require every integration suite to succeed
+        env:
+          INTEGRATION_RESULT: ${{ needs.integration.result }}
+        run: test "$INTEGRATION_RESULT" = success

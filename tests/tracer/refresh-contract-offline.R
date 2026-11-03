@@ -26,7 +26,7 @@ local({
   seen<-character();versions<-'2.0.0'
   tx<-list(schema='"results"',stream=function(sql,visit){seen<<-c(seen,sql);for(version in versions)visit(version)})
   stopifnot(f('.store_version')(tx)=='2.0.0',length(seen)==1L,grepl('LIMIT 2',seen,fixed=TRUE),
-    !grepl('cdm|INSERT|UPDATE|DELETE|CREATE',seen))
+    !grepl('cdm|INSERT|UPDATE|DELETE|CREATE',seen,ignore.case=TRUE))
   for(v in list(character(),'3.0.0',c('2.0.0','2.0.0'),NA_character_)) {
     versions<-v;rejects(function()f('.store_version')(tx))
   }

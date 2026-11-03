@@ -3,11 +3,33 @@
 The [conformance guide](conformance.md) groups the contributor commands by
 compatibility and safety boundary, including saved-bundle viewer checks.
 
-The PostgreSQL workflow uses a 30-minute budget for routine runs and a 60-minute
-budget only for an explicitly requested wider manual run. It runs one job per
-pull request or main push and cancels
-superseded runs on the same ref. It retains all numerical, schema, state,
-source-denied, rollback and publication checks.
+The PostgreSQL workflow runs three distinct integration suites, each in its own
+runner and PostgreSQL service. Each has a 30-minute routine budget (60 minutes
+for an explicitly requested wider manual run):
+
+| Suite | Coverage |
+|---|---|
+| `compatibility` | Native/JavaScript contracts, existing tracers, core and registered publication, recovery/ledger, private staging, refresh readiness and saved viewer/provider checks |
+| `domain` | Population and eight-domain numerical oracles, schema variants, saved selection and source-denied reads |
+| `measurement` | Whole-source measurement oracle, exact reference/weighted parity, budget/failure and source-denied checks |
+
+Every integration check has one suite owner. Database suites remain serial inside
+their runner, preserving temporary-permission and cleanup checks. Only the
+compatibility suite installs Node dependencies and rebuilds the viewer; the other
+two use the shipped assets and native R validators. All suites install the current
+R package over cached dependencies.
+
+The lightweight `tracer` gate keeps the previous required-check name and succeeds
+only when the integration matrix succeeds. A failing suite cancels remaining
+matrix work; failed, cancelled or skipped results cannot make the gate green.
+Superseded workflow runs on the same ref are still cancelled. There is no additional
+feature-branch push trigger duplicating the pull-request run.
+
+This separates elapsed test time without dropping numerical, schema, state,
+source-denied, rollback or publication coverage. Matrix jobs have some repeated
+runner/setup work; splitting is not a claim of lower billed CPU minutes. Compare
+the next hosted step timings before claiming a measured speedup. See
+[GitHub's matrix job semantics](https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/run-job-variations).
 
 Compiled R dependencies use an exact OS/architecture/JDK/runtime key plus a
 fingerprint of dependency fields in DESCRIPTION and the installer script.
@@ -50,8 +72,7 @@ Reader spools store only selected rows and are capped at 64 MiB by default
 A budget failure emits no rows and removes the temporary spool; operators can
 explicitly raise the limit for larger approved local workloads.
 
-The measurement baseline adds one step to this same cached job, with no additional
-runtime installation or job. Its default smoke uses the 5.5 adversarial and
+The measurement suite's default smoke uses the 5.5 adversarial and
 empty-source fixtures and compares weighted summaries with physical-row reference
 sorting. Run `tools/test_measurement_baseline.py --full-matrix` locally for the
 5.3/5.4 schemas, empty-domain and unobserved cases. This is a numerical/safety

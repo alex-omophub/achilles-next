@@ -1,6 +1,8 @@
 """Check CI cost controls without installing dependencies or starting Docker."""
 import json
 import os
+import re
+from collections import Counter
 import shlex
 from pathlib import Path
 import subprocess
@@ -11,6 +13,68 @@ ROOT=Path(__file__).resolve().parents[1]
 
 
 class CiRuntimeTests(unittest.TestCase):
+    @staticmethod
+    def integration_steps(workflow):
+        # Parse the deliberately flat step list; workflow syntax is also checked
+        # with actionlint. Do not silently accept new unrecognised conditions.
+        section=workflow.split('  integration:\n',1)[1].split('\n  # Keep the existing required check name;',1)[0]
+        return re.split(r'(?m)^      - ',section)[1:]
+
+    def check_suite_topology(self,workflow):
+        self.assertIn('suite: [compatibility, domain, measurement]',workflow)
+        self.assertIn('fail-fast: true',workflow)
+        self.assertNotIn('continue-on-error:',workflow)
+        assignments=[]
+        for step in self.integration_steps(workflow):
+            commands=re.findall(r'(?m)^\s*(?:run: )?(?:PGPASSFILE="[^"\n]*" |ACHILLES_NEXT_TEST_NUMERIC_STRATEGY=weighted )?(?:Rscript(?: --vanilla)?|python3) ((?:tests/tracer|tools)/[^\s]+)([^\n]*)',step)
+            for path,args in commands:
+                if not (path.startswith('tests/tracer/') or path.startswith('tools/test_') or path.startswith('tools/benchmark/')):continue
+                owner=re.search(r"(?m)^        if: matrix[.]suite == '(compatibility|domain|measurement)'$",step)
+                self.assertIsNotNone(owner,'A test would run in every suite: '+path)
+                assignments.append((path,args.strip(),owner[1]))
+        return assignments
+
+    def test_all_integration_checks_have_one_suite_owner(self):
+        workflow=(ROOT/'.github/workflows/count-tracer.yml').read_text();assignments=self.check_suite_topology(workflow)
+        # Explicit coverage inventory: moving a suite must not omit or duplicate
+        # an old check, including both measurement strategies and serving roles.
+        core=['request.R','native-validation.R','result-validation-offline.R','baseline-reader-once.R','result-wire.R','result-store.R',
+              'implementation-identity.R','recovery-offline.R','run-ledger-offline.R','recovery.R','publication.R','run-ledger.R',
+              'postgresql.R','observation.R','quantile-request.R','measurement.R','measurement.R','analysis-definitions.R',
+              'registered-profile-offline.R','source-store-offline.R','measurement-baseline-offline.R','refresh-contract-offline.R',
+              'persistence-offline.R','batch-plan.R']
+        expected=Counter(('tests/tracer/'+name,'compatibility') for name in core)
+        expected.update({('tools/test_result_serving.py','compatibility'):3,
+                         ('tools/benchmark/weighted_quantiles.py','compatibility'):1,
+                         ('tools/benchmark/batch_primitives.py','compatibility'):1,
+                         ('tests/tracer/domain-review-offline.R','domain'):1,
+                         ('tools/test_population_baseline.py','domain'):1,
+                         ('tools/test_domain_baseline.py','domain'):1,
+                         ('tools/test_measurement_baseline.py','measurement'):1})
+        self.assertEqual(Counter((path,suite) for path,args,suite in assignments),expected)
+        measurements=[args for path,args,suite in assignments if path=='tests/tracer/measurement.R']
+        self.assertTrue(any('MEASUREMENT_TEST_BUNDLES' in args for args in measurements))
+        self.assertTrue(any('WEIGHTED_TEST_BUNDLES' in args for args in measurements))
+        self.assertIn('ACHILLES_NEXT_TEST_NUMERIC_STRATEGY=weighted Rscript tests/tracer/measurement.R',workflow)
+        serving=[args for path,args,suite in assignments if path=='tools/test_result_serving.py']
+        self.assertTrue(any('--test-script registered-profile' in args for args in serving))
+        self.assertTrue(any('--test-script refresh-contract' in args for args in serving))
+        self.assertEqual(sum('--test-script' not in args for args in serving),1)
+        for step in self.integration_steps(workflow):
+            if any(command in step for command in ['actions/setup-node@','npm ci ','npm run package-viewer',
+                                                   'npm run check','npm test','python3 -m unittest','node packages/contracts/']):
+                self.assertIn("if: matrix.suite == 'compatibility'",step)
+        self.assertIn('services:\n      postgres:',workflow)
+
+    def test_required_tracer_gate_rejects_failure_cancellation_and_skips(self):
+        gate=(ROOT/'.github/workflows/count-tracer.yml').read_text().split('\n  tracer:\n',1)[1]
+        self.assertIn('if: always()',gate);self.assertIn('needs: integration',gate)
+        self.assertIn('INTEGRATION_RESULT: ${{ needs.integration.result }}',gate)
+        command=re.search(r'(?m)^        run: (.+)$',gate)[1]
+        for status in ['success','failure','cancelled','skipped']:
+            result=subprocess.run(['sh','-c',command],env=dict(os.environ,INTEGRATION_RESULT=status))
+            self.assertEqual(result.returncode==0,status=='success')
+
     def test_serving_workflow_invocations_pass_admin_credentials(self):
         workflow=(ROOT/'.github/workflows/count-tracer.yml').read_text()
         commands=[shlex.split(line.strip()) for line in workflow.splitlines()
