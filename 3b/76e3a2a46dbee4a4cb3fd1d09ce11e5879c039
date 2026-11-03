@@ -1,0 +1,45 @@
+tests/test_ci_runtime.py
+  s_3e206b4a2cf4c3::t_bd33b345bc6627 56-58
+R/core-metadata.R
+  s_895f6ebe145fd3::t_991a297b33eaa0 54-56
+  s_895f6ebe145fd3::t_d9f9b6de45c153 9,11
+docs/development/ci.md
+  s_895f6ebe145fd3::t_d9f9b6de45c153 76-79
+docs/development/core-characterization.md
+  s_895f6ebe145fd3::t_d9f9b6de45c153 22,38-39,52,85-88
+  s_3e206b4a2cf4c3::t_367382d3d5cd1a 24-25
+tests/tracer/core-characterization.R
+  s_3e206b4a2cf4c3::t_bd33b345bc6627 42-62
+tests/tracer/core-metadata-offline.R
+  s_895f6ebe145fd3::t_d9f9b6de45c153 5-7,15
+  s_3e206b4a2cf4c3::t_367382d3d5cd1a 31-43
+  s_3e206b4a2cf4c3::t_bd33b345bc6627 45-48,50-53
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_d9f9b6de45c153 209
+tools/test_core_characterization.py
+  s_895f6ebe145fd3::t_d9f9b6de45c153 72
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3b76e3a2a46dbee4a4cb3fd1d09ce11e5879c039",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
