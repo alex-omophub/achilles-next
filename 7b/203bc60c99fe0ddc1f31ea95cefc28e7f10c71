@@ -1,0 +1,71 @@
+DESCRIPTION
+  s_895f6ebe145fd3::t_e66daadeca2e6e 12-14
+tests/tracer/persistence-offline.R
+  s_895f6ebe145fd3::t_5f11d8df10e0f2 8-9
+tools/test_core_characterization.py
+  s_3e206b4a2cf4c3::t_35002d386b1b95 14-26,57,64-66,69,73,105
+  s_3e206b4a2cf4c3::t_f3fe3acd360f11 1-13,27-56,58-63,67-68,70-72,74-104,106-115
+man/generateCharacterizationCandidate.Rd
+  s_895f6ebe145fd3::t_a2d4534e0656ca 1-44
+man/generateMeasurementBaseline.Rd
+  s_3e206b4a2cf4c3::t_35002d386b1b95 39-40
+R/core-metadata.R
+  s_895f6ebe145fd3::t_a0eba921ca1a06 1-96
+docs/development/core-characterization.md
+  s_895f6ebe145fd3::t_e66daadeca2e6e 1-88
+docs/development/conformance.md
+  s_3e206b4a2cf4c3::t_35002d386b1b95 53-55
+  s_895f6ebe145fd3::t_6e567132d6be5f 49
+docs/development/refresh.md
+  s_895f6ebe145fd3::t_e66daadeca2e6e 6-8,32-34,113
+R/result-producer.R
+  s_895f6ebe145fd3::t_5f11d8df10e0f2 8-9,11,16-17
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_b6e3c90ffa8856 186,207-209
+  s_3e206b4a2cf4c3::t_5f8159f1fb6e68 46-47,55
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_b6e3c90ffa8856 44,53-54
+tests/tracer/core-characterization.R
+  s_3e206b4a2cf4c3::t_f3fe3acd360f11 1-38,40-58,60-79
+  s_3e206b4a2cf4c3::t_35002d386b1b95 39
+  s_895f6ebe145fd3::t_28831be9d878cd 59
+tests/tracer/core-metadata-offline.R
+  s_895f6ebe145fd3::t_a2d4534e0656ca 1-38
+README.md
+  s_895f6ebe145fd3::t_e66daadeca2e6e 47,72-73
+  s_3e206b4a2cf4c3::t_be24fec56c3859 78
+  s_895f6ebe145fd3::t_6e567132d6be5f 19-22
+docs/development/ci.md
+  s_895f6ebe145fd3::t_b6e3c90ffa8856 75-81
+  s_3e206b4a2cf4c3::t_5f8159f1fb6e68 87-102
+NAMESPACE
+  s_3e206b4a2cf4c3::t_51c078836752c4 37
+R/population-baseline.R
+  s_3e206b4a2cf4c3::t_2e6ba213b23127 65,73-75,80-81,87-88,144,159,161,170,193-196,199-200,202
+docs/development/result-store.md
+  s_3e206b4a2cf4c3::t_ae293084fe5b52 33-36
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7b203bc60c99fe0ddc1f31ea95cefc28e7f10c71",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
