@@ -5,8 +5,8 @@ local({
   args<-commandArgs(TRUE);stopifnot(length(args)==1L)
   f<-function(n)get(n,asNamespace("AchillesNext"));o<-f(".object")
   cases<-jsonlite::fromJSON(args[[1]],simplifyVector=FALSE)
-  cases<-Filter(function(c)isTRUE(c$valid)&&c$row$row_kind%in%c("counts","eligibility_counts","summary"),cases)
-  stopifnot(length(cases)>100L)
+  cases<-Filter(function(c)isTRUE(c$valid),cases)
+  stopifnot(length(cases)>100L,any(vapply(cases,function(c)c$row$row_kind=="metadata",TRUE)))
   sql<-character();tx<-list(schema='"fixture"',execute=function(s)sql<<-c(sql,s))
   release<-"00000000-0000-4000-8000-000000000001"
   writer<-f(".store_writer")(tx,release,maxRows=2L,maxBytes=1048576)

@@ -43,8 +43,8 @@ jobs:
       OBSERVATION_TEST_BUNDLES: ${{ github.workspace }}/.local/observation-integration
       ACHILLES_NEXT_VIEWER_TEST_LIBRARY: ${{ github.workspace }}/.local/R-library
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         if: matrix.suite == 'compatibility'
         with:
           node-version: '24.11.1'
@@ -52,7 +52,7 @@ jobs:
           cache-dependency-path: |
             packages/contracts/package-lock.json
             packages/tracer/package-lock.json
-      - uses: actions/setup-java@v4
+      - uses: actions/setup-java@v6
         id: java
         with:
           distribution: temurin
@@ -183,6 +183,7 @@ jobs:
           Rscript --vanilla tests/tracer/source-store-offline.R
           Rscript --vanilla tests/tracer/measurement-baseline-offline.R
           Rscript --vanilla tests/tracer/refresh-contract-offline.R
+          Rscript --vanilla tests/tracer/core-metadata-offline.R
           Rscript --vanilla tests/tracer/persistence-offline.R "$RUNNER_TEMP/v2-corpus.json"
           Rscript --vanilla tests/tracer/batch-plan.R
           PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_result_serving.py --test-script registered-profile --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/registered-profile" --admin-host 127.0.0.1 --admin-user postgres
@@ -203,6 +204,9 @@ jobs:
       - name: Verify whole-source measurements and exact summary parity
         if: matrix.suite == 'measurement'
         run: python3 tools/test_measurement_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/measurement-baseline"
+      - name: Validate complete core candidates and independent metadata
+        if: matrix.suite == 'measurement'
+        run: python3 tools/test_core_characterization.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/core-characterization"
       - name: Validate every generated bundle against the frozen contracts
         if: matrix.suite == 'compatibility'
         run: |

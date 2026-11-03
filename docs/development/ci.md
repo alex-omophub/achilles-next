@@ -72,8 +72,31 @@ Reader spools store only selected rows and are capped at 64 MiB by default
 A budget failure emits no rows and removes the temporary spool; operators can
 explicitly raise the limit for larger approved local workloads.
 
+The measurement suite also verifies [complete core candidates](core-characterization.md)
+with populated 5.3 aliases and an empty 5.5 source, independent metadata/numeric
+expectations, native validation without source access and late metadata-budget
+rollback. The small offline metadata guard runs in compatibility. These checks
+reuse the existing suites and dependencies; they add candidate validation work,
+so total hosted duration must be measured after push.
+
 The measurement suite's default smoke uses the 5.5 adversarial and
 empty-source fixtures and compares weighted summaries with physical-row reference
 sorting. Run `tools/test_measurement_baseline.py --full-matrix` locally for the
 5.3/5.4 schemas, empty-domain and unobserved cases. This is a numerical/safety
 suite, not a timing benchmark or production-scale qualification.
+
+## Action runtime maintenance
+
+Checkout v7, setup-node v7 and setup-java v6 declare Node 24 as their action
+runtime. This avoids forcing the deprecated Node 20 actions to execute on Node 24.
+The action runtime is separate from the installed test tools: Node 24.11.1,
+Temurin 11 and R 4.2.3 retain their existing settings. The R/JDBC cache keys and
+verification are unchanged; setup-r v2 and cache v5 already declare Node 24.
+
+The migrations used here do not set npm registry authentication, Maven credential
+aliases or privileged fork-checkout options. See the official
+[checkout migration notes](https://github.com/actions/checkout/blob/v7.0.1/README.md),
+[setup-node migration notes](https://github.com/actions/setup-node/blob/v7.1.0/README.md)
+and [setup-java migration notes](https://github.com/actions/setup-java/blob/v6.1.0/README.md).
+Confirm the annotations after the next user-pushed hosted run; local workflow
+validation does not execute the remote actions.
