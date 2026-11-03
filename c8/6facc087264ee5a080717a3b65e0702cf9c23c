@@ -1,0 +1,45 @@
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_b0aedc4a134eaa 163,167
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_34c594af6e9961 88,103
+  s_895f6ebe145fd3::t_f59eba1443ab37 15,58
+man/planCharacterizationRefresh.Rd
+  s_895f6ebe145fd3::t_aa132594291d85 1-28
+tests/tracer/refresh-contract.R
+  s_895f6ebe145fd3::t_b0aedc4a134eaa 1-43
+tools/test_result_serving.py
+  s_895f6ebe145fd3::t_b0aedc4a134eaa 21
+docs/development/refresh.md
+  s_895f6ebe145fd3::t_84b43edee6a0e4 1-71,73-111
+  s_895f6ebe145fd3::t_093b3de169d8d1 72
+README.md
+  s_895f6ebe145fd3::t_84b43edee6a0e4 73-77
+R/refresh-plan.R
+  s_895f6ebe145fd3::t_d39bdfdf7affdc 1-23
+man/inspectResultStore.Rd
+  s_895f6ebe145fd3::t_aa132594291d85 1-20
+tests/tracer/refresh-contract-offline.R
+  s_895f6ebe145fd3::t_b0aedc4a134eaa 1-34
+R/store-compatibility.R
+  s_895f6ebe145fd3::t_d39bdfdf7affdc 1-23
+NAMESPACE
+  s_895f6ebe145fd3::t_d39bdfdf7affdc 35-36
+docs/development/result-store.md
+  s_895f6ebe145fd3::t_84b43edee6a0e4 7-10
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c86facc087264ee5a080717a3b65e0702cf9c23c",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
