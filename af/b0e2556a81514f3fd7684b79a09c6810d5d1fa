@@ -1,0 +1,29 @@
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_95522d5cde5e92 21
+  s_895f6ebe145fd3::t_0b9f68e5857922 18-20,22-24,48,65,136,143,145-148,157-159,164-166,169-171,179,192,195,204,207,214,222-232
+tests/tracer/refresh-contract-offline.R
+  s_895f6ebe145fd3::t_9cb7eb421f13f8 29
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_de65ea4330f078 58,62
+  s_895f6ebe145fd3::t_a13d9005cdc82c 29
+  s_895f6ebe145fd3::t_d936adcc31c370 64-65
+  s_895f6ebe145fd3::t_158a52efdfd3f2 4-5,16-28,30-57,59-61,63,66-77
+docs/development/ci.md
+  s_895f6ebe145fd3::t_b403ae4c018f49 6-32,75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "afb0e2556a81514f3fd7684b79a09c6810d5d1fa",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
