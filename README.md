@@ -70,6 +70,11 @@ representations, units/operators, exact numeric and reference-range summaries,
 and saved readback. Four metadata outputs and complete core publication remain
 pending. The earlier synthetic measurement tracer and its viewer stay separate.
 
+The [refresh contracts](docs/development/refresh.md) add source-free
+`planCharacterizationRefresh()` requests and a read-only `inspectResultStore()`
+version probe. A full refresh worker and the four remaining metadata reports
+remain under development.
+
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 
 ## Relationship to OHDSI
