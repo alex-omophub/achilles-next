@@ -53,6 +53,9 @@ class CiRuntimeTests(unittest.TestCase):
                          ('tools/test_measurement_baseline.py','measurement'):1,
                          ('tools/test_core_characterization.py','measurement'):1})
         self.assertEqual(Counter((path,suite) for path,args,suite in assignments),expected)
+        complete=[args for path,args,suite in assignments if path=='tools/test_core_characterization.py']
+        self.assertEqual(len(complete),1)
+        self.assertIn('--full-matrix',shlex.split(complete[0]))
         measurements=[args for path,args,suite in assignments if path=='tests/tracer/measurement.R']
         self.assertTrue(any('MEASUREMENT_TEST_BUNDLES' in args for args in measurements))
         self.assertTrue(any('WEIGHTED_TEST_BUNDLES' in args for args in measurements))

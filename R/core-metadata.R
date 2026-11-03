@@ -6,9 +6,9 @@
   probes<-.core_probes();physical<-probes[grepl("^[a-z_]+[.][a-z_]+$",probes)]
   tables<-sort(unique(c(sub("[.].*","",physical),"cdm_source","vocabulary")),method="radix")
   metadata<-list()
-  tx$stream(paste0("SELECT jsonb_build_object('table',c.relname,'kind',c.relkind::text,'column',a.attname,'type',t.typname,",
+  tx$stream(paste0("SELECT jsonb_build_object('table',c.relname,'kind',c.relkind::text,'column',a.attname,'type',format_type(a.atttypid,a.atttypmod),",
     "'readable',has_schema_privilege(n.oid,'USAGE') AND has_column_privilege(c.oid,a.attname,'SELECT'))::text ",
-    "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_attribute a ON a.attrelid=c.oid JOIN pg_type t ON t.oid=a.atttypid ",
+    "FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_attribute a ON a.attrelid=c.oid ",
     "WHERE n.nspname=",.store_literal(schema)," AND c.relkind IN ('r','p','v','m','f') AND a.attnum>0 AND NOT a.attisdropped ",
     "AND c.relname IN (",paste(vapply(tables,.store_literal,""),collapse=","),") ORDER BY c.relname COLLATE \"C\",a.attname COLLATE \"C\""),function(text) {
       m<-.store_decode(text);metadata[[paste(m$table,m$column,sep=".")]]<<-m
@@ -51,6 +51,9 @@
     lapply(c("validation","projection","export","publication"),function(phase)row(paste0("core.",phase),phase)))
 }
 .core_write_metadata <- function(tx,release,sourceId,version,schemaHash,capabilities,datasets,started,ended,timings,maxRows,numericRows,check) {
+  # The caller supplies a lazy timing expression. Capture it before any metadata
+  # assembly or writer flush so numeric-generation timing excludes all four outputs.
+  force(timings)
   assets<-.v2_assets();ids<-.core_metadata_ids();writer<-.store_writer(tx,release)
   counts<-stats::setNames(rep(0L,length(ids)),ids)
   put<-function(mid,dimensions,values) {

@@ -39,6 +39,27 @@ main<-function() {
     for(table in unlist(case$denied_tables))ex(paste0('REVOKE SELECT ON "',schema,'"."',table,'" FROM achilles_next_runner'))
     schema
   }
+  # Catalog type modifiers are schema evidence, even on an empty relation.
+  # Exercise the same probe used by candidate generation without rounding data.
+  probeSchema<-makeSource(list(columns=list(measurement=list(value_as_number='numeric(8,2)',value_source_value='varchar(12)')),
+    tables=list(measurement=list()),denied_tables=list()),0L)
+  probe<-function()f('.store_transaction')(env$fixtureConnection(),results,function(tx)f('.core_capabilities')(tx,probeSchema),readOnly=TRUE)
+  first<-probe();stopifnot(identical(first,probe()),
+    first$values[['measurement.value_as_number']]$observed_type=='numeric(8,2)',
+    first$values[['measurement.value_source_value']]$observed_type=='character varying(12)')
+  ex(paste0('ALTER TABLE "',probeSchema,'".measurement ALTER COLUMN value_as_number TYPE numeric(18,6)'))
+  second<-probe();stopifnot(second$values[['measurement.value_as_number']]$observed_type=='numeric(18,6)',
+    first$schema_sha256!=second$schema_sha256,identical(second,probe()))
+  ex(paste0('ALTER TABLE "',probeSchema,'".measurement ALTER COLUMN value_source_value TYPE varchar(48)'))
+  third<-probe();stopifnot(third$values[['measurement.value_source_value']]$observed_type=='character varying(48)',
+    second$schema_sha256!=third$schema_sha256,identical(third,probe()))
+  typeModifiers<-list(numeric_before=first$values[['measurement.value_as_number']]$observed_type,
+    numeric_after=second$values[['measurement.value_as_number']]$observed_type,
+    varchar_before=first$values[['measurement.value_source_value']]$observed_type,
+    varchar_after=third$values[['measurement.value_source_value']]$observed_type,
+    before_sha256=first$schema_sha256,numeric_changed_sha256=second$schema_sha256,varchar_changed_sha256=third$schema_sha256)
+  writeLines(wire(typeModifiers),file.path(out,'schema-modifier-proof.json'))
+  cat('NUMERIC_AND_VARCHAR_TYPEMODIFIERS_CHANGE_SCHEMA_IDENTITY_OK\n')
   for(index in seq_along(input)) {
     case<-input[[index]];schema<-makeSource(case,index);sourceId<-paste0('fixture:core:',case$case)
     generated<-generateCharacterizationCandidate(env$fixtureConnection(),schema,sourceId,results,case$version)

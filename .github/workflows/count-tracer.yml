@@ -206,7 +206,7 @@ jobs:
         run: python3 tools/test_measurement_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/measurement-baseline"
       - name: Validate complete core candidates and independent metadata
         if: matrix.suite == 'measurement'
-        run: python3 tools/test_core_characterization.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/core-characterization"
+        run: python3 tools/test_core_characterization.py --full-matrix --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/core-characterization"
       - name: Validate every generated bundle against the frozen contracts
         if: matrix.suite == 'compatibility'
         run: |

@@ -69,7 +69,7 @@ def verify(snapshot, case):
             typ = model['columns'].get(table,{}).get(col)
             if typ is None: expected = dict(state='absent',reason_code='capability.column_absent',observed_type=None)
             else:
-                pgtype = dict(bigint='int8',text='text',numeric='numeric',date='date',timestamp='timestamp')[typ]
+                pgtype = dict(bigint='bigint',text='text',numeric='numeric',date='date',timestamp='timestamp without time zone')[typ]
                 expected = dict(state='available' if model['tables'][table] else 'available_empty',reason_code=None,observed_type=pgtype)
         assert v == expected, (p,v,expected)
     ledger = {r['dimensions']['metric_id']:r['values'] for r in rows['core.execution.output_status']}

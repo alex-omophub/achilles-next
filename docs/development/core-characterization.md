@@ -19,9 +19,10 @@ validateResultRelease(storeOperatorDetails, "results", candidate$release_id)
 
 The worker needs SELECT-only source privileges, database TEMPORARY and result-store
 producer grants. It also needs SELECT on `achillesnext_storage_version`, whose
-`2.0.0` marker is checked before generation. Missing/denied dependencies, unsupported
+`2.0.0` marker is checked before generation. Missing or denied required dependencies, unsupported
 exact numeric types, cancellation, timeouts and resource-limit failures roll back
-the candidate transaction. `maxAggregateRows` counts metadata as well as numeric
+the candidate transaction. Absent optional columns can leave schema-conditional outputs explicitly
+unsupported instead of failing the candidate. `maxAggregateRows` counts metadata as well as numeric
 rows. Stage byte checks happen after allocation; they are not hard memory, spill
 or production-scale guarantees.
 
@@ -34,7 +35,8 @@ or production-scale guarantees.
   share a repeatable-read transaction; cross-run reuse remains false.
 - **Capabilities:** every physical dependency and alias from the frozen manifest,
   plus its declared metadata probes. Catalog evidence records absent and denied
-  columns separately, including their physical types where visible. One bounded
+  columns separately, including their physical types and modifiers (such as NUMERIC precision/scale
+  and VARCHAR length) where visible. One bounded
   existence read per readable relation distinguishes available from available-empty;
   no additional full-table count or patient values are retrieved. Catalog/probe
   services are available; operator assertions are absent because this API does
@@ -47,7 +49,7 @@ or production-scale guarantees.
   self-hash or retroactively claim to have passed a later operation.
 - **Timing:** monotonic wall time for each materialized stage and numeric generation
   through persistence/reconciliation. The latter ends at metadata assembly and
-  excludes writing the timing/passport rows and transaction commit. These nested
+  excludes writing all four metadata outputs and transaction commit. These nested
   intervals must not be summed as independent work. Validation, projection, export
   and publication are unavailable at capture time. CPU, memory, scanned-source-row
   and spill-byte telemetry remains NULL when unmeasured.
@@ -80,7 +82,10 @@ python3 tools/test_core_characterization.py --config tools/tracer_fixture_config
   --output-dir "$(mktemp -d)/core-matrix" --full-matrix
 ```
 
-The default proof covers populated 5.3 aliases and an empty 5.5 source. Independent
+The default local proof covers populated 5.3 aliases and an empty 5.5 source. CI
+runs `--full-matrix`, adding populated 5.4 (denied descriptive metadata) and 5.5.
+The same harness also verifies that numeric precision/scale and varchar length
+changes alter the saved schema fingerprint, while repeated probes remain stable. Independent
 Python expectations compare all 138 numeric outputs and all four metadata outputs;
 real candidates are sealed and natively validated with source privileges revoked.
 A late metadata row-budget failure proves atomic rollback. Tests use disposable
