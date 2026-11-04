@@ -1,0 +1,57 @@
+tools/test_result_serving.py
+  s_895f6ebe145fd3::t_dfb06bd42209b2 21
+R/population-baseline.R
+  s_895f6ebe145fd3::t_d22bd3520ae4b1 65-66,75,78-79,82,84,202,204-207
+man/executeCharacterizationRefresh.Rd
+  s_895f6ebe145fd3::t_ae6c528f0ff1e4 1-44
+tests/tracer/refresh-contract-offline.R
+  s_895f6ebe145fd3::t_d22bd3520ae4b1 8
+NAMESPACE
+  s_895f6ebe145fd3::t_d22bd3520ae4b1 38
+docs/development/refresh.md
+  s_895f6ebe145fd3::t_ae6c528f0ff1e4 5-7,40-41,65-67,72-135,180-196
+README.md
+  s_895f6ebe145fd3::t_ae6c528f0ff1e4 21,47,73-74,78-80
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_9c865d712ae4ca 186,211-213
+tests/tracer/refresh-execution.R
+  s_895f6ebe145fd3::t_6c707747294c38 1-67,69-71,73-94,99-104,107,109-142
+  s_895f6ebe145fd3::t_96697d9949bfaf 68,72
+  s_895f6ebe145fd3::t_4193c7ec236ef6 95-98,105-106,108
+tests/tracer/refresh-execution-offline.R
+  s_895f6ebe145fd3::t_dfb06bd42209b2 1-27
+tools/test_characterization_refresh.py
+  s_895f6ebe145fd3::t_dfb06bd42209b2 1-33
+docs/development/core-characterization.md
+  s_895f6ebe145fd3::t_ae6c528f0ff1e4 66,68-69
+DESCRIPTION
+  s_895f6ebe145fd3::t_ae6c528f0ff1e4 12-14
+docs/development/ci.md
+  s_895f6ebe145fd3::t_9c865d712ae4ca 79-82
+R/refresh-plan.R
+  s_895f6ebe145fd3::t_d22bd3520ae4b1 21
+man/planCharacterizationRefresh.Rd
+  s_895f6ebe145fd3::t_ae6c528f0ff1e4 22-25,29
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_9c865d712ae4ca 50
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_9c865d712ae4ca 45,54-55,86
+R/refresh-execution.R
+  s_895f6ebe145fd3::t_356e892141ee0c 1-44
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "90dc2b0a97c0975895576bd2f2e3553781fb1526",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
