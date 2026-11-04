@@ -205,5 +205,5 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
     if(!is.null(refreshPlan))candidate$refresh<-.object(plan_sha256=refreshPlan$plan_sha256,mode="full_recompute",reused=FALSE,durable_checkpoints=FALSE,
       publication_changed=FALSE,serving_schema_verified=FALSE,next_steps=as.list(c("seal","validate","approve","promote_cas")))
     candidate
-  },queryTimeoutSeconds=ceiling(statementTimeoutMs/1000)+1),error=function(e){if(inherits(e,"AchillesPopulationFailure"))stop(e);stop(if(domainMode)"Domain baseline generation failed; transaction rolled back" else "Population/observation generation failed; transaction rolled back",call.=FALSE)})
+  },queryTimeoutSeconds=ceiling(statementTimeoutMs/1000)+1),error=function(e){if(inherits(e,c("AchillesPopulationFailure","AchillesRefreshReadinessFailure")))stop(e);stop(if(domainMode)"Domain baseline generation failed; transaction rolled back" else "Population/observation generation failed; transaction rolled back",call.=FALSE)})
 }

@@ -88,7 +88,16 @@ main<-function() {
   ex(paste0('REVOKE INSERT ON "',results,'".achillesnext_source_release FROM achilles_next_runner'))
   error<-tryCatch({executeCharacterizationRefresh(worker,request,check=function(){ticks<<-ticks+1L});NULL},error=identity)
   ex(paste0('GRANT INSERT ON "',results,'".achillesnext_source_release TO achilles_next_runner'))
-  stopifnot(inherits(error,'error'),ticks==2L,identical(before,counts()));prior()
+  stopifnot(inherits(error,'AchillesRefreshReadinessFailure'),
+    conditionMessage(error)=='Refresh worker lacks required INSERT privilege on achillesnext_source_release',
+    error$reason_code=='refresh.store_privilege_missing',ticks==2L,identical(before,counts()));prior()
+  before<-counts();ticks<-0L
+  ex(paste0('REVOKE SELECT ON "',results,'".achillesnext_storage_version FROM achilles_next_runner'))
+  error<-tryCatch({executeCharacterizationRefresh(worker,request,check=function(){ticks<<-ticks+1L});NULL},error=identity)
+  ex(paste0('GRANT SELECT ON "',results,'".achillesnext_storage_version TO achilles_next_runner'))
+  stopifnot(inherits(error,'AchillesRefreshReadinessFailure'),
+    conditionMessage(error)=='Refresh result-store version unavailable or unsupported; check results schema USAGE, marker SELECT and storage version',
+    error$reason_code=='refresh.store_version_unavailable_or_unsupported',ticks==2L,identical(before,counts()));prior()
   second<-executeCharacterizationRefresh(worker,request);b<-inspect(second)
   stopifnot(identical(a$hashes,b$hashes),first$release_id!=second$release_id,first$run_id!=second$run_id);prior()
   sealResultRelease(operator,results,second$release_id);validateResultRelease(operator,results,second$release_id)

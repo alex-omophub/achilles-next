@@ -98,7 +98,8 @@ SQL/registered definitions, create a fresh plan.
 
 The worker verifies the storage marker and required table privileges before any
 staging/result write, then applies the existing required-source/profile preflight.
-It needs SELECT on the version/profile registry and SELECT/INSERT on the seven
+It needs `USAGE` on both the source and results schemas, SELECT on the
+version/profile registry and SELECT/INSERT on the seven
 producer tables (`source_release`, `analysis_run`, `operation`, `result_release`,
 `dataset`, `aggregate_cell`, `denominator_edge`), all with the `achillesnext_` prefix,
 plus UPDATE on `analysis_run` and `result_release`. Source privileges remain
@@ -108,6 +109,13 @@ all physical structures, trigger definitions, RLS behavior or migrations; an act
 write/validation failure still fails closed. The serving schema is retained in the
 plan for subsequent publication but its view wiring and audience grants are not
 validated by this worker.
+
+Readiness errors use class `AchillesRefreshReadinessFailure` and a safe
+`reason_code`: `refresh.store_version_unavailable_or_unsupported`,
+`refresh.store_privilege_missing` or `refresh.store_privilege_check_failed`.
+Messages identify the version/access check or required privilege and table. Raw
+JDBC/SQL diagnostics are excluded. These errors retain their refresh context
+through the generation wrapper; they do not become domain-baseline errors.
 
 Each successful execution commits distinct run, source-release and result-release
 identities, the complete requested plan, configured limits and actual telemetry.

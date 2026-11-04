@@ -9,14 +9,25 @@
   .nv_need(identical(.json(plan),.json(expected)),"Refresh plan changed or is stale; create a new plan")
   expected
 }
+.refresh_readiness_error <- function(message,reasonCode) {
+  stop(structure(list(message=message,call=NULL,reason_code=reasonCode),
+    class=c("AchillesRefreshReadinessFailure","error","condition")))
+}
 .refresh_readiness <- function(tx) {
-  .store_version(tx)
+  # JDBC errors may include SQL or connection details. Only fixed readiness
+  # diagnostics cross this boundary; never attach the original condition.
+  tryCatch(.store_version(tx),error=function(e).refresh_readiness_error(
+    "Refresh result-store version unavailable or unsupported; check results schema USAGE, marker SELECT and storage version",
+    "refresh.store_version_unavailable_or_unsupported"))
   tables<-c("source_release","analysis_run","operation","result_release","dataset","aggregate_cell","denominator_edge")
   for(table in c("profile_registry",tables)) {
     target<-.store_literal(paste0(tx$schema,".achillesnext_",table))
     for(privilege in c("SELECT",if(table%in%tables)"INSERT",if(table%in%c("analysis_run","result_release"))"UPDATE")) {
-      .nv_need(tx$one(paste0("SELECT COALESCE(has_table_privilege(to_regclass(",target,"),",.store_literal(privilege),"),false)::text"))=="true",
-        paste("Refresh worker lacks required",privilege,"privilege on",paste0("achillesnext_",table)))
+      allowed<-tryCatch(tx$one(paste0("SELECT COALESCE(has_table_privilege(to_regclass(",target,"),",.store_literal(privilege),"),false)::text")),
+        error=function(e).refresh_readiness_error(paste0("Refresh store privilege check failed for ",privilege," on achillesnext_",table,
+          "; check results schema USAGE and table access"),"refresh.store_privilege_check_failed"))
+      if(!identical(allowed,"true")) .refresh_readiness_error(
+        paste("Refresh worker lacks required",privilege,"privilege on",paste0("achillesnext_",table)),"refresh.store_privilege_missing")
     }
   }
   invisible(TRUE)

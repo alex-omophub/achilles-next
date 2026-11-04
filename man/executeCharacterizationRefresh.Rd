@@ -7,7 +7,8 @@ executeCharacterizationRefresh(connectionDetails, plan,
   maxAggregateRows = 1000000L)
 }
 \arguments{
-\item{connectionDetails}{PostgreSQL worker credentials with SELECT-only source,
+\item{connectionDetails}{PostgreSQL worker credentials with USAGE on source and
+results schemas, SELECT-only source,
 database TEMPORARY and restricted result-store producer grants.}
 \item{plan}{A current unmodified request from \code{planCharacterizationRefresh}.}
 \item{maxStageBytes}{Total temporary relation/index byte budget checked after stages;
@@ -30,6 +31,9 @@ operations. Later validation or approval failure leaves prior approved bytes/cur
 unchanged and may leave an unpublished candidate for diagnosis. A lost commit
 acknowledgement can make candidate completion uncertain; a retry is a full rerun,
 not checkpoint recovery. No failed-attempt ledger survives a rolled-back generation.
+Readiness failures preserve class \code{AchillesRefreshReadinessFailure} and a
+safe \code{reason_code} describing version availability/compatibility, missing
+table privilege or a failed access check. Raw database diagnostics are excluded.
 The serving schema is retained in the request but its view wiring/audience grants
 are not verified by generation. Readiness is a version/privilege preflight, not a
 complete structural, RLS, migration or production-scale certification.
