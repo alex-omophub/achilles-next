@@ -42,7 +42,7 @@ class CiRuntimeTests(unittest.TestCase):
               'implementation-identity.R','recovery-offline.R','run-ledger-offline.R','recovery.R','publication.R','run-ledger.R',
               'postgresql.R','observation.R','quantile-request.R','measurement.R','measurement.R','analysis-definitions.R',
               'registered-profile-offline.R','source-store-offline.R','measurement-baseline-offline.R','refresh-contract-offline.R','core-metadata-offline.R',
-              'persistence-offline.R','batch-plan.R']
+              'persistence-offline.R','batch-plan.R','refresh-execution-offline.R']
         expected=Counter(('tests/tracer/'+name,'compatibility') for name in core)
         expected.update({('tools/test_result_serving.py','compatibility'):3,
                          ('tools/benchmark/weighted_quantiles.py','compatibility'):1,
@@ -51,7 +51,8 @@ class CiRuntimeTests(unittest.TestCase):
                          ('tools/test_population_baseline.py','domain'):1,
                          ('tools/test_domain_baseline.py','domain'):1,
                          ('tools/test_measurement_baseline.py','measurement'):1,
-                         ('tools/test_core_characterization.py','measurement'):1})
+                         ('tools/test_core_characterization.py','measurement'):1,
+                         ('tools/test_characterization_refresh.py','measurement'):1})
         self.assertEqual(Counter((path,suite) for path,args,suite in assignments),expected)
         complete=[args for path,args,suite in assignments if path=='tools/test_core_characterization.py']
         self.assertEqual(len(complete),1)
@@ -82,7 +83,7 @@ class CiRuntimeTests(unittest.TestCase):
     def test_serving_workflow_invocations_pass_admin_credentials(self):
         workflow=(ROOT/'.github/workflows/count-tracer.yml').read_text()
         commands=[shlex.split(line.strip()) for line in workflow.splitlines()
-                  if 'python3 tools/test_result_serving.py' in line]
+                  if any(tool in line for tool in ['python3 tools/test_result_serving.py','python3 tools/test_characterization_refresh.py'])]
         self.assertGreaterEqual(len(commands),2)
         for args in commands:
             self.assertIn('PGPASSFILE=$GITHUB_WORKSPACE/.local/admin.pgpass',args[:args.index('python3')])

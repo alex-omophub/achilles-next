@@ -62,8 +62,8 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
   .baseline_generate(connectionDetails,cdmSchema,sourceId,resultsSchema,declaredCdmVersion,window,maxStageBytes,check,statementTimeoutMs,FALSE)
 }
 .baseline_generate <- function(connectionDetails,cdmSchema,sourceId,resultsSchema,declaredCdmVersion,
-  window,maxStageBytes,check,statementTimeoutMs,domainMode,measurementMode=FALSE,numericStrategy="weighted",maxAggregateRows=NULL,coreMode=FALSE) {
-  plan<-planCharacterizationBatch(cdmSchema,sourceId,declaredCdmVersion,window,"shared")
+  window,maxStageBytes,check,statementTimeoutMs,domainMode,measurementMode=FALSE,numericStrategy="weighted",maxAggregateRows=NULL,coreMode=FALSE,refreshPlan=NULL) {
+  plan<-if(is.null(refreshPlan))planCharacterizationBatch(cdmSchema,sourceId,declaredCdmVersion,window,"shared") else refreshPlan$batch
   .population_need(nchar(sourceId,type="bytes")<=256L && .batch_identifier(resultsSchema) && resultsSchema!="public" && resultsSchema!=cdmSchema,"Invalid baseline source/results configuration")
   .population_need(is.numeric(maxStageBytes)&&length(maxStageBytes)==1L&&is.finite(maxStageBytes)&&maxStageBytes>=0&&maxStageBytes<=2^53,"Invalid intermediate byte budget")
   .population_need(is.null(check)||is.function(check),"Invalid cancellation callback")
@@ -72,14 +72,16 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
   tick<-function()if(!is.null(check))check()
   tick();clock<-proc.time()[["elapsed"]];started<-.stamp();assets<-.v2_assets();numericIds<-c(.population_ids(),if(domainMode).domain_ids(measurementMode) else character())
   ids<-if(coreMode)names(assets$metrics) else numericIds
-  requested<-.object(producer_id=if(coreMode)"core_characterization" else if(measurementMode)"measurement_baseline" else if(domainMode)"domain_baseline" else "population_observation_baseline",producer_revision="1.0.0",plan_sha256=plan$plan_sha256,
+  requested<-.object(producer_id=if(!is.null(refreshPlan))"core_characterization_refresh" else if(coreMode)"core_characterization" else if(measurementMode)"measurement_baseline" else if(domainMode)"domain_baseline" else "population_observation_baseline",producer_revision="1.0.0",plan_sha256=plan$plan_sha256,
     requested_metric_ids=as.list(ids),scope=plan$scope)
   if(measurementMode)requested$numeric_strategy<-numericStrategy
+  if(!is.null(refreshPlan))requested$refresh<-.object(plan=refreshPlan,
+    limits=.object(max_stage_bytes=format(maxStageBytes,scientific=FALSE,trim=TRUE),statement_timeout_ms=as.character(statementTimeoutMs),max_aggregate_rows=as.character(maxAggregateRows)))
   requestHash<-.hash(.json(requested))
   tryCatch(.store_transaction(connectionDetails,resultsSchema,function(tx) {
-    tick();if(coreMode).store_version(tx)
-    tx$execute(paste0("SET LOCAL statement_timeout=",as.integer(statementTimeoutMs)));tx$execute("SET LOCAL lock_timeout=2000")
+    tick();tx$execute(paste0("SET LOCAL statement_timeout=",as.integer(statementTimeoutMs)));tx$execute("SET LOCAL lock_timeout=2000")
     tx$execute("SET LOCAL timezone='UTC'");tx$execute("SET LOCAL datestyle='ISO,YMD'");tx$execute("SET LOCAL standard_conforming_strings=on")
+    if(coreMode){if(is.null(refreshPlan)).store_version(tx) else .refresh_readiness(tx)}
     .population_need(tx$one(paste0("SELECT count(*)::text FROM ",tx$schema,".achillesnext_profile_registry WHERE profile_sha256=",.store_literal(assets$hash)))=="1","Install the matching core profile in the result store first")
     schemaHash<-.population_preflight(tx,cdmSchema)
     cap<-if(domainMode).domain_preflight(tx,cdmSchema,measurementMode) else NULL
@@ -197,8 +199,11 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
       population_window=populationEffective,schema_conditional=if(domainMode)domains$unsupported else NULL,care_reason=if(domainMode)domains$care_reason else NULL,
       definitions=plan$definitions,stages=stageTimings,peak_intermediate_bytes=format(peak,scientific=FALSE,trim=TRUE),
       resource_limits=.object(statement_timeout_ms=as.character(statementTimeoutMs),max_stage_bytes=format(maxStageBytes,scientific=FALSE,trim=TRUE),max_aggregate_rows=if(measurementMode)as.character(maxAggregateRows) else NULL),persistence=persistence,metadata_persistence=metadataPersistence,reusable=FALSE)
-    tx$execute(paste0("INSERT INTO ",s,".achillesnext_operation VALUES (",.store_uuid(run),",",lit(if(coreMode)"core_characterization.generate" else if(measurementMode)"measurement_baseline.generate" else if(domainMode)"domain_baseline.generate" else "population_observation.generate"),",",lit(.hash(.json(plan$definitions))),",'succeeded','[]',",lit(.json(telemetry)),"::jsonb)"))
+    tx$execute(paste0("INSERT INTO ",s,".achillesnext_operation VALUES (",.store_uuid(run),",",lit(if(!is.null(refreshPlan))"core_characterization.refresh" else if(coreMode)"core_characterization.generate" else if(measurementMode)"measurement_baseline.generate" else if(domainMode)"domain_baseline.generate" else "population_observation.generate"),",",lit(.hash(.json(plan$definitions))),",'succeeded','[]',",lit(.json(telemetry)),"::jsonb)"))
     tx$execute(paste0("UPDATE ",s,".achillesnext_analysis_run SET state='succeeded',finished_at=",lit(ended),"::timestamptz WHERE run_id=",.store_uuid(run)))
-    tick();.object(release_id=release,run_id=run,profile_id=assets$profile$profile_id,profile_sha256=assets$hash,state="building",generated_metrics=as.list(ids),expected_metric_count="142",generated_metric_count=as.character(length(ids)),publishable=FALSE,profile_complete=coreMode)
-  },queryTimeoutSeconds=ceiling(statementTimeoutMs/1000)+1),error=function(e){if(inherits(e,"AchillesPopulationFailure"))stop(e);stop(if(domainMode)"Domain baseline generation failed; transaction rolled back" else "Population/observation generation failed; transaction rolled back",call.=FALSE)})
+    tick();candidate<-.object(release_id=release,run_id=run,profile_id=assets$profile$profile_id,profile_sha256=assets$hash,state="building",generated_metrics=as.list(ids),expected_metric_count="142",generated_metric_count=as.character(length(ids)),publishable=FALSE,profile_complete=coreMode)
+    if(!is.null(refreshPlan))candidate$refresh<-.object(plan_sha256=refreshPlan$plan_sha256,mode="full_recompute",reused=FALSE,durable_checkpoints=FALSE,
+      publication_changed=FALSE,serving_schema_verified=FALSE,next_steps=as.list(c("seal","validate","approve","promote_cas")))
+    candidate
+  },queryTimeoutSeconds=ceiling(statementTimeoutMs/1000)+1),error=function(e){if(inherits(e,c("AchillesPopulationFailure","AchillesRefreshReadinessFailure")))stop(e);stop(if(domainMode)"Domain baseline generation failed; transaction rolled back" else "Population/observation generation failed; transaction rolled back",call.=FALSE)})
 }
