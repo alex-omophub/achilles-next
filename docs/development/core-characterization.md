@@ -63,10 +63,10 @@ source snapshot. Generation timestamps end at the metadata capture boundary.
 A complete candidate remains restricted and unapproved. Sealing and native
 validation do not grant audience access or change the current publication. Existing
 institution-controlled projection/approval/promotion operations remain separate.
-Complete candidate generation does not execute a refresh plan, schedule work,
+The direct candidate generator does not execute a refresh plan, schedule work,
 reuse previous aggregates, migrate stores or expose a production UI. Browsing
-continues to consume saved aggregates without source joins. Full recomputation
-orchestration and overlap/failure proofs remain under development.
+continues to consume saved aggregates without source joins. Use the separate [refresh executor](refresh.md) to consume a checked plan.
+Overlap/race and operational qualification remain under development.
 
 ## Contributor checks
 

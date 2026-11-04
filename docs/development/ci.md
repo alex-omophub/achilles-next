@@ -76,7 +76,10 @@ The measurement suite also verifies [complete core candidates](core-characteriza
 using `--full-matrix`: populated 5.3/5.4/5.5 (including visit aliases and
 denied descriptive metadata) plus an empty 5.5 source. It checks independent
 metadata/numeric expectations, native validation without source access, type-modifier
-schema fingerprints and late metadata-budget rollback. The small offline metadata guard runs in compatibility. These checks
+schema fingerprints and late metadata-budget rollback. The [full-refresh proof](refresh.md)
+also runs in measurement on tiny empty-domain fixtures, checking fresh recomputation
+and preservation of an actual prior publication through failures. Its offline plan/
+readiness guard runs in compatibility. No new suite or dependency is added. The small offline metadata guard runs in compatibility. These checks
 reuse the existing suites and dependencies; they add candidate validation work,
 so total hosted duration must be measured after push.
 

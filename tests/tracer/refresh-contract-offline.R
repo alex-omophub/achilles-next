@@ -5,7 +5,7 @@ local({
   p<-plan();stopifnot(identical(p,plan()),length(p$request$metric_ids)==142L,
     identical(unlist(p$request$metric_ids),names(f('.v2_assets')()$metrics)),
     p$execution$state=='planning_only',!p$execution$source_accessed,!p$execution$store_inspected,
-    !p$execution$refresh_worker_implemented,p$refresh$mode=='full_recompute',
+    p$execution$refresh_worker_implemented,p$refresh$mode=='full_recompute',
     !p$refresh$reuse_previous_aggregates,!p$refresh$durable_checkpoints,
     !p$publication$automatic,p$publication$retain_previous,p$publication$requires_institutional_approval,
     is.null(p$batch$scope$observed_window),p$target$required_storage_version=='2.0.0')

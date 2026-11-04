@@ -19,10 +19,11 @@ source query, candidate release, checkpoint, approval or publication is created.
 \details{Refresh requires full recomputation. Matching request hashes and unknown
 or operator-declared release identities never imply reusable source data. The plan
 retains the previous approved publication until complete validation and explicit
-institutional approval permit promotion. These are requirements for the future
-refresh worker; that worker and complete 142-output generation are not implemented
-by this planner. The current measurement generator accounts for 138 outputs.}
+institutional approval permit promotion. The planner does not execute these steps.
+Use \code{executeCharacterizationRefresh} for fresh complete candidate generation;
+sealing, validation, approval and promotion remain explicit. Changed definitions
+require a fresh plan. The older measurement-baseline entry point remains partial.}
 \value{A request list with format, batch/profile/definition identities, target,
 full-recompute/publication requirements, planning-only state and plan SHA-256.}
 \seealso{\code{planCharacterizationBatch}, \code{inspectResultStore},
-\code{generateMeasurementBaseline}}
+\code{executeCharacterizationRefresh}}

@@ -183,6 +183,7 @@ jobs:
           Rscript --vanilla tests/tracer/source-store-offline.R
           Rscript --vanilla tests/tracer/measurement-baseline-offline.R
           Rscript --vanilla tests/tracer/refresh-contract-offline.R
+          Rscript --vanilla tests/tracer/refresh-execution-offline.R
           Rscript --vanilla tests/tracer/core-metadata-offline.R
           Rscript --vanilla tests/tracer/persistence-offline.R "$RUNNER_TEMP/v2-corpus.json"
           Rscript --vanilla tests/tracer/batch-plan.R
@@ -207,6 +208,9 @@ jobs:
       - name: Validate complete core candidates and independent metadata
         if: matrix.suite == 'measurement'
         run: python3 tools/test_core_characterization.py --full-matrix --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/core-characterization"
+      - name: Prove full refresh recomputation and prior publication preservation
+        if: matrix.suite == 'measurement'
+        run: PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_characterization_refresh.py --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/full-refresh" --admin-host 127.0.0.1 --admin-user postgres
       - name: Validate every generated bundle against the frozen contracts
         if: matrix.suite == 'compatibility'
         run: |

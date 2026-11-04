@@ -18,6 +18,6 @@ planCharacterizationRefresh <- function(cdmSchema,sourceId,resultsSchema,serving
     refresh=.object(mode="full_recompute",reuse_previous_aggregates=FALSE,durable_checkpoints=FALSE,
       source_identity="unknown_until_verified",reason_code="source.no_verified_immutable_release"),
     publication=.object(automatic=FALSE,retain_previous=TRUE,requires_complete_validation=TRUE,requires_institutional_approval=TRUE),
-    execution=.object(state="planning_only",source_accessed=FALSE,store_inspected=FALSE,refresh_worker_implemented=FALSE))
+    execution=.object(state="planning_only",source_accessed=FALSE,store_inspected=FALSE,refresh_worker_implemented=TRUE))
   plan$plan_sha256<-.hash(.json(plan));plan
 }

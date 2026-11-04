@@ -9,9 +9,9 @@ Description: Precomputes exact population, observation opportunity and eight-dom
     aggregate store. Includes saved concept and calendar selection, exact summaries,
     explicit schema support states, a separate bounded synthetic measurement tracer,
     versioned bundles, approved publication tools and a reusable React view.
-    Generates complete restricted core candidates with saved metadata. Full refresh
-    orchestration, general input reuse and production-scale qualification are not
-    yet implemented.
+    Generates complete restricted core candidates with saved metadata and executes
+    checked full-recomputation refresh plans. General input reuse and
+    production-scale qualification are not yet implemented.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Depends: R (>= 4.2)
