@@ -18,7 +18,7 @@ def main():
     parser.add_argument('--admin-host', default='/tmp')
     parser.add_argument('--admin-user')
     parser.add_argument('--port', type=int, default=5432)
-    parser.add_argument('--test-script', choices=['result-export', 'registered-profile', 'refresh-contract', 'refresh-execution'], default='result-export')
+    parser.add_argument('--test-script', choices=['result-export', 'registered-profile', 'refresh-contract', 'refresh-execution', 'refresh-operations'], default='result-export')
     args = parser.parse_args()
     admin = Postgres(args.state, admin=True, host=args.admin_host, port=args.port, admin_user=args.admin_user)
     if admin.value(f"SELECT shobj_description(oid,'pg_database') FROM pg_database WHERE datname={literal(DB)}") != MARKER:

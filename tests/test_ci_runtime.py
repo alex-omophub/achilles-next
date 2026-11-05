@@ -52,7 +52,8 @@ class CiRuntimeTests(unittest.TestCase):
                          ('tools/test_domain_baseline.py','domain'):1,
                          ('tools/test_measurement_baseline.py','measurement'):1,
                          ('tools/test_core_characterization.py','measurement'):1,
-                         ('tools/test_characterization_refresh.py','measurement'):1})
+                         ('tools/test_characterization_refresh.py','measurement'):1,
+                         ('tools/test_refresh_operations.py','measurement'):1})
         self.assertEqual(Counter((path,suite) for path,args,suite in assignments),expected)
         complete=[args for path,args,suite in assignments if path=='tools/test_core_characterization.py']
         self.assertEqual(len(complete),1)
@@ -83,7 +84,7 @@ class CiRuntimeTests(unittest.TestCase):
     def test_serving_workflow_invocations_pass_admin_credentials(self):
         workflow=(ROOT/'.github/workflows/count-tracer.yml').read_text()
         commands=[shlex.split(line.strip()) for line in workflow.splitlines()
-                  if any(tool in line for tool in ['python3 tools/test_result_serving.py','python3 tools/test_characterization_refresh.py'])]
+                  if any(tool in line for tool in ['python3 tools/test_result_serving.py','python3 tools/test_characterization_refresh.py','python3 tools/test_refresh_operations.py'])]
         self.assertGreaterEqual(len(commands),2)
         for args in commands:
             self.assertIn('PGPASSFILE=$GITHUB_WORKSPACE/.local/admin.pgpass',args[:args.index('python3')])

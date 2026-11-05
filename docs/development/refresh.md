@@ -138,8 +138,9 @@ bound individual statements, not the entire job or peak spill allocation. The
 optional `check` callback is trusted application code: it should return or signal
 cancellation, without making database writes of its own. External schedulers can
 call the same entry point; this package does not install a scheduler or run work
-from chart interactions. Overlap/race, connection-loss and upgrade/retention
-rehearsals remain separate qualification work.
+from chart interactions. The [operations proof and procedures](store-operations.md) cover controlled
+overlap, precommit session loss, CAS contention and pinned reads. Version-pair
+migration/retention rehearsals and production-scale qualification remain separate work.
 
 ## Store upgrade and retention design boundary
 
@@ -202,3 +203,7 @@ late precommit error/cancellation, validation and approval failures. After each,
 the previous publication's pointer and every saved page byte remain unchanged;
 the serving-only reader still retrieves the original count. Concurrent refresh,
 promotion races and production-scale qualification are not implied by this proof.
+
+For concurrent generation, promotion conflicts, versioned upgrade/interruption
+procedures and retention of pinned readers, see [store operations](store-operations.md).
+The controlled concurrency proof is separate from the serial failure proof above.

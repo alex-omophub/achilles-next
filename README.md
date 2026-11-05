@@ -78,6 +78,8 @@ The [refresh contracts](docs/development/refresh.md) add source-free
 version probe. `executeCharacterizationRefresh()` recomputes a checked plan into
 a fresh complete candidate, retaining the previous publication through failures.
 Sealing, validation, institutional approval and CAS promotion remain explicit.
+The [operations guide](docs/development/store-operations.md) documents controlled
+overlap/CAS proofs, restart boundaries and versioned upgrade/retention procedures.
 
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 
