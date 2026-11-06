@@ -211,6 +211,9 @@ jobs:
       - name: Prove full refresh recomputation and prior publication preservation
         if: matrix.suite == 'measurement'
         run: PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_characterization_refresh.py --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/full-refresh" --admin-host 127.0.0.1 --admin-user postgres
+      - name: Prove concurrent snapshots, connection loss and pinned promotion reads
+        if: matrix.suite == 'measurement'
+        run: PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_refresh_operations.py --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/refresh-operations" --admin-host 127.0.0.1 --admin-user postgres
       - name: Validate every generated bundle against the frozen contracts
         if: matrix.suite == 'compatibility'
         run: |

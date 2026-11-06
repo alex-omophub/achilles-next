@@ -48,6 +48,7 @@ keep the implementation fixed while a suite runs.
 | `tools/test_measurement_baseline.py` | Independent 138-output baseline oracle, measurement representations/ranges, exact strategy parity and source-denied saved selections |
 | `tools/test_core_characterization.py` | Independent complete candidate expectations across numeric and metadata outputs, native source-denied validation and late metadata-budget rollback |
 | `tools/test_characterization_refresh.py` | Checked full reruns, changed source/definition inputs, prior approved pointer/page preservation through readiness, precommit, validation and approval failures; serving-only pinned reads |
+| `tools/test_refresh_operations.py` | Concurrent real refresh snapshots across committed ETL mutations, precommit backend termination, observed CAS lock contention and pinned reads after promotion |
 
 Older tracer and complete fixture workflows retain their own populations and wire
 versions. Their success does not make the 138-output whole-source core release

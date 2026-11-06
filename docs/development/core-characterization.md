@@ -66,7 +66,9 @@ institution-controlled projection/approval/promotion operations remain separate.
 The direct candidate generator does not execute a refresh plan, schedule work,
 reuse previous aggregates, migrate stores or expose a production UI. Browsing
 continues to consume saved aggregates without source joins. Use the separate [refresh executor](refresh.md) to consume a checked plan.
-Overlap/race and operational qualification remain under development.
+Controlled overlap/CAS proofs and upgrade/retention procedures are described in
+[store operations](store-operations.md); actual migration/deletion and scale
+qualification remain separate.
 
 ## Contributor checks
 

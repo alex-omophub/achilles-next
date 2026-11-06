@@ -11,7 +11,7 @@ for an explicitly requested wider manual run):
 |---|---|
 | `compatibility` | Native/JavaScript contracts, existing tracers, core and registered publication, recovery/ledger, private staging, refresh readiness and saved viewer/provider checks |
 | `domain` | Population and eight-domain numerical oracles, schema variants, saved selection and source-denied reads |
-| `measurement` | Whole-source measurement oracle, exact reference/weighted parity, budget/failure and source-denied checks |
+| `measurement` | Whole-source measurement oracle, exact reference/weighted parity, budget/failure and source-denied checks, concurrent refresh/CAS operations proof |
 
 Every integration check has one suite owner. Database suites remain serial inside
 their runner, preserving temporary-permission and cleanup checks. Only the
@@ -82,6 +82,15 @@ and preservation of an actual prior publication through failures. Its offline pl
 readiness guard runs in compatibility. No new suite or dependency is added. The small offline metadata guard runs in compatibility. These checks
 reuse the existing suites and dependencies; they add candidate validation work,
 so total hosted duration must be measured after push.
+
+The separate [operations proof](store-operations.md) runs serially in measurement,
+using independently spawned R/JVM sessions inside that suite's isolated database.
+It observes two in-flight snapshots across source changes, terminates only its
+fixture-owned precommit backend, and holds the actual CAS key until both promotion
+sessions visibly wait. Each process/barrier has a bounded wait and child cleanup.
+It adds no runner or dependency install. The additional hosted duration has not
+been measured; local proof timing is not a CI cost or production-scale guarantee.
+
 
 The measurement suite's default smoke uses the 5.5 adversarial and
 empty-source fixtures and compares weighted summaries with physical-row reference
