@@ -27,6 +27,7 @@ def verify_publication(out, report):
         pointer = json.loads((directory / 'publication.json').read_text())
         assert pointer['root'] == publication['root']
         seen, catalogue, data = set(), {}, {}
+        concepts, terminology = [], []
         expected_context = dict(contract_version='2.0.0', source_id=snapshot['source_id'],
                                 publication_id=publication['publication_id'], release_id=proof['release_id'],
                                 access_scope_id=publication['access_scope_id'], profile_id='core-characterization-v2',
@@ -60,11 +61,34 @@ def verify_publication(out, report):
                     catalogue[entry['metric_id']] = entry
             elif doc['kind'] == 'data':
                 data.setdefault(doc['metric_id'], []).extend(doc['rows'])
+            elif doc['kind'] == 'concept_catalogue':
+                concepts.extend(doc['entries'])
+            elif doc['kind'] == 'terminology':
+                terminology.extend(doc['entries'])
+            else:
+                raise AssertionError('Unhandled artifact kind: ' + doc['kind'])
 
         visit(pointer['root'])
         assert {p.name for p in (directory / 'objects').iterdir()} == {sha + '.json' for sha in seen}
         assert catalogue.keys() == snapshot['datasets'].keys()
         allowed = set(catalogue) if kind == 'full' else {'core.person.count', 'core.person.gender_count'}
+        # Saved browse metadata is derived only from retained typed dimensions.
+        # Raw source labels/values and omitted metrics cannot add concepts.
+        ids = set()
+        for mid in allowed:
+            for row in snapshot['rows'][mid]:
+                if row['state'] == 'suppressed':
+                    continue
+                for key, value in row['dimensions'].items():
+                    if key.endswith('_tag') and isinstance(value, dict) and value['kind'] == 'id':
+                        ids.add(value['value'])
+                    elif key.endswith('_concept_id') and isinstance(value, str) and value != 'null':
+                        ids.add(value)
+        expected_concepts = [dict(concept_tag=dict(kind='id', value=value), label=None, label_state='unavailable')
+                             for value in sorted(ids, key=int)]
+        assert concepts == expected_concepts, 'Concept catalogue differs from retained dimensions'
+        assert terminology == [dict(entry, domain_id=None) for entry in expected_concepts], \
+            'Terminology differs from retained dimensions'
         for mid, dataset in catalogue.items():
             if mid in allowed:
                 assert dataset == snapshot['datasets'][mid], mid

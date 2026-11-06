@@ -42,7 +42,7 @@ testCorePublication<-function(env,owner,results,serving,sourceSchema,sourceId,ca
     current<-DatabaseConnector::querySql(readConnection,paste0('SELECT publication_id::text AS id,revision::text AS revision FROM "',serving,
       '".achillesnext_approved_current WHERE source_id=',lit(sourceId),' AND scope_id=',lit(scope)),
       errorReportFile=file.path(out,'reader-current-error.txt'))
-    stopifnot(current$ID==published$publication_id,current$REVISION=='1')
+    stopifnot(nrow(current)==1L,current$ID==published$publication_id,current$REVISION=='1')
     publications[[kind]]<-list(directory=basename(published$export_dir),publication_id=published$publication_id,
       access_scope_id=scope,root=published$root,scope_kind=policy$scope_kind)
   }

@@ -83,7 +83,7 @@ main<-function() {
     validateResultRelease(env$fixtureConnection('owner'),results,generated$release_id)
     if(index==1L)f('.store_transaction')(env$fixtureConnection(),results,function(tx)f('.store_validate')(tx,generated$release_id))
     snap$validated<-TRUE;snap$generated_metric_count<-generated$generated_metric_count
-    snap$refresh_executed<-publicationMode
+    if(publicationMode)snap$refresh_executed<-TRUE
     snapshots[[length(snapshots)+1L]]<-c(list(case=case$case,version=case$version,source_id=sourceId),snap)
     saved[[length(saved)+1L]]<-list(schema=schema,release=generated$release_id)
     stopifnot(q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_current_publication'))$N==if(publicationMode && index>1L)'2' else '0',
@@ -100,8 +100,9 @@ main<-function() {
   err<-tryCatch({generateCharacterizationCandidate(env$fixtureConnection(),schema,'fixture:late-budget',results,input[[1]]$version,maxAggregateRows=numericRows+1);'accepted'},error=conditionMessage)
   stopifnot(err!='accepted',grepl('Aggregate row budget',err),q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_result_release'))$N==before)
   stopifnot(identical(implementation,implementationIdentity(getwd())))
-  writeLines(wire(list(snapshots=snapshots,implementation=implementation,
-    publication=if(publicationMode)publicationProof else NULL)),file.path(out,'report.json'),useBytes=TRUE)
+  reportParts<-list(snapshots=snapshots,implementation=implementation)
+  if(publicationMode)reportParts$publication<-publicationProof
+  writeLines(wire(reportParts),file.path(out,'report.json'),useBytes=TRUE)
   cat('CORE_METADATA_NATIVE_VALIDATION_SOURCE_DENIED_AND_LATE_BUDGET_ROLLBACK_OK\n')
 }
 main()

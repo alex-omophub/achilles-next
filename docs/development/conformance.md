@@ -134,8 +134,9 @@ python3 tools/test_core_characterization.py --full-matrix --with-publication \
   --output-dir "$evidence_dir/core-publication"
 ```
 
-Set the serving harness administrator host/user/password-file options for your
-marked fixture environment as described above. This mode requires `--state`;
+Set the serving harness administrator options (`--admin-host`, `--admin-user`)
+for your marked fixture environment. Supply a password file through `PGPASSFILE`
+when required; there is no password-file CLI option. This mode requires `--state`;
 it provisions and removes a disposable reader role. The ordinary command without
 `--with-publication` retains its generator-only behavior.
 
@@ -151,8 +152,10 @@ An independent byte/tree walk compares every exported data row with the checked
 generated rows and every catalogue entry with its projected state. Native artifact
 validation checks the full directory. Record partitions reconcile per-concept
 capture counts; the separate all-concepts capture total is not a partition
-bucket. A rehashed artifact with an altered per-concept partition count must
-still fail reconciliation. The database reader has no source or
+bucket. When present with unsuppressed evidence, that total must separately
+equal the sum of per-concept record counts; distinct-person counts are not
+additive. Rehashed artifacts with an altered partition count or all-concepts
+record total must fail reconciliation. The database reader has no source or
 aggregate-schema access, reads every approved object with exact export-byte parity,
 and rejects source/scope mismatches. Revoking one audience blocks its database
 reads while the other audience and existing offline copy remain usable. The
