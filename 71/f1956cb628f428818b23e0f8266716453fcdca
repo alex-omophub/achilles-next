@@ -1,0 +1,31 @@
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_b9b1604e11e429 155-158
+  s_895f6ebe145fd3::t_e050c54dff013b 137-139
+tools/test_core_characterization.py
+  s_895f6ebe145fd3::t_e050c54dff013b 30,64-69,75-91
+R/result-artifact.R
+  s_895f6ebe145fd3::t_135774a5842973 20,159-172,204-207
+tests/tracer/artifact-partition-regression.R
+  s_895f6ebe145fd3::t_e6eb5efc807d73 7-26,28-31
+  s_895f6ebe145fd3::t_ab924fc9de6fac 2,6,33
+tests/tracer/core-publication.R
+  s_895f6ebe145fd3::t_e050c54dff013b 45
+tests/tracer/core-characterization.R
+  s_895f6ebe145fd3::t_e050c54dff013b 86,103-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "71f1956cb628f428818b23e0f8266716453fcdca",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
