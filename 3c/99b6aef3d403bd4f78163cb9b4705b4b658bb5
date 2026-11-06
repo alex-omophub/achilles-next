@@ -1,0 +1,54 @@
+tools/test_result_serving.py
+  s_895f6ebe145fd3::t_29790e071906d9 21
+R/result-artifact.R
+  s_895f6ebe145fd3::t_5834cb13a67111 157-158,160
+tests/tracer/core-characterization.R
+  s_895f6ebe145fd3::t_29790e071906d9 8-9,67-69,86,89,91,103-104
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_fe9ce18ee291a6 69-71,90
+docs/development/conformance.md
+  s_3e206b4a2cf4c3::t_b3aa15d4dceb74 152-155
+  s_3e206b4a2cf4c3::t_252ebbb2231b5a 49,125-151,156-164
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_fe9ce18ee291a6 208,210
+tests/tracer/artifact-partition-regression.R
+  s_895f6ebe145fd3::t_1ade0e914df05d 1-27
+tests/tracer/core-publication.R
+  s_895f6ebe145fd3::t_5834cb13a67111 33-35
+  s_895f6ebe145fd3::t_dfb66bc66426e8 36
+  s_895f6ebe145fd3::t_c42760bbfccd92 1-15,18-32,37-41,45-66
+  s_895f6ebe145fd3::t_fe9ce18ee291a6 16-17,42-44
+tools/test_core_characterization.py
+  s_895f6ebe145fd3::t_9e092eeb046187 32-36
+  s_895f6ebe145fd3::t_fe9ce18ee291a6 4,10,16-31,37-86,172-176,183-188,194
+README.md
+  s_3e206b4a2cf4c3::t_1c2883f5db6bd2 73-76
+docs/development/ci.md
+  s_3e206b4a2cf4c3::t_26d0b7e98c2f47 76,79-85
+docs/development/core-characterization.md
+  s_3e206b4a2cf4c3::t_91b5f98ef9d7b7 96-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3c99b6aef3d403bd4f78163cb9b4705b4b658bb5",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
