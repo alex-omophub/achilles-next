@@ -205,9 +205,9 @@ jobs:
       - name: Verify whole-source measurements and exact summary parity
         if: matrix.suite == 'measurement'
         run: python3 tools/test_measurement_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/measurement-baseline"
-      - name: Validate complete core candidates and independent metadata
+      - name: Validate core refresh, metadata, projection, export and serving reads
         if: matrix.suite == 'measurement'
-        run: python3 tools/test_core_characterization.py --full-matrix --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/core-characterization"
+        run: PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_core_characterization.py --full-matrix --with-publication --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/core-characterization" --admin-host 127.0.0.1 --admin-user postgres
       - name: Prove full refresh recomputation and prior publication preservation
         if: matrix.suite == 'measurement'
         run: PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_characterization_refresh.py --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/full-refresh" --admin-host 127.0.0.1 --admin-user postgres

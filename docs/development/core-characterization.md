@@ -93,3 +93,10 @@ real candidates are sealed and natively validated with source privileges revoked
 A late metadata row-budget failure proves atomic rollback. Tests use disposable
 marked synthetic schemas, restore TEMPORARY grants and leave canonical sources
 and existing publications untouched.
+
+The [integrated conformance mode](conformance.md#compose-complete-refresh-with-approved-publication)
+composes checked full refreshes with real approval, full/reduced projections,
+export and exact pinned approved-page reads. It retains the independent numerical
+and metadata matrix, using a serving principal with source and aggregate access
+denied. The synthetic proof qualifies this local pipeline boundary; it does not
+qualify a production viewer, migration/deletion tooling or another engine.

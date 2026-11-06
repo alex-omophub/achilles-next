@@ -17,7 +17,7 @@
   scratch <- tempfile("achilles-validate-");.nv_need(dir.create(scratch,mode="0700"));on.exit(unlink(scratch,recursive=TRUE))
   dir.create(file.path(scratch,"seen"),mode="0700");dir.create(file.path(scratch,"rows"),mode="0700")
   dir.create(file.path(scratch,"groups"),mode="0700")
-  suppressed <- list()
+  suppressed <- list();captureTotals <- list()
   groupPath <- function(mid,key)file.path(scratch,"groups",mid,.v2_hash(.v2_bytes(key)))
   accumulate <- function(mid,key,value) {
     path <- groupPath(mid,key);old <- if(file.exists(path))readLines(path,warn=FALSE) else "0"
@@ -154,8 +154,22 @@
       observed_schema_sha256=root$source_schema$sha256,declared_cdm_version=root$source_schema$declared_cdm_version,
       consistency_basis=root$source_consistency$within_run)))
     if(row$state=="suppressed") suppressed[[mid]] <<- TRUE
-    if(!is.null(row$values$record_count) && "concept_tag"%in%names(row$dimensions) &&
-      (!grepl(".capture_count",mid,fixed=TRUE)||row$dimensions$period_kind=="full_scope")) accumulate(mid,row$dimensions$concept_tag,row$values$record_count)
+    # Record partitions are per concept. Capture also contains an all-concept
+    # total, which has no corresponding source/type partition bucket.
+    if(!is.null(row$values$record_count) && "concept_tag"%in%names(row$dimensions)) {
+      if(!grepl(".capture_count",mid,fixed=TRUE)) accumulate(mid,row$dimensions$concept_tag,row$values$record_count) else
+      if(row$dimensions$period_kind=="full_scope") {
+        totals <- captureTotals[[mid]] %||% list(all=NULL,parts="0")
+        if(row$dimensions$concept_tag$kind=="all") {
+          .nv_need(is.null(totals$all),"Duplicate full-scope all-concepts capture total")
+          totals$all <- row$values$record_count
+        } else {
+          totals$parts <- .nv_add(totals$parts,row$values$record_count)
+          accumulate(mid,row$dimensions$concept_tag,row$values$record_count)
+        }
+        captureTotals[[mid]] <<- totals
+      }
+    }
     if(row$row_kind=="summary" && row$state!="suppressed") {
       eligible <- row;eligible$row_kind <- "eligibility_counts";eligible$dimensions <- c(row$dimensions,.object(eligibility_reason="eligible"))
       key <- .v2_row_identity(assets$rows[[mid]],eligible)
@@ -187,6 +201,10 @@
     .v2_capability_check(catalogue,capabilities,requireEvidence=FALSE)
   } else .profile_artifact_checks(catalogue,sums,assets)
   available <- function(mid)!is.null(catalogue[[mid]]) && !catalogue[[mid]]$state%in%c("suppressed","unsupported") && !isTRUE(suppressed[[mid]])
+  # Capture totals count records, whose typed concept buckets are disjoint.
+  # Do not add person counts or reconcile totals against suppressed evidence.
+  for(mid in names(captureTotals)) if(available(mid) && !is.null(captureTotals[[mid]]$all))
+    .nv_need(identical(captureTotals[[mid]]$all,captureTotals[[mid]]$parts),"Projected all-concepts record total does not reconcile")
   if(available("core.person.count")) for(mid in c("core.person.gender_count","core.person.birth_year_count","core.person.race_count","core.person.ethnicity_count","core.person.birth_year_gender_count","core.person.race_ethnicity_count","core.density.domain_count","core.density.domain_presence_count")) {
     if(available(mid)) .nv_need(sums[[mid]]==sums[["core.person.count"]],"Projected PERSON partition does not reconcile")
   }

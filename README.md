@@ -70,8 +70,10 @@ outputs, bringing the restricted baseline to 138 of 142 outputs. The
 [measurement baseline guide](docs/development/measurement-baseline.md) describes
 representations, units/operators, exact numeric and reference-range summaries,
 and saved readback. That entry point retains its partial baseline boundary. The separate
-[complete candidate generator](docs/development/core-characterization.md) adds the four real metadata outputs and supports sealing/native validation. Full refresh execution is described below; integrated publication qualification
-remains in progress. The earlier synthetic measurement tracer and its viewer stay separate.
+[complete candidate generator](docs/development/core-characterization.md) adds the four real metadata outputs and supports sealing/native validation. Full refresh execution is described below; an
+[integrated synthetic conformance proof](docs/development/conformance.md#compose-complete-refresh-with-approved-publication)
+covers approval, full/reduced export and serving-only page reads. Production
+qualification remains in progress. The earlier synthetic measurement tracer and its viewer stay separate.
 
 The [refresh contracts](docs/development/refresh.md) add source-free
 `planCharacterizationRefresh()` requests and a read-only `inspectResultStore()`
