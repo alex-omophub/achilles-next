@@ -9,6 +9,8 @@ save(as.character(Sys.getpid()),ctx$pid_file)
 library(AchillesNext)
 e<-new.env();sys.source(ctx$config,e)
 base<-e$fixtureConnection(if(ctx$action=='promote')'owner' else 'runner')
+# DatabaseConnector stores these fields as lazy accessor functions; evaluate them
+# when copying the connection details and adding the worker application name.
 details<-DatabaseConnector::createConnectionDetails(dbms=base$dbms,server=base$server(),port=base$port(),
   user=base$user(),password=base$password(),extraSettings=paste0('ApplicationName=',ctx$app))
 barrier<-function(ticks) {
