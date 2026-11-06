@@ -5,6 +5,8 @@ main<-function() {
   args<-commandArgs(TRUE);stopifnot(length(args)==2L)
   implementation<-implementationIdentity(getwd())
   env<-new.env(parent=globalenv());sys.source(args[1],env);out<-normalizePath(args[2],mustWork=TRUE)
+  publicationMode<-nzchar(Sys.getenv('ACHILLES_NEXT_SERVING_FIXTURE'))
+  if(publicationMode)source('tests/tracer/core-publication.R',local=TRUE)
   input<-jsonlite::fromJSON(file.path(out,'input.json'),simplifyVector=FALSE)
   owner<-DatabaseConnector::connect(env$fixtureConnection('owner'))
   on.exit(DatabaseConnector::disconnect(owner),add=TRUE)
@@ -62,7 +64,9 @@ main<-function() {
   cat('NUMERIC_AND_VARCHAR_TYPEMODIFIERS_CHANGE_SCHEMA_IDENTITY_OK\n')
   for(index in seq_along(input)) {
     case<-input[[index]];schema<-makeSource(case,index);sourceId<-paste0('fixture:core:',case$case)
-    generated<-generateCharacterizationCandidate(env$fixtureConnection(),schema,sourceId,results,case$version)
+    generated<-if(publicationMode)executeCharacterizationRefresh(env$fixtureConnection(),
+      planCharacterizationRefresh(schema,sourceId,results,serving,case$version)) else
+      generateCharacterizationCandidate(env$fixtureConnection(),schema,sourceId,results,case$version)
     stopifnot(generated$generated_metric_count=='142',generated$profile_complete,!generated$publishable)
     snap<-f('.store_transaction')(env$fixtureConnection(),results,function(tx) {
       datasets<-f('.store_datasets')(tx,generated$release_id);rows<-list()
@@ -79,10 +83,12 @@ main<-function() {
     validateResultRelease(env$fixtureConnection('owner'),results,generated$release_id)
     if(index==1L)f('.store_transaction')(env$fixtureConnection(),results,function(tx)f('.store_validate')(tx,generated$release_id))
     snap$validated<-TRUE;snap$generated_metric_count<-generated$generated_metric_count
+    snap$refresh_executed<-publicationMode
     snapshots[[length(snapshots)+1L]]<-c(list(case=case$case,version=case$version,source_id=sourceId),snap)
     saved[[length(saved)+1L]]<-list(schema=schema,release=generated$release_id)
-    stopifnot(q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_current_publication'))$N=='0',
+    stopifnot(q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_current_publication'))$N==if(publicationMode && index>1L)'2' else '0',
       q("SELECT count(*)::text AS n FROM pg_class WHERE relpersistence='t' AND relname~'^achillesnext_[0-9a-f]{32}_'")$N==baselineTemp)
+    if(publicationMode && index==1L)publicationProof<-testCorePublication(env,owner,results,serving,schema,sourceId,generated,snap,out)
     cat('CORE_142_VALIDATED ',case$case,' ',case$version,'\n',sep='')
   }
   # Permit all numeric rows but fail inside metadata writing: no candidate may
@@ -94,7 +100,8 @@ main<-function() {
   err<-tryCatch({generateCharacterizationCandidate(env$fixtureConnection(),schema,'fixture:late-budget',results,input[[1]]$version,maxAggregateRows=numericRows+1);'accepted'},error=conditionMessage)
   stopifnot(err!='accepted',grepl('Aggregate row budget',err),q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_result_release'))$N==before)
   stopifnot(identical(implementation,implementationIdentity(getwd())))
-  writeLines(wire(list(snapshots=snapshots,implementation=implementation)),file.path(out,'report.json'),useBytes=TRUE)
+  writeLines(wire(list(snapshots=snapshots,implementation=implementation,
+    publication=if(publicationMode)publicationProof else NULL)),file.path(out,'report.json'),useBytes=TRUE)
   cat('CORE_METADATA_NATIVE_VALIDATION_SOURCE_DENIED_AND_LATE_BUDGET_ROLLBACK_OK\n')
 }
 main()

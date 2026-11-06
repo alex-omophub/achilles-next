@@ -1,14 +1,87 @@
 #!/usr/bin/env python3
 """Independent metadata expectations and exact numeric parity for complete candidates."""
 import argparse
+import hashlib
 from decimal import getcontext
 import json
 from pathlib import Path
 import re
 import subprocess
+import sys
 import test_measurement_baseline as measurement
 
 ROOT = measurement.ROOT
+
+
+def verify_publication(out, report):
+    """Compare exported rows with independently checked generated rows, not report flags alone."""
+    proof = report['publication']
+    snapshot = next(s for s in report['snapshots'] if s['source_id'] == proof['snapshot_source_id'])
+    assert all(s['refresh_executed'] is True for s in report['snapshots'])
+    for flag in ['source_and_aggregate_denied', 'exact_serving_bytes', 'context_mismatch_rejected',
+                 'scope_revocation_isolated', 'offline_copy_retained']:
+        assert proof[flag] is True, flag
+    total_objects = 0
+    for kind, publication in proof['publications'].items():
+        directory = out / publication['directory']
+        pointer = json.loads((directory / 'publication.json').read_text())
+        assert pointer['root'] == publication['root']
+        seen, catalogue, data = set(), {}, {}
+        expected_context = dict(contract_version='2.0.0', source_id=snapshot['source_id'],
+                                publication_id=publication['publication_id'], release_id=proof['release_id'],
+                                access_scope_id=publication['access_scope_id'], profile_id='core-characterization-v2',
+                                profile_revision='2.0.0', profile_sha256=hashlib.sha256(
+                                    (ROOT / 'inst/analysis/core-characterization-v2.json').read_bytes()).hexdigest())
+        for key in ['publication_id', 'source_id', 'access_scope_id']:
+            assert pointer[key] == expected_context[key], key
+
+        def visit(descriptor):
+            sha = descriptor['sha256']
+            assert sha not in seen
+            seen.add(sha)
+            raw = (directory / 'objects' / (sha + '.json')).read_bytes()
+            assert hashlib.sha256(raw).hexdigest() == sha
+            assert str(len(raw)) == descriptor['bytes']
+            doc = json.loads(raw)
+            assert doc['kind'] == descriptor['kind']
+            for key, value in expected_context.items():
+                assert doc[key] == value, key
+            if doc['kind'] == 'root':
+                assert doc['scope_kind'] == publication['scope_kind']
+                assert doc['expected_metric_count'] == '142'
+                for key in ['catalogue', 'data', 'concepts', 'terminology']:
+                    visit(doc[key])
+            elif doc['kind'] == 'index':
+                for child in doc['children']:
+                    visit(child['object'])
+            elif doc['kind'] == 'metric_catalogue':
+                for entry in doc['entries']:
+                    assert entry['metric_id'] not in catalogue
+                    catalogue[entry['metric_id']] = entry
+            elif doc['kind'] == 'data':
+                data.setdefault(doc['metric_id'], []).extend(doc['rows'])
+
+        visit(pointer['root'])
+        assert {p.name for p in (directory / 'objects').iterdir()} == {sha + '.json' for sha in seen}
+        assert catalogue.keys() == snapshot['datasets'].keys()
+        allowed = set(catalogue) if kind == 'full' else {'core.person.count', 'core.person.gender_count'}
+        for mid, dataset in catalogue.items():
+            if mid in allowed:
+                assert dataset == snapshot['datasets'][mid], mid
+                assert sorted(measurement.base.canon(r) for r in data.get(mid, [])) == sorted(
+                    measurement.base.canon(r) for r in snapshot['rows'][mid]), mid
+            else:
+                assert dataset == dict(snapshot['datasets'][mid], state='suppressed',
+                                       reason_code='policy.output_omitted', rows='0'), mid
+                assert mid not in data, mid
+        if kind == 'projected':
+            assert set(data) == allowed
+            assert 'core.execution.output_status' not in data
+            assert 'core.condition.observation_qualification_count' not in data
+        total_objects += len(seen)
+    assert proof['approved_objects_read'] == str(total_objects)
+    return dict(status='passed', exports=2, exact_objects=total_objects, full_metrics=142,
+                projected_metrics=2, denominator_closure=True, source_denied_serving=True)
 
 
 def physical(case, version):
@@ -96,19 +169,29 @@ def verify(snapshot, case):
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config',type=Path,required=True);p.add_argument('--output-dir',type=Path,required=True)
-    p.add_argument('--full-matrix',action='store_true');a = p.parse_args()
+    p.add_argument('--full-matrix',action='store_true')
+    p.add_argument('--with-publication',action='store_true')
+    p.add_argument('--state',type=Path);p.add_argument('--admin-host',default='/tmp')
+    p.add_argument('--admin-user');p.add_argument('--port',type=int,default=5432);a = p.parse_args()
+    if a.with_publication and not a.state:p.error('--with-publication requires --state')
     out = measurement.base.create_evidence_dir(a.output_dir)
     getcontext().prec = 256
     case = measurement.fixture();empty = dict(case,id='empty_source',person=[],events=[],observation_period=[])
     cases = {case['id']:case,empty['id']:empty}
     matrix = [(case,v) for v in (['5.3','5.4','5.5'] if a.full_matrix else ['5.3'])]+[(empty,'5.5')]
     (out/'input.json').write_text(json.dumps([dict(case=c['id'],version=v,**physical(c,v)) for c,v in matrix]))
-    subprocess.run(['Rscript','--vanilla','tests/tracer/core-characterization.R',str(a.config.resolve()),str(out)],cwd=ROOT,check=True)
+    if a.with_publication:
+        cmd=[sys.executable,'tools/test_result_serving.py','--test-script','core-characterization','--state',str(a.state.resolve()),
+             '--config',str(a.config.resolve()),'--output-dir',str(out),'--admin-host',a.admin_host,'--port',str(a.port)]
+        if a.admin_user:cmd.extend(['--admin-user',a.admin_user])
+    else:cmd=['Rscript','--vanilla','tests/tracer/core-characterization.R',str(a.config.resolve()),str(out)]
+    subprocess.run(cmd,cwd=ROOT,check=True)
     report = json.loads((out/'report.json').read_text())
     assert len(report['snapshots'])==len(matrix)
     for snap in report['snapshots']:verify(snap,cases[snap['case']])
     summary = dict(status='passed',cases=len(matrix),metrics=142,numeric_parity='138 exact outputs',native_validation=True,
                    metadata='independent fixture expectations',source_denied=True,metadata_budget_rollback=True)
+    if a.with_publication:summary['publication']=verify_publication(out,report)
     (out/'oracle.json').write_text(json.dumps(summary,indent=2)+'\n');print(summary)
 
 

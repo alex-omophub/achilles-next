@@ -154,8 +154,10 @@
       observed_schema_sha256=root$source_schema$sha256,declared_cdm_version=root$source_schema$declared_cdm_version,
       consistency_basis=root$source_consistency$within_run)))
     if(row$state=="suppressed") suppressed[[mid]] <<- TRUE
+    # Record partitions are per concept. Capture also contains an all-concept
+    # total, which has no corresponding source/type partition bucket.
     if(!is.null(row$values$record_count) && "concept_tag"%in%names(row$dimensions) &&
-      (!grepl(".capture_count",mid,fixed=TRUE)||row$dimensions$period_kind=="full_scope")) accumulate(mid,row$dimensions$concept_tag,row$values$record_count)
+      (!grepl(".capture_count",mid,fixed=TRUE)||(row$dimensions$period_kind=="full_scope" && row$dimensions$concept_tag$kind!="all"))) accumulate(mid,row$dimensions$concept_tag,row$values$record_count)
     if(row$row_kind=="summary" && row$state!="suppressed") {
       eligible <- row;eligible$row_kind <- "eligibility_counts";eligible$dimensions <- c(row$dimensions,.object(eligibility_reason="eligible"))
       key <- .v2_row_identity(assets$rows[[mid]],eligible)

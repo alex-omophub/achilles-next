@@ -66,6 +66,9 @@ class CiRuntimeTests(unittest.TestCase):
         self.assertTrue(any('--test-script registered-profile' in args for args in serving))
         self.assertTrue(any('--test-script refresh-contract' in args for args in serving))
         self.assertEqual(sum('--test-script' not in args for args in serving),1)
+        conformance=[args for path,args,suite in assignments if path=='tools/test_core_characterization.py']
+        self.assertEqual(len(conformance),1)
+        self.assertIn('--with-publication',conformance[0])
         for step in self.integration_steps(workflow):
             if any(command in step for command in ['actions/setup-node@','npm ci ','npm run package-viewer',
                                                    'npm run check','npm test','python3 -m unittest','node packages/contracts/']):
@@ -84,7 +87,7 @@ class CiRuntimeTests(unittest.TestCase):
     def test_serving_workflow_invocations_pass_admin_credentials(self):
         workflow=(ROOT/'.github/workflows/count-tracer.yml').read_text()
         commands=[shlex.split(line.strip()) for line in workflow.splitlines()
-                  if any(tool in line for tool in ['python3 tools/test_result_serving.py','python3 tools/test_characterization_refresh.py','python3 tools/test_refresh_operations.py'])]
+                  if any(tool in line for tool in ['python3 tools/test_result_serving.py','python3 tools/test_characterization_refresh.py','python3 tools/test_refresh_operations.py','python3 tools/test_core_characterization.py'])]
         self.assertGreaterEqual(len(commands),2)
         for args in commands:
             self.assertIn('PGPASSFILE=$GITHUB_WORKSPACE/.local/admin.pgpass',args[:args.index('python3')])

@@ -73,10 +73,16 @@ A budget failure emits no rows and removes the temporary spool; operators can
 explicitly raise the limit for larger approved local workloads.
 
 The measurement suite also verifies [complete core candidates](core-characterization.md)
-using `--full-matrix`: populated 5.3/5.4/5.5 (including visit aliases and
+using `--full-matrix --with-publication`: populated 5.3/5.4/5.5 (including visit aliases and
 denied descriptive metadata) plus an empty 5.5 source. It checks independent
 metadata/numeric expectations, native validation without source access, type-modifier
-schema fingerprints and late metadata-budget rollback. The [full-refresh proof](refresh.md)
+schema fingerprints and late metadata-budget rollback. The same candidates now
+come from checked refresh execution, and the first populated candidate is reused
+for full/reduced approval, exact export-row comparisons and source/store-denied
+serving reads, including context and audience-revocation checks. No additional
+generation run or Node dependency is introduced. See the
+[integrated conformance command](conformance.md#compose-complete-refresh-with-approved-publication).
+The [full-refresh proof](refresh.md)
 also runs in measurement on tiny empty-domain fixtures, checking fresh recomputation
 and preservation of an actual prior publication through failures. Its offline plan/
 readiness guard runs in compatibility. No new suite or dependency is added. The small offline metadata guard runs in compatibility. These checks
