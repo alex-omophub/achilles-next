@@ -13,7 +13,7 @@ openDatabaseResultProvider(connectionDetails, servingSchema, context,
 \item{servingSchema}{Schema exposing the approved serving views.}
 \item{context}{Trusted pinned list containing contract_version, publication_id, release_id, source_id, profile_id, profile_revision, profile_sha256, access_scope_id, the exact root descriptor, authorization_epoch and instance_id.}
 \item{authorize}{Trusted function of context returning exactly TRUE only while the complete release/root/scope is admitted, approved and accessible to this instance and epoch.}
-\item{readBudget}{Optional named overrides for cacheBytes, maxObjects, maxBytes and maxRows of the internal reader. Defaults are 4 MiB raw cache, 64 distinct objects, 8 MiB inspected bytes and 8,192 inspected leaf rows per operation. Database caching is disabled.}
+\item{readBudget}{Optional named overrides for cacheBytes, maxObjects, maxBytes and maxRows of the internal reader. Defaults are 4 MiB raw cache, 64 distinct objects, 8 MiB distinct verified bytes and 8,192 distinct verified leaf rows per operation. Database caching is disabled.}
 }
 \description{Provides metric discovery and exact equality selection of typed precomputed rows through the same native interface for artifact and database modes. Does not query CDM tables, aggregate results again, or schedule jobs.}
 \value{A provider list with listMetrics, selectSavedRows, inspect and idempotent close methods. Data responses are serializable lists with pinned context, explicit state/reason, opaque cursor, complete flag and bounded read counters.}
@@ -32,7 +32,9 @@ returns exact saved rows and relevant verified denominator/summary-eligibility d
 Filters are up to 16 named exact strings or typed tag lists. Default rowKind is summary
 when saved by the metric, otherwise the first declared kind. Summary units/operators
 remain separate strata. Limits are 1,000 primary rows and 8 MiB for the complete response,
-including dependencies, context and counters. All catalogue, selected-row and dependency
+including dependencies, context, cursor and counters. Row and metric pages stop
+at the byte boundary with a continuation cursor. A single unit with its required
+response envelope/evidence/continuation that cannot fit raises resource_limit. All catalogue, selected-row and dependency
 reads share the operation's bounded read budget. No count, mean or percentile is recomputed.
 
 State available preserves individual row states and exact string values. Missing selections

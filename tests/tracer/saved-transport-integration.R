@@ -59,6 +59,19 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
     if(a$complete)break
     left<-a$cursor;right<-b$cursor
   }
+  measured<-fileProvider$selectSavedRows('core.measurement.numeric_summary',maxRows=1L)
+  byteLimit<-length(f('.v2_bytes')(measured))+16L
+  left<-NULL;right<-NULL;byteKeys<-character();bytePages<-0L
+  repeat {
+    a<-fileProvider$selectSavedRows('core.measurement.numeric_summary',maxBytes=byteLimit,cursor=left)
+    b<-dbProvider$selectSavedRows('core.measurement.numeric_summary',maxBytes=byteLimit,cursor=right)
+    semanticSame(a,b)
+    stopifnot(length(f('.v2_bytes')(a))<=byteLimit,length(f('.v2_bytes')(b))<=byteLimit)
+    byteKeys<-c(byteKeys,vapply(a$rows,function(r)r$row_key,''));bytePages<-bytePages+1L
+    if(a$complete)break
+    left<-a$cursor;right<-b$cursor
+  }
+  stopifnot(bytePages>1L,identical(byteKeys,summaryKeys))
   stopifnot(length(summaryKeys)==2L,!anyDuplicated(summaryKeys),dbProvider$inspect()$cache_bytes==0L,
     length(statements)==database$inspect()$fetched_objects+dbProvider$inspect()$fetched_objects)
   cat('SAVED_SEMANTIC_PROVIDER_REAL_142_METRICS_ROWS_DEPENDENCIES_PAGINATION_PARITY_OK\n')

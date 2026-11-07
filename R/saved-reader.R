@@ -72,9 +72,10 @@
       result <- c(list(descriptor=d,bytes=raw),page)
       memo[[d$sha256]] <<- result;result
     }
-    value <- work(get)
+    budget <- function()list(objects=used$objects,bytes=used$bytes,rows=used$rows)
+    value <- work(get,budget)
     check(cancel,generation)
-    value$budget <- list(objects=used$objects,bytes=used$bytes,rows=used$rows)
+    value$budget <- budget()
     if(!is.null(responseLimit) && length(.v2_bytes(value))>responseLimit) .saved_error("resource_limit")
     check(cancel,generation);value
   },error=function(e) {
@@ -120,17 +121,18 @@
     list(pages=pages,cursor=nextCursor,complete=is.null(nextCursor))
   }
   scan <- function(branch,lower=NULL,upper=NULL,limit=1L,cursor=NULL,cancel=function()FALSE)
-    run(cancel,function(get)scanBody(get,branch,lower,upper,limit,cursor))
-  session <- function(work,cancel=function()FALSE,responseLimit=NULL) run(cancel,function(get) {
+    run(cancel,function(get,budget)scanBody(get,branch,lower,upper,limit,cursor))
+  session <- function(work,cancel=function()FALSE,responseLimit=NULL) run(cancel,function(get,budget) {
     root <- NULL;generation <- state$generation
     readRoot <- function(){if(is.null(root)) root <<- get(context$root)$document;root}
     access <- list(root=readRoot,check=function()check(cancel,generation),
+      measure=function(value){check(cancel,generation);value$budget<-budget();size<-length(.v2_bytes(value));check(cancel,generation);size},
       walk=function(branch,lower=NULL,upper=NULL,after=NULL,visit)scanBody(get,branch,lower,upper,root=readRoot(),afterKey=after,visit=visit),
       decode=function(token,selection)if(is.null(token))NULL else decode(token,selection),
       cursor=function(selection,last)encode(.object(version=1L,context_sha256=contextHash,selection_sha256=selection,generation=state$generation,last_key=last)))
     work(access)
   },responseLimit=responseLimit)
-  list(session=session,root=function(cancel=function()FALSE)run(cancel,function(get)list(page=get(context$root))),scan=scan,
+  list(session=session,root=function(cancel=function()FALSE)run(cancel,function(get,budget)list(page=get(context$root))),scan=scan,
     close=function(){if(!state$closed){state$closed<-TRUE;clear()};invisible(NULL)},
     inspect=function()c(state$stats,list(cache_bytes=state$bytes,cache_objects=length(state$order),cache_allowed=transport$cacheAllowed,closed=state$closed,generation=state$generation)))
 }

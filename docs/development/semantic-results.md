@@ -115,7 +115,8 @@ operation; it is not presented as a zero or an estimated ratio.
 ## Budgets, pagination and cancellation
 
 All catalogue, row and dependency reads share **one operation budget**: defaults
-64 distinct verified objects, 8 MiB of inspected bytes and 8,192 decoded leaf rows.
+64 distinct verified objects, 8 MiB of distinct verified bytes and 8,192 distinct
+verified leaf rows, including raw-cache hits.
 The [transport ceilings](saved-transports.md#verification-and-traversal) still apply.
 A bounded per-operation memo reuses already verified decoded pages; it is discarded
 at return/error. Across operations, file raw caching stays bounded and database
@@ -123,9 +124,14 @@ raw caching stays disabled. Each physical DB fetch rechecks its serving grant;
 host authority/cancellation checks also run on memo and raw-cache reuse.
 
 A selection returns at most 1,000 primary rows; the complete serialized response,
-including dependencies, context and counters, must fit the requested byte budget
-(default 1 MiB, hard 8 MiB). Dependency expansion is bounded by the read budget,
-response bytes and at most 3,000 distinct primary/dependency rows. Raw cache/read
+including dependencies, context, cursor and counters, must fit the requested byte
+budget (default 1 MiB, hard 8 MiB). Row selection and metric discovery shorten the
+page at a byte boundary and return a continuation cursor. The selected rows keep
+all required evidence, and evidence belonging only to deferred rows is omitted.
+A single result unit plus its required envelope/evidence/continuation that cannot
+fit still raises `resource_limit`. The final serialized response is checked exactly.
+Dependency expansion remains bounded by the shared read budget and at most 3,000
+distinct primary/dependency rows. Raw cache/read
 limits do not constitute a whole-process R/JVM memory guarantee.
 
 Opaque HMAC cursors bind method, normalized selection, limits, complete context,

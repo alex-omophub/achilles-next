@@ -28,7 +28,7 @@ local({
   }
   ids<-vapply(metrics,function(m)m$metric_id,'')
   stopifnot(length(ids)==142L,!anyDuplicated(ids),identical(ids,sort(names(f('.v2_assets')()$metrics),method='radix')))
-  stopifnot(all(vapply(metrics,function(m)!is.null(m$capability)&&m$rows==if(m$state=='suppressed')'0' else m$rows,TRUE)))
+  stopifnot(all(vapply(metrics,function(m)!is.null(m$capability)&&identical(m$rows,as.character(length(x$rows[[m$metric_id]]))),TRUE)))
   count<-p$selectSavedRows('core.person.count')
   stopifnot(count$state=='available',count$rows[[1]]$values$person_count=='10',!length(count$dependencies),!count$generation_requested,count$transformations=='none',count$budget$objects<12L)
   # Registry-driven capability discovery also handles installed count extensions.
@@ -40,6 +40,39 @@ local({
   stopifnot(second$complete,second$rows[[1]]$dimensions$gender_concept_id=='9007199254740993',second$rows[[1]]$values$person_count=='4',second$rows[[1]]$row_key!=gender$rows[[1]]$row_key)
   summary<-p$selectSavedRows('core.measurement.numeric_summary',list(concept_tag=list(kind='id',value='123')))
   stopifnot(length(summary$rows)==3L,all(vapply(summary$rows,function(r)r$row_kind=='summary',TRUE)),length(summary$dependencies)==3L)
+  # Byte pagination accounts for the complete envelope and only returned evidence.
+  oneSizes<-integer();cursor<-NULL
+  repeat {
+    one<-p$selectSavedRows('core.measurement.numeric_summary',maxRows=1L,cursor=cursor)
+    oneSizes<-c(oneSizes,length(f('.v2_bytes')(one)))
+    if(one$complete)break
+    cursor<-one$cursor
+  }
+  byteLimit<-max(oneSizes)+128L
+  stopifnot(byteLimit<length(f('.v2_bytes')(summary)))
+  cursor<-NULL;keys<-character();bytePages<-0L
+  repeat {
+    page<-p$selectSavedRows('core.measurement.numeric_summary',maxBytes=byteLimit,cursor=cursor)
+    stopifnot(length(page$rows)>0L,length(f('.v2_bytes')(page))<=byteLimit)
+    units<-vapply(page$rows,function(r)r$dimensions$unit_concept_tag$value,'')
+    stopifnot(setequal(units,vapply(page$dependencies,function(d)d$row$dimensions$unit_concept_tag$value,'')))
+    keys<-c(keys,vapply(page$rows,function(r)r$row_key,''));bytePages<-bytePages+1L
+    if(page$complete)break
+    cursor<-page$cursor
+  }
+  stopifnot(bytePages>1L,!anyDuplicated(keys),identical(keys,vapply(summary$rows,function(r)r$row_key,'')))
+  header<-p$listMetrics(limit=1L)
+  headerBytes<-length(f('.v2_bytes')(header))-length(f('.v2_bytes')(header$metrics[[1]]))
+  metricBytes<-headerBytes+max(vapply(metrics,function(m)length(f('.v2_bytes')(m)),1L))+256L
+  cursor<-NULL;byteIds<-character()
+  repeat {
+    page<-p$listMetrics(limit=100L,maxBytes=metricBytes,cursor=cursor)
+    stopifnot(length(page$metrics)>0L,length(f('.v2_bytes')(page))<=metricBytes)
+    byteIds<-c(byteIds,vapply(page$metrics,function(m)m$metric_id,''))
+    if(page$complete)break
+    cursor<-page$cursor
+  }
+  stopifnot(identical(byteIds,ids))
   zero<-Filter(function(r)r$dimensions$unit_concept_tag$value=='777',summary$rows)[[1]]
   stopifnot(zero$state=='empty_population',zero$values$n=='0',is.null(zero$values$p50))
   chosen<-p$selectSavedRows('core.measurement.numeric_summary',list(concept_tag=list(kind='id',value='123'),unit_concept_tag=list(kind='id',value='456'),raw_operator_tag=list(kind='null')))

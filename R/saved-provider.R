@@ -11,6 +11,15 @@
   prefix <- paste0(mid,"|",if(length(parts))paste0(paste(parts,collapse="|"),"|") else "")
   list(lower=prefix,upper=paste0(prefix,"~"))
 }
+# Fit a verified prefix, including its evidence, cursor and final read counters.
+.saved_fit_page <- function(items,complete,build,measure,maxBytes) {
+  repeat {
+    value <- build(items,complete)
+    if(measure(value)<=maxBytes)return(value)
+    if(length(items)<=1L).saved_error("resource_limit")
+    items <- items[-length(items)];complete <- FALSE
+  }
+}
 .saved_provider <- function(transport,readBudget=list()) {
   .nv_need(is.list(readBudget) && (!length(readBudget)||(.nv_object(readBudget)&&!anyDuplicated(names(readBudget))&&all(names(readBudget)%in%c("cacheBytes","maxObjects","maxBytes","maxRows")))),"Invalid read budget")
   reader <- do.call(.saved_reader,c(list(transport=transport),readBudget))
@@ -35,19 +44,23 @@
     reader$session(function(api) {
       if(!bounded(limit,100L)||!bounded(maxBytes,8388608L)) .saved_error("invalid_request")
       selector <- .v2_hash(.v2_bytes(.object(operation="list_metrics",limit=limit,max_bytes=maxBytes)))
-      after <- api$decode(cursor,selector);entries<-list();last<-NULL
+      after <- api$decode(cursor,selector);entries<-list();entryBytes<-0L
+      build <- function(items,complete).object(state="available",reason_code=NULL,context=identity,metrics=items,
+        complete=complete,cursor=if(complete)NULL else api$cursor(selector,items[[length(items)]]$metric_id),generation_requested=FALSE)
+      headerBytes <- api$measure(build(list(),TRUE))
       done <- api$walk("metric_catalogue",after=after,visit=function(doc) {
         for(entry in doc$entries) {
           api$check()
           if(!is.null(after)&&!.v2_less(after,entry$metric_id))next
           if(length(entries)>=limit)return(FALSE)
-          entries[[length(entries)+1L]] <<- c(entry,.object(capability=.saved_capability(entry$metric_id,assets)))
-          last <<- entry$metric_id
+          item<-c(entry,.object(capability=.saved_capability(entry$metric_id,assets)))
+          entries[[length(entries)+1L]] <<- item
+          entryBytes <<- entryBytes+length(.v2_bytes(item))
+          if(headerBytes+entryBytes>maxBytes)return(FALSE)
         }
         TRUE
       })
-      .object(state="available",reason_code=NULL,context=identity,metrics=entries,complete=done$complete,
-        cursor=if(done$complete)NULL else api$cursor(selector,last),generation_requested=FALSE)
+      .saved_fit_page(entries,done$complete,build,api$measure,maxBytes)
     },cancel,responseLimit=maxBytes)
   }
   select <- function(metricId,filters=list(),rowKind=NULL,population=NULL,maxRows=100L,maxBytes=1048576L,cursor=NULL,cancel=function()FALSE) {
@@ -70,41 +83,25 @@
         .nv_need(!entry$state%in%c("suppressed","unsupported"),"Inaccessible dependency")
         if(entry$state%in%c("empty_source","empty_population")) .nv_need(row$state%in%c(entry$state,"suppressed"),"Dataset row state mismatch")
       }
-      bounds <- .saved_range(metricId,filters,kind,assets)
-      rows <- list();last <- NULL;primaryBytes<-0L
-      done <- api$walk("data",lower=bounds$lower,upper=bounds$upper,after=after,visit=function(doc) {
-        .nv_need(identical(doc$metric_id,metricId))
-        for(row in doc$rows) {
-          api$check();key<-paste0(metricId,"|",.v2_sort(assets$rows[[metricId]],row))
-          if((!is.null(after)&&!.v2_less(after,key)) || !identical(row$row_kind,kind))next
-          if(!all(vapply(names(filters),function(n)identical(.json(row$dimensions[[n]]),.json(filters[[n]])),TRUE)))next
-          if(length(rows)>=maxRows)return(FALSE)
-          checkRow(dataset,row)
-          primaryBytes <<- primaryBytes+length(.v2_bytes(row))
-          if(primaryBytes>maxBytes).saved_error("resource_limit")
-          rows[[length(rows)+1L]] <<- row;last <<- key
-        }
-        TRUE
-      })
-      if(!length(rows))return(response("not_saved","selection.no_saved_rows"))
       # Resolve only exact declared dependencies. Hashes are checked against keys
       # derived from installed definitions, never used as arbitrary object paths.
-      allRows<-new.env(parent=emptyenv());queue<-list();primary<-character();dependencyBytes<-0L
+      allRows<-new.env(parent=emptyenv());queue<-list();links<-list();recordBytes<-list();parent<-NULL
       add <- function(mid,row) {
         id<-paste0(mid,"|",row$row_key)
         if(!exists(id,allRows,inherits=FALSE)) {
           if(length(queue)>=3000L).saved_error("resource_limit")
           record<-.object(metric_id=mid,metric_version=assets$metrics[[mid]]$version,row=row)
           assign(id,record,allRows);queue[[length(queue)+1L]]<<-record
+          recordBytes[[id]]<<-length(.v2_bytes(record))
         }
         id
       }
-      for(row in rows)primary<-c(primary,add(metricId,row))
       exact <- function(mid,dimensions,kind,expectedKey=NULL) {
         witness<-.object(dimensions=dimensions,row_kind=kind)
         rowKey<-.v2_row_identity(assets$rows[[mid]],witness)
         .nv_need(is.null(expectedKey)||identical(expectedKey,rowKey),"Wrong dependency identity")
         id<-paste0(mid,"|",rowKey)
+        links[[parent]] <<- unique(c(links[[parent]],id))
         if(exists(id,allRows,inherits=FALSE))return(get(id,allRows,inherits=FALSE)$row)
         entry<-catalogue(api,mid,catMemo);target<-NULL
         .nv_need(!entry$state%in%c("suppressed","unsupported"),"Inaccessible dependency")
@@ -117,35 +114,71 @@
           TRUE
         })
         .nv_need(!is.null(target),"Missing dependency");checkRow(entry,target)
-        dependencyBytes<<-dependencyBytes+length(.v2_bytes(target))
-        if(primaryBytes+dependencyBytes>maxBytes).saved_error("resource_limit")
         add(mid,target);target
       }
       index<-1L
-      while(index<=length(queue)) {
-        api$check();record<-queue[[index]];mid<-record$metric_id;row<-record$row
-        spec<-.analysis_denominator(mid,row,assets,forKey=TRUE)
-        .v2_denominator_check(mid,row,function(id,key) {
-          .nv_need(!is.null(spec)&&identical(id,spec$metric_id))
-          target<-exact(id,spec$dimensions,"counts",key)
-          refs<-Filter(function(r)identical(r$metric_id,id)&&identical(r$row_key,key),row$denominator_refs)
-          for(ref in refs).nv_need(target$state!="suppressed"&&identical(target$values[[ref$field]],ref$value),"Dependency value mismatch")
-          target$dimensions
-        },assets)
-        if(row$state!="suppressed" && row$row_kind=="summary") {
-          dimensions<-c(row$dimensions,.object(eligibility_reason="eligible"))
-          target<-exact(mid,dimensions,"eligibility_counts")
-          .nv_need(target$state!="suppressed"&&identical(target$values$record_count %||% target$values$person_count,row$values$n),"Summary eligibility mismatch")
+      expand <- function(candidate) {
+        add(metricId,candidate)
+        while(index<=length(queue)) {
+          api$check();record<-queue[[index]];mid<-record$metric_id;row<-record$row
+          parent <<- paste0(mid,"|",row$row_key)
+          spec<-.analysis_denominator(mid,row,assets,forKey=TRUE)
+          .v2_denominator_check(mid,row,function(id,key) {
+            .nv_need(!is.null(spec)&&identical(id,spec$metric_id))
+            target<-exact(id,spec$dimensions,"counts",key)
+            refs<-Filter(function(r)identical(r$metric_id,id)&&identical(r$row_key,key),row$denominator_refs)
+            for(ref in refs).nv_need(target$state!="suppressed"&&identical(target$values[[ref$field]],ref$value),"Dependency value mismatch")
+            target$dimensions
+          },assets)
+          if(row$state!="suppressed" && row$row_kind=="summary") {
+            dimensions<-c(row$dimensions,.object(eligibility_reason="eligible"))
+            target<-exact(mid,dimensions,"eligibility_counts")
+            .nv_need(target$state!="suppressed"&&identical(target$values$record_count %||% target$values$person_count,row$values$n),"Summary eligibility mismatch")
+          }
+          if(row$state!="suppressed" && row$row_kind=="eligibility_counts" && identical(row$dimensions$eligibility_reason,"eligible")) {
+            dimensions<-row$dimensions;dimensions$eligibility_reason<-NULL
+            target<-exact(mid,dimensions,"summary")
+            .nv_need(target$state=="suppressed"||identical(target$values$n,row$values$record_count %||% row$values$person_count),"Eligibility summary mismatch")
+          }
+          index<<-index+1L
         }
-        if(row$state!="suppressed" && row$row_kind=="eligibility_counts" && identical(row$dimensions$eligibility_reason,"eligible")) {
-          dimensions<-row$dimensions;dimensions$eligibility_reason<-NULL
-          target<-exact(mid,dimensions,"summary")
-          .nv_need(target$state=="suppressed"||identical(target$values$n,row$values$record_count %||% row$values$person_count),"Eligibility summary mismatch")
-        }
-        index<-index+1L
       }
-      deps<-lapply(sort(setdiff(ls(allRows,all.names=TRUE),primary),method="radix"),function(n)get(n,allRows,inherits=FALSE))
-      response("available",NULL,rows,deps,if(done$complete)NULL else api$cursor(selector,last),done$complete)
+      build <- function(items,complete) {
+        primary<-vapply(items,function(r)paste0(metricId,"|",r$row_key),"")
+        reached<-primary;at<-1L
+        while(at<=length(reached)) {
+          api$check();reached<-unique(c(reached,links[[reached[[at]]]]));at<-at+1L
+        }
+        deps<-lapply(sort(setdiff(reached,primary),method="radix"),function(n)get(n,allRows,inherits=FALSE))
+        last<-paste0(metricId,"|",.v2_sort(assets$rows[[metricId]],items[[length(items)]]))
+        response("available",NULL,items,deps,if(complete)NULL else api$cursor(selector,last),complete)
+      }
+      headerBytes<-api$measure(response("available",NULL))
+      bounds <- .saved_range(metricId,filters,kind,assets)
+      rows <- list();primaryBytes<-0L
+      done <- api$walk("data",lower=bounds$lower,upper=bounds$upper,after=after,visit=function(doc) {
+        .nv_need(identical(doc$metric_id,metricId))
+        for(row in doc$rows) {
+          api$check();key<-paste0(metricId,"|",.v2_sort(assets$rows[[metricId]],row))
+          if((!is.null(after)&&!.v2_less(after,key)) || !identical(row$row_kind,kind))next
+          if(!all(vapply(names(filters),function(n)identical(.json(row$dimensions[[n]]),.json(filters[[n]])),TRUE)))next
+          if(length(rows)>=maxRows)return(FALSE)
+          checkRow(dataset,row);n<-length(.v2_bytes(row))
+          if(primaryBytes+n>maxBytes) {
+            if(!length(rows)).saved_error("resource_limit")
+            return(FALSE)
+          }
+          rows[[length(rows)+1L]] <<- row;primaryBytes <<- primaryBytes+n
+          expand(row)
+          primary<-vapply(rows,function(r)paste0(metricId,"|",r$row_key),"")
+          deps<-setdiff(ls(allRows,all.names=TRUE),primary)
+          # A lower bound avoids repeatedly encoding a growing complete response.
+          if(headerBytes+primaryBytes+sum(unlist(recordBytes[deps]))>maxBytes)return(FALSE)
+        }
+        TRUE
+      })
+      if(!length(rows))return(response("not_saved","selection.no_saved_rows"))
+      .saved_fit_page(rows,done$complete,build,api$measure,maxBytes)
     },cancel,responseLimit=maxBytes)
   }
   list(listMetrics=metrics,selectSavedRows=select,close=reader$close,inspect=reader$inspect)
