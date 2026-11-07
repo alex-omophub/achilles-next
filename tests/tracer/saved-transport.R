@@ -10,7 +10,7 @@ local({
     if(!is.null(code))stopifnot(inherits(e,'achillesnext_read_error'),identical(e$code,code))
     failures<<-failures+1L;invisible(e)
   }
-  make<-function(bad=NULL,n=130L) {
+  make<-function(bad=NULL,n=130L,retained=TRUE,catalogueState='computed',catalogueRows='1') {
     directory<-tempfile('fixture-',folder);dir.create(directory);dir.create(file.path(directory,'objects'))
     common<-o(contract_version='2.0.0',publication_id='00000000-0000-4000-8000-000000000001',release_id='00000000-0000-4000-8000-000000000002',source_id='fixture:transport',profile_id='core-characterization-v2',profile_revision='2.0.0',profile_sha256=a$hash,access_scope_id='fixture-scope')
     emit<-function(doc,kind,rows) {
@@ -45,11 +45,11 @@ local({
     if(identical(bad,'row_state_type'))row$state<-list('computed')
     if(identical(bad,'ref_type'))row$denominator_refs<-list(o(measure=list('person_count'),metric_id=mid,row_key=row$row_key,field='person_count',value='9007199254740993'))
     data<-emit(c(common,o(kind='data',metric_id=mid,metric_version=if(identical(bad,'version_type'))list(m$version) else m$version,rows=list(row))),'data','1')
-    entry<-o(metric_id=mid,version=m$version,population=m$population,grain=m$grain,row_schema_id=a$rows[[mid]]$row_schema_id,definition_sha256=hash(wire(m)),state='computed',reason_code=NULL,required=TRUE,conditional_support=o(state='supported',reason_code=NULL),rows='1',completeness=o(scope_kind='standard_full',complete=TRUE,excluded_record_count='0',reason_code=NULL))
+    entry<-o(metric_id=mid,version=m$version,population=m$population,grain=m$grain,row_schema_id=a$rows[[mid]]$row_schema_id,definition_sha256=hash(wire(m)),state=catalogueState,reason_code=if(catalogueState=='computed')NULL else 'fixture.policy_suppressed',required=TRUE,conditional_support=o(state='supported',reason_code=NULL),rows=catalogueRows,completeness=o(scope_kind='standard_full',complete=TRUE,excluded_record_count='0',reason_code=NULL))
     if(identical(bad,'catalogue_state_type'))entry$state<-list('computed')
     catalogue<-emit(c(common,o(kind='metric_catalogue',entries=list(entry))),'metric_catalogue','1')
     terminology<-emit(c(common,o(kind='index',index_kind='terminology',children=list())),'index','0')
-    policy<-o(id='fixture',revision='1',scope_kind='restricted',allow_metrics=if(identical(bad,'policy'))list() else as.list(names(a$metrics)))
+    policy<-o(id='fixture',revision='1',scope_kind='restricted',allow_metrics=if(!retained || identical(bad,'policy'))list() else as.list(names(a$metrics)))
     root<-c(common,o(kind='root',scope_kind='restricted',publication_state='ready',eligible_for_current_pointer=TRUE,expected_metric_count='142',generated_at='2026-01-01T00:00:00.000Z',source_schema=o(sha256=strrep('a',64),declared_cdm_version='5.5'),source_consistency=o(within_run='unknown',reusable=FALSE,reason_code='fixture.unknown'),disclosure=o(approval_id='fixture',policy=policy,policy_sha256=hash(wire(policy))),catalogue=catalogue,concepts=conceptRoot,data=data,terminology=terminology))
     if(identical(bad,'root_count_type'))root$expected_metric_count<-142L
     if(identical(bad,'root_scope_type'))root$scope_kind<-list('restricted')
@@ -58,6 +58,30 @@ local({
     list(directory=normalizePath(directory),context=context,root=root)
   }
   x<-make();approved<-TRUE;checks<-0L
+  # Root policy constrains catalogue metadata as well as data pages.
+  for(values in list(c('computed','1'),c('computed','0'),c('suppressed','1'))) {
+    z<-make(n=1L,retained=FALSE,catalogueState=values[[1]],catalogueRows=values[[2]])
+    r<-f('.saved_reader')(f('.saved_artifact_transport')(z$directory,z$context,function(c)TRUE))
+    fail(function()r$scan('metric_catalogue'),'integrity_failure')
+    stopifnot(r$inspect()$cache_bytes==0L);r$close()
+  }
+  for(retained in c(TRUE,FALSE)) {
+    z<-make(n=1L,retained=retained,catalogueState=if(retained)'computed' else 'suppressed',catalogueRows=if(retained)'1' else '0')
+    r<-f('.saved_reader')(f('.saved_artifact_transport')(z$directory,z$context,function(c)TRUE))
+    entry<-r$scan('metric_catalogue')$pages[[1]]$document$entries[[1]]
+    stopifnot(entry$state==if(retained)'computed' else 'suppressed',entry$rows==if(retained)'1' else '0');r$close()
+  }
+  # A host callback may close the reader after the first lifecycle check.
+  checkCallbackClose<-function(stage) {
+    r<-NULL;fetched<-0L
+    authority<-function(c){if(stage=='authority')r$close();TRUE}
+    cancelled<-function(){if(stage=='cancel')r$close();FALSE}
+    t<-f('.saved_transport')(x$context,authority,function(d){fetched<<-fetched+1L;stop('Unexpected fetch')})
+    r<-f('.saved_reader')(t);on.exit(r$close())
+    fail(function()r$root(cancel=cancelled),'closed')
+    stopifnot(r$inspect()$closed,r$inspect()$cache_bytes==0L,fetched==0L)
+  }
+  for(stage in c('authority','cancel'))checkCallbackClose(stage)
   # Fixture approval is a test host decision, not inferred by the reader.
   authorize<-function(context){checks<<-checks+1L;approved}
   transport<-f('.saved_artifact_transport')(x$directory,x$context,authorize)
@@ -143,7 +167,7 @@ local({
   original<-readBin(rootFile,'raw',n=262145L)
   r<-f('.saved_reader')(f('.saved_artifact_transport')(z$directory,z$context,function(c)TRUE),cacheBytes=0L);on.exit(r$close(),add=TRUE)
   writeBin(c(original,as.raw(32)),rootFile);fail(function()r$root(),'integrity_failure')
-  unlink(rootFile);other<-tempfile('outside-',folder);writeBin(original,other);file.symlink(other,rootFile)
+  unlink(rootFile);other<-tempfile('outside-',folder);writeBin(original,other);stopifnot(file.symlink(other,rootFile))
   fail(function()r$root(),'unavailable')
   unlink(rootFile);writeBin(as.raw(rep(32L,262145L)),rootFile);fail(function()r$root(),'unavailable')
   # An empty branch's bytes must be checked, not trusted from rows="0" alone.

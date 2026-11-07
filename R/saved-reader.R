@@ -16,7 +16,8 @@
   check <- function(cancel,generation) {
     if(state$closed) .saved_error("closed")
     transport$check(cancel)
-    if(state$closed || generation!=state$generation) .saved_error("superseded")
+    if(state$closed) .saved_error("closed")
+    if(generation!=state$generation) .saved_error("superseded")
   }
   encode <- function(doc) {
     bytes <- .v2_bytes(doc)
@@ -96,6 +97,8 @@
         .nv_need(identical(doc$kind,branch))
         if(!intersects(page$lo,page$hi)) return(invisible(NULL))
         if(branch=="data" && !doc$metric_id%in%allowed) .nv_need(all(vapply(doc$rows,function(r)r$state=="suppressed",TRUE)),"Policy output leak")
+        if(branch=="metric_catalogue") for(entry in doc$entries) if(!entry$metric_id%in%allowed)
+          .nv_need(identical(entry$state,"suppressed") && identical(entry$rows,"0"),"Policy catalogue leak")
         pages[[length(pages)+1L]] <<- page;last <<- page$hi
       }
       invisible(NULL)

@@ -62,6 +62,11 @@ guards before returning complete partitions. A zero-row branch's index is read
 and verified before returning an empty traversal. Missing or corrupt pages fail;
 an empty traversal never manufactures a zero-valued analytical result.
 
+Catalogue entries omitted by the root's effective disclosure policy must be
+`suppressed` with `rows: "0"` before the reader returns them. Computed entries
+and suppressed entries with nonzero row counts fail even if individually typed
+correctly. Policy failures clear the cache and invalidate cursors like other errors.
+
 Internal range arguments select encoded partition ranges; they are not semantic
 OMOP filters or known-ID membership tests. A partition crossing a range boundary
 is returned intact for the later semantic layer to inspect. Consumers of the
