@@ -1,0 +1,55 @@
+tools/benchmark/saved_representation.py
+  s_895f6ebe145fd3::t_13097acb9386d6 63,191,219
+  s_895f6ebe145fd3::t_33685e60dbc82a 9,212
+  s_895f6ebe145fd3::t_01e43b302eef98 1-8,10-62,64-190,192-211,213-218,220-231
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_aa9c0a45450ef5 24,54-59
+tools/benchmark/representation.py
+  s_895f6ebe145fd3::t_56a8d7bed37599 1-17,20-33,38-47,51-59,61-70,72-73,76-80,82-84,88-110,112-131,133-134,136-148,151-159,161-164,167-177,179-180,182-190
+  s_895f6ebe145fd3::t_33685e60dbc82a 18-19,81,87,132
+  s_895f6ebe145fd3::t_0a3d71b03c25ed 35,48-50,85-86
+  s_895f6ebe145fd3::t_d9af4e604534a0 34,36-37,60,71,74-75,111,135,149-150,160,165-166,178,181
+tests/test_schema_subset.py
+  s_895f6ebe145fd3::t_40803ea5f0e64d 1-31
+tools/check_schema_subset.py
+  s_895f6ebe145fd3::t_40803ea5f0e64d 1-56
+tests/test_saved_representation.py
+  s_895f6ebe145fd3::t_4d00b25ec8196c 1-99
+docs/benchmark/saved-representation.md
+  s_3e206b4a2cf4c3::t_3891bb7a3d8eef 1-94
+docs/development/ci.md
+  s_895f6ebe145fd3::t_b240b9a3dd4b66 6-10
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_40803ea5f0e64d 151
+tools/benchmark/representation.R
+  s_895f6ebe145fd3::t_7abdd9b03651bf 1-18,21-23,25,30-31,35-41
+  s_895f6ebe145fd3::t_33685e60dbc82a 19-20,24,26-29,32-34
+docs/development/validator-boundary.md
+  s_3e206b4a2cf4c3::t_3891bb7a3d8eef 1-83
+README.md
+  s_895f6ebe145fd3::t_aa9c0a45450ef5 44-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9d34d3051e87d20156014e2b21006d637de851f4",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
