@@ -1,0 +1,36 @@
+tests/test_saved_representation.py
+  s_895f6ebe145fd3::t_4092fb0c159a90 3,57-58,100-118
+  s_895f6ebe145fd3::t_1cd24770bd13fe 119
+tools/benchmark/representation.py
+  s_895f6ebe145fd3::t_4092fb0c159a90 18-19,145,147
+tests/test_schema_subset.py
+  s_895f6ebe145fd3::t_4092fb0c159a90 30-39
+tests/test_representation_runner.py
+  s_895f6ebe145fd3::t_028472d042061c 1-50
+docs/benchmark/saved-representation.md
+  s_895f6ebe145fd3::t_4092fb0c159a90 78-81
+tools/check_schema_subset.py
+  s_895f6ebe145fd3::t_4092fb0c159a90 18
+tools/benchmark/saved_representation.py
+  s_895f6ebe145fd3::t_4092fb0c159a90 100-103,172
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_4092fb0c159a90 55
+docs/development/validator-boundary.md
+  s_895f6ebe145fd3::t_4092fb0c159a90 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "df89c9cef386a508055fa0064a8de1054f218e25",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
