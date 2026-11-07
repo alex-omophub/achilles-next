@@ -18,7 +18,8 @@ use semantic dimensions; callers do not supply page paths, sort keys or SQL.
 | PERSON count | None | PERSON table | Whole source | None | Count only |
 | PERSON gender count | None; gender is its own typed dimension | PERSON table | Whole source; no year filter | None | Count only |
 | Core domain capture | Exact raw standard-concept tag | All recorded rows | Exact full scope, calendar month/year or undated bucket | Not a capture-report dimension | Separate record/person counts |
-| Observed domain capture | Exact raw standard-concept tag | Recorded observation union | Exact saved period | Not a capture-report dimension | Separate record/person counts |
+| Observed domain capture | Exact raw standard-concept tag | Recorded observation union | Full scope and calendar month/year; no undated bucket | Not a capture-report dimension | Separate record/person counts |
+| Observation coverage / continuous-person count | None | Observed people | Saved bounded full scope and clipped/complete calendar periods; no undated bucket | None | Counts with the saved full-calendar indicator where applicable |
 | Observation year/gender/age count | None | Observed people | Saved year, jointly with gender/age | None | Count only |
 | Measurement numeric summary | Exact tag | All recorded rows | Full source; no monthly summary | Exact saved unit/operator tags | Saved summary and separate eligibility rows |
 | Measurement range-status count | Exact tag | All recorded rows | Full source | Exact saved unit/operator tags | Reason partition only |
@@ -37,13 +38,25 @@ to only one row kind require that row kind explicitly; for example,
 `eligibility_reason` selects eligibility rows, not summary rows. Large/signed IDs
 remain strings. NULL, zero, all and schema absence retain distinct typed tags.
 
-Every supplied period tuple has a kind, start and end. The core full-source model
-supports NULL endpoints for full scope/undated, complete calendar months and
-complete calendar years. A valid custom interval that does not match those saved
+Every supplied period tuple has a kind, start and end. `period_kinds` and
+`period_bounds` in the capability entry follow that metric's declared producer
+family. All-recorded capture saves an undated bucket; observed capture does not.
+Capture uses NULL endpoints for full scope and complete calendar months/years.
+Observation coverage/continuous-person reports retain their saved full-scope
+bounds and clipped calendar boundaries as well as complete periods. A structurally
+valid clipped tuple still needs an exact saved-row match later; it is not an
+arbitrary-window computation. A valid custom interval outside the metric's saved
 grains requires additional operator work. Invalid dates and incomplete tuples
 fail validation. A month or year selector cannot be applied to a report lacking
 that dimension. Selecting several saved months does not authorize summing distinct
 people, averaging percentiles or pooling units.
+
+Explicit numeric `summary` requests apply the installed summary-specific rules:
+supplied units must be positive IDs, and measurement numeric summaries accept
+only NULL or zero operators. Eligibility-row requests can still select ineligible
+groups. Omitted unit/operator filters remain wildcards, without adding default
+selectors to the request or inventing result values. Full row eligibility and
+denominator validation remain required at readback.
 
 The internal response has two structural states:
 

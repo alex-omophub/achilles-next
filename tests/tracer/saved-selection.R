@@ -21,6 +21,21 @@ local({
   stopifnot(request('core.condition.capture_count',period('calendar_year','2020-01-01','2020-12-31'))$state=='selection_shape_supported')
   for(bounds in list(c('1900-02-01','1900-02-28'),c('2000-02-01','2000-02-29'),c('2100-02-01','2100-02-28')))
     stopifnot(request('core.condition.capture_count',period('calendar_month',bounds[1],bounds[2]))$state=='selection_shape_supported')
+  domains<-c('condition','drug','procedure','visit','device','observation','death','specimen','measurement')
+  rawCaptures<-paste0('core.',domains,'.capture_count')
+  datedOnly<-c(paste0('observed.',domains,'.capture_count'),'core.observation_period.coverage_count','core.observation_period.continuous_person_count')
+  periodReports<-names(Filter(function(c)c$time=='exact_saved_period',matrix))
+  stopifnot(setequal(periodReports,c(rawCaptures,datedOnly)))
+  for(mid in rawCaptures)stopifnot(identical(unlist(matrix[[mid]]$period_kinds),c('full_scope','calendar_month','calendar_year','undated')),
+    request(mid,period('undated'))$state=='selection_shape_supported')
+  for(mid in datedOnly) {
+    stopifnot(identical(unlist(matrix[[mid]]$period_kinds),c('full_scope','calendar_month','calendar_year')))
+    unsaved<-request(mid,period('undated'))
+    stopifnot(unsaved$state=='additional_batch_job_required',unsaved$reason_code=='selection.period_not_saved',!unsaved$generation_requested)
+  }
+  for(mid in c('core.observation_period.coverage_count','core.observation_period.continuous_person_count'))
+    for(p in list(period('full_scope','2020-01-15','2020-02-20'),period('calendar_month','2020-01-15','2020-01-31'),period('calendar_year','2020-01-15','2020-02-20')))
+      stopifnot(request(mid,p)$state=='selection_shape_supported')
   summary<-request('core.measurement.numeric_summary',o(unit_concept_tag=o(kind='id',value='9007199254740993'),raw_operator_tag=o(kind='null')),rowKind='summary')
   stopifnot(summary$state=='selection_shape_supported',cap('core.measurement.numeric_summary')$time=='not_saved',
     cap('core.measurement.numeric_summary')$summary=='saved_summary_only')
@@ -38,6 +53,23 @@ local({
     request('core.condition.capture_count',period('full_scope','2020-01-01','2020-02-29')))
   stopifnot(all(vapply(unsupported,function(x)x$state=='additional_batch_job_required'&&!x$generation_requested,TRUE)))
   rejects<-function(work)stopifnot(inherits(try(work(),silent=TRUE),'try-error'))
+  for(mid in c('core.measurement.numeric_summary','core.observation.numeric_summary','core.measurement.range_low_summary','core.measurement.range_high_summary')) {
+    wildcard<-request(mid,rowKind='summary')
+    stopifnot(wildcard$state=='selection_shape_supported',length(wildcard$request$filters)==0L)
+    for(tag in list(o(kind='id',value='0'),o(kind='id',value='-1'),o(kind='null'),o(kind='schema_absent'),o(kind='all')))
+      rejects(function()request(mid,o(unit_concept_tag=tag),rowKind='summary'))
+  }
+  for(tag in list(o(kind='id',value='4172703'),o(kind='all'),o(kind='schema_absent')))
+    rejects(function()request('core.measurement.numeric_summary',o(raw_operator_tag=tag),rowKind='summary'))
+  for(tag in list(o(kind='null'),o(kind='id',value='0'))) {
+    operatorOnly<-request('core.measurement.numeric_summary',o(raw_operator_tag=tag),rowKind='summary')
+    stopifnot(operatorOnly$state=='selection_shape_supported',identical(names(operatorOnly$request$filters),'raw_operator_tag'))
+  }
+  unitOnly<-request('core.measurement.numeric_summary',o(unit_concept_tag=o(kind='id',value='1')),rowKind='summary')
+  stopifnot(unitOnly$state=='selection_shape_supported',identical(names(unitOnly$request$filters),'unit_concept_tag'),
+    request('core.condition.first_age_summary',rowKind='summary')$state=='selection_shape_supported',
+    request('core.measurement.range_low_summary',o(raw_operator_tag=o(kind='id',value='4172703')),rowKind='summary')$reason_code=='selection.dimensions_not_saved',
+    request('core.measurement.numeric_summary',o(unit_concept_tag=o(kind='null'),raw_operator_tag=o(kind='id',value='4172703')),rowKind='eligibility_counts')$state=='selection_shape_supported')
   rejects(function()request('unknown.metric'))
   rejects(function()request('core.person.count',list()))
   rejects(function()request('core.person.gender_count',o(gender_concept_id=9007199254740992)))

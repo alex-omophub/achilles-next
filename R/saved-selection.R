@@ -1,15 +1,31 @@
 # Internal semantic selection model. This performs no source/store reads and is
 # not a public provider, cursor, cache permission or job submission API.
+.saved_period_grain <- function(metric) {
+  if(!"period_kind"%in%unlist(metric$dimensions))
+    return(.object(kinds=list(),full_scope="not_saved",calendar="not_saved"))
+  kinds <- c("full_scope","calendar_month","calendar_year")
+  # Match the closed materialization families, never infer from the existence
+  # of a period dimension or parse the human-readable grain description.
+  if(metric$family=="capture_count" && metric$population%in%c("all_recorded_rows","observed_rows")) {
+    if(metric$population=="all_recorded_rows") kinds <- c(kinds,"undated")
+    return(.object(kinds=as.list(kinds),full_scope="null_endpoints",calendar="complete"))
+  }
+  if(metric$id%in%c("core.observation_period.coverage_count","core.observation_period.continuous_person_count") && metric$family=="observation_union")
+    return(.object(kinds=as.list(kinds),full_scope="saved_bounds",calendar="saved_clipped_or_complete"))
+  stop("Unregistered saved-period materialization",call.=FALSE)
+}
 .saved_capability <- function(metricId, assets=.v2_assets()) {
   .nv_need(isTRUE(assets$is_core) && .string(metricId) && nchar(metricId,type="bytes")<=128L && metricId %in% names(assets$metrics),"Unknown saved core metric")
   metric <- assets$metrics[[metricId]]; schema <- assets$rows[[metricId]]
   dimensions <- unlist(schema$dimensions,use.names=FALSE)
   kinds <- names(schema$value_keys_by_row_kind)
   byKind <- stats::setNames(lapply(kinds,function(kind)as.list(c(dimensions,unlist(schema$extra_dimensions_by_row_kind[[kind]],use.names=FALSE)))),kinds)
+  period <- .saved_period_grain(metric)
   .object(metric_id=metricId,metric_version=metric$version,population=metric$population,grain=metric$grain,
     row_kinds=as.list(kinds),dimensions_by_row_kind=byKind,
     concept=if("concept_tag"%in%dimensions)"exact_saved_tag" else "not_saved",
     time=if("period_kind"%in%dimensions)"exact_saved_period" else if("month"%in%dimensions)"saved_month" else if("year"%in%dimensions)"saved_year" else "not_saved",
+    period_kinds=period$kinds,period_bounds=.object(full_scope=period$full_scope,calendar=period$calendar),
     unit=if("unit_concept_tag"%in%dimensions)"exact_saved_tag" else "not_saved",
     operator=if("raw_operator_tag"%in%dimensions)"exact_saved_tag" else "not_saved",
     summary=if("summary"%in%kinds)"saved_summary_only" else "not_saved",
@@ -45,15 +61,26 @@
   if(any(period%in%names(filters))) {
     .nv_need(all(period%in%names(filters)),"Select a complete exact saved period")
   }
-  # Validate supplied dimension values/anchors without requiring an entire saved
-  # row payload. Actual summary eligibility and denominator checks remain at readback.
-  .v2_dimensions(metricId,.object(dimensions=filters[intersect(names(filters),names(assets$dimensions))],row_kind="counts"),assets)
+  # Apply the requested row-kind rules. Valid witnesses for unspecified summary
+  # axes validate a wildcard query without adding filters or inventing result rows.
+  validationDimensions <- filters[intersect(names(filters),names(assets$dimensions))]
+  if(identical(rowKind,"summary")) {
+    dimensions <- unlist(assets$rows[[metricId]]$dimensions)
+    if("unit_concept_tag"%in%dimensions && !"unit_concept_tag"%in%names(filters))
+      validationDimensions$unit_concept_tag <- .object(kind="id",value="1")
+    if("raw_operator_tag"%in%dimensions && !"raw_operator_tag"%in%names(filters))
+      validationDimensions$raw_operator_tag <- .object(kind="null")
+  }
+  .v2_dimensions(metricId,.object(dimensions=validationDimensions,row_kind=rowKind %||% "counts"),assets)
   savedPeriod <- TRUE
   if(all(period%in%names(filters))) {
     kind <- filters$period_kind;start <- filters$period_start;end <- filters$period_end
-    if(kind%in%c("full_scope","undated")) savedPeriod <- start=="null"&&end=="null"
-    if(kind=="calendar_year") savedPeriod <- substr(start,6,10)=="01-01"&&end==paste0(substr(start,1,4),"-12-31")
-    if(kind=="calendar_month") {
+    savedPeriod <- kind%in%unlist(capability$period_kinds)
+    if(savedPeriod && kind%in%c("full_scope","undated") && capability$period_bounds$full_scope=="null_endpoints")
+      savedPeriod <- start=="null"&&end=="null"
+    if(savedPeriod && kind=="calendar_year" && capability$period_bounds$calendar=="complete")
+      savedPeriod <- substr(start,6,10)=="01-01"&&end==paste0(substr(start,1,4),"-12-31")
+    if(savedPeriod && kind=="calendar_month" && capability$period_bounds$calendar=="complete") {
       year <- as.integer(substr(start,1,4));month <- as.integer(substr(start,6,7))
       days <- c(31L,28L+as.integer(year%%4L==0L&&(year%%100L!=0L||year%%400L==0L)),31L,30L,31L,30L,31L,31L,30L,31L,30L,31L)[month]
       savedPeriod <- substr(start,9,10)=="01"&&end==paste0(substr(start,1,8),sprintf("%02d",days))
