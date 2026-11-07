@@ -18,6 +18,8 @@ context-bound cursors and cooperative cancellation. The experimental
 [native semantic providers](docs/development/semantic-results.md) add approved
 metric discovery and exact saved-row selection with denominator/eligibility
 evidence. Production UI remains separate work.
+Exact [saved-concept lookup](docs/development/saved-concepts.md) preserves IDs and
+explicit missing-name states; current v2 exports have no approved name-search index.
 
 ## Development status
 

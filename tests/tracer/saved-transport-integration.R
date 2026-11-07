@@ -72,6 +72,22 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
     left<-a$cursor;right<-b$cursor
   }
   stopifnot(bytePages>1L,identical(byteKeys,summaryKeys))
+  savedConcepts<-artifact$scan('concept_catalogue',limit=1L)$pages[[1]]$document$entries
+  knownId<-savedConcepts[[1]]$concept_tag$value
+  lookupIds<-unique(c(knownId,'0','-1','9007199254740993'))
+  left<-NULL;right<-NULL;lookupCount<-0L
+  repeat {
+    a<-fileProvider$lookupConcepts(lookupIds,limit=1L,cursor=left)
+    b<-dbProvider$lookupConcepts(lookupIds,limit=1L,cursor=right)
+    semanticSame(a,b);lookupCount<-lookupCount+length(a$concepts)
+    if(a$complete)break
+    left<-a$cursor;right<-b$cursor
+  }
+  stopifnot(lookupCount==length(lookupIds),fileProvider$lookupConcepts(knownId)$concepts[[1]]$state=='available')
+  for(query in c('Diabetes','β blocker',"x%_'; SELECT * FROM person; --")) {
+    a<-fileProvider$searchConcepts(query);b<-dbProvider$searchConcepts(query);semanticSame(a,b)
+    stopifnot(a$state=='unavailable',!a$searched,b$budget$objects==1L)
+  }
   stopifnot(length(summaryKeys)==2L,!anyDuplicated(summaryKeys),dbProvider$inspect()$cache_bytes==0L,
     length(statements)==database$inspect()$fetched_objects+dbProvider$inspect()$fetched_objects)
   cat('SAVED_SEMANTIC_PROVIDER_REAL_142_METRICS_ROWS_DEPENDENCIES_PAGINATION_PARITY_OK\n')
@@ -87,8 +103,13 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
   stopifnot(inherits(denied,'achillesnext_read_error'),denied$code=='unavailable',database$inspect()$cache_bytes==0L)
   denied<-tryCatch({dbProvider$listMetrics();NULL},error=identity)
   stopifnot(inherits(denied,'achillesnext_read_error'),denied$code=='unavailable',dbProvider$inspect()$cache_bytes==0L)
+  for(work in list(function()dbProvider$lookupConcepts(knownId),function()dbProvider$searchConcepts('x'))) {
+    denied<-tryCatch({work();NULL},error=identity)
+    stopifnot(inherits(denied,'achillesnext_read_error'),denied$code=='unavailable',dbProvider$inspect()$cache_bytes==0L)
+  }
   stopifnot(fileProvider$listMetrics(limit=1L)$state=='available')
   stopifnot(length(artifact$root()$page$bytes)>0L)
   execute(paste0(revoke,'true',where));same(artifact$root()$page,database$root()$page)
+  cat('SAVED_CONCEPT_REAL_LOOKUP_PAGINATION_UNAVAILABLE_SEARCH_PARITY_REVOCATION_OK\n')
   cat('SAVED_TRANSPORT_REAL_ARTIFACT_DATABASE_BYTES_SQL_ONLY_APPROVED_VIEW_REVOCATION_OK pages=',total,'statements=',length(statements),'\n')
 }

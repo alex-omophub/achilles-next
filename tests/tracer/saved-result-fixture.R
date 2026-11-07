@@ -1,5 +1,5 @@
 # Independent small reduced-scope result fixture; no CDM or store connection.
-makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL) {
+makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConceptIds=character(),saveConcepts=TRUE) {
   f<-function(n)get(n,asNamespace('AchillesNext'));o<-f('.object');a<-f('.v2_assets')();wire<-f('.v2_bytes');hash<-f('.v2_hash')
   stopifnot(dir.create(directory,mode='0700'));dir.create(file.path(directory,'objects'))
   context<-o(contract_version='2.0.0',publication_id='00000000-0000-4000-8000-000000000031',release_id='00000000-0000-4000-8000-000000000032',source_id='fixture:semantic',profile_id='core-characterization-v2',profile_revision='2.0.0',profile_sha256=a$hash,access_scope_id='fixture-semantic')
@@ -11,6 +11,7 @@ makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL) {
   ref<-function(mid,r,field,source=field)o(measure=source,metric_id=mid,row_key=r$row_key,field=field,value=r$values[[field]])
   person<-row('core.person.count',o(),o(person_count='10'))
   for(pair in list(c('0','6'),c('9007199254740993','4')))row('core.person.gender_count',o(gender_concept_id=pair[[1]]),o(person_count=pair[[2]]),refs=list(ref('core.person.count',person,'person_count')))
+  for(id in extraConceptIds)row('core.person.gender_count',o(gender_concept_id=id),o(person_count='0'),refs=list(ref('core.person.count',person,'person_count')))
   capture<-row('core.condition.capture_count',o(concept_tag=o(kind='id',value='123'),period_kind='full_scope',period_start='null',period_end='null'),o(record_count='4',person_count='3'),refs=list(ref('core.person.count',person,'person_count')))
   row('core.condition.capture_count',o(concept_tag=o(kind='all'),period_kind='full_scope',period_start='null',period_end='null'),o(record_count='4',person_count='3'),refs=list(ref('core.person.count',person,'person_count')))
   row('core.condition.observation_qualification_count',o(concept_tag=o(kind='id',value='123'),reason='inside_valid_union'),o(record_count='4',person_count='3'),refs=list(ref('core.condition.capture_count',capture,'record_count'),ref('core.condition.capture_count',capture,'person_count')))
@@ -55,7 +56,18 @@ makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL) {
     }
   }
   catalogue<-tree('metric_catalogue',datasets,vapply(datasets,function(d)d$metric_id,''))
-  concepts<-tree('concept_catalogue',list(),character());terms<-tree('terminology',list(),character())
+  # Mirror the producer's retained typed-ID inventory, never synthetic names.
+  conceptIds<-character()
+  if(saveConcepts)for(rs in rows)for(r in rs)for(n in names(r$dimensions)) {
+    v<-r$dimensions[[n]]
+    if(grepl('_tag$',n)&&is.list(v)&&identical(v$kind,'id'))conceptIds<-c(conceptIds,v$value)
+    if(grepl('_concept_id$',n)&&is.character(v)&&v!='null')conceptIds<-c(conceptIds,v)
+  }
+  entries<-lapply(unique(conceptIds),function(id)o(concept_tag=o(kind='id',value=id),label=NULL,label_state='unavailable'))
+  if(identical(fault,'unversioned_label')){entries[[1]]$label<-'Unapproved name';entries[[1]]$label_state<-'available'}
+  conceptKeys<-vapply(entries,function(e)f('.v2_component')(e$concept_tag,'concept_tag'),'')
+  concepts<-tree('concept_catalogue',entries,conceptKeys)
+  terms<-tree('terminology',lapply(entries,function(e)c(e,o(domain_id=NULL))),conceptKeys)
   policy<-o(id='fixture-semantic',revision='1',scope_kind='restricted',allow_metrics=as.list(retained))
   root<-c(context,o(kind='root',scope_kind='restricted',publication_state='ready',eligible_for_current_pointer=TRUE,expected_metric_count='142',generated_at='2026-01-01T00:00:00.000Z',source_schema=o(sha256=strrep('a',64),declared_cdm_version='5.5'),source_consistency=o(within_run='unknown',reusable=FALSE,reason_code='fixture.synthetic'),disclosure=o(approval_id='fixture-review',policy=policy,policy_sha256=hash(wire(policy))),catalogue=catalogue,concepts=concepts,data=data$finish(),terminology=terms))
   descriptor<-emit(root,'root','0')

@@ -16,7 +16,7 @@ openDatabaseResultProvider(connectionDetails, servingSchema, context,
 \item{readBudget}{Optional named overrides for cacheBytes, maxObjects, maxBytes and maxRows of the internal reader. Defaults are 4 MiB raw cache, 64 distinct objects, 8 MiB distinct verified bytes and 8,192 distinct verified leaf rows per operation. Database caching is disabled.}
 }
 \description{Provides metric discovery and exact equality selection of typed precomputed rows through the same native interface for artifact and database modes. Does not query CDM tables, aggregate results again, or schedule jobs.}
-\value{A provider list with listMetrics, selectSavedRows, inspect and idempotent close methods. Data responses are serializable lists with pinned context, explicit state/reason, opaque cursor, complete flag and bounded read counters.}
+\value{A provider list with listMetrics, selectSavedRows, lookupConcepts, searchConcepts, inspect and idempotent close methods. Data responses are serializable lists with pinned context, explicit state/reason, opaque cursor, complete flag and bounded read counters.}
 \details{
 The experimental native R interface uses installed integrity-checked definitions.
 Physical filenames, page descriptors, index keys and SQL are absent from method requests.
@@ -47,6 +47,23 @@ Cursors bind operation/selection, limits, complete pinned context, instance, epo
 generation. Reuse them with the same method arguments. They are not permissions and do not
 follow current. Cancellation is cooperative; errors invalidate cursors and clear raw caches.
 The synchronous JDBC query timeout remains 60 seconds; immediate statement interruption,
-browser integration, concept-name discovery and production-scale qualification are separate.
+browser integration, available concept-name search and production-scale qualification are separate.
+\code{lookupConcepts(conceptIds, limit = 25L, cursor = NULL, maxBytes = 1048576L,
+cancel = function() FALSE)} accepts 1--100 unique canonical signed integer strings,
+with at most 512 digits per ID. Zero and large/negative IDs retain their exact values.
+Returns up to 100 saved catalogue entries or individual not_saved states, in signed
+numeric order, with count/byte pagination. Request order is normalized; no numeric
+coercion or vocabulary fallback is used. Current v2 labels remain NULL/unavailable.
+
+\code{searchConcepts(query, limit = 25L, cursor = NULL, maxBytes = 1048576L,
+cancel = function() FALSE)} validates a nonblank UTF-8 query of at most 256 bytes,
+without control characters. On contract 2.0.0 it reads only the pinned root and
+returns unavailable, reason terminology.name_index_not_saved, searched FALSE and
+no concepts/cursor. This is not a completed empty search. Query bytes are retained;
+no name matching or normalization is performed. A non-NULL cursor is invalid.
+Terminology label-source and vocabulary-release identities are explicitly unavailable
+in this terminology contract, independently of the dataset source_id in context.
+These methods share authority, cancellation, read/response budgets and lifecycle rules.
+
 Close the provider when finished. Already returned approved bytes cannot be recalled by closing.
 }
