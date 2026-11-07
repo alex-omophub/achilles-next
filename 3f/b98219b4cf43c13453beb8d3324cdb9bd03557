@@ -1,0 +1,31 @@
+tests/tracer/saved-provider.R
+  s_895f6ebe145fd3::t_585b3a0aa71e47 64-75
+  s_895f6ebe145fd3::t_24466dc620e65d 44-51
+  s_895f6ebe145fd3::t_0b743d551089c5 31,43,52-63
+tests/tracer/saved-transport-integration.R
+  s_895f6ebe145fd3::t_585b3a0aa71e47 62-74
+R/saved-provider.R
+  s_895f6ebe145fd3::t_cf212a5946a352 14-22,47-50,56-59,63,88,95,104,120-143,145-150,152-154,156-181
+R/saved-reader.R
+  s_895f6ebe145fd3::t_b7ccdd87698104 75-76,78,124-125,129,135
+docs/development/semantic-results.md
+  s_895f6ebe145fd3::t_59e9487f2bb17b 118-119,127-134
+man/openResultProvider.Rd
+  s_895f6ebe145fd3::t_c12c7f9b97d48c 16,35-37
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3fb98219b4cf43c13453beb8d3324cdb9bd03557",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
