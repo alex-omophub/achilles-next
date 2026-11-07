@@ -1,0 +1,125 @@
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_80c7979deb9199 183-187,189-194,196-201
+  s_895f6ebe145fd3::t_dfefa0ac255d63 188,195
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_1a7b00c53eddf1 156-157
+docs/development/ci.md
+  s_895f6ebe145fd3::t_dfefa0ac255d63 123
+  s_895f6ebe145fd3::t_80c7979deb9199 122,124-129
+docs/development/validator-boundary.md
+  s_895f6ebe145fd3::t_80c7979deb9199 30-32
+  s_895f6ebe145fd3::t_dfefa0ac255d63 20,33-34
+  s_895f6ebe145fd3::t_64a6462bc06124 35
+README.md
+  s_895f6ebe145fd3::t_571be309f0bbfd 22-23
+R/result-artifact.R
+  s_895f6ebe145fd3::t_51c7229386db69 20-21,36,47,58-59,99-102,112-122,130-134,167
+docs/development/semantic-results.md
+  s_895f6ebe145fd3::t_571be309f0bbfd 12,122,177-178
+R/saved-page.R
+  s_895f6ebe145fd3::t_63b7fdf349d0a7 55
+  s_895f6ebe145fd3::t_c688a28305f325 31-33,83
+  s_895f6ebe145fd3::t_02ed4bad12c1b0 90
+man/savedTerminology.Rd
+  s_895f6ebe145fd3::t_db8a03d9bc3a07 1-22,24-45
+  s_895f6ebe145fd3::t_26efd5768c77d8 23
+R/terminology-extension.R
+  s_895f6ebe145fd3::t_49043daa30fa79 1-2,4-32
+  s_895f6ebe145fd3::t_51c7229386db69 3
+man/resultPublication.Rd
+  s_895f6ebe145fd3::t_571be309f0bbfd 11,24-25,29
+R/result-reader.R
+  s_895f6ebe145fd3::t_c688a28305f325 31
+docs/development/saved-transports.md
+  s_895f6ebe145fd3::t_dfefa0ac255d63 10,97-99
+  s_895f6ebe145fd3::t_80c7979deb9199 9,11,100
+  s_895f6ebe145fd3::t_e62a2951b5068d 101
+tests/tracer/saved-label-integration.R
+  s_895f6ebe145fd3::t_0a1e13bce4ec31 7-8,60,62
+  s_895f6ebe145fd3::t_8208dc143f7438 1-4,9-59,61,63-84,86-96
+  s_895f6ebe145fd3::t_19f8e04c866e3b 5-6,85
+man/openResultProvider.Rd
+  s_895f6ebe145fd3::t_571be309f0bbfd 50,56,64-74
+R/saved-concepts.R
+  s_895f6ebe145fd3::t_9d4dfb625f00ef 1-2,4,8-11,23,26,58-92
+R/saved-reader.R
+  s_895f6ebe145fd3::t_63b7fdf349d0a7 32,88
+R/saved-terminology-format.R
+  s_895f6ebe145fd3::t_63b7fdf349d0a7 47,55
+  s_895f6ebe145fd3::t_02ed4bad12c1b0 5
+  s_895f6ebe145fd3::t_39c578b072c9e0 6-13,23
+  s_895f6ebe145fd3::t_49043daa30fa79 1-4,14,16-22,24-46,48-54,56-65
+  s_895f6ebe145fd3::t_3c0389424098b5 15
+R/result-export.R
+  s_895f6ebe145fd3::t_63b7fdf349d0a7 5,16,18
+  s_895f6ebe145fd3::t_c688a28305f325 71,73-75,108,118-119,121,139,160-162,165,172,181
+tests/tracer/saved-labels.R
+  s_895f6ebe145fd3::t_19f8e04c866e3b 8-9,37-39
+  s_895f6ebe145fd3::t_3c0389424098b5 66,78
+  s_895f6ebe145fd3::t_154c67ee895163 73-75
+  s_895f6ebe145fd3::t_8ef056d4a6ca56 1-7,10-36,40-65,67-72,76-77,79-92,136-137
+  s_895f6ebe145fd3::t_1a7b00c53eddf1 113-135
+  s_895f6ebe145fd3::t_39c578b072c9e0 93-105
+  s_895f6ebe145fd3::t_40a6d4777950c9 106-112
+NAMESPACE
+  s_895f6ebe145fd3::t_49043daa30fa79 24-25
+docs/development/saved-concepts.md
+  s_3e206b4a2cf4c3::t_6a570fc50daa7f 1,4-13,16-21,23-32,35-80,82-87,89-95,99-100,102-107,109,111-113,116-175,177-192
+  s_895f6ebe145fd3::t_dfefa0ac255d63 176
+tests/tracer/result-store.R
+  s_895f6ebe145fd3::t_1b7b068c14ed46 78,84
+  s_895f6ebe145fd3::t_d65d94f550aaf1 74-76
+  s_895f6ebe145fd3::t_c0d4783ca59375 71-73,77,79-83,85-89
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_8ef056d4a6ca56 45
+packages/contracts/tools/validate-terminology-corpus.mjs
+  s_895f6ebe145fd3::t_1a7b00c53eddf1 1-18
+R/terminology-projection.R
+  s_895f6ebe145fd3::t_51c7229386db69 25-26,28
+  s_895f6ebe145fd3::t_40a6d4777950c9 8
+  s_895f6ebe145fd3::t_63b7fdf349d0a7 34-35
+  s_895f6ebe145fd3::t_c688a28305f325 1-7,9-24,27,29-33,36-58
+inst/contracts/v2.1/schema-lock.json
+  s_895f6ebe145fd3::t_6ede75dea346c0 1-7
+tests/tracer/saved-result-fixture.R
+  s_895f6ebe145fd3::t_8ef056d4a6ca56 2,6,36,69-81,85-89,91,93
+R/concept-snapshot.R
+  s_895f6ebe145fd3::t_154c67ee895163 9
+  s_895f6ebe145fd3::t_9827c6b6e2dded 24-25,46
+  s_895f6ebe145fd3::t_51c7229386db69 54-60,82
+  s_895f6ebe145fd3::t_49043daa30fa79 1-8,10-23,26-41,43-45,47-50,52-53,61-81,83-84
+  s_895f6ebe145fd3::t_d65d94f550aaf1 42
+  s_895f6ebe145fd3::t_3c0389424098b5 51
+R/saved-transport.R
+  s_895f6ebe145fd3::t_c688a28305f325 7
+R/result-validation.R
+  s_895f6ebe145fd3::t_d65d94f550aaf1 4,6-8
+tests/tracer/result-export.R
+  s_895f6ebe145fd3::t_8208dc143f7438 97-98
+inst/contracts/v2.1/terminology.schema.json
+  s_895f6ebe145fd3::t_6ede75dea346c0 1-576
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a50c9ef9686b574df12a4f732b3ba3909e2c1d65",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
