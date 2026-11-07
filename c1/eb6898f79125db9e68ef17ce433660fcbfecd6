@@ -1,0 +1,44 @@
+docs/development/semantic-results.md
+  s_895f6ebe145fd3::t_ec54affa42c02d 5-6,12,116-124,127,138,151-152,167
+tests/tracer/saved-concepts.R
+  s_895f6ebe145fd3::t_70aa1f0e7f7ef9 70-71
+  s_895f6ebe145fd3::t_d3865642cde4c3 121-126
+  s_895f6ebe145fd3::t_7c214ce071fbd3 88-93,108-116
+  s_895f6ebe145fd3::t_6f70b9c60465f9 1-69,72-87,94-107,117-120,127-144
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_6f70b9c60465f9 155
+man/openResultProvider.Rd
+  s_895f6ebe145fd3::t_ec54affa42c02d 19,50-67
+R/saved-concepts.R
+  s_895f6ebe145fd3::t_0f31d32838ab73 1-10,13-62
+  s_895f6ebe145fd3::t_70aa1f0e7f7ef9 11-12
+docs/development/saved-concepts.md
+  s_895f6ebe145fd3::t_f58bb51f846aa0 1-105
+README.md
+  s_895f6ebe145fd3::t_ec54affa42c02d 21-22
+tests/tracer/saved-transport-integration.R
+  s_895f6ebe145fd3::t_d3865642cde4c3 75-90,106-109,113
+R/saved-provider.R
+  s_895f6ebe145fd3::t_0f31d32838ab73 184-185
+tests/tracer/saved-result-fixture.R
+  s_895f6ebe145fd3::t_d3865642cde4c3 67
+  s_895f6ebe145fd3::t_0f31d32838ab73 2,14,59-66,68-70
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_6f70b9c60465f9 45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c1eb6898f79125db9e68ef17ce433660fcbfecd6",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
