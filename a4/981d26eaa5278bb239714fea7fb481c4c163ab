@@ -1,0 +1,65 @@
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_f3220d12964074 28,57
+tests/tracer/saved-result-fixture.R
+  s_895f6ebe145fd3::t_ffbafb95513e44 32
+  s_895f6ebe145fd3::t_6b02934db37282 1-31,33-64
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_0e91b152f91d74 154
+R/saved-reader.R
+  s_3e206b4a2cf4c3::t_0088ed3a162f39 35,38,41-45,72-73,78-79,85,89,91,96-97,110-112,118,121-133
+docs/development/validator-boundary.md
+  s_895f6ebe145fd3::t_f3220d12964074 19,59-61
+docs/development/saved-transports.md
+  s_895f6ebe145fd3::t_f3220d12964074 7-9,78-80,95-97
+  s_3e206b4a2cf4c3::t_7889c1becd5567 98
+README.md
+  s_895f6ebe145fd3::t_f3220d12964074 17-20
+docs/development/ci.md
+  s_895f6ebe145fd3::t_f3220d12964074 15-16
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_0e91b152f91d74 45
+tests/tracer/saved-provider.R
+  s_895f6ebe145fd3::t_3dc0b2220854dd 34-69,85-90
+  s_895f6ebe145fd3::t_2f30f1437b1b24 72-77
+  s_3e206b4a2cf4c3::t_9aeed57b832467 1-33,70-71,78-84,91-96
+R/saved-provider.R
+  s_3e206b4a2cf4c3::t_e7b73c5e89eecc 1-35,37-54,56-109,111-160
+  s_895f6ebe145fd3::t_c9b9d93d1c23a8 36,55,110
+R/saved-selection.R
+  s_3e206b4a2cf4c3::t_0088ed3a162f39 18
+NAMESPACE
+  s_895f6ebe145fd3::t_bd4878714bd695 22-23
+tests/tracer/saved-transport-integration.R
+  s_895f6ebe145fd3::t_d74fd5caa209a0 32-51,53-64,75-77
+  s_895f6ebe145fd3::t_996f28c27ae30b 52
+docs/development/semantic-results.md
+  s_895f6ebe145fd3::t_53ce45c550ed53 1-161
+docs/development/saved-selection.md
+  s_3e206b4a2cf4c3::t_7edb0e683c7e7b 73-74,81,83-88,90-93
+man/openResultProvider.Rd
+  s_3e206b4a2cf4c3::t_73b85e2fb24212 1-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a4981d26eaa5278bb239714fea7fb481c4c163ab",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
