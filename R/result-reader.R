@@ -17,10 +17,8 @@ readResultObject <- function(connectionDetails,servingSchema,sourceId,publicatio
     .nv_need(.string(sourceId)&&.string(accessScopeId)&&.string(rootSha256)&&grepl("^[0-9a-f]{64}$",rootSha256))
     .store_uuid(publicationId)
     if(!is.null(descriptor)) {
-      .v2_keys(descriptor,c("sha256","bytes","kind","rows"))
-      .nv_need(.string(descriptor$sha256)&&grepl("^[0-9a-f]{64}$",descriptor$sha256)&&.v2_count(descriptor$bytes)&&.v2_count(descriptor$rows))
+      .v2_descriptor_check(descriptor)
       .nv_need(descriptor$kind%in%c("index","data","metric_catalogue","concept_catalogue","terminology"))
-      .nv_need(.nv_unsigned_cmp(descriptor$bytes,as.character(.v2_limit(descriptor$kind)))<=0)
     }
     sha <- if(is.null(descriptor))rootSha256 else descriptor$sha256
     kind <- if(is.null(descriptor))"root" else descriptor$kind
@@ -28,8 +26,8 @@ readResultObject <- function(connectionDetails,servingSchema,sourceId,publicatio
       " AND source_id=",.store_literal(sourceId)," AND scope_id=",.store_literal(accessScopeId)," AND root_sha256=",.store_literal(rootSha256),
       " AND sha256=",.store_literal(sha)," AND kind=",.store_literal(kind)," AND octet_length(payload)<=",.v2_limit(kind)))
     at <- seq.int(1L,nchar(text),2L);bytes <- as.raw(strtoi(substring(text,at,at+1L),16L))
-    .nv_need(.v2_hash(bytes)==sha && (is.null(descriptor)||as.character(length(bytes))==descriptor$bytes))
-    doc <- .nv_json(bytes)
+    expected <- descriptor %||% .object(sha256=sha,bytes=as.character(length(bytes)),kind="root",rows="0")
+    doc <- .v2_verified_bytes(bytes,expected)
     .nv_need(doc$contract_version=="2.0.0"&&doc$publication_id==publicationId&&doc$source_id==sourceId&&doc$access_scope_id==accessScopeId)
     invisible(.profile_context(doc))
     bytes

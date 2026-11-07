@@ -8,6 +8,12 @@ Compatibility also audits the locked core metadata/dimension vocabulary with
 The [saved-representation timing experiment](../benchmark/saved-representation.md)
 is an explicit local command and adds no hosted benchmark job or dependency cache.
 
+The existing compatibility suite runs `saved-transport.R` offline. The
+[artifact/database byte-parity and grant-revocation checks](saved-transports.md)
+run against the marked PostgreSQL fixture through the existing `result-export.R`
+serving test.
+No extra integration job, dependency install or fixture generation is added.
+
 The PostgreSQL workflow runs three distinct integration suites, each in its own
 runner and PostgreSQL service. Each has a 30-minute routine budget (60 minutes
 for an explicitly requested wider manual run):

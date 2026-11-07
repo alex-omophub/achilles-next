@@ -150,6 +150,7 @@ jobs:
           Rscript --vanilla tests/tracer/native-validation.R .
           python3 tools/check_schema_subset.py
           Rscript --vanilla tests/tracer/saved-selection.R
+          Rscript --vanilla tests/tracer/saved-transport.R
           Rscript --vanilla tests/tracer/result-validation-offline.R
           Rscript --vanilla tests/tracer/baseline-reader-once.R
           Rscript --vanilla tests/tracer/result-wire.R "$RUNNER_TEMP/v2-corpus.json"

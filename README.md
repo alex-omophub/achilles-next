@@ -12,6 +12,11 @@ Open-source OMOP data characterization and exploration with reproducible aggrega
 
 **R package name:** `AchillesNext` · **Repository:** `achilles-next` · **License:** Apache-2.0
 
+The [internal saved-result transports](docs/development/saved-transports.md)
+provide verified artifact/database page traversal with bounded resources,
+context-bound cursors and cooperative cancellation. A public semantic provider
+and production UI remain separate work.
+
 ## Development status
 
 AchillesNext is in early development. The R package installs from source and

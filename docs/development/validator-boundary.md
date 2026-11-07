@@ -54,8 +54,9 @@ integrity, complete pinned context, row structure/identity and requested semanti
 scope; enforce row/byte/cache/depth limits and cancellation; and reject stale or
 cross-context responses. It must not resolve current mid-pagination, query CDM or
 unrestricted facts, reinterpret unavailable as zero, pool units, combine marginal
-populations or manufacture percentiles. These adapters are still being implemented;
-benchmark readers are not installed providers or authorization boundaries.
+populations or manufacture percentiles. The [internal native transports](saved-transports.md)
+implement the page/traversal foundation; semantic and browser adapters remain separate
+work. Benchmark readers are not installed providers or authorization boundaries.
 
 ## Reuse and generation review
 
