@@ -24,10 +24,7 @@
     writeLines(.nv_add(old,value),path)
   }
   safe <- function(path,limit) {
-    target <- file.path(rootDir,path)
-    .nv_need(utils::file_test("-f",target) && !nzchar(Sys.readlink(target)) && identical(normalizePath(target,mustWork=TRUE),target),"Unsafe artifact file")
-    n <- file.info(target)$size;.nv_need(!is.na(n) && n>=2 && n<=limit,"Artifact byte limit")
-    raw <- readBin(target,"raw",n=n+1);.nv_need(length(raw)==n,"Artifact changed during read");raw
+    .v2_safe_file(rootDir,path,limit)
   }
   strict <- function(bytes) {
     doc <- .nv_json(bytes);.nv_need(identical(bytes,.v2_bytes(doc)),"Noncanonical page bytes");doc
@@ -38,14 +35,10 @@
   context <- NULL;assets <- NULL;catalogue <- list();counts <- list();sums <- list();last <- list()
   spool <- function(hash) file.path(scratch,"rows",hash)
   read <- function(d,expectedKind,depth=0L) {
-    .v2_keys(d,c("sha256","bytes","kind","rows"))
-    .nv_need(.string(d$sha256) && grepl("^[0-9a-f]{64}$",d$sha256) && .v2_count(d$bytes) && .v2_count(d$rows))
-    .nv_need(d$kind %in% c("root","index","metric_catalogue","concept_catalogue","terminology","data"))
-    .nv_need(.nv_unsigned_cmp(d$bytes,as.character(.v2_limit(d$kind)))<=0L,"Descriptor byte limit")
+    .v2_descriptor_check(d)
     mark <- file.path(scratch,"seen",d$sha256);.nv_need(!file.exists(mark),"Repeated page or cycle")
     .nv_need(file.create(mark));raw <- safe(paste0("objects/",d$sha256,".json"),.v2_limit(d$kind))
-    .nv_need(as.character(length(raw))==d$bytes && .v2_hash(raw)==d$sha256,"Page integrity mismatch")
-    doc <- strict(raw)
+    doc <- .v2_verified_bytes(raw,d)
     common <- c("contract_version","publication_id","release_id","source_id","profile_id","profile_revision","profile_sha256","access_scope_id")
     if(is.null(context)) {
       context <<- doc[common]
