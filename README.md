@@ -41,6 +41,11 @@ The [v1 result/provider/embed contracts](docs/contracts/v1.md) add versioned sch
 
 The [synthetic PostgreSQL reference benchmark](docs/benchmark/reference.md) checks pinned legacy counts/distributions against an independent oracle and captures separate execution/export timings on fixture and deterministic cardinality workloads.
 
+The contributor [saved-representation experiment](docs/benchmark/saved-representation.md)
+compares tree and flat-index routing over identical precomputed pages. The
+[validator boundary](docs/development/validator-boundary.md) describes complete
+admission, bounded verified reads and independent numerical checks.
+
 The experimental [core batch planner](docs/development/batch-planner.md) enumerates
 all 142 frozen core results across 51 dependency nodes, with explicit shared-input
 candidates and exact grains. It plans full-history/all-concept work; complete core
