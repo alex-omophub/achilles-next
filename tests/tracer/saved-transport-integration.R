@@ -29,6 +29,52 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
     }
   }
   stopifnot(total>0L,length(statements)==database$inspect()$fetched_objects,!database$inspect()$cache_allowed,database$inspect()$cache_bytes==0L)
+  fileProvider<-openArtifactResultProvider(directory,context,allowed)
+  dbProvider<-openDatabaseResultProvider(details,serving,context,allowed)
+  on.exit({fileProvider$close();dbProvider$close()},add=TRUE)
+  semanticSame<-function(a,b) {
+    a$cursor<-NULL;b$cursor<-NULL;a$budget<-NULL;b$budget<-NULL
+    stopifnot(identical(f('.json')(a),f('.json')(b)))
+  }
+  left<-NULL;right<-NULL;discovered<-character()
+  repeat {
+    a<-fileProvider$listMetrics(limit=17L,cursor=left);b<-dbProvider$listMetrics(limit=17L,cursor=right)
+    semanticSame(a,b);discovered<-c(discovered,vapply(a$metrics,function(m)m$metric_id,''))
+    if(a$complete)break
+    left<-a$cursor;right<-b$cursor
+  }
+  stopifnot(length(discovered)==142L,!anyDuplicated(discovered))
+  for(request in list(list(metricId='core.person.count'),list(metricId='core.person.gender_count'),
+      list(metricId='core.measurement.numeric_summary'),list(metricId='observed.condition.capture_count'),
+      list(metricId='core.visit.care_setting_count'),list(metricId='core.drug.capture_count'),
+      list(metricId='core.person.gender_count',filters=list(gender_concept_id='8507')),
+      list(metricId='core.condition.capture_count',rowKind='summary'))) {
+    semanticSame(do.call(fileProvider$selectSavedRows,request),do.call(dbProvider$selectSavedRows,request))
+  }
+  left<-NULL;right<-NULL;summaryKeys<-character()
+  repeat {
+    a<-fileProvider$selectSavedRows('core.measurement.numeric_summary',maxRows=1L,cursor=left)
+    b<-dbProvider$selectSavedRows('core.measurement.numeric_summary',maxRows=1L,cursor=right)
+    semanticSame(a,b);summaryKeys<-c(summaryKeys,vapply(a$rows,function(r)r$row_key,''))
+    if(a$complete)break
+    left<-a$cursor;right<-b$cursor
+  }
+  measured<-fileProvider$selectSavedRows('core.measurement.numeric_summary',maxRows=1L)
+  byteLimit<-length(f('.v2_bytes')(measured))+16L
+  left<-NULL;right<-NULL;byteKeys<-character();bytePages<-0L
+  repeat {
+    a<-fileProvider$selectSavedRows('core.measurement.numeric_summary',maxBytes=byteLimit,cursor=left)
+    b<-dbProvider$selectSavedRows('core.measurement.numeric_summary',maxBytes=byteLimit,cursor=right)
+    semanticSame(a,b)
+    stopifnot(length(f('.v2_bytes')(a))<=byteLimit,length(f('.v2_bytes')(b))<=byteLimit)
+    byteKeys<-c(byteKeys,vapply(a$rows,function(r)r$row_key,''));bytePages<-bytePages+1L
+    if(a$complete)break
+    left<-a$cursor;right<-b$cursor
+  }
+  stopifnot(bytePages>1L,identical(byteKeys,summaryKeys))
+  stopifnot(length(summaryKeys)==2L,!anyDuplicated(summaryKeys),dbProvider$inspect()$cache_bytes==0L,
+    length(statements)==database$inspect()$fetched_objects+dbProvider$inspect()$fetched_objects)
+  cat('SAVED_SEMANTIC_PROVIDER_REAL_142_METRICS_ROWS_DEPENDENCIES_PAGINATION_PARITY_OK\n')
   expected<-paste0(' FROM "',serving,'".achillesnext_approved_pages WHERE ')
   stopifnot(all(startsWith(statements,'SELECT encode(payload,\'hex\') FROM ')),all(grepl(expected,statements,fixed=TRUE)),
     !any(grepl('achillesnext_approved_current|achillesnext_aggregate_cell|cdm_',statements)))
@@ -39,6 +85,9 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
   execute(paste0(revoke,'false',where))
   denied<-tryCatch({database$root();NULL},error=identity)
   stopifnot(inherits(denied,'achillesnext_read_error'),denied$code=='unavailable',database$inspect()$cache_bytes==0L)
+  denied<-tryCatch({dbProvider$listMetrics();NULL},error=identity)
+  stopifnot(inherits(denied,'achillesnext_read_error'),denied$code=='unavailable',dbProvider$inspect()$cache_bytes==0L)
+  stopifnot(fileProvider$listMetrics(limit=1L)$state=='available')
   stopifnot(length(artifact$root()$page$bytes)>0L)
   execute(paste0(revoke,'true',where));same(artifact$root()$page,database$root()$page)
   cat('SAVED_TRANSPORT_REAL_ARTIFACT_DATABASE_BYTES_SQL_ONLY_APPROVED_VIEW_REVOCATION_OK pages=',total,'statements=',length(statements),'\n')

@@ -70,28 +70,27 @@ The internal response has two structural states:
   definition, validation and publication; this model does not schedule it.
 
 Requests default to 100 rows and 1 MiB, with hard maxima of 1,000 rows, 8 MiB and
-16 KiB of encoded request metadata. These are prospective response budgets,
-not a claim that a transport enforces them yet. Malformed/duplicate selectors,
+16 KiB of encoded request metadata. The pure model checks request shape; the [native semantic provider](semantic-results.md)
+now enforces complete response and shared read budgets separately. Malformed/duplicate selectors,
 numeric rather than string IDs, recursive payloads and invalid budgets fail.
 The trusted cancellation callback runs before and after construction; cancellation
 propagates without returning a plan. The deterministic request hash identifies
 only the request shape, never authorization, source immutability, a cursor or
 cache permission.
 
-## Remaining provider work
+## Provider implementation and remaining work
 
-Representation comparison must precede public protocol expansion: measure the
-current page tree against a simpler bounded partition/index design on identical
-saved aggregates, including validation, export size, memory, latency and migration
-cost. This internal model does not select or introduce another format.
+The [representation comparison](../benchmark/saved-representation.md) retained
+canonical v2 pages. [Verified native transports](saved-transports.md) and the
+[semantic providers](semantic-results.md) now implement approved catalogue
+selection, exact saved-row matching, summary-first output, relevant denominator/
+eligibility checks, response/read budgets and context-bound cursors in both modes.
+The model itself remains structural and performs no I/O or job submission.
 
-Approved database/artifact transports, full pinned context and byte verification,
-bounded traversal/cursors, actual availability, summary-first row emission and
-equivalent concept lookup/name search remain unimplemented. Current terminology
-has explicit unavailable labels; this model does not turn IDs into names or query
-the CDM/vocabulary as a fallback. Search needs an approved saved-label/index path
-with declared matching and normalization rules. No whole-source React/ATLAS or
-large-inventory performance qualification is implied.
+Saved concept inventory/name discovery remains separate work. Current terminology
+has explicit unavailable labels; IDs are not treated as names or looked up through
+CDM/vocabulary fallbacks. Search needs approved labels/indexes with declared matching
+rules. Browser/ATLAS views and large-inventory qualification remain separate gates.
 
 Structural selector/schema ownership uses the installed contract. Numerical
 arithmetic, eligibility, denominators and summary semantics stay with the

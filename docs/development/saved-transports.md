@@ -4,8 +4,9 @@ The installed R package has internal artifact and PostgreSQL adapters plus a
 shared verified page traversal engine. These are foundations for semantic result
 access, not exported R functions, a browser transport, a public provider protocol
 or a complete report/discovery UI. They query approved precomputed results only.
-Known-ID selection, labels/name search, denominator fetching and the semantic
-provider surface are separate work. The earlier v1 tracer is unchanged.
+The [native semantic provider](semantic-results.md) adds metric discovery,
+typed saved-row selection and denominator/eligibility fetching over these internals.
+Saved concept/name discovery remains separate work. The earlier v1 tracer is unchanged.
 
 ## Authority and pins
 
@@ -74,9 +75,9 @@ future public provider should not construct filenames, descriptors or sort keys.
 
 | Resource | Default | Hard ceiling |
 |---|---:|---:|
-| Objects inspected per operation, including cache hits | 64 | 256 |
-| Bytes inspected per operation, including cache hits | 8 MiB | 16 MiB |
-| Leaf rows inspected per operation | 8,192 | 32,768 |
+| Distinct objects verified per operation, including raw-cache hits | 64 | 256 |
+| Distinct bytes verified per operation, including raw-cache hits | 8 MiB | 16 MiB |
+| Distinct leaf rows verified per operation | 8,192 | 32,768 |
 | Returned leaf partitions per scan | 1 | 16 |
 | Artifact raw-byte cache | 4 MiB | 8 MiB / 64 objects |
 | Database raw-byte cache | Disabled | Disabled |
@@ -90,6 +91,10 @@ success. Use smaller scans or explicitly raise controls within the hard ceilings
 Raw cache size is not a total R/JVM/process memory budget: decoding and the result
 also consume bounded-by-page/row resources. No >64 MiB inventory, million-entry
 search or representative production-scale qualification is claimed here.
+
+A bounded operation may reuse already verified decoded pages for multiple exact
+lookups under the same budget and live host checks. That operation-local memo is
+discarded at return/error; it does not introduce a database cache across calls.
 
 ## Cursors, cancellation and cleanup
 

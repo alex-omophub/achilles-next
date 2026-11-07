@@ -14,8 +14,10 @@ Open-source OMOP data characterization and exploration with reproducible aggrega
 
 The [internal saved-result transports](docs/development/saved-transports.md)
 provide verified artifact/database page traversal with bounded resources,
-context-bound cursors and cooperative cancellation. A public semantic provider
-and production UI remain separate work.
+context-bound cursors and cooperative cancellation. The experimental
+[native semantic providers](docs/development/semantic-results.md) add approved
+metric discovery and exact saved-row selection with denominator/eligibility
+evidence. Production UI remains separate work.
 
 ## Development status
 

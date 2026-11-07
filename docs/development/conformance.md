@@ -25,6 +25,7 @@ python3 tools/check_schema_subset.py
 Rscript --vanilla tests/tracer/analysis-definitions.R
 Rscript --vanilla tests/tracer/source-store-offline.R
 Rscript --vanilla tests/tracer/saved-transport.R
+Rscript --vanilla tests/tracer/saved-provider.R
 Rscript --vanilla tests/tracer/result-wire.R "$evidence_dir/v2-corpus.json"
 node packages/contracts/tools/validate-v2-corpus.mjs "$evidence_dir/v2-corpus.json"
 Rscript --vanilla tests/tracer/persistence-offline.R "$evidence_dir/v2-corpus.json"
@@ -53,6 +54,7 @@ keep the implementation fixed while a suite runs.
 | `tools/test_refresh_operations.py` | Concurrent real refresh snapshots across committed ETL mutations, precommit backend termination, observed CAS lock contention and pinned reads after promotion |
 | `tests/tracer/saved-selection.R` | Internal 142-report filter/grain matrix, bounded exact selectors, unsupported-job states without generation and cancellation; no source/store connection or provider read |
 | `tests/tracer/saved-transport.R` | Internal root-reachable bounded scans, exact native pages, cursor/context/cache isolation, budgets and cancellation; routing fixtures simulate host admission |
+| `tests/tracer/saved-provider.R` | Public native semantic discovery/selection, shared read/response budgets, summary/denominator evidence, typed missing/suppressed states and cursors; admitted fixture with DB connections disabled |
 | `tests/tracer/saved-transport-integration.R` via `result-export.R` | Real approved artifact/database byte parity, serving-only SQL observation and audience-grant revocation |
 | `tools/check_schema_subset.py` | Locked core metadata/dimension vocabulary audit for the finite native schema engine; not numerical or publication validation |
 | `tools/benchmark/representation.py` | Opt-in local tree/flat routing experiment over identical saved pages; not run by these commands or CI; see the saved-representation guide |

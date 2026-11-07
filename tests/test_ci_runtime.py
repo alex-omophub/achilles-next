@@ -42,7 +42,7 @@ class CiRuntimeTests(unittest.TestCase):
               'implementation-identity.R','recovery-offline.R','run-ledger-offline.R','recovery.R','publication.R','run-ledger.R',
               'postgresql.R','observation.R','quantile-request.R','measurement.R','measurement.R','analysis-definitions.R',
               'registered-profile-offline.R','source-store-offline.R','measurement-baseline-offline.R','refresh-contract-offline.R','core-metadata-offline.R',
-              'persistence-offline.R','batch-plan.R','refresh-execution-offline.R','saved-selection.R','saved-transport.R']
+              'persistence-offline.R','batch-plan.R','refresh-execution-offline.R','saved-selection.R','saved-transport.R','saved-provider.R']
         expected=Counter(('tests/tracer/'+name,'compatibility') for name in core)
         expected.update({('tools/test_result_serving.py','compatibility'):3,
                          ('tools/benchmark/weighted_quantiles.py','compatibility'):1,

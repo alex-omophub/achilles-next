@@ -16,6 +16,7 @@ Passing a cheaper layer does not establish the guarantees of the next one.
 | Publication policy | `publishResultRelease()`, institution callback, receipt/content revision, CAS and grants | Explicit retained scope, suppression, immutable approved bytes and audience/current identity |
 | Single approved database object | `readResultObject()` and audience-filtered approved views | Bounded saved bytes, hash and supplied source/publication/audience/root context; no CDM queries |
 | Selection shape | Internal `.saved_selection()` / per-report capabilities | Exact supported joint grain, period and explicit summary-selector rules, input budgets; not authorization, existence or result validation |
+| Semantic result access | Native result providers over the verified reader | Approved catalogue states, exact saved equality matches, declared dependency/eligibility evidence and aggregate operation/response budgets; no reaggregation |
 | Independent contributor checks | Generated row schema/Ajv, native/Node vectors and Python numerical fixtures | Differential structure and independent arithmetic/count/quantile expectations; no end-user Node requirement |
 
 The native row implementation uses `rows.json`, locked dimension/metadata
@@ -55,8 +56,9 @@ scope; enforce row/byte/cache/depth limits and cancellation; and reject stale or
 cross-context responses. It must not resolve current mid-pagination, query CDM or
 unrestricted facts, reinterpret unavailable as zero, pool units, combine marginal
 populations or manufacture percentiles. The [internal native transports](saved-transports.md)
-implement the page/traversal foundation; semantic and browser adapters remain separate
-work. Benchmark readers are not installed providers or authorization boundaries.
+implement the page/traversal foundation. [Native semantic providers](semantic-results.md)
+now consume it; browser adapters remain separate work. Benchmark readers are not
+installed providers or authorization boundaries.
 
 ## Reuse and generation review
 

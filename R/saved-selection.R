@@ -15,7 +15,7 @@
   stop("Unregistered saved-period materialization",call.=FALSE)
 }
 .saved_capability <- function(metricId, assets=.v2_assets()) {
-  .nv_need(isTRUE(assets$is_core) && .string(metricId) && nchar(metricId,type="bytes")<=128L && metricId %in% names(assets$metrics),"Unknown saved core metric")
+  .nv_need(.string(metricId) && nchar(metricId,type="bytes")<=128L && metricId %in% names(assets$metrics),"Unknown saved metric")
   metric <- assets$metrics[[metricId]]; schema <- assets$rows[[metricId]]
   dimensions <- unlist(schema$dimensions,use.names=FALSE)
   kinds <- names(schema$value_keys_by_row_kind)
