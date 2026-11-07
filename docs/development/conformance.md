@@ -49,6 +49,7 @@ keep the implementation fixed while a suite runs.
 | `tools/test_core_characterization.py` | Independent complete candidate expectations across numeric and metadata outputs, native validation and late metadata-budget rollback; `--with-publication` composes checked refreshes, full/reduced approval, exact export rows and serving-only page reads |
 | `tools/test_characterization_refresh.py` | Checked full reruns, changed source/definition inputs, prior approved pointer/page preservation through readiness, precommit, validation and approval failures; serving-only pinned reads |
 | `tools/test_refresh_operations.py` | Concurrent real refresh snapshots across committed ETL mutations, precommit backend termination, observed CAS lock contention and pinned reads after promotion |
+| `tests/tracer/saved-selection.R` | Internal 142-report filter/grain matrix, bounded exact selectors, unsupported-job states without generation and cancellation; no source/store connection or provider read |
 
 Older tracer and complete fixture workflows retain their own populations and wire
 versions. Their success does not make the 138-output whole-source core release
