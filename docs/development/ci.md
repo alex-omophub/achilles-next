@@ -3,6 +3,11 @@
 The [conformance guide](conformance.md) groups the contributor commands by
 compatibility and safety boundary, including saved-bundle viewer checks.
 
+Compatibility also audits the locked core metadata/dimension vocabulary with
+`tools/check_schema_subset.py`; see [validator ownership](validator-boundary.md).
+The [saved-representation timing experiment](../benchmark/saved-representation.md)
+is an explicit local command and adds no hosted benchmark job or dependency cache.
+
 The PostgreSQL workflow runs three distinct integration suites, each in its own
 runner and PostgreSQL service. Each has a 30-minute routine budget (60 minutes
 for an explicitly requested wider manual run):
