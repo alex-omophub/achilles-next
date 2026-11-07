@@ -1,0 +1,25 @@
+R/saved-selection.R
+  s_895f6ebe145fd3::t_3f0e85112eea1c 3-16,23,28,64-74,78-83
+tests/tracer/saved-selection.R
+  s_895f6ebe145fd3::t_c009038a433daf 71
+  s_895f6ebe145fd3::t_51085f2f4e9222 24-38,56-70,72
+docs/development/saved-selection.md
+  s_895f6ebe145fd3::t_c009038a433daf 21-22,41-48,54-59
+  s_895f6ebe145fd3::t_f2af25b01080cf 60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0ad77e97c1e7fe503ccfc07ecdff0ff764d46913",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
