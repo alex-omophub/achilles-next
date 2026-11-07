@@ -181,7 +181,8 @@
       .saved_fit_page(rows,done$complete,build,api$measure,maxBytes)
     },cancel,responseLimit=maxBytes)
   }
-  list(listMetrics=metrics,selectSavedRows=select,close=reader$close,inspect=reader$inspect)
+  c(list(listMetrics=metrics,selectSavedRows=select),
+    .saved_concept_methods(reader,identity,bounded,input),list(close=reader$close,inspect=reader$inspect))
 }
 #' Open semantic access to an admitted artifact
 #' @export

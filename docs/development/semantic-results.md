@@ -2,13 +2,14 @@
 
 `openArtifactResultProvider()` and `openDatabaseResultProvider()` expose the same
 experimental native R interface over admitted, approved v2 results. Both provide
-`listMetrics()`, `selectSavedRows()`, `inspect()` and idempotent `close()` methods.
+`listMetrics()`, `selectSavedRows()`, `lookupConcepts()`, `searchConcepts()`,
+`inspect()` and idempotent `close()` methods.
 Consumers select metric IDs and typed dimensions; they do not construct filenames,
 page descriptors, encoded index keys or SQL. Database reads use only the approved
 serving view; artifact reads need no database credentials or connection.
 
 This is a native provider foundation for later standalone/embedded views. It does
-not add a browser/HTTP transport, a whole-domain viewer, concept-name search or
+not add a browser/HTTP transport, a whole-domain viewer, available concept-name search or
 representative-scale qualification. Existing v1 tracers/viewer remain separate.
 
 ## Host setup and authority
@@ -112,9 +113,18 @@ allows it. Related rows are de-duplicated, checked once and returned separately.
 Missing, wrong-identity, suppressed-required or inconsistent evidence fails the
 operation; it is not presented as a zero or an estimated ratio.
 
+## Saved concepts and name-search availability
+
+`lookupConcepts(conceptIds, limit = 25L, cursor = NULL, maxBytes = 1048576L,
+cancel = function() FALSE)` resolves a bounded set of exact IDs from the approved
+saved concept catalogue. `searchConcepts()` reports name-search availability.
+See the [concept guide](saved-concepts.md) for states, exact-ID normalization,
+pagination, provenance and the current explicit absence of a saved name index.
+Neither method reads a live vocabulary or CDM.
+
 ## Budgets, pagination and cancellation
 
-All catalogue, row and dependency reads share **one operation budget**: defaults
+All catalogue, concept, row and dependency reads share **one operation budget**: defaults
 64 distinct verified objects, 8 MiB of distinct verified bytes and 8,192 distinct
 verified leaf rows, including raw-cache hits.
 The [transport ceilings](saved-transports.md#verification-and-traversal) still apply.
@@ -125,7 +135,7 @@ host authority/cancellation checks also run on memo and raw-cache reuse.
 
 A selection returns at most 1,000 primary rows; the complete serialized response,
 including dependencies, context, cursor and counters, must fit the requested byte
-budget (default 1 MiB, hard 8 MiB). Row selection and metric discovery shorten the
+budget (default 1 MiB, hard 8 MiB). Row selection, metric discovery and concept lookup shorten the
 page at a byte boundary and return a continuation cursor. The selected rows keep
 all required evidence, and evidence belonging only to deferred rows is omitted.
 A single result unit plus its required envelope/evidence/continuation that cannot
@@ -138,7 +148,8 @@ Opaque HMAC cursors bind method, normalized selection, limits, complete context,
 instance, epoch and generation, plus the last unique semantic row/metric key.
 Reuse the same method arguments and returned cursor; callers never construct its
 contents. Row pagination works inside a partition and verifies all row dependencies
-before returning a page. Cursors are not permissions or source-identity evidence.
+before returning a page. Concept lookup cursors resume after the last requested
+ID, including a `not_saved` result. Cursors are not permissions or source-identity evidence.
 
 Sparse non-leading filters can exhaust the read budget before absence or the next
 match is established. That raises `resource_limit` without partial success or a
@@ -153,7 +164,7 @@ closed or stale operations cannot return late rows. Call `close()` when finished
 ## Verified scope
 
 The self-contained contributor fixture passes native full artifact admission,
-then disables all database connections while testing 142-metric discovery,
+then disables all database connections while testing saved-ID lookup and 142-metric discovery,
 within-page pagination, summaries/eligibility, recursive denominators, typed
 states, corruption, budgets, cursor isolation and cancellation. Rehashed negative
 fixtures are deliberately not certified publications. Installed count-extension
