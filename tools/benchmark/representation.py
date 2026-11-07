@@ -15,7 +15,8 @@ import tracemalloc
 import saved_representation as rep
 
 ROOT = Path(__file__).resolve().parents[2]
-SCRIPTS = [Path(__file__).resolve(), Path(rep.__file__).resolve(), ROOT/'tools/benchmark/representation.R']
+SCRIPTS = [Path(__file__).resolve(), Path(rep.__file__).resolve(), ROOT/'tools/benchmark/representation.R',
+           ROOT/'tools/benchmark/implementation_identity.R']
 RUN_CODE = {str(p.relative_to(ROOT)): rep.digest(p.read_bytes()) for p in SCRIPTS}
 
 
@@ -141,8 +142,9 @@ def main():
     for size in sizes:
         path = out/f'catalogue-{size}'; path.mkdir(mode=0o700)
         completed = subprocess.run(['Rscript', '--vanilla', 'tools/benchmark/representation.R', 'catalogue', str(path), str(size)],
-                                   cwd=ROOT, check=True, capture_output=True, text=True)
+                                   cwd=ROOT, capture_output=True, text=True)
         (out/f'catalogue-{size}.log').write_text(completed.stdout+completed.stderr)
+        completed.check_returncode()
         sources.append((f'catalogue-{size}', path))
     rng = random.Random(20261107)
     for case_id, source in sources:

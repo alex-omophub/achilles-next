@@ -97,7 +97,10 @@ def origin(directory):
     directory = Path(directory).resolve(strict=True)
     if (directory/'publication.json').exists():
         pointer = decode(read_file(directory/'publication.json', LIMITS['root']))
-        root = decode(read_file(directory/'objects'/(pointer['root']['sha256']+'.json'), LIMITS['root']))
+        descriptor = pointer['root']
+        sha = descriptor.get('sha256') if isinstance(descriptor, dict) else None
+        need(isinstance(sha, str) and re.fullmatch('[0-9a-f]{64}', sha), 'Invalid root object hash')
+        root = decode(read_file(directory/'objects'/(sha+'.json'), LIMITS['root']))
         context = {k: root[k] for k in CONTEXT}
         # Complete native validation is a separate required orchestration step.
         Pages(directory, context).read(pointer['root'])
@@ -166,7 +169,7 @@ def copy_artifact(source, destination):
 
 def build_flat(directory, pin):
     """Flat indexed partition routing; retain exact v2 bytes for lossless validation."""
-    directory = Path(directory); artifact = directory/'artifact'
+    directory = Path(directory).resolve(strict=True); artifact = directory/'artifact'
     tree = Tree(artifact, pin)
     database = directory/'routes.sqlite'
     connection = sqlite3.connect(database)

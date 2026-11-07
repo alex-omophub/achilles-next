@@ -15,6 +15,7 @@ ANNOTATIONS = {'$schema','$id','$defs','title','description','$comment','default
 def audit_schema(schema, root):
     """Reject unsupported native vocabulary/refs; no values or arithmetic checked."""
     if not isinstance(schema,dict):raise ValueError('Native schema must be an object')
+    if '$id' in schema and schema is not root:raise ValueError('Native schema does not support nested $id resources')
     unknown = set(schema)-SUPPORTED
     if unknown:raise ValueError('Unsupported native schema keywords: '+','.join(sorted(unknown)))
     if '$ref' in schema:

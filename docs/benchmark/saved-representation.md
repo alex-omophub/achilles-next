@@ -75,6 +75,10 @@ and process memory. Worker processes are fresh; session samples reuse one reader
 The initial core view reads the PERSON summary partition plus metric catalogue.
 There is no decoded-page cache in either prototype.
 
+Source pins include the R implementation-identity helper. Failed R catalogue
+generation writes captured stdout/stderr to its local log before propagating the
+failure, so setup diagnostics remain available even without a completed report.
+
 Timing sessions have Python memory tracing disabled. Separate reader sessions
 measure peak traced Python allocations, which exclude SQLite/JVM/native allocations.
 Process and child `ru_maxrss` values are retained in platform-native units, not

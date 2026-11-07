@@ -27,5 +27,15 @@ class SchemaSubsetTests(unittest.TestCase):
         result=audit.audit_schema({'type':'string','pattern':'^(0|[1-9][0-9]*)$'}, {})
         self.assertEqual(result['pattern'],1)
 
+    def test_nested_resource_ids_are_rejected_without_changing_root_refs(self):
+        root={'$id':'urn:test','$defs':{'text':{'type':'string'}}}
+        audit.audit_schema(root,root)
+        for schema in [
+            {'$id':'urn:child','$ref':'#/$defs/text'},
+            {'properties':{'value':{'$id':'urn:child','type':'string'}}},
+            {'$defs':{'child':{'$id':'urn:child','type':'string'}}},
+        ]:
+            with self.assertRaisesRegex(ValueError,'nested'):audit.audit_schema(schema,root)
+
 
 if __name__=='__main__':unittest.main()

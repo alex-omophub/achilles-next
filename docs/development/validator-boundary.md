@@ -27,7 +27,7 @@ implement. The difference is intentional ownership, not interchangeable engines.
 
 `tools/check_schema_subset.py` now audits the schemas actually consumed by the
 native subset and their locks. Unsupported keywords/types/formats, nonlocal or
-unknown references, semantic siblings of `$ref`, and schema-valued
+unknown references, nested `$id` resources, semantic siblings of `$ref`, and schema-valued
 `additionalProperties` fail this audit rather than being silently relied upon.
 It reports the boundary explicitly and does not validate values or arithmetic.
 A future subset extension must update native support, the audit and independent

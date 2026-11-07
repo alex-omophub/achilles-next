@@ -1,5 +1,6 @@
 """Routing parity and integrity of contributor experiments, not clinical validation."""
 from pathlib import Path
+import os
 import sys
 import tempfile
 import unittest
@@ -53,7 +54,8 @@ class SavedRepresentationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'context'):rep.Flat(self.flat,pin,self.manifest_sha)
 
     def test_index_seal_and_private_spool_cleanup(self):
-        flat = rep.Flat(self.flat,self.pin,self.manifest_sha); folder = Path(flat.temp.name)
+        flat = rep.Flat(self.flat,self.pin,self.manifest_sha); self.addCleanup(flat.close)
+        folder = Path(flat.temp.name)
         self.assertEqual(folder.stat().st_mode & 0o777,0o700)
         (self.flat/'routes.sqlite').write_bytes(b'changed-after-open')
         self.assertEqual(flat.lookup('concept_catalogue','I1000001:1')[0],self.leaves[0]['sha256'])
@@ -94,6 +96,26 @@ class SavedRepresentationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'depth'):rep.Tree(self.source,dict(self.pin,trees=dict(concept_catalogue=descriptor))).lookup('concept_catalogue','I1000001:1')
         for path in (self.flat/'artifact'/'objects').iterdir():
             self.assertEqual(path.read_bytes(),(self.source/'objects'/path.name).read_bytes())
+
+    def test_build_flat_accepts_relative_and_symlink_directory(self):
+        for name in ['relative','symlink']:
+            with self.subTest(name=name):
+                directory = self.root/name; directory.mkdir()
+                rep.copy_artifact(self.source,directory/'artifact')
+                supplied = Path(os.path.relpath(directory))
+                if name == 'symlink':
+                    supplied = self.root/'alias'; supplied.symlink_to(directory,target_is_directory=True)
+                manifest = rep.build_flat(supplied,self.pin)
+                reader = rep.Flat(supplied,self.pin,manifest); self.addCleanup(reader.close)
+                self.assertEqual(reader.lookup('concept_catalogue','I1000001:1')[0],self.leaves[0]['sha256'])
+
+    def test_origin_rejects_invalid_root_hash_before_object_read(self):
+        for sha in ['../escape',str(self.root/'escape'),'A'*64,'a'*63,123,None]:
+            with self.subTest(sha=sha):
+                (self.source/'publication.json').write_bytes(rep.canonical(dict(root=dict(sha256=sha))))
+                with patch.object(rep,'read_file',wraps=rep.read_file) as read:
+                    with self.assertRaisesRegex(ValueError,'root object hash'):rep.origin(self.source)
+                self.assertEqual([call.args[0] for call in read.call_args_list],[self.source/'publication.json'])
 
 
 if __name__ == '__main__':unittest.main()

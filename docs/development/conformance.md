@@ -52,7 +52,7 @@ keep the implementation fixed while a suite runs.
 | `tools/test_refresh_operations.py` | Concurrent real refresh snapshots across committed ETL mutations, precommit backend termination, observed CAS lock contention and pinned reads after promotion |
 | `tests/tracer/saved-selection.R` | Internal 142-report filter/grain matrix, bounded exact selectors, unsupported-job states without generation and cancellation; no source/store connection or provider read |
 | `tools/check_schema_subset.py` | Locked core metadata/dimension vocabulary audit for the finite native schema engine; not numerical or publication validation |
-| `tools/benchmark/representation.py` | Paired tree/flat routing experiment over identical saved pages; local output, native core admission, separate timing/allocation measurements; not an installed provider |
+| `tools/benchmark/representation.py` | Opt-in local tree/flat routing experiment over identical saved pages; not run by these commands or CI; see the saved-representation guide |
 
 See the [saved-representation experiment](../benchmark/saved-representation.md)
 for its inputs, limits and reproducible command, and the
