@@ -68,5 +68,24 @@ local({
   stopifnot(identical(q(paste0('SELECT revision::text AS value FROM ',a,'.achillesnext_current_publication'))$VALUE,'3'))
   expectError(function()promoteResultPublication(details,a,first,'0'))
 
+  # Explicit terminology enablement refuses a modified guard/marker instead of
+  # overwriting institutional changes. Existing publications/pointers survive.
+  f<-function(n)get(n,asNamespace('AchillesNext'));def<-f('.term_extension_definition')(paste0('"',a,'"'))
+  stopifnot(identical(f('.store_transaction')(details,'public',function(tx)tx$one("SELECT 'source-read-test'"),readOnly=TRUE,sourceRead=TRUE),'source-read-test'))
+  expectError(function()f('.store_transaction')(details,'public',function(tx)NULL))
+  expectError(function()f('.store_transaction')(details,'public',function(tx)NULL,sourceRead=TRUE))
+  body<-function()q(paste0("SELECT p.prosrc AS body FROM pg_proc p JOIN pg_namespace n ON p.pronamespace=n.oid WHERE n.nspname='",a,"' AND p.proname='guard_publication_transition'"))$BODY
+  setBody<-function(value)f('.store_transaction')(details,a,function(tx)tx$execute(sub(def$new,value,def$sql,fixed=TRUE)))
+  custom<-paste0(def$old,'\n-- institutional customization\n');setBody(custom)
+  expectError(function()enableSavedTerminology(details,a));stopifnot(identical(body(),custom),is.na(q(paste0("SELECT to_regclass('",a,".achillesnext_storage_extension')::text AS name"))$NAME))
+  setBody(def$old);stopifnot(isTRUE(enableSavedTerminology(details,a)),identical(enableSavedTerminology(details,a),FALSE))
+  custom<-paste0(def$new,'\n-- institutional customization\n');setBody(custom)
+  expectError(function()enableSavedTerminology(details,a));stopifnot(identical(body(),custom))
+  setBody(def$new);execute(paste0('DELETE FROM ',a,'.achillesnext_storage_extension'))
+  expectError(function()enableSavedTerminology(details,a));stopifnot(identical(body(),def$new))
+  execute(paste0('INSERT INTO ',a,".achillesnext_storage_extension VALUES ('saved-terminology','1.0.0')"))
+  stopifnot(identical(enableSavedTerminology(details,a),FALSE),identical(q(paste0('SELECT revision::text AS value FROM ',a,'.achillesnext_current_publication'))$VALUE,'3'))
+  cat('SAVED_TERMINOLOGY_EXPLICIT_ENABLEMENT_REFUSES_GUARD_DRIFT_OR_MISSING_MARKER_WITHOUT_REPAIR_OK\n')
+
   cat('RESULT_STORE_INSTALL_SEAL_AND_CONCURRENT_CAS_OK\n')
 })

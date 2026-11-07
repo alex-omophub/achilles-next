@@ -17,6 +17,8 @@
   scratch <- tempfile("achilles-validate-");.nv_need(dir.create(scratch,mode="0700"));on.exit(unlink(scratch,recursive=TRUE))
   dir.create(file.path(scratch,"seen"),mode="0700");dir.create(file.path(scratch,"rows"),mode="0700")
   dir.create(file.path(scratch,"groups"),mode="0700")
+  for(n in c("concepts","used_concepts","names"))dir.create(file.path(scratch,n),mode="0700")
+  termPath<-function(kind,key)file.path(scratch,kind,.v2_hash(charToRaw(key)))
   suppressed <- list();captureTotals <- list()
   groupPath <- function(mid,key)file.path(scratch,"groups",mid,.v2_hash(.v2_bytes(key)))
   accumulate <- function(mid,key,value) {
@@ -31,7 +33,7 @@
   }
   pointer <- strict(safe("publication.json",262144L))
   .v2_keys(pointer,c("contract_version","publication_id","source_id","access_scope_id","root"))
-  .nv_need(pointer$contract_version=="2.0.0")
+  .nv_need(.term_version(pointer$contract_version))
   context <- NULL;assets <- NULL;catalogue <- list();counts <- list();sums <- list();last <- list()
   spool <- function(hash) file.path(scratch,"rows",hash)
   read <- function(d,expectedKind,depth=0L) {
@@ -42,7 +44,7 @@
     common <- c("contract_version","publication_id","release_id","source_id","profile_id","profile_revision","profile_sha256","access_scope_id")
     if(is.null(context)) {
       context <<- doc[common]
-      .nv_need(identical(doc$contract_version,"2.0.0") && d$kind=="root","Unsupported root contract")
+      .nv_need(identical(doc$contract_version,pointer$contract_version) && d$kind=="root","Unsupported root contract")
       .nv_need(doc$publication_id==pointer$publication_id && doc$source_id==pointer$source_id && doc$access_scope_id==pointer$access_scope_id)
       .store_uuid(doc$publication_id);.store_uuid(doc$release_id)
       assets <<- .profile_context(doc)
@@ -53,7 +55,8 @@
     visit(d,raw)
     if(d$kind=="root") {
       .nv_need(expectedKind=="root" && d$rows=="0")
-      .v2_keys(doc,c(common,"kind","scope_kind","publication_state","eligible_for_current_pointer","expected_metric_count","generated_at","source_schema","source_consistency","disclosure","catalogue","concepts","data","terminology"))
+      .v2_keys(doc,c(common,"kind","scope_kind","publication_state","eligible_for_current_pointer","expected_metric_count","generated_at","source_schema","source_consistency","disclosure","catalogue","concepts","data","terminology",if(doc$contract_version=="2.1.0")"saved_terminology"))
+      if(doc$contract_version=="2.1.0").term_metadata(doc$saved_terminology)
       .nv_need(doc$publication_state=="ready" && isTRUE(doc$eligible_for_current_pointer) && .nv_date(doc$generated_at,TRUE))
       .nv_need(identical(doc$expected_metric_count,as.character(length(assets$metrics))),"Invalid expected metric count")
       .v2_keys(doc$disclosure,c("approval_id","policy","policy_sha256"));.nv_need(.string(doc$disclosure$approval_id))
@@ -93,6 +96,10 @@
         if(!is.null(row$values$person_count)) sums[[mid]] <<- .nv_add(sums[[mid]],row$values$person_count)
         path <- spool(row$row_key);.nv_need(!file.exists(path),"Repeated row identity")
         writeBin(.v2_bytes(c(.object(metric_id=mid),row)),path)
+        if(context$contract_version=="2.1.0")for(id in .term_row_ids(row)) {
+          .nv_need(file.exists(termPath("concepts",id)),"Missing retained concept metadata")
+          mark<-termPath("used_concepts",id);if(!file.exists(mark)).nv_need(file.create(mark))
+        }
       }
     } else {
       .v2_keys(doc,c(common,"kind","entries"));.nv_need(.nv_array(doc$entries)&&length(doc$entries)<=2048L)
@@ -102,11 +109,17 @@
           .v2_dataset(entry,assets);mid <- entry$metric_id;.nv_need(is.null(catalogue[[mid]]),"Duplicate metric")
           catalogue[[mid]] <<- entry;return(mid)
         }
-        .v2_keys(entry,c("concept_tag","label","label_state",if(d$kind=="terminology")"domain_id"))
-        .v2_component(entry$concept_tag,"concept_tag")
-        .nv_need(entry$label_state=="unavailable" && is.null(entry$label),"Unapproved terminology fields")
-        if(d$kind=="terminology") .nv_need(is.null(entry$domain_id))
-        .v2_component(entry$concept_tag,"concept_tag")
+        key<-.term_entry(entry,d$kind,doc$contract_version)
+        if(context$contract_version=="2.1.0") {
+          id<-.v2_component(entry$concept_tag,"concept_tag");path<-termPath("concepts",id)
+          if(d$kind=="concept_catalogue") {
+            .nv_need(!file.exists(path),"Duplicate concept ID");writeBin(.v2_bytes(entry),path)
+          } else {
+            .nv_need(file.exists(path)&&identical(readBin(path,"raw",n=8193L),.v2_bytes(entry)),"Name index/ID label mismatch")
+            mark<-termPath("names",id);.nv_need(!file.exists(mark)&&file.create(mark),"Duplicate name-index ID")
+          }
+        }
+        key
       },"")
     }
     .nv_need(length(keys)>0L && as.character(length(keys))==d$rows,"Leaf row count mismatch")
@@ -114,6 +127,11 @@
     list(lo=keys[[1]],hi=keys[[length(keys)]])
   }
   root <- read(pointer$root,"root")
+  if(context$contract_version=="2.1.0").v2_directory_entries(file.path(scratch,"concepts"),function(name) {
+    .nv_need(file.exists(file.path(scratch,"used_concepts",name)),"Concept metadata outside retained scope")
+    entry<-.nv_json(readBin(file.path(scratch,"concepts",name),"raw",n=8193L))
+    .nv_need(identical(file.exists(file.path(scratch,"names",name)),entry$label_state=="available"),"Missing or extra name-index entry")
+  })
   capabilities <- list();ledger <- list()
   .nv_need(setequal(names(catalogue),names(assets$metrics)),"Incomplete catalogue")
   allowed <- .v2_policy(root$disclosure$policy,assets)
@@ -146,6 +164,7 @@
     if(mid=="core.source.passport" && row$state!="suppressed") .v2_passport_check(row$values,c(context,.object(
       observed_schema_sha256=root$source_schema$sha256,declared_cdm_version=root$source_schema$declared_cdm_version,
       consistency_basis=root$source_consistency$within_run)))
+    if(mid=="core.source.passport"&&row$state!="suppressed") .term_vocab_match(row$values,root$saved_terminology)
     if(row$state=="suppressed") suppressed[[mid]] <<- TRUE
     # Record partitions are per concept. Capture also contains an all-concept
     # total, which has no corresponding source/type partition bucket.

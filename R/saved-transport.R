@@ -4,7 +4,7 @@
   .v2_keys(context,c(.saved_common(),"root","authorization_epoch","instance_id"))
   .nv_need(!anyDuplicated(names(context)))
   for(n in c(.saved_common(),"authorization_epoch","instance_id")) .nv_need(.string(context[[n]]) && nchar(context[[n]],type="bytes")<=256L)
-  .nv_need(context$contract_version=="2.0.0")
+  .nv_need(.term_version(context$contract_version))
   .store_uuid(context$publication_id);.store_uuid(context$release_id)
   .v2_descriptor_check(context$root);.nv_need(context$root$kind=="root" && context$root$rows=="0")
   invisible(.profile_context(context));context

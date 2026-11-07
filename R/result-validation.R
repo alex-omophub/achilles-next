@@ -1,9 +1,11 @@
 # JDBC strings preserve NUMERIC exactly. Each cursor fetch is bounded; it never
 # uses DatabaseConnector's data-frame conversion for aggregate values.
 .store_commit <- function(jdbc) rJava::.jcall(jdbc, "V", "commit")
-.store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L, queryTimeoutSeconds = 60L) {
+.store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L, queryTimeoutSeconds = 60L,sourceRead=FALSE) {
   .nv_need(identical(details$dbms, "postgresql"), "PostgreSQL is required")
-  .nv_need(.string(schema) && grepl("^[a-z][a-z0-9_]{0,62}$", schema) && !grepl("^pg_|^public$|^information_schema$", schema), "Invalid results schema")
+  .nv_need(identical(sourceRead,TRUE)||identical(sourceRead,FALSE))
+  .nv_need(!sourceRead||identical(readOnly,TRUE),"Source capture must be read-only")
+  .nv_need(.string(schema) && grepl("^[a-z][a-z0-9_]{0,62}$", schema) && !grepl("^pg_|^information_schema$", schema) && (schema!="public"||sourceRead), "Invalid database schema")
   .nv_need(is.numeric(queryTimeoutSeconds)&&length(queryTimeoutSeconds)==1L&&!is.na(queryTimeoutSeconds)&&is.finite(queryTimeoutSeconds)&&
     queryTimeoutSeconds>=1&&queryTimeoutSeconds<=2147483647&&queryTimeoutSeconds==floor(queryTimeoutSeconds),"Invalid store query timeout")
   connection <- DatabaseConnector::connect(details)

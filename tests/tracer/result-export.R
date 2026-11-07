@@ -94,6 +94,8 @@ local({
     readDetails <- DatabaseConnector::createConnectionDetails(dbms='postgresql',server='127.0.0.1/achilles_next_fixtures',port=as.integer(reader$port),user=role,password=reader$password)
     source(file.path(helperDir,'saved-transport-integration.R'),local=TRUE)
     testSavedTransportIntegration(approved$export_dir,approved$root,readDetails,serve,schema,role,ex)
+    source(file.path(helperDir,'saved-label-integration.R'),local=TRUE)
+    testSavedLabelIntegration(details,schema,serve,release,root,allow,readDetails,role,ex,q)
     raw <- readResultObject(readDetails,serve,'fixture:export',approved$publication_id,'fixture-restricted',approved$root$sha256)
     stopifnot(identical(raw,readBin(file.path(approved$export_dir,'objects',paste0(approved$root$sha256,'.json')),'raw',n=262145L)))
     f('.v2_directory')(approved$export_dir,function(d,bytes) {

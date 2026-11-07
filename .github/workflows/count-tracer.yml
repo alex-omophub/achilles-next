@@ -153,6 +153,8 @@ jobs:
           Rscript --vanilla tests/tracer/saved-transport.R
           Rscript --vanilla tests/tracer/saved-provider.R
           Rscript --vanilla tests/tracer/saved-concepts.R
+          Rscript --vanilla tests/tracer/saved-labels.R "$RUNNER_TEMP/terminology-corpus.json"
+          node packages/contracts/tools/validate-terminology-corpus.mjs "$RUNNER_TEMP/terminology-corpus.json"
           Rscript --vanilla tests/tracer/result-validation-offline.R
           Rscript --vanilla tests/tracer/baseline-reader-once.R
           Rscript --vanilla tests/tracer/result-wire.R "$RUNNER_TEMP/v2-corpus.json"

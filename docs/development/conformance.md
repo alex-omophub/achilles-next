@@ -180,3 +180,22 @@ publication does not rewrite them as measured downstream phases.
 This exercises the v2 artifact and approved-page R reader. The v1 React tracer
 viewer and experimental HTTP provider remain separate; this proof does not qualify
 a whole-source UI, gateway, ATLAS host, warehouse or production-scale workload.
+
+## Optional saved-label/index extension
+
+The existing marked publication suite additionally captures synthetic local
+vocabulary metadata, explicitly enables the store extension and publishes approved
+artifact `2.1.0`. It verifies file/database ID and prefix-search parity, duplicate-name
+count/byte continuations, exact stored/exported bytes, known/missing provenance,
+scope-omitted names, grant revocation and previous-publication preservation on
+cancellation, bad hash or denied approval. The store suite separately checks
+transactional enablement and refusal to repair customized guards/missing markers.
+
+`Rscript --vanilla tests/tracer/saved-labels.R "$evidence_dir/terminology-corpus.json"`
+tests admitted source-denied fixtures, old `2.0.0` compatibility, mixed/corrupt/scope/
+index rejection, matching, long Unicode keys/IDs, snapshot and SQL-buffer bounds.
+`node packages/contracts/tools/validate-terminology-corpus.mjs "$evidence_dir/terminology-corpus.json"`
+checks the shared structural vectors independently using existing contributor
+dependencies. Node remains unnecessary for end-user admission/viewing. See the
+[concept guide](saved-concepts.md) for format/matching/capture boundaries. These
+are bounded synthetic proofs, not million-entry or representative-scale evidence.
