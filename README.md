@@ -83,6 +83,11 @@ Sealing, validation, institutional approval and CAS promotion remain explicit.
 The [operations guide](docs/development/store-operations.md) documents controlled
 overlap/CAS proofs, restart boundaries and versioned upgrade/retention procedures.
 
+An [internal saved-selection model](docs/development/saved-selection.md) describes
+all 142 report/filter grains and rejects requests that would require unsaved
+combinations. Approved lazy transports and concept-name discovery remain under
+development; the model reads no source data and submits no generation jobs.
+
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 
 ## Relationship to OHDSI
