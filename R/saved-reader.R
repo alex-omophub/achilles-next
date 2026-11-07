@@ -32,11 +32,17 @@
     .nv_need(identical(token,encode(doc)) && identical(doc$version,1L) && identical(doc$context_sha256,contextHash) && identical(doc$selection_sha256,selection) && identical(doc$generation,state$generation) && .saved_key(doc$last_key))
     doc$last_key
   },error=function(e).saved_error("invalid_cursor"))
-  run <- function(cancel,work) tryCatch({
+  run <- function(cancel,work,responseLimit=NULL) tryCatch({
     generation <- state$generation;check(cancel,generation)
     used <- new.env(parent=emptyenv());used$objects<-0L;used$bytes<-0;used$rows<-0L
+    memo <- list()
     get <- function(d) {
       check(cancel,generation);.v2_descriptor_check(d)
+      previous <- memo[[d$sha256]]
+      if(!is.null(previous)) {
+        .nv_need(identical(.json(d),.json(previous$descriptor)),"Conflicting descriptor")
+        check(cancel,generation);return(previous)
+      }
       used$objects <- used$objects+1L;used$bytes <- used$bytes+as.numeric(d$bytes)
       if(!d$kind%in%c("root","index")) {
         if(.nv_unsigned_cmp(d$rows,as.character(maxRows-used$rows))>0L) .saved_error("resource_limit")
@@ -63,30 +69,32 @@
         }
         state$cache[[d$sha256]]<-raw;state$order<-c(state$order,d$sha256);state$bytes<-state$bytes+length(raw)
       }
-      c(list(descriptor=d,bytes=raw),page)
+      result <- c(list(descriptor=d,bytes=raw),page)
+      memo[[d$sha256]] <<- result;result
     }
     value <- work(get)
     check(cancel,generation)
     value$budget <- list(objects=used$objects,bytes=used$bytes,rows=used$rows)
-    value
+    if(!is.null(responseLimit) && length(.v2_bytes(value))>responseLimit) .saved_error("resource_limit")
+    check(cancel,generation);value
   },error=function(e) {
     clear()
     if(inherits(e,"achillesnext_read_error")) stop(e)
     .saved_error("integrity_failure")
   })
-  scan <- function(branch,lower=NULL,upper=NULL,limit=1L,cursor=NULL,cancel=function()FALSE) run(cancel,function(get) {
+  scanBody <- function(get,branch,lower=NULL,upper=NULL,limit=1L,cursor=NULL,root=NULL,afterKey=NULL,visit=NULL) {
     names <- c(data="data",metric_catalogue="catalogue",concept_catalogue="concepts",terminology="terminology")
     if(!.string(branch)||!branch%in%names(names)||!control(limit,1,16)||(!is.null(lower)&&!.saved_key(lower))||(!is.null(upper)&&!.saved_key(upper))||(!is.null(lower)&&!is.null(upper)&&.v2_less(upper,lower))) .saved_error("invalid_request")
     selection <- .v2_hash(.v2_bytes(.object(branch=branch,lower=lower,upper=upper)))
-    after <- if(is.null(cursor))NULL else decode(cursor,selection)
+    after <- if(!is.null(visit))afterKey else if(is.null(cursor))NULL else decode(cursor,selection)
     if(!is.null(after) && ((!is.null(lower)&&.v2_less(after,lower))||(!is.null(upper)&&.v2_less(upper,after)))) .saved_error("invalid_cursor")
-    root <- get(context$root)$document
+    if(is.null(root)) root <- get(context$root)$document
     allowed <- .v2_policy(root$disclosure$policy,assets)
     pages <- list();more <- FALSE;last <- NULL;seen <- context$root$sha256
     intersects <- function(lo,hi) (is.null(lower)||!.v2_less(hi,lower)) && (is.null(upper)||!.v2_less(upper,lo)) && (is.null(after)||.v2_less(after,hi))
     walk <- function(d,lo=NULL,hi=NULL,depth=0L) {
-      if(!is.null(lo)&&!intersects(lo,hi)) return(invisible(NULL))
-      if(length(pages)>=limit) {more<<-TRUE;return(invisible(NULL))}
+      if(more || (!is.null(lo)&&!intersects(lo,hi))) return(invisible(NULL))
+      if(is.null(visit) && length(pages)>=limit) {more<<-TRUE;return(invisible(NULL))}
       if(depth>8L || d$sha256%in%seen) .saved_error("integrity_failure")
       seen <<- c(seen,d$sha256);page <- get(d);doc <- page$document
       if(!is.null(lo)) .nv_need(identical(page$lo,lo)&&identical(page$hi,hi),"Index range mismatch")
@@ -99,16 +107,30 @@
         if(branch=="data" && !doc$metric_id%in%allowed) .nv_need(all(vapply(doc$rows,function(r)r$state=="suppressed",TRUE)),"Policy output leak")
         if(branch=="metric_catalogue") for(entry in doc$entries) if(!entry$metric_id%in%allowed)
           .nv_need(identical(entry$state,"suppressed") && identical(entry$rows,"0"),"Policy catalogue leak")
-        pages[[length(pages)+1L]] <<- page;last <<- page$hi
+        if(!is.null(visit)) {
+          if(!isTRUE(visit(doc))) more <<- TRUE
+        } else {pages[[length(pages)+1L]] <<- page;last <<- page$hi}
       }
       invisible(NULL)
     }
     walk(root[[names[[branch]]]])
     # A cursor describes the last complete partition, never a numeric offset.
+    if(!is.null(visit)) return(list(complete=!more))
     nextCursor <- if(more && !is.null(last)) encode(.object(version=1L,context_sha256=contextHash,selection_sha256=selection,generation=state$generation,last_key=last)) else NULL
     list(pages=pages,cursor=nextCursor,complete=is.null(nextCursor))
-  })
-  list(root=function(cancel=function()FALSE)run(cancel,function(get)list(page=get(context$root))),scan=scan,
+  }
+  scan <- function(branch,lower=NULL,upper=NULL,limit=1L,cursor=NULL,cancel=function()FALSE)
+    run(cancel,function(get)scanBody(get,branch,lower,upper,limit,cursor))
+  session <- function(work,cancel=function()FALSE,responseLimit=NULL) run(cancel,function(get) {
+    root <- NULL;generation <- state$generation
+    readRoot <- function(){if(is.null(root)) root <<- get(context$root)$document;root}
+    access <- list(root=readRoot,check=function()check(cancel,generation),
+      walk=function(branch,lower=NULL,upper=NULL,after=NULL,visit)scanBody(get,branch,lower,upper,root=readRoot(),afterKey=after,visit=visit),
+      decode=function(token,selection)if(is.null(token))NULL else decode(token,selection),
+      cursor=function(selection,last)encode(.object(version=1L,context_sha256=contextHash,selection_sha256=selection,generation=state$generation,last_key=last)))
+    work(access)
+  },responseLimit=responseLimit)
+  list(session=session,root=function(cancel=function()FALSE)run(cancel,function(get)list(page=get(context$root))),scan=scan,
     close=function(){if(!state$closed){state$closed<-TRUE;clear()};invisible(NULL)},
     inspect=function()c(state$stats,list(cache_bytes=state$bytes,cache_objects=length(state$order),cache_allowed=transport$cacheAllowed,closed=state$closed,generation=state$generation)))
 }

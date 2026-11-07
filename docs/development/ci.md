@@ -12,6 +12,8 @@ The existing compatibility suite runs `saved-transport.R` offline. The
 [artifact/database byte-parity and grant-revocation checks](saved-transports.md)
 run against the marked PostgreSQL fixture through the existing `result-export.R`
 serving test.
+The same fixture also compares the native semantic providers. `saved-provider.R`
+checks semantic pagination, dependencies and limits without a database connection.
 No extra integration job, dependency install or fixture generation is added.
 
 The PostgreSQL workflow runs three distinct integration suites, each in its own
