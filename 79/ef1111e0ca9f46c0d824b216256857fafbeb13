@@ -1,0 +1,30 @@
+tests/tracer/inventory-inputs.R
+  s_895f6ebe145fd3::t_eba80ab33b14cf 13,17-18
+  s_895f6ebe145fd3::t_5d90f1e699020b 19-20
+docs/development/inventory-proof.md
+  s_895f6ebe145fd3::t_eba80ab33b14cf 79
+tools/benchmark/inventory-inputs.R
+  s_895f6ebe145fd3::t_c0fc9fefcbe82c 10-11
+tools/benchmark/inventory_database.py
+  s_895f6ebe145fd3::t_eba80ab33b14cf 33
+tests/test_inventory_guards.py
+  s_895f6ebe145fd3::t_eba80ab33b14cf 9-14,62-64
+tests/test_inventory_fixture.py
+  s_895f6ebe145fd3::t_eba80ab33b14cf 121
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "79ef1111e0ca9f46c0d824b216256857fafbeb13",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
