@@ -33,6 +33,7 @@
 .term_entry <- function(entry,kind,version) {
   if(identical(version,"2.0.0")) {
     .v2_keys(entry,c("concept_tag","label","label_state",if(kind=="terminology")"domain_id"))
+    .nv_need(identical(entry$concept_tag$kind,"id"),"Only retained exact concept IDs are indexed")
     .nv_need(identical(entry$label_state,"unavailable")&&is.null(entry$label)&&(kind!="terminology"||is.null(entry$domain_id)),"Unapproved terminology fields")
     return(.v2_component(entry$concept_tag,"concept_tag"))
   }

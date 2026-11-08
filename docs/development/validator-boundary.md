@@ -31,7 +31,9 @@ The optional [saved terminology extension](saved-concepts.md) also has an
 independent locked JSON Schema/Ajv oracle and shared structural vectors. Native
 terminology predicates own byte limits, matching/order, capture identity and
 scope/index closure; `.nv_schema()` does not interpret the full `2.1.0` schema.
-Existing `2.0.0` unavailable-label validation remains closed and unchanged.
+Original `2.0.0` unavailable-label rules remain unchanged; both versions require
+exact ID tags in concept/terminology catalogues. Special tags remain valid in
+their declared data dimensions.
 
 `tools/check_schema_subset.py` now audits the schemas actually consumed by the
 native subset and their locks. Unsupported keywords/types/formats, nonlocal or

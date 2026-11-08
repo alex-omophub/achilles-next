@@ -66,14 +66,20 @@ not automatically capture/attach labels; configure this explicit publication pat
 ## Enablement and compatibility
 
 `enableSavedTerminology()` requires store-owner privileges and a recognized base
-store `2.0.0`. In one transaction it verifies the exact installed publication guard,
-adds `saved-terminology/1.0.0` capability and allows physical roots `2.0.0`/`2.1.0`.
+store `2.0.0`. It locks before reading store state and uses read-committed
+transactions so concurrent first calls yield one installation and one no-op.
+It verifies the exact installed publication guard and its enabled, unconditional,
+row-level BEFORE INSERT/UPDATE trigger binding while holding a publication-table
+lock against trigger DDL. It adds `saved-terminology/1.0.0` capability and allows
+physical roots `2.0.0`/`2.1.0`.
 Repeated enablement is a no-op only when marker and definition agree; modified
 functions/markers are refused without repair. The base storage version stays
 `2.0.0`; `inspectResultStore()` still describes that base compatibility only.
 
-No existing export, release or current pointer is rewritten. Old exports remain
-readable unchanged; publishing with names creates a new publication requiring new
+Enablement leaves existing exports, releases and current pointers unchanged.
+Publication creates a new approved export/release projection; it can advance the
+current pointer through compare-and-swap when `expectedRevision` is supplied.
+Old exports remain readable unchanged; publishing with names requires new
 approval. Older consumers reject unsupported `2.1.0`; this is not an in-place
 artifact upgrade. All pages in a publication must share its version/context.
 

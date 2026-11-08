@@ -78,7 +78,34 @@ local({
   setBody<-function(value)f('.store_transaction')(details,a,function(tx)tx$execute(sub(def$new,value,def$sql,fixed=TRUE)))
   custom<-paste0(def$old,'\n-- institutional customization\n');setBody(custom)
   expectError(function()enableSavedTerminology(details,a));stopifnot(identical(body(),custom),is.na(q(paste0("SELECT to_regclass('",a,".achillesnext_storage_extension')::text AS name"))$NAME))
-  setBody(def$old);stopifnot(isTRUE(enableSavedTerminology(details,a)),identical(enableSavedTerminology(details,a),FALSE))
+  setBody(def$old)
+  # An intact function body is insufficient without its complete trigger binding.
+  publication<-paste0('"',a,'".achillesnext_publication')
+  baseline<-paste0('CREATE TRIGGER publication_transition BEFORE INSERT OR UPDATE ON ',publication,' FOR EACH ROW EXECUTE FUNCTION "',a,'".guard_publication_transition()')
+  triggerSql<-function(sql)f('.store_transaction')(details,a,function(tx)tx$execute(sql))
+  restoreTrigger<-function()triggerSql(paste0('DROP TRIGGER IF EXISTS publication_transition ON ',publication,';',baseline))
+  bindingChecks<-function(enabled) {
+    expectedBody<-body()
+    variants<-list(
+      paste0('DROP TRIGGER publication_transition ON ',publication),
+      paste0('ALTER TABLE ',publication,' DISABLE TRIGGER publication_transition'),
+      paste0('ALTER TABLE ',publication,' ENABLE REPLICA TRIGGER publication_transition'),
+      paste0('DROP TRIGGER publication_transition ON ',publication,';',sub('guard_publication_transition()','guard_current_pointer()',baseline,fixed=TRUE)),
+      paste0('DROP TRIGGER publication_transition ON ',publication,';',sub('FOR EACH ROW','FOR EACH STATEMENT',baseline,fixed=TRUE)),
+      paste0('DROP TRIGGER publication_transition ON ',publication,';',sub('INSERT OR UPDATE','UPDATE',baseline,fixed=TRUE)),
+      paste0('DROP TRIGGER publication_transition ON ',publication,';',sub('EXECUTE FUNCTION',"WHEN (NEW.state='ready') EXECUTE FUNCTION",baseline,fixed=TRUE)))
+    for(sql in variants) {
+      triggerSql(sql)
+      tryCatch({
+        error<-tryCatch({enableSavedTerminology(details,a);NULL},error=identity)
+        stopifnot(inherits(error,'error'),identical(conditionMessage(error),'Modified publication trigger; no migration or repair attempted'),identical(body(),expectedBody),
+          identical(!is.na(q(paste0("SELECT to_regclass('",a,".achillesnext_storage_extension')::text AS name"))$NAME),enabled))
+      },finally=restoreTrigger())
+    }
+  }
+  bindingChecks(FALSE)
+  stopifnot(isTRUE(enableSavedTerminology(details,a)),identical(enableSavedTerminology(details,a),FALSE))
+  bindingChecks(TRUE)
   custom<-paste0(def$new,'\n-- institutional customization\n');setBody(custom)
   expectError(function()enableSavedTerminology(details,a));stopifnot(identical(body(),custom))
   setBody(def$new);execute(paste0('DELETE FROM ',a,'.achillesnext_storage_extension'))
@@ -86,6 +113,31 @@ local({
   execute(paste0('INSERT INTO ',a,".achillesnext_storage_extension VALUES ('saved-terminology','1.0.0')"))
   stopifnot(identical(enableSavedTerminology(details,a),FALSE),identical(q(paste0('SELECT revision::text AS value FROM ',a,'.achillesnext_current_publication'))$VALUE,'3'))
   cat('SAVED_TERMINOLOGY_EXPLICIT_ENABLEMENT_REFUSES_GUARD_DRIFT_OR_MISSING_MARKER_WITHOUT_REPAIR_OK\n')
+
+  race<-paste0('term_race_',Sys.getpid());raceServe<-paste0('term_race_serve_',Sys.getpid())
+  initializeResultStore(details,race,raceServe,'cdm_tiny_a_55')
+  on.exit(execute(paste0('DROP SCHEMA "',raceServe,'" CASCADE; DROP SCHEMA "',race,'" CASCADE')),add=TRUE,after=FALSE)
+  barrier<-tempfile('term-enable-barrier-');stopifnot(dir.create(barrier));on.exit(unlink(barrier,recursive=TRUE),add=TRUE)
+  concurrent<-parallel::parLapply(cluster,1:2,function(i,lib,config,schema,barrier) {
+    library(AchillesNext,lib.loc=lib);e<-new.env();sys.source(config,e)
+    ns<-asNamespace('AchillesNext');original<-get('.store_transaction',ns);trace<-character()
+    observed<-function(details,schema,work,...)original(details,schema,function(tx) {
+      execute<-tx$execute;stream<-tx$stream
+      tx$execute<-function(sql){trace<<-c(trace,paste0('execute:',sql));value<-execute(sql);if(grepl('achillesnext_storage_version IN EXCLUSIVE MODE',sql,fixed=TRUE))Sys.sleep(0.3);value}
+      tx$stream<-function(sql,visit){trace<<-c(trace,paste0('stream:',sql));stream(sql,visit)}
+      work(tx)
+    },...)
+    assignInNamespace('.store_transaction',observed,ns='AchillesNext');on.exit(assignInNamespace('.store_transaction',original,ns='AchillesNext'))
+    stopifnot(file.create(file.path(barrier,as.character(i))))
+    deadline<-Sys.time()+10
+    while(!all(file.exists(file.path(barrier,c('1','2'))))&&Sys.time()<deadline)Sys.sleep(0.01)
+    stopifnot(all(file.exists(file.path(barrier,c('1','2')))))
+    value<-enableSavedTerminology(e$fixtureConnection('owner'),schema)
+    list(value=value,first=trace[[1]])
+  },lib=normalizePath(Sys.getenv('R_LIBS')),config=normalizePath(commandArgs(TRUE)[[1]]),schema=race,barrier=barrier)
+  stopifnot(identical(sort(vapply(concurrent,function(x)x$value,TRUE)),c(FALSE,TRUE)),
+    all(vapply(concurrent,function(x)identical(x$first,paste0('execute:LOCK TABLE "',race,'".achillesnext_storage_version IN EXCLUSIVE MODE')),TRUE)))
+  cat('SAVED_TERMINOLOGY_TRIGGER_BINDING_14_MUTATIONS_AND_CONCURRENT_FIRST_ENABLE_TRUE_FALSE_OK\n')
 
   cat('RESULT_STORE_INSTALL_SEAL_AND_CONCURRENT_CAS_OK\n')
 })

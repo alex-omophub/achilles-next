@@ -1,12 +1,12 @@
 // Independent structural oracle only. Native admission owns index/scope closure.
 import {readFileSync} from 'node:fs';
-import {createHash} from 'node:crypto';
 import Ajv from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
+import {verifyTerminologyLock} from './terminology-lock.mjs';
 const directory = new URL('../../../inst/contracts/v2.1/', import.meta.url);
 const bytes = readFileSync(new URL('terminology.schema.json', directory));
 const lock = JSON.parse(readFileSync(new URL('schema-lock.json', directory), 'utf8'));
-if (lock.contract_version !== '2.1.0' || createHash('sha256').update(bytes).digest('hex') !== lock.sha256['terminology.schema.json']) throw new Error('Terminology schema integrity mismatch');
+verifyTerminologyLock(lock, bytes);
 const schema = JSON.parse(bytes);
 const ajv = new Ajv({strict: true}); addFormats(ajv); ajv.addSchema(schema);
 const validators = new Map(['concept_entry','name_entry','metadata','snapshot_header'].map(kind => [kind, ajv.compile({$ref: `${schema.$id}#/$defs/${kind}`})]));

@@ -32,7 +32,10 @@ release is explicitly not_asserted. Source/release IDs bind the input but do not
 prove a simultaneous snapshot. Operators supply honest vocabulary/source evidence.
 
 Enablement is explicit, transactional and owner-only through PostgreSQL privileges.
-It verifies the installed base version and exact original publication guard before
+It locks before reading store state and uses read-committed isolation for concurrent
+first-call idempotence. It verifies the installed base version, exact publication
+guard body and its enabled unconditional row-level BEFORE INSERT/UPDATE trigger
+binding before
 adding extension marker saved-terminology/1.0.0 and support for roots 2.0.0/2.1.0.
 A modified guard or incompatible marker is refused; no automatic repair occurs.
 Existing pages, releases, current pointers and the base storage version are unchanged.

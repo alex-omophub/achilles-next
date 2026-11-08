@@ -9,22 +9,36 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
   known<-function(value)o(state='known',value=value,basis='synthetic-capture',assertion_id='fixture-assertion',reason_code=NULL)
   snapshot<-captureConceptSnapshot(details,vocab,file.path(root,'vocabulary.jsonl'),'fixture:export',release,known('fixture:vocabulary'),known('fixture-v1'))
   stopifnot(snapshot$rows=='6')
-  fail<-function(work)stopifnot(tryCatch({work();FALSE},error=function(e)TRUE))
+  # Publication deliberately sanitizes backend errors. Observe the original
+  # transaction-work condition as well, so a generic outer error cannot hide a
+  # wrong setup/SQL failure in these negative tests.
+  fail<-function(work,message,code=NULL,causeMessage=NULL,causeCode=NULL) {
+    original<-f('.store_transaction');cause<-NULL
+    observed<-function(details,schema,run,...)original(details,schema,function(tx)tryCatch(run(tx),error=function(e){cause<<-e;stop(e)}),...)
+    assignInNamespace('.store_transaction',observed,ns='AchillesNext')
+    on.exit(assignInNamespace('.store_transaction',original,ns='AchillesNext'))
+    error<-tryCatch({work();NULL},error=identity)
+    stopifnot(inherits(error,'error'),identical(conditionMessage(error),message))
+    if(!is.null(code))stopifnot(inherits(error,'achillesnext_read_error'),identical(error$code,code))
+    if(!is.null(causeMessage))stopifnot(inherits(cause,'error'),identical(conditionMessage(cause),causeMessage))
+    if(!is.null(causeCode))stopifnot(inherits(cause,'achillesnext_read_error'),identical(cause$code,causeCode))
+  }
+  publicationError<-'Result publication failed; prior current preserved'
   before<-q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID
   # A base2.0.0 store cannot silently publish the new format.
-  fail(function()publishResultRelease(details,schema,release,file.path(root,'not-enabled'),'fixture-restricted','review-terms',policy,function(c)TRUE,savedTerminology=snapshot))
+  fail(function()publishResultRelease(details,schema,release,file.path(root,'not-enabled'),'fixture-restricted','review-terms',policy,function(c)TRUE,savedTerminology=snapshot),publicationError,causeMessage='Enable the saved terminology extension explicitly')
   stopifnot(!dir.exists(file.path(root,'not-enabled')))
   # Extension DDL and guard replacement roll back together on commit failure.
   commit<-f('.store_commit');on.exit(assignInNamespace('.store_commit',commit,ns='AchillesNext'),add=TRUE)
   assignInNamespace('.store_commit',function(jdbc)stop('synthetic precommit failure'),ns='AchillesNext')
-  fail(function()enableSavedTerminology(details,schema));assignInNamespace('.store_commit',commit,ns='AchillesNext')
+  fail(function()enableSavedTerminology(details,schema),'synthetic precommit failure');assignInNamespace('.store_commit',commit,ns='AchillesNext')
   stopifnot(is.na(q(paste0("SELECT to_regclass('",schema,".achillesnext_storage_extension')::text AS name"))$NAME))
   stopifnot(isTRUE(enableSavedTerminology(details,schema)),identical(enableSavedTerminology(details,schema),FALSE),inspectResultStore(details,schema)$storage_version=='2.0.0')
   ex(paste0('INSERT INTO ',vocab,".concept VALUES (123,'Conflicting name','Condition','Fixture')"))
-  fail(function()captureConceptSnapshot(details,vocab,file.path(root,'duplicate.jsonl'),'fixture:export',release,known('fixture:vocabulary'),known('fixture-v1')))
+  fail(function()captureConceptSnapshot(details,vocab,file.path(root,'duplicate.jsonl'),'fixture:export',release,known('fixture:vocabulary'),known('fixture-v1')),'Duplicate or unordered vocabulary concept ID')
   stopifnot(!file.exists(file.path(root,'duplicate.jsonl')))
   ex(paste0('DELETE FROM ',vocab,".concept WHERE concept_name='Conflicting name'"))
-  fail(function()captureConceptSnapshot(details,vocab,file.path(root,'cancelled.jsonl'),'fixture:export',release,known('fixture:vocabulary'),known('fixture-v1'),cancel=function()TRUE))
+  fail(function()captureConceptSnapshot(details,vocab,file.path(root,'cancelled.jsonl'),'fixture:export',release,known('fixture:vocabulary'),known('fixture-v1'),cancel=function()TRUE),'Saved result read failed: aborted',code='aborted')
   stopifnot(!file.exists(file.path(root,'cancelled.jsonl')))
   approved<-publishResultRelease(details,schema,release,file.path(root,'labelled'),'fixture-labelled','review-terms',policy,function(c) {
     stopifnot(c$contract_version=='2.1.0',c$saved_terminology$snapshot_sha256==snapshot$sha256);TRUE
@@ -85,12 +99,56 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
   stopifnot(length(p$searchConcepts('diab')$concepts)==1L,p$lookupConcepts('123')$concepts[[1]]$state=='not_saved')
   cancelled<-FALSE
   fail(function()publishResultRelease(details,schema,release,file.path(root,'labels-cancelled'),'fixture-restricted','review-cancel',policy,
-    function(c){cancelled<<-TRUE;TRUE},expectedRevision='1',savedTerminology=snapshot,cancel=function()cancelled))
+    function(c){cancelled<<-TRUE;TRUE},expectedRevision='1',savedTerminology=snapshot,cancel=function()cancelled),publicationError,causeCode='aborted')
   bad<-snapshot;bad$sha256<-strrep('0',64)
-  fail(function()publishResultRelease(details,schema,release,file.path(root,'labels-bad-hash'),'fixture-restricted','review-bad',policy,function(c)TRUE,expectedRevision='1',savedTerminology=bad))
-  fail(function()publishResultRelease(details,schema,release,file.path(root,'labels-denied'),'fixture-restricted','review-denied',policy,function(c)FALSE,expectedRevision='1',savedTerminology=snapshot))
+  fail(function()publishResultRelease(details,schema,release,file.path(root,'labels-bad-hash'),'fixture-restricted','review-bad',policy,function(c)TRUE,expectedRevision='1',savedTerminology=bad),publicationError,causeMessage='Snapshot hash mismatch')
+  fail(function()publishResultRelease(details,schema,release,file.path(root,'labels-denied'),'fixture-restricted','review-denied',policy,function(c)FALSE,expectedRevision='1',savedTerminology=snapshot),publicationError,causeMessage='Institutional policy did not approve the candidate')
   stopifnot(!dir.exists(file.path(root,'labels-cancelled')),!dir.exists(file.path(root,'labels-bad-hash')),!dir.exists(file.path(root,'labels-denied')),
     identical(q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID,before))
   validateResultArtifact(file.path(root,'restricted'))
+  # Cancellation interrupts actual release validation/producer work, rather than
+  # waiting for a whole export and accepting any generic failure afterwards.
+  originals<-lapply(c('.store_validate','.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_denominator_check'),f)
+  names(originals)<-c('.store_validate','.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_denominator_check')
+  restore<-function()for(n in names(originals))assignInNamespace(n,originals[[n]],ns='AchillesNext')
+  on.exit(restore(),add=TRUE)
+  for(mode in c('validation','rows','emission','admission')) {
+    phase<-NULL;validationRows<-0L;builtRows<-0L;emitted<-0L;admittedRows<-0L;cancelled<-FALSE;stage<-NULL;buildCalled<-FALSE
+    assignInNamespace('.store_validate',function(tx,releaseId,exclusive=FALSE){phase<<-'validation';originals[['.store_validate']](tx,releaseId,exclusive)},ns='AchillesNext')
+    assignInNamespace('.store_build_pages',function(tx,validated,publicationId,scopeId,approvalId,policy,directory,...) {
+      phase<<-'projection';stage<<-directory;buildCalled<<-TRUE
+      originals[['.store_build_pages']](tx,validated,publicationId,scopeId,approvalId,policy,directory,...)
+    },ns='AchillesNext')
+    assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets=f('.v2_assets')()) {
+      originals[['.store_rows']](tx,releaseId,metricId,function(row,key) {
+        visit(row,key)
+        if(identical(phase,'validation')){validationRows<<-validationRows+1L;if(mode=='validation'&&validationRows==3L)cancelled<<-TRUE}
+        if(identical(phase,'projection')){builtRows<<-builtRows+1L;if(mode=='rows'&&builtRows==3L)cancelled<<-TRUE}
+      },assets)
+    },ns='AchillesNext')
+    assignInNamespace('.v2_descriptor',function(bytes,kind,rows) {
+      descriptor<-originals[['.v2_descriptor']](bytes,kind,rows)
+      if(identical(phase,'projection')){emitted<<-emitted+1L;if(mode=='emission'&&emitted==1L)cancelled<<-TRUE}
+      descriptor
+    },ns='AchillesNext')
+    assignInNamespace('.v2_directory',function(directory,visit=function(d,b)NULL,check=function()NULL) {
+      phase<<-'admission';originals[['.v2_directory']](directory,visit,check)
+    },ns='AchillesNext')
+    assignInNamespace('.v2_denominator_check',function(mid,row,lookup,assets=f('.v2_assets')()) {
+      value<-originals[['.v2_denominator_check']](mid,row,lookup,assets)
+      if(identical(phase,'admission')){admittedRows<<-admittedRows+1L;if(mode=='admission'&&admittedRows==3L)cancelled<<-TRUE}
+      value
+    },ns='AchillesNext')
+    fail(function()publishResultRelease(details,schema,release,file.path(root,paste0('cancel-',mode)),'fixture-restricted','review-cancel',policy,function(c)TRUE,
+      expectedRevision='1',cancel=function()cancelled),publicationError,causeCode='aborted')
+    if(mode=='validation')stopifnot(validationRows==3L,!buildCalled)
+    if(mode=='rows')stopifnot(builtRows==3L)
+    if(mode=='emission')stopifnot(emitted==1L)
+    if(mode=='admission')stopifnot(admittedRows==3L)
+    stopifnot(!dir.exists(file.path(root,paste0('cancel-',mode))),is.null(stage)||!dir.exists(stage),
+      identical(q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID,before))
+    restore()
+  }
+  cat('PUBLICATION_CANCEL_VALIDATION_THIRD_ROW_FIRST_PAGE_AND_SPOOLED_ADMISSION_TYPED_CAUSES_CLEANUP_CURRENT_PRESERVATION_OK\n')
   cat('SAVED_LABEL_REAL_CAPTURE_EXTENSION_ROLLBACK_IDEMPOTENCE_PROJECTION_BOTH_MODES_PREFIX_BYTE_PAGES_EXACT_BYTES_SCOPE_REVOCATION_FAILURE_PRESERVATION_OK statements=',length(statements),'\n')
 }

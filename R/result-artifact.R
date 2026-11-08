@@ -11,7 +11,8 @@
   }
   invisible(NULL)
 }
-.v2_directory <- function(directory, visit=function(descriptor,bytes)NULL) {
+.v2_directory <- function(directory, visit=function(descriptor,bytes)NULL,check=function()NULL) {
+  .nv_need(is.function(check));check()
   rootDir <- normalizePath(directory,mustWork=TRUE)
   .nv_need(dir.exists(rootDir) && !nzchar(Sys.readlink(directory)),"Artifact must be a directory")
   scratch <- tempfile("achilles-validate-");.nv_need(dir.create(scratch,mode="0700"));on.exit(unlink(scratch,recursive=TRUE))
@@ -26,7 +27,7 @@
     writeLines(.nv_add(old,value),path)
   }
   safe <- function(path,limit) {
-    .v2_safe_file(rootDir,path,limit)
+    check();bytes<-.v2_safe_file(rootDir,path,limit);check();bytes
   }
   strict <- function(bytes) {
     doc <- .nv_json(bytes);.nv_need(identical(bytes,.v2_bytes(doc)),"Noncanonical page bytes");doc
@@ -37,6 +38,7 @@
   context <- NULL;assets <- NULL;catalogue <- list();counts <- list();sums <- list();last <- list()
   spool <- function(hash) file.path(scratch,"rows",hash)
   read <- function(d,expectedKind,depth=0L) {
+    check()
     .v2_descriptor_check(d)
     mark <- file.path(scratch,"seen",d$sha256);.nv_need(!file.exists(mark),"Repeated page or cycle")
     .nv_need(file.create(mark));raw <- safe(paste0("objects/",d$sha256,".json"),.v2_limit(d$kind))
@@ -90,6 +92,7 @@
       .nv_need(!is.null(m)&&doc$metric_version==m$version&&.nv_array(doc$rows)&&length(doc$rows)<=2048L)
       keys <- character()
       for(row in doc$rows) {
+        check()
         key <- paste0(mid,"|",.v2_row(mid,row,assets));.nv_need(is.null(last[[mid]])||.v2_less(last[[mid]],key),"Duplicate row coverage")
         last[[mid]] <<- key;keys <- c(keys,key)
         counts[[mid]] <<- .nv_add(counts[[mid]],"1")
@@ -104,6 +107,7 @@
     } else {
       .v2_keys(doc,c(common,"kind","entries"));.nv_need(.nv_array(doc$entries)&&length(doc$entries)<=2048L)
       keys <- vapply(doc$entries,function(entry) {
+        check()
         .nv_need(length(.v2_bytes(entry))<=65536L)
         if(d$kind=="metric_catalogue") {
           .v2_dataset(entry,assets);mid <- entry$metric_id;.nv_need(is.null(catalogue[[mid]]),"Duplicate metric")
@@ -128,6 +132,7 @@
   }
   root <- read(pointer$root,"root")
   if(context$contract_version=="2.1.0").v2_directory_entries(file.path(scratch,"concepts"),function(name) {
+    check()
     .nv_need(file.exists(file.path(scratch,"used_concepts",name)),"Concept metadata outside retained scope")
     entry<-.nv_json(readBin(file.path(scratch,"concepts",name),"raw",n=8193L))
     .nv_need(identical(file.exists(file.path(scratch,"names",name)),entry$label_state=="available"),"Missing or extra name-index entry")
@@ -136,6 +141,7 @@
   .nv_need(setequal(names(catalogue),names(assets$metrics)),"Incomplete catalogue")
   allowed <- .v2_policy(root$disclosure$policy,assets)
   for(mid in names(catalogue)) {
+    check()
     d <- catalogue[[mid]];.nv_need(d$rows==counts[[mid]],"Missing data coverage")
     if(mid%in%assets$singletons && d$state!="suppressed") .nv_need(d$rows=="1","Missing projected singleton")
     if(mid=="core.execution.output_status" && d$state!="suppressed") .nv_need(d$rows=="142","Incomplete output ledger coverage")
@@ -143,6 +149,7 @@
   }
   # Disk-spooled second pass validates references without an in-memory row map.
   .v2_directory_entries(file.path(scratch,"rows"),function(name) {
+    check()
     row <- .nv_json(readBin(spool(name),"raw",n=131073L));mid <- row$metric_id;row$metric_id <- NULL
     targets <- list()
     for(ref in row$denominator_refs) {
@@ -207,6 +214,7 @@
     }
     if(d$state=="suppressed") .nv_need(row$state=="suppressed")
     if(d$state%in%c("empty_source","empty_population")) .nv_need(row$state%in%c(d$state,"suppressed"))
+    check()
   })
   if(isTRUE(assets$is_core)) {
     .v2_ledger_check(catalogue,ledger)
@@ -225,17 +233,19 @@
     for(suffix in c("source_count","type_count","representation_count","unit_count","coded_value_count","operator_count","numeric_eligibility_count","observation_qualification_count","range_status_count","status_type_count")) {
       mid <- paste0("core.",domain,".",suffix);if(!available(mid)) next
       for(pair in list(c(mid,cap),c(cap,mid))) .v2_directory_entries(file.path(scratch,"groups",pair[[1]]),function(key) {
+        check()
         a <- file.path(scratch,"groups",pair[[1]],key);b <- file.path(scratch,"groups",pair[[2]],key)
         .nv_need(file.exists(b)&&identical(readLines(a,warn=FALSE),readLines(b,warn=FALSE)),"Projected record partition does not reconcile")
       })
     }
   }
-  .v2_directory_entries(rootDir,function(name) .nv_need(name%in%c("objects","publication.json"),"Undeclared artifact file"))
+  .v2_directory_entries(rootDir,function(name){check();.nv_need(name%in%c("objects","publication.json"),"Undeclared artifact file")})
   .nv_need(!nzchar(Sys.readlink(file.path(rootDir,"objects"))),"Symlinked object directory")
   .v2_directory_entries(file.path(rootDir,"objects"),function(name) {
+    check()
     .nv_need(grepl("^[0-9a-f]{64}[.]json$",name) && file.exists(file.path(scratch,"seen",sub("[.]json$","",name))),"Undeclared artifact object")
   })
-  invisible(root)
+  check();invisible(root)
 }
 #' Validate an exact-byte approved artifact without Node
 #' @param bundleDir Directory containing publication.json and objects.

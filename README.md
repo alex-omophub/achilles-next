@@ -20,7 +20,7 @@ metric discovery and exact saved-row selection with denominator/eligibility
 evidence. Production UI remains separate work.
 Exact [saved-concept lookup](docs/development/saved-concepts.md) preserves IDs and
 explicit missing-name states. Opt-in artifact format 2.1.0 adds approved saved names
-and bounded prefix search; original 2.0.0 exports retain unavailable names.
+and bounded prefix search; names remain unavailable in original 2.0.0 exports.
 
 ## Development status
 
@@ -100,8 +100,9 @@ overlap/CAS proofs, restart boundaries and versioned upgrade/retention procedure
 
 An [internal saved-selection model](docs/development/saved-selection.md) describes
 all 142 report/filter grains and rejects requests that would require unsaved
-combinations. Approved lazy transports and concept-name discovery remain under
-development; the model reads no source data and submits no generation jobs.
+combinations. Approved native lazy transports and optional saved-name discovery
+are available; the model reads no source data and submits no generation jobs.
+Million-entry qualification and production UI integration remain under development.
 
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 

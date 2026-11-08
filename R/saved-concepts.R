@@ -78,8 +78,11 @@
           .nv_need(startsWith(.term_normalize(entry$label),normalized),"Name range mismatch")
           id<-.v2_component(entry$concept_tag,"concept_tag");found<-NULL
           api$walk("concept_catalogue",lower=id,upper=id,visit=function(page) {
-            for(candidate in page$entries)if(identical(.v2_component(candidate$concept_tag,"concept_tag"),id)) {
-              .nv_need(is.null(found),"Duplicate concept ID");found<<-candidate
+            for(candidate in page$entries) {
+              api$check()
+              if(identical(.v2_component(candidate$concept_tag,"concept_tag"),id)) {
+                .nv_need(is.null(found),"Duplicate concept ID");found<<-candidate
+              }
             }
             TRUE
           })

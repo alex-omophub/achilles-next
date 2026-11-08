@@ -119,10 +119,11 @@ suite, not a timing benchmark or production-scale qualification.
 
 ## Action runtime maintenance
 
-The existing compatibility suite also runs source-denied saved-label/index tests,
-their independent structural corpus and optional `2.1.0` capture/publication/search
-checks inside the existing marked PostgreSQL serving test. These reuse the current
-R/JDBC and Ajv installations; no extra job or dependency install is introduced.
+The existing compatibility suite runs source-denied saved-label/index tests and
+their independent R/Ajv structural corpus without PostgreSQL. The optional `2.1.0`
+capture/publication/search integration checks run separately through the existing
+marked PostgreSQL serving harness. Both paths reuse the current R/JDBC and Ajv
+installations; no extra job or dependency install is introduced.
 Source capture in that fixture is explicit batch vocabulary work. Provider SQL
 must still target only approved serving views. Local timings do not measure the
 additional hosted duration or certify production scale.

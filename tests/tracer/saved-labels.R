@@ -87,9 +87,33 @@ local({
   late<-f('.saved_provider')(t);on.exit(late$close(),add=TRUE)
   fail(function()late$searchConcepts('diab',cancel=function()cancelled),'aborted')
   active<-FALSE;fail(function()p$searchConcepts('diab'),'inaccessible')
+  fail(function()publishResultRelease(o(dbms='postgresql'),'fixture',x$context$release_id,file.path(folder,'precancelled'),
+    'fixture','fixture',list(),function(c)TRUE,cancel=function()TRUE),'aborted')
+  stopifnot(!dir.exists(file.path(folder,'precancelled')),attempted==0L)
   p$close();fail(function()p$searchConcepts('diab'),'closed')
   legacy<-openArtifactResultProvider(old$directory,old$context,function(c)TRUE);on.exit(legacy$close(),add=TRUE)
   stopifnot(legacy$searchConcepts('diab')$state=='unavailable',legacy$lookupConcepts('123')$concepts[[1]]$label_state=='unavailable',attempted==0L)
+  for(kind in c('concept_catalogue','terminology'))for(tag in c('all','null','schema_absent')) {
+    entry<-o(concept_tag=o(kind=tag),label=NULL,label_state='unavailable')
+    if(kind=='terminology')entry<-c(entry,o(domain_id=NULL))
+    fail(function()f('.term_entry')(entry,kind,'2.0.0'))
+  }
+  malformed<-makeSavedResultFixture(file.path(folder,'legacy-non-id'),fault='non_id_concept')
+  fail(function()validateResultArtifact(malformed$directory))
+  # Abort inside exact-ID verification, before scanning the remaining candidates.
+  many<-makeSavedResultFixture(file.path(folder,'candidate-cancel'),pageRows=2048L,extraConceptIds=as.character(201:500),savedLabels=list('500'='Cancel target'))
+  validateResultArtifact(many$directory)
+  candidates<-openArtifactResultProvider(many$directory,many$context,function(c)TRUE);on.exit(candidates$close(),add=TRUE)
+  component<-f('.v2_component');scanned<-0L;abort<-FALSE
+  observed<-function(x,name) {
+    if(identical(substitute(x),quote(candidate$concept_tag))){scanned<<-scanned+1L;if(scanned==2L)abort<<-TRUE}
+    component(x,name)
+  }
+  assignInNamespace('.v2_component',observed,ns='AchillesNext')
+  on.exit(assignInNamespace('.v2_component',component,ns='AchillesNext'),add=TRUE)
+  fail(function()candidates$searchConcepts('Cancel',cancel=function()abort),'aborted')
+  assignInNamespace('.v2_component',component,ns='AchillesNext')
+  stopifnot(scanned==2L,candidates$inspect()$cache_bytes==0L)
   # Full-length multilingual labels and large IDs exceed old key lengths.
   bigId<-paste(rep('9',512L),collapse='');longIds<-c(as.character(40:79),bigId);longLabels<-list()
   for(i in seq_along(longIds))longLabels[[longIds[[i]]]]<-paste0(paste(rep('💡',255L),collapse=''),sprintf('%04d',i))

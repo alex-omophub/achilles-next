@@ -22,7 +22,7 @@ publishResultRelease(connectionDetails, resultsSchema, releaseId,
 \item{institutionalPolicy}{Function receiving the candidate root descriptor, identities and policy; must return TRUE to approve those exact bytes. It receives no credentials.}
 \item{expectedRevision}{Canonical integer string for compare-and-swap, or NULL to prepare without changing current.}
 \item{savedTerminology}{Optional restricted snapshot list containing path, sha256 and optional exact rows, as returned by captureConceptSnapshot. Requires explicit enableSavedTerminology; opts into artifact format 2.1.0. NULL preserves format 2.0.0.}
-\item{cancel}{Boolean cancellation predicate checked during snapshot loading, terminology projection, admission and publication. Cancellation is cooperative and preserves the prior publication.}
+\item{cancel}{Boolean cancellation predicate checked before validation, between publication SQL operations and streamed rows, during page emission, snapshot loading, admission and publication. Cancellation is cooperative and preserves the prior publication.}
 }
 \description{Native validation of immutable aggregate releases and bounded content-addressed exports. Publication builds an explicit approved projection, validates all exported objects and writes identical database page bytes. It never queries the CDM.}
 \value{Validation invisibly returns context or TRUE. Publication returns publication_id, root descriptor, revision (NULL when not promoted) and export_dir.}

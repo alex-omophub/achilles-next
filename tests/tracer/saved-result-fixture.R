@@ -80,6 +80,7 @@ makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConcept
     if(identical(fault,'missing_concept'))entries<-Filter(function(e)e$concept_tag$value!='123',entries)
   }
   if(identical(fault,'unversioned_label')){entries[[1]]$label<-'Unapproved name';entries[[1]]$label_state<-'available'}
+  if(identical(fault,'non_id_concept'))entries[[1]]$concept_tag<-o(kind='all')
   conceptKeys<-vapply(entries,function(e)f('.v2_component')(e$concept_tag,'concept_tag'),'')
   concepts<-tree('concept_catalogue',entries,conceptKeys)
   termEntries<-if(is.null(savedLabels))lapply(entries,function(e)c(e,o(domain_id=NULL))) else Filter(function(e)e$label_state=='available',entries)
