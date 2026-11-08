@@ -1,0 +1,51 @@
+tests/tracer/inventory-inputs.R
+  s_895f6ebe145fd3::t_2881ceee4ffccb 1-17
+tools/benchmark/inventory.py
+  s_895f6ebe145fd3::t_bd31e88c67cc41 16,19-22,44,63-64
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_2881ceee4ffccb 159
+tests/test_inventory_guards.py
+  s_895f6ebe145fd3::t_727bb21a679475 1-59
+docs/development/inventory-proof.md
+  s_895f6ebe145fd3::t_027c538ac58613 20-26
+  s_895f6ebe145fd3::t_2881ceee4ffccb 44-45,49-52,74-79,126,136-137
+tools/benchmark/inventory_database.py
+  s_895f6ebe145fd3::t_bd31e88c67cc41 16,18-35,48,52-53,66,127,153
+docs/development/saved-concepts.md
+  s_895f6ebe145fd3::t_2881ceee4ffccb 206-207
+R/count-tracer.R
+  s_895f6ebe145fd3::t_2881ceee4ffccb 16
+tests/tracer/inventory-proof.R
+  s_895f6ebe145fd3::t_2881ceee4ffccb 115-118,122-124,127
+tools/benchmark/inventory_fixture.py
+  s_895f6ebe145fd3::t_bd31e88c67cc41 46-47,59-60,92-93
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_2881ceee4ffccb 46
+docs/development/ci.md
+  s_895f6ebe145fd3::t_2881ceee4ffccb 132-133
+tests/tracer/canonical-json.R
+  s_895f6ebe145fd3::t_2881ceee4ffccb 30
+tools/benchmark/inventory-inputs.R
+  s_895f6ebe145fd3::t_bd31e88c67cc41 1-12
+tools/benchmark/inventory.R
+  s_895f6ebe145fd3::t_bd31e88c67cc41 5-6,13,42,122-123
+tests/test_inventory_fixture.py
+  s_895f6ebe145fd3::t_727bb21a679475 55,60,76-121
+  s_895f6ebe145fd3::t_8088d47564e1e7 122
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "36c60b3d4824305a22803e747b1364d40b7067cc",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
