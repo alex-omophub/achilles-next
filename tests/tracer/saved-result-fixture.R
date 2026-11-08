@@ -1,5 +1,5 @@
 # Independent small reduced-scope result fixture; no CDM or store connection.
-makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConceptIds=character(),saveConcepts=TRUE,savedLabels=NULL) {
+makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConceptIds=character(),saveConcepts=TRUE,savedLabels=NULL,saveCalendar=FALSE) {
   f<-function(n)get(n,asNamespace('AchillesNext'));o<-f('.object');a<-f('.v2_assets')();wire<-f('.v2_bytes');hash<-f('.v2_hash')
   stopifnot(dir.create(directory,mode='0700'));dir.create(file.path(directory,'objects'))
   context<-o(contract_version='2.0.0',publication_id='00000000-0000-4000-8000-000000000031',release_id='00000000-0000-4000-8000-000000000032',source_id='fixture:semantic',profile_id='core-characterization-v2',profile_revision='2.0.0',profile_sha256=a$hash,access_scope_id='fixture-semantic')
@@ -15,6 +15,13 @@ makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConcept
   for(id in extraConceptIds)row('core.person.gender_count',o(gender_concept_id=id),o(person_count='0'),refs=list(ref('core.person.count',person,'person_count')))
   capture<-row('core.condition.capture_count',o(concept_tag=o(kind='id',value='123'),period_kind='full_scope',period_start='null',period_end='null'),o(record_count='4',person_count='3'),refs=list(ref('core.person.count',person,'person_count')))
   row('core.condition.capture_count',o(concept_tag=o(kind='all'),period_kind='full_scope',period_start='null',period_end='null'),o(record_count='4',person_count='3'),refs=list(ref('core.person.count',person,'person_count')))
+  if(saveCalendar)for(period in list(c('calendar_month','2020-01-01','2020-01-31','2','2'),
+                                    c('calendar_month','2020-02-01','2020-02-29','2','2'),
+                                    c('calendar_year','2020-01-01','2020-12-31','4','3'))) {
+    for(tag in list(o(kind='id',value='123'),o(kind='all')))
+      row('core.condition.capture_count',o(concept_tag=tag,period_kind=period[[1]],period_start=period[[2]],period_end=period[[3]]),
+        o(record_count=period[[4]],person_count=period[[5]]))
+  }
   row('core.condition.observation_qualification_count',o(concept_tag=o(kind='id',value='123'),reason='inside_valid_union'),o(record_count='4',person_count='3'),refs=list(ref('core.condition.capture_count',capture,'record_count'),ref('core.condition.capture_count',capture,'person_count')))
   for(unit in c('456','777','9007199254740993')) {
     dims<-o(concept_tag=o(kind='id',value='123'),unit_concept_tag=o(kind='id',value=unit),raw_operator_tag=o(kind='null'))

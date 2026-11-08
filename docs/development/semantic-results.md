@@ -163,6 +163,11 @@ closed or stale operations cannot return late rows. Call `close()` when finished
 
 ## Verified scope
 
+The runnable [saved-result walkthrough](saved-walkthrough.md) combines owner and
+researcher tasks, produces the complete 142-report filter matrix and records
+typed outcomes with all database connections denied. It is an automated synthetic
+API dry run; participant and production UI evaluation remain separate.
+
 The self-contained contributor fixture passes native full artifact admission,
 then disables all database connections while testing saved-ID lookup and 142-metric discovery,
 within-page pagination, summaries/eligibility, recursive denominators, typed

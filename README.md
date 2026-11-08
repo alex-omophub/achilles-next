@@ -106,6 +106,9 @@ all 142 report/filter grains and rejects requests that would require unsaved
 combinations. Approved native lazy transports and optional saved-name discovery
 are available; the model reads no source data and submits no generation jobs.
 Million-entry qualification and production UI integration remain under development.
+The runnable [synthetic saved-result walkthrough](docs/development/saved-walkthrough.md)
+demonstrates discovery, exact saved filters and result-state interpretation, and
+exports the complete 142-report filter matrix without a database connection.
 
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 
