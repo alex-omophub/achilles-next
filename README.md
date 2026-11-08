@@ -48,7 +48,12 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) for the contribution and Git workflow. S
 
 The [PostgreSQL fixture environment](tests/fixtures/postgresql/README.md) provides reproducible synthetic CDM 5.3/5.4/5.5 sources, optional pinned GiBleed 5.3/5.5 datasets, and separate empty schemas for later SynPUF loading. This is developer test infrastructure; the R package and analysis engine are still under development.
 
-The [alpha measurement profile](docs/analysis/alpha-profile.md) specifies 15 bounded outputs with explicit observation, representation and exact-distribution semantics. Its manifests and read-only fixture references can be checked now; the production analysis engine is not implemented yet.
+The earlier [alpha measurement profile](docs/analysis/alpha-profile.md) specifies
+15 bounded compatibility-tracer outputs with explicit observation, representation
+and exact-distribution semantics. The separate
+[core batch profile](docs/development/core-characterization.md) accounts for all
+142 outputs across population, observation periods, nine clinical domains and
+operational metadata; representative-scale qualification remains in progress.
 
 The [v1 result/provider/embed contracts](docs/contracts/v1.md) add versioned schemas, a complete synthetic bundle, TypeScript interfaces and executable conformance checks for Generation → View and host embedding.
 
@@ -59,6 +64,11 @@ reproducible small CSV previews for the pinned PostgreSQL CDM 5.3/5.4/5.5 DDL,
 with source manifests and preserved duplicate bags. Independent count and
 exact-summary checks run in the opt-in PostgreSQL proof. Larger tiers are
 disabled; this is contributor test data, not scale qualification.
+
+The [matched reference comparator](docs/benchmark/matched-reference.md) uses
+independent SQL for 138 numerical outputs and separately compares four operational
+metadata outputs. Both paths use the same native validation, projection,
+publication and export boundaries on small sources.
 
 The contributor [saved-representation experiment](docs/benchmark/saved-representation.md)
 compares tree and flat-index routing over identical precomputed pages. The
