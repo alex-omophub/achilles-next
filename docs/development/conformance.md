@@ -55,6 +55,7 @@ keep the implementation fixed while a suite runs.
 | `tests/tracer/saved-selection.R` | Internal 142-report filter/grain matrix, bounded exact selectors, unsupported-job states without generation and cancellation; no source/store connection or provider read |
 | `tests/tracer/saved-transport.R` | Internal root-reachable bounded scans, exact native pages, cursor/context/cache isolation, budgets and cancellation; routing fixtures simulate host admission |
 | `tests/tracer/saved-provider.R` | Public native semantic discovery/selection, shared read/response budgets, summary/denominator evidence, typed missing/suppressed states and cursors; admitted fixture with DB connections disabled |
+| `tests/tracer/saved-walkthrough.R` | Automated owner/researcher synthetic API tasks, 142-report filter matrix, exact saved months/units, explicit unavailable/job states and interaction errors; no human acceptance claim |
 | `tests/tracer/saved-transport-integration.R` via `result-export.R` | Real approved artifact/database byte parity, serving-only SQL observation and audience-grant revocation |
 | `tools/check_schema_subset.py` | Locked core metadata/dimension vocabulary audit for the finite native schema engine; not numerical or publication validation |
 | `tools/benchmark/representation.py` | Opt-in local tree/flat routing experiment over identical saved pages; not run by these commands or CI; see the saved-representation guide |
@@ -182,6 +183,17 @@ viewer and experimental HTTP provider remain separate; this proof does not quali
 a whole-source UI, gateway, ATLAS host, warehouse or production-scale workload.
 
 ## Optional saved-label/index extension
+
+For a small source-free discovery/filter run, use the
+[saved-result walkthrough](saved-walkthrough.md):
+
+```sh
+Rscript --vanilla tests/tracer/saved-walkthrough.R "$evidence_dir/saved-walkthrough"
+```
+
+The output directory must be new. This writes the full report/filter matrix and
+an interpreted API transcript after native admission. It runs once in the existing
+compatibility CI suite without new jobs, dependencies or database generation.
 
 The existing marked publication suite additionally captures synthetic local
 vocabulary metadata, explicitly enables the store extension and publishes approved

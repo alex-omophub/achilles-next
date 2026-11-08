@@ -87,10 +87,12 @@ selection, exact saved-row matching, summary-first output, relevant denominator/
 eligibility checks, response/read budgets and context-bound cursors in both modes.
 The model itself remains structural and performs no I/O or job submission.
 
-Saved concept inventory/name discovery remains separate work. Current terminology
-has explicit unavailable labels; IDs are not treated as names or looked up through
-CDM/vocabulary fallbacks. Search needs approved labels/indexes with declared matching
-rules. Browser/ATLAS views and large-inventory qualification remain separate gates.
+Saved concept lookup and optional name discovery use the approved
+[saved terminology extension](saved-concepts.md). Original 2.0.0 retains explicit
+unavailable labels; 2.1.0 adds declared prefix matching without CDM/vocabulary
+fallbacks. The [synthetic walkthrough](saved-walkthrough.md) exports this complete
+filter matrix and demonstrates saved/unsaved filter outcomes. Browser/ATLAS views
+and representative-scale qualification remain separate work.
 
 Structural selector/schema ownership uses the installed contract. Numerical
 arithmetic, eligibility, denominators and summary semantics stay with the
