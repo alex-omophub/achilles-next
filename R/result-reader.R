@@ -28,7 +28,7 @@ readResultObject <- function(connectionDetails,servingSchema,sourceId,publicatio
     at <- seq.int(1L,nchar(text),2L);bytes <- as.raw(strtoi(substring(text,at,at+1L),16L))
     expected <- descriptor %||% .object(sha256=sha,bytes=as.character(length(bytes)),kind="root",rows="0")
     doc <- .v2_verified_bytes(bytes,expected)
-    .nv_need(doc$contract_version=="2.0.0"&&doc$publication_id==publicationId&&doc$source_id==sourceId&&doc$access_scope_id==accessScopeId)
+    .nv_need(.term_version(doc$contract_version)&&doc$publication_id==publicationId&&doc$source_id==sourceId&&doc$access_scope_id==accessScopeId)
     invisible(.profile_context(doc))
     bytes
   },readOnly=TRUE),error=function(e)stop("Approved result page unavailable or invalid",call.=FALSE))

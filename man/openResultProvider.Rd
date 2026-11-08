@@ -47,13 +47,13 @@ Cursors bind operation/selection, limits, complete pinned context, instance, epo
 generation. Reuse them with the same method arguments. They are not permissions and do not
 follow current. Cancellation is cooperative; errors invalidate cursors and clear raw caches.
 The synchronous JDBC query timeout remains 60 seconds; immediate statement interruption,
-browser integration, available concept-name search and production-scale qualification are separate.
+browser integration and production-scale qualification are separate.
 \code{lookupConcepts(conceptIds, limit = 25L, cursor = NULL, maxBytes = 1048576L,
 cancel = function() FALSE)} accepts 1--100 unique canonical signed integer strings,
 with at most 512 digits per ID. Zero and large/negative IDs retain their exact values.
 Returns up to 100 saved catalogue entries or individual not_saved states, in signed
 numeric order, with count/byte pagination. Request order is normalized; no numeric
-coercion or vocabulary fallback is used. Current v2 labels remain NULL/unavailable.
+coercion or vocabulary fallback is used. Original 2.0.0 labels remain NULL/unavailable; opt-in 2.1.0 preserves saved labels, domain/vocabulary IDs, missing-label reasons and provenance.
 
 \code{searchConcepts(query, limit = 25L, cursor = NULL, maxBytes = 1048576L,
 cancel = function() FALSE)} validates a nonblank UTF-8 query of at most 256 bytes,
@@ -61,8 +61,17 @@ without control characters. On contract 2.0.0 it reads only the pinned root and
 returns unavailable, reason terminology.name_index_not_saved, searched FALSE and
 no concepts/cursor. This is not a completed empty search. Query bytes are retained;
 no name matching or normalization is performed. A non-NULL cursor is invalid.
-Terminology label-source and vocabulary-release identities are explicitly unavailable
-in this terminology contract, independently of the dataset source_id in context.
+Format 2.1.0 searches the approved saved name index using ascii-fold-prefix-v1:
+trim ASCII spaces, fold ASCII A--Z, preserve all other Unicode scalars. Results
+sort by normalized UTF-8 bytes, then exact signed ID; duplicate names keep distinct
+IDs. Display labels are unchanged. No substring/fuzzy/Unicode-casefold claim.
+Available responses have searched TRUE, including a completed empty result; original
+2.0.0 returns unavailable/searched FALSE. Name results are checked against the
+saved ID catalogue under the same read budget. Count and complete-byte pagination
+use opaque cursors bound to normalized query, matching version, limits and context.
+Terminology provenance is unavailable in 2.0.0 and explicit known/unknown in 2.1.0,
+independently of the dataset source_id. Capture consistency with the aggregate
+release is explicitly not_asserted; no source reuse is inferred.
 These methods share authority, cancellation, read/response budgets and lifecycle rules.
 
 Close the provider when finished. Already returned approved bytes cannot be recalled by closing.

@@ -2,6 +2,7 @@
 .v2_descriptor <- function(bytes, kind, rows) .object(sha256=.v2_hash(bytes),bytes=as.character(length(bytes)),kind=kind,rows=rows)
 .v2_limit <- function(kind) switch(kind,root=262144L,index=262144L,data=4194304L,1048576L)
 .v2_tree <- function(kind, context, emit) {
+  fanout<-if(identical(context$contract_version,"2.1.0")&&kind=="terminology")32L else 128L
   levels <- list(); total <- "0"
   node <- function(children) {
     d <- emit(c(context,.object(kind="index",index_kind=kind,children=children)),"index",.nv_sum(vapply(children,function(c)c$object$rows,"")))
@@ -12,9 +13,9 @@
     while(length(levels)<level) levels[[length(levels)+1L]] <<- list()
     bucket <- levels[[level]]
     if(length(bucket)) .nv_need(.v2_less(bucket[[length(bucket)]]$upper_key,item$lower_key),"Overlapping page ranges")
-    .nv_need(length(bucket)<128L,"Index depth limit")
+    .nv_need(length(bucket)<fanout,"Index depth limit")
     bucket[[length(bucket)+1L]] <- item
-    if(length(bucket)==128L && level<8L) {levels[[level]] <<- list();add(node(bucket),level+1L)} else levels[[level]] <<- bucket
+    if(length(bucket)==fanout && level<8L) {levels[[level]] <<- list();add(node(bucket),level+1L)} else levels[[level]] <<- bucket
   }
   finish <- function() {
     if(!length(levels)) return(emit(c(context,.object(kind="index",index_kind=kind,children=list())),"index","0"))
@@ -67,26 +68,41 @@
   if(length(allow)<length(assets$metrics)) allow <- setdiff(allow,"core.execution.output_status")
   allow
 }
-.store_build_pages <- function(tx, validated, publicationId, scopeId, approvalId, policy, directory) {
+# All publication SQL and streamed validation/producer rows share cancellation.
+# This also covers existing validators without weakening their predicates.
+.publication_tx <- function(tx,cancel) {
+  check<-function().term_check(cancel)
+  execute<-tx$execute;one<-tx$one;stream<-tx$stream
+  tx$execute<-function(sql){check();value<-execute(sql);check();value}
+  tx$one<-function(sql){check();value<-one(sql);check();value}
+  tx$stream<-function(sql,visit){check();value<-stream(sql,function(text){check();visit(text);check()});check();value}
+  tx
+}
+.store_build_pages <- function(tx, validated, publicationId, scopeId, approvalId, policy, directory,savedTerminology=NULL,cancel=function()FALSE) {
+  .term_check(cancel)
   assets <- validated$assets %||% .v2_assets();allow <- .v2_policy(policy,assets);c <- validated$context;datasets <- validated$datasets
-  context <- .object(contract_version="2.0.0",publication_id=publicationId,release_id=c$release_id,source_id=c$source_id,
+  metadata<-if(is.null(savedTerminology))NULL else .term_load(tx,savedTerminology,c,cancel)
+  version<-if(is.null(metadata))"2.0.0" else "2.1.0"
+  context <- .object(contract_version=version,publication_id=publicationId,release_id=c$release_id,source_id=c$source_id,
     profile_id=c$profile_id,profile_revision=c$profile_revision,profile_sha256=c$profile_sha256,access_scope_id=scopeId)
   emit <- function(doc,kind,rows) {
+    .term_check(cancel)
     raw <- .v2_bytes(doc);.nv_need(length(raw)<=.v2_limit(kind),"Page resource limit")
     d <- .v2_descriptor(raw,kind,rows)
     path <- file.path(directory,"objects",paste0(d$sha256,".json"))
     .nv_need(!file.exists(path),"Duplicate page coverage")
-    writeBin(raw,path);Sys.chmod(path,"0600");d
+    writeBin(raw,path);Sys.chmod(path,"0600");.term_check(cancel);d
   }
   catalogue <- .v2_pages("metric_catalogue",context,emit,assets=assets)
   data <- .v2_tree("data",context,emit)
   for(mid in sort(names(datasets),method="radix")) {
+    .term_check(cancel)
     d <- datasets[[mid]]
     if(!mid %in% allow) {d$state <- "suppressed";d$reason_code <- "policy.output_omitted";d$rows <- "0"}
     catalogue$add(d,mid)
     if(d$rows=="0") next
     pages <- .v2_pages("data",context,emit,mid,assets)
-    .store_rows(tx,c$release_id,mid,function(row,key) pages$add(row,paste0(mid,"|",key)),assets)
+    .store_rows(tx,c$release_id,mid,function(row,key){.term_check(cancel);pages$add(row,paste0(mid,"|",key))},assets)
     desc <- pages$finish()
     # The page tree carries the exact range, not a truncated metric label.
     bounds <- .store_decode(tx$one(paste0("SELECT jsonb_build_object('lo',min(sort_key COLLATE \"C\"),'hi',max(sort_key COLLATE \"C\"))::text FROM ",tx$schema,".achillesnext_aggregate_cell WHERE release_id=",.store_uuid(c$release_id)," AND metric_id=",.store_literal(mid))))
@@ -102,7 +118,8 @@
     # are never sorted as ordinary decimal strings ("10" before "2").
     code <- "CASE WHEN left(tag->>'value',1)='-' THEN 'I0'||lpad((999999-length(substr(tag->>'value',2)))::text,6,'0')||':'||translate(substr(tag->>'value',2),'0123456789','9876543210') ELSE 'I1'||lpad(length(tag->>'value')::text,6,'0')||':'||(tag->>'value') END"
     sql <- paste0("WITH tags AS (SELECT DISTINCT CASE WHEN jsonb_typeof(v.value)='object' THEN v.value ELSE jsonb_build_object('kind','id','value',v.value#>>'{}') END AS tag FROM ",tx$schema,".achillesnext_aggregate_cell c CROSS JOIN LATERAL jsonb_each(c.dimensions) v WHERE c.release_id=",.store_uuid(c$release_id)," AND c.metric_id IN (",ids,") AND c.state<>'suppressed' AND ((right(v.key,4)='_tag' AND v.value->>'kind'='id') OR (right(v.key,11)='_concept_id' AND jsonb_typeof(v.value)='string' AND v.value#>>'{}'<>'null'))) SELECT jsonb_build_object('tag',tag,'key',",code,")::text FROM tags ORDER BY (",code,") COLLATE \"C\"")
-    tx$stream(sql,function(text) {
+    if(!is.null(metadata)) .term_project(tx,sql,context,concepts,terms,cancel) else tx$stream(sql,function(text) {
+      .term_check(cancel)
       item <- .store_decode(text);tag <- item$tag;key <- .v2_component(tag,"concept_tag")
       .nv_need(identical(key,item$key),"Concept index codec mismatch")
       entry <- .object(concept_tag=tag,label=NULL,label_state="unavailable")
@@ -112,9 +129,11 @@
   root <- c(context,.object(kind="root",scope_kind=policy$scope_kind,publication_state="ready",eligible_for_current_pointer=TRUE,
     expected_metric_count=as.character(length(assets$metrics)),generated_at=.stamp(),source_schema=.object(sha256=c$observed_schema_sha256,declared_cdm_version=c$declared_cdm_version),source_consistency=.object(within_run=c$consistency_basis,reusable=FALSE,reason_code="source.reuse_not_asserted"),
     disclosure=.object(approval_id=approvalId,policy=policy,policy_sha256=.v2_hash(.v2_bytes(policy))),
-    catalogue=catalogue$finish(),concepts=concepts$finish(),data=data$finish(),terminology=terms$finish()))
+    catalogue=catalogue$finish(),concepts=concepts$finish(),data=data$finish(),terminology=terms$finish()),
+    if(!is.null(metadata)).object(saved_terminology=metadata))
   descriptor <- emit(root,"root","0")
-  writeBin(.v2_bytes(.object(contract_version="2.0.0",publication_id=publicationId,source_id=c$source_id,access_scope_id=scopeId,root=descriptor)),file.path(directory,"publication.json"))
+  .term_check(cancel)
+  writeBin(.v2_bytes(.object(contract_version=version,publication_id=publicationId,source_id=c$source_id,access_scope_id=scopeId,root=descriptor)),file.path(directory,"publication.json"))
   Sys.chmod(file.path(directory,"publication.json"),"0600")
   descriptor
 }
@@ -132,12 +151,13 @@
 #' @param institutionalPolicy Function approving the exact candidate descriptor and policy.
 #' @param expectedRevision Exact current revision string, or NULL to prepare without promotion.
 #' @export
-publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,exportDir,accessScopeId,approvalId,policy,institutionalPolicy,expectedRevision=NULL) {
+publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,exportDir,accessScopeId,approvalId,policy,institutionalPolicy,expectedRevision=NULL,savedTerminology=NULL,cancel=function()FALSE) {
   .nv_need(.string(exportDir) && !file.exists(exportDir),"Export directory must be new")
   .nv_need(.string(accessScopeId) && grepl("^[a-z0-9_.:-]{1,128}$",accessScopeId),"Invalid audience identifier")
   .nv_need(.string(approvalId) && grepl("^[A-Za-z0-9_.:-]{1,128}$",approvalId),"Invalid approval identifier")
   .nv_need(is.function(institutionalPolicy),"An explicit institutional policy callback is required")
   if(!is.null(expectedRevision)) .nv_need(.v2_count(expectedRevision) && nchar(expectedRevision)<=18L,"Invalid expected revision")
+  .term_check(cancel)
   parent <- tryCatch(normalizePath(dirname(exportDir),mustWork=TRUE),error=function(e)stop("Export parent directory is unavailable",call.=FALSE))
   destination <- file.path(parent,basename(exportDir))
   lock <- file.path(parent,paste0(".achilles-export-lock-",.hash(destination)))
@@ -152,25 +172,31 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
   },add=TRUE)
   .nv_need(dir.create(file.path(stage,"objects"),mode="0700",showWarnings=FALSE),"Cannot prepare export objects")
   result <- tryCatch(.store_transaction(connectionDetails,resultsSchema,function(tx) {
+    .term_check(cancel);tx<-.publication_tx(tx,cancel)
     validated <- .store_validate(tx,releaseId);.nv_need(validated$context$state=="validated","Validate the release before publication")
-    pub <- .store_new_uuid();root <- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage)
-    .v2_directory(stage)
+    .term_check(cancel)
+    pub <- .store_new_uuid();root <- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel)
+    admittedRoot<-.v2_directory(stage,check=function().term_check(cancel))
     candidate <- .object(publication_id=pub,release_id=releaseId,source_id=validated$context$source_id,access_scope_id=accessScopeId,
       approval_id=approvalId,policy=policy,root=root)
+    if(!is.null(savedTerminology))candidate<-c(candidate,.object(contract_version="2.1.0",saved_terminology=admittedRoot$saved_terminology))
+    .term_check(cancel)
     approved <- tryCatch(isTRUE(institutionalPolicy(candidate)),error=function(e)FALSE)
     .nv_need(approved,"Institutional policy did not approve the candidate")
     receipt <- tx$one(paste0("SELECT receipt_id::text FROM ",tx$schema,".achillesnext_validation_receipt WHERE release_id=",.store_uuid(releaseId)," AND passed AND content_revision=",validated$context$content_revision," AND profile_sha256=",.store_literal(validated$context$profile_sha256)," ORDER BY validated_at DESC LIMIT 1"))
     tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_publication VALUES (",.store_uuid(pub),",",.store_uuid(releaseId),",",.store_uuid(receipt),",",.store_literal(accessScopeId),",",.store_literal(.v2_hash(.v2_bytes(policy))),",",.store_literal(approvalId),",",.store_literal(root$sha256),",'building',now(),null)"))
     # Walk validated reachable objects; never enumerate or reserialize payloads.
     .v2_directory(stage,function(desc,bytes) {
+      .term_check(cancel)
       hex <- paste(sprintf("%02x",as.integer(bytes)),collapse="")
       tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_page_object VALUES (",.store_uuid(pub),",",.store_literal(desc$sha256),",",.store_literal(desc$kind),",decode('",hex,"','hex'))"))
-    })
+    },check=function().term_check(cancel))
     tx$execute(paste0("UPDATE ",tx$schema,".achillesnext_publication SET state='ready',approved_at=now() WHERE publication_id=",.store_uuid(pub)))
     .nv_need(!file.exists(destination) && suppressWarnings(file.rename(stage,destination)),"Cannot finalize approved export")
     ownsDestination <<- TRUE
     # The pointer lock covers only the final CAS, after all validation/file I/O.
     revision <- if(is.null(expectedRevision)) NULL else tx$one(paste0("SELECT ",tx$schema,".promote_publication(",.store_uuid(pub),",",expectedRevision,"::bigint)::text"))
+    .term_check(cancel)
     list(publication_id=pub,root=root,revision=revision,export_dir=destination)
   },isolation=2L),error=function(e) {
     if(ownsDestination && dir.exists(destination)) unlink(destination,recursive=TRUE)

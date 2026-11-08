@@ -119,6 +119,15 @@ suite, not a timing benchmark or production-scale qualification.
 
 ## Action runtime maintenance
 
+The existing compatibility suite runs source-denied saved-label/index tests and
+their independent R/Ajv structural corpus without PostgreSQL. The optional `2.1.0`
+capture/publication/search integration checks run separately through the existing
+marked PostgreSQL serving harness. Both paths reuse the current R/JDBC and Ajv
+installations; no extra job or dependency install is introduced.
+Source capture in that fixture is explicit batch vocabulary work. Provider SQL
+must still target only approved serving views. Local timings do not measure the
+additional hosted duration or certify production scale.
+
 Checkout v7, setup-node v7 and setup-java v6 declare Node 24 as their action
 runtime. This avoids forcing the deprecated Node 20 actions to execute on Node 24.
 The action runtime is separate from the installed test tools: Node 24.11.1,

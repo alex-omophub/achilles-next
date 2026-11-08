@@ -29,7 +29,7 @@
     parts <- strsplit(token,".",fixed=TRUE)[[1]]
     bytes <- jsonlite::base64_dec(paste0(chartr("-_","+/",parts[[1]]),strrep("=",(4L-nchar(parts[[1]])%%4L)%%4L)))
     doc <- .nv_json(bytes);.v2_keys(doc,c("version","context_sha256","selection_sha256","generation","last_key"))
-    .nv_need(identical(token,encode(doc)) && identical(doc$version,1L) && identical(doc$context_sha256,contextHash) && identical(doc$selection_sha256,selection) && identical(doc$generation,state$generation) && .saved_key(doc$last_key))
+    .nv_need(identical(token,encode(doc)) && identical(doc$version,1L) && identical(doc$context_sha256,contextHash) && identical(doc$selection_sha256,selection) && identical(doc$generation,state$generation) && .saved_key(doc$last_key,context$contract_version))
     doc$last_key
   },error=function(e).saved_error("invalid_cursor"))
   run <- function(cancel,work,responseLimit=NULL) tryCatch({
@@ -85,7 +85,7 @@
   })
   scanBody <- function(get,branch,lower=NULL,upper=NULL,limit=1L,cursor=NULL,root=NULL,afterKey=NULL,visit=NULL) {
     names <- c(data="data",metric_catalogue="catalogue",concept_catalogue="concepts",terminology="terminology")
-    if(!.string(branch)||!branch%in%names(names)||!control(limit,1,16)||(!is.null(lower)&&!.saved_key(lower))||(!is.null(upper)&&!.saved_key(upper))||(!is.null(lower)&&!is.null(upper)&&.v2_less(upper,lower))) .saved_error("invalid_request")
+    if(!.string(branch)||!branch%in%names(names)||!control(limit,1,16)||(!is.null(lower)&&!.saved_key(lower,context$contract_version))||(!is.null(upper)&&!.saved_key(upper,context$contract_version))||(!is.null(lower)&&!is.null(upper)&&.v2_less(upper,lower))) .saved_error("invalid_request")
     selection <- .v2_hash(.v2_bytes(.object(branch=branch,lower=lower,upper=upper)))
     after <- if(!is.null(visit))afterKey else if(is.null(cursor))NULL else decode(cursor,selection)
     if(!is.null(after) && ((!is.null(lower)&&.v2_less(after,lower))||(!is.null(upper)&&.v2_less(upper,after)))) .saved_error("invalid_cursor")

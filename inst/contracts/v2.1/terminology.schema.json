@@ -1,0 +1,576 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:achilles-next:saved-terminology:1.0.0",
+  "$comment": "Structural independent oracle. Native R additionally enforces UTF-8 byte limits, control rejection, matching/order, scope membership and complete ID/name equivalence.",
+  "$defs": {
+    "concept_entry": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "concept_tag",
+            "label",
+            "label_state",
+            "label_reason_code",
+            "domain_id",
+            "vocabulary_id"
+          ],
+          "properties": {
+            "concept_tag": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "value"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "id"
+                },
+                "value": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,511}|-[1-9][0-9]{0,511})$"
+                }
+              }
+            },
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 1024
+            },
+            "label_state": {
+              "const": "available"
+            },
+            "label_reason_code": {
+              "type": "null"
+            },
+            "domain_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "vocabulary_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "concept_tag",
+            "label",
+            "label_state",
+            "label_reason_code",
+            "domain_id",
+            "vocabulary_id"
+          ],
+          "properties": {
+            "concept_tag": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind",
+                "value"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "id"
+                },
+                "value": {
+                  "type": "string",
+                  "pattern": "^(0|[1-9][0-9]{0,511}|-[1-9][0-9]{0,511})$"
+                }
+              }
+            },
+            "label": {
+              "type": "null"
+            },
+            "label_state": {
+              "const": "unavailable"
+            },
+            "label_reason_code": {
+              "enum": [
+                "terminology.missing_label",
+                "terminology.id_not_in_snapshot"
+              ]
+            },
+            "domain_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "vocabulary_id": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 128
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "name_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "concept_tag",
+        "label",
+        "label_state",
+        "label_reason_code",
+        "domain_id",
+        "vocabulary_id"
+      ],
+      "properties": {
+        "concept_tag": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "value"
+          ],
+          "properties": {
+            "kind": {
+              "const": "id"
+            },
+            "value": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,511}|-[1-9][0-9]{0,511})$"
+            }
+          }
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024
+        },
+        "label_state": {
+          "const": "available"
+        },
+        "label_reason_code": {
+          "type": "null"
+        },
+        "domain_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "vocabulary_id": {
+          "anyOf": [
+            {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "extension_version",
+        "matching",
+        "label_source",
+        "vocabulary_release",
+        "snapshot_sha256",
+        "capture"
+      ],
+      "properties": {
+        "extension_version": {
+          "const": "1.0.0"
+        },
+        "matching": {
+          "const": "ascii-fold-prefix-v1"
+        },
+        "label_source": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "value",
+                "basis",
+                "assertion_id",
+                "reason_code"
+              ],
+              "properties": {
+                "state": {
+                  "const": "known"
+                },
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "basis": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "assertion_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "reason_code": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "value",
+                "basis",
+                "assertion_id",
+                "reason_code"
+              ],
+              "properties": {
+                "state": {
+                  "const": "unknown"
+                },
+                "value": {
+                  "type": "null"
+                },
+                "basis": {
+                  "type": "null"
+                },
+                "assertion_id": {
+                  "type": "null"
+                },
+                "reason_code": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_.:-]{1,96}$"
+                }
+              }
+            }
+          ]
+        },
+        "vocabulary_release": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "value",
+                "basis",
+                "assertion_id",
+                "reason_code"
+              ],
+              "properties": {
+                "state": {
+                  "const": "known"
+                },
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "basis": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "assertion_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "reason_code": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "value",
+                "basis",
+                "assertion_id",
+                "reason_code"
+              ],
+              "properties": {
+                "state": {
+                  "const": "unknown"
+                },
+                "value": {
+                  "type": "null"
+                },
+                "basis": {
+                  "type": "null"
+                },
+                "assertion_id": {
+                  "type": "null"
+                },
+                "reason_code": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_.:-]{1,96}$"
+                }
+              }
+            }
+          ]
+        },
+        "snapshot_sha256": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{64}$"
+        },
+        "capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "captured_at",
+            "within_capture",
+            "with_aggregate_release"
+          ],
+          "properties": {
+            "captured_at": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{3})?Z$"
+            },
+            "within_capture": {
+              "const": "single_repeatable_read"
+            },
+            "with_aggregate_release": {
+              "const": "not_asserted"
+            }
+          }
+        }
+      }
+    },
+    "snapshot_header": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "kind",
+        "source_id",
+        "release_id",
+        "label_source",
+        "vocabulary_release",
+        "capture"
+      ],
+      "properties": {
+        "contract_version": {
+          "const": "1.0.0"
+        },
+        "kind": {
+          "const": "concept_snapshot"
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "release_id": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"
+        },
+        "label_source": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "value",
+                "basis",
+                "assertion_id",
+                "reason_code"
+              ],
+              "properties": {
+                "state": {
+                  "const": "known"
+                },
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "basis": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "assertion_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "reason_code": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "value",
+                "basis",
+                "assertion_id",
+                "reason_code"
+              ],
+              "properties": {
+                "state": {
+                  "const": "unknown"
+                },
+                "value": {
+                  "type": "null"
+                },
+                "basis": {
+                  "type": "null"
+                },
+                "assertion_id": {
+                  "type": "null"
+                },
+                "reason_code": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_.:-]{1,96}$"
+                }
+              }
+            }
+          ]
+        },
+        "vocabulary_release": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "value",
+                "basis",
+                "assertion_id",
+                "reason_code"
+              ],
+              "properties": {
+                "state": {
+                  "const": "known"
+                },
+                "value": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "basis": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "assertion_id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 256
+                },
+                "reason_code": {
+                  "type": "null"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "state",
+                "value",
+                "basis",
+                "assertion_id",
+                "reason_code"
+              ],
+              "properties": {
+                "state": {
+                  "const": "unknown"
+                },
+                "value": {
+                  "type": "null"
+                },
+                "basis": {
+                  "type": "null"
+                },
+                "assertion_id": {
+                  "type": "null"
+                },
+                "reason_code": {
+                  "type": "string",
+                  "pattern": "^[a-z0-9_.:-]{1,96}$"
+                }
+              }
+            }
+          ]
+        },
+        "capture": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "captured_at",
+            "within_capture",
+            "with_aggregate_release"
+          ],
+          "properties": {
+            "captured_at": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{3})?Z$"
+            },
+            "within_capture": {
+              "const": "single_repeatable_read"
+            },
+            "with_aggregate_release": {
+              "const": "not_asserted"
+            }
+          }
+        }
+      }
+    }
+  }
+}

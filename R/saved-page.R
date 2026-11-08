@@ -28,7 +28,9 @@
   doc <- .v2_verified_bytes(bytes,d,context);common <- .saved_common()
   keys <- character()
   if(d$kind=="root") {
-    .v2_keys(doc,c(common,"kind","scope_kind","publication_state","eligible_for_current_pointer","expected_metric_count","generated_at","source_schema","source_consistency","disclosure","catalogue","concepts","data","terminology"))
+    .nv_need(.term_version(doc$contract_version))
+    .v2_keys(doc,c(common,"kind","scope_kind","publication_state","eligible_for_current_pointer","expected_metric_count","generated_at","source_schema","source_consistency","disclosure","catalogue","concepts","data","terminology",if(doc$contract_version=="2.1.0")"saved_terminology"))
+    if(doc$contract_version=="2.1.0").term_metadata(doc$saved_terminology)
     .nv_need(d$rows=="0" && identical(doc$publication_state,"ready") && isTRUE(doc$eligible_for_current_pointer) && .nv_date(doc$generated_at,TRUE))
     .nv_need(identical(doc$expected_metric_count,as.character(length(assets$metrics))))
     .v2_keys(doc$disclosure,c("approval_id","policy","policy_sha256"))
@@ -50,7 +52,7 @@
     total <- "0";previous <- NULL
     for(child in doc$children) {
       .v2_keys(child,c("lower_key","upper_key","object"))
-      for(n in c("lower_key","upper_key")) .nv_need(.saved_key(child[[n]]),"Invalid index range")
+      for(n in c("lower_key","upper_key")) .nv_need(.saved_key(child[[n]],doc$contract_version),"Invalid index range")
       .nv_need(!.v2_less(child$upper_key,child$lower_key) && (is.null(previous)||.v2_less(previous,child$lower_key)),"Overlapping index coverage")
       .v2_descriptor_check(child$object)
       .nv_need(child$object$kind%in%c("index",doc$index_kind) && child$object$rows!="0")
@@ -78,13 +80,11 @@
         .nv_need(.string(entry$state) && .string(entry$conditional_support$state))
         .v2_dataset(entry,assets);return(entry$metric_id)
       }
-      .v2_keys(entry,c("concept_tag","label","label_state",if(d$kind=="terminology")"domain_id"))
-      .nv_need(identical(entry$label_state,"unavailable") && is.null(entry$label) && (d$kind!="terminology"||is.null(entry$domain_id)),"Unapproved terminology fields")
-      .v2_component(entry$concept_tag,"concept_tag")
+      .term_entry(entry,d$kind,doc$contract_version)
     },"")
   }
   if(!d$kind%in%c("root","index")) .nv_need(as.character(length(keys))==d$rows,"Leaf row count mismatch")
   if(!d$kind%in%c("root","index") && length(keys)>1L) for(i in seq_len(length(keys)-1L)) .nv_need(.v2_less(keys[[i]],keys[[i+1L]]),"Unordered page")
   list(document=doc,lo=if(length(keys))keys[[1]] else NULL,hi=if(length(keys))keys[[length(keys)]] else NULL)
 }
-.saved_key <- function(x) .string(x) && nchar(x,type="bytes")<=2048L && grepl("^[ -~]+$",x)
+.saved_key <- function(x,version="2.0.0") .string(x) && nchar(x,type="bytes")<=(if(identical(version,"2.1.0"))4096L else 2048L) && grepl("^[ -~]+$",x)

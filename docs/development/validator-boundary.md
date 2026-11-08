@@ -17,6 +17,7 @@ Passing a cheaper layer does not establish the guarantees of the next one.
 | Single approved database object | `readResultObject()` and audience-filtered approved views | Bounded saved bytes, hash and supplied source/publication/audience/root context; no CDM queries |
 | Selection shape | Internal `.saved_selection()` / per-report capabilities | Exact supported joint grain, period and explicit summary-selector rules, input budgets; not authorization, existence or result validation |
 | Semantic result access | Native result providers over the verified reader | Approved catalogue states, exact saved equality matches, declared dependency/eligibility evidence and aggregate operation/response budgets; no reaggregation |
+| Saved terminology extension | Locked `inst/contracts/v2.1`, native terminology predicates, snapshot/projection and `.v2_directory()` | Opt-in `2.1.0` provenance, exact captured IDs, matching/order/byte limits, retained-scope and complete name/ID equivalence; per-search name/ID verification under shared budgets |
 | Independent contributor checks | Generated row schema/Ajv, native/Node vectors and Python numerical fixtures | Differential structure and independent arithmetic/count/quantile expectations; no end-user Node requirement |
 
 The native row implementation uses `rows.json`, locked dimension/metadata
@@ -25,6 +26,14 @@ full generated conditional `row.schema.json`. That schema is built by
 `tools/build_result_schema.py` for the independent developer Ajv oracle and
 contains `allOf`/`if`/`then`/`else`, which the finite `.nv_schema()` engine does not
 implement. The difference is intentional ownership, not interchangeable engines.
+
+The optional [saved terminology extension](saved-concepts.md) also has an
+independent locked JSON Schema/Ajv oracle and shared structural vectors. Native
+terminology predicates own byte limits, matching/order, capture identity and
+scope/index closure; `.nv_schema()` does not interpret the full `2.1.0` schema.
+Original `2.0.0` unavailable-label rules remain unchanged; both versions require
+exact ID tags in concept/terminology catalogues. Special tags remain valid in
+their declared data dimensions.
 
 `tools/check_schema_subset.py` now audits the schemas actually consumed by the
 native subset and their locks. Unsupported keywords/types/formats, nonlocal or

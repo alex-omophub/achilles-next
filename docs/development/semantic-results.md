@@ -9,7 +9,7 @@ page descriptors, encoded index keys or SQL. Database reads use only the approve
 serving view; artifact reads need no database credentials or connection.
 
 This is a native provider foundation for later standalone/embedded views. It does
-not add a browser/HTTP transport, a whole-domain viewer, available concept-name search or
+not add a browser/HTTP transport, a whole-domain viewer or
 representative-scale qualification. Existing v1 tracers/viewer remain separate.
 
 ## Host setup and authority
@@ -119,7 +119,7 @@ operation; it is not presented as a zero or an estimated ratio.
 cancel = function() FALSE)` resolves a bounded set of exact IDs from the approved
 saved concept catalogue. `searchConcepts()` reports name-search availability.
 See the [concept guide](saved-concepts.md) for states, exact-ID normalization,
-pagination, provenance and the current explicit absence of a saved name index.
+pagination, provenance and optional approved saved-name search in artifact format 2.1.0.
 Neither method reads a live vocabulary or CDM.
 
 ## Budgets, pagination and cancellation
@@ -174,5 +174,5 @@ The existing marked PostgreSQL publication test compares serialized semantic
 responses in both modes, using independent cursors and excluding diagnostic
 counters. It exercises real approved full catalogue entries, summaries, empty and
 unavailable states, dependencies and live grant revocation with source/store
-access denied. See [conformance](conformance.md). Large inventories, saved-name
-indexes, browser/ATLAS lifecycle and production qualification remain separate gates.
+access denied. See [conformance](conformance.md). Opt-in saved-name indexes have their own versioned capture/projection/admission checks.
+Large inventories, browser/ATLAS lifecycle and production qualification remain separate gates.

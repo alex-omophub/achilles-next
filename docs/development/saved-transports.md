@@ -6,7 +6,9 @@ access, not exported R functions, a browser transport, a public provider protoco
 or a complete report/discovery UI. They query approved precomputed results only.
 The [native semantic provider](semantic-results.md) adds metric discovery,
 typed saved-row selection and denominator/eligibility fetching over these internals.
-Saved concept/name discovery remains separate work. The earlier v1 tracer is unchanged.
+[Saved concept lookup and optional approved-name search](saved-concepts.md) reuse
+these adapters. Artifact `2.1.0` adds the saved-label/index extension; original `2.0.0`
+remains supported with unavailable names. The earlier v1 tracer is unchanged.
 
 ## Authority and pins
 
@@ -91,6 +93,11 @@ success. Use smaller scans or explicitly raise controls within the hard ceilings
 Raw cache size is not a total R/JVM/process memory budget: decoding and the result
 also consume bounded-by-page/row resources. No >64 MiB inventory, million-entry
 search or representative production-scale qualification is claimed here.
+
+The opt-in `2.1.0` name-tree writer uses a fanout of 32 for long Unicode keys, within the
+same 128-child reader ceiling and 256 KiB index limit. Its encoded keys allow 4,096 bytes;
+original `2.0.0` keeps 2,048 bytes. Label-specific limits and scope/index admission are
+documented in the [concept guide](saved-concepts.md).
 
 A bounded operation may reuse already verified decoded pages for multiple exact
 lookups under the same budget and live host checks. That operation-local memo is
