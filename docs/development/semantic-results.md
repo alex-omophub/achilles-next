@@ -175,4 +175,6 @@ responses in both modes, using independent cursors and excluding diagnostic
 counters. It exercises real approved full catalogue entries, summaries, empty and
 unavailable states, dependencies and live grant revocation with source/store
 access denied. See [conformance](conformance.md). Opt-in saved-name indexes have their own versioned capture/projection/admission checks.
-Large inventories, browser/ATLAS lifecycle and production qualification remain separate gates.
+The [large-inventory experiment](inventory-proof.md) separately exercises bounded
+saved access and isolation. Browser/ATLAS lifecycle and representative production
+qualification remain later gates.

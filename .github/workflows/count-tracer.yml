@@ -154,6 +154,10 @@ jobs:
           Rscript --vanilla tests/tracer/saved-provider.R
           Rscript --vanilla tests/tracer/saved-concepts.R
           Rscript --vanilla tests/tracer/saved-labels.R "$RUNNER_TEMP/terminology-corpus.json"
+          Rscript --vanilla tests/tracer/canonical-json.R
+          Rscript --vanilla tests/tracer/validation-spool.R
+          Rscript --vanilla tests/tracer/inventory-inputs.R
+          python3 tools/benchmark/inventory.py all --entries 96 --samples 3 --output-dir "$RUNNER_TEMP/saved-inventory-smoke"
           node packages/contracts/tools/validate-terminology-corpus.mjs "$RUNNER_TEMP/terminology-corpus.json"
           Rscript --vanilla tests/tracer/result-validation-offline.R
           Rscript --vanilla tests/tracer/baseline-reader-once.R

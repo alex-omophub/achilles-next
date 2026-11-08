@@ -128,6 +128,13 @@ Source capture in that fixture is explicit batch vocabulary work. Provider SQL
 must still target only approved serving views. Local timings do not measure the
 additional hosted duration or certify production scale.
 
+Compatibility also runs the frozen canonical-byte oracle, disk-scratch tests and
+a 96-entry [inventory smoke](inventory-proof.md) with six unique IDs: first,
+midpoint and last, plus three deterministic samples. An
+ownership test freezes those small CI controls; million-entry and PostgreSQL
+mirror experiments are opt-in. They reuse the installed dependencies and add no
+workflow job or dependency installation.
+
 Checkout v7, setup-node v7 and setup-java v6 declare Node 24 as their action
 runtime. This avoids forcing the deprecated Node 20 actions to execute on Node 24.
 The action runtime is separate from the installed test tools: Node 24.11.1,

@@ -91,8 +91,10 @@ terminology pages at 1 MiB. Leaf pages contain at most 2,048 rows, with a 64 KiB
 row/entry cap. Budget exhaustion fails the operation without returning partial
 success. Use smaller scans or explicitly raise controls within the hard ceilings.
 Raw cache size is not a total R/JVM/process memory budget: decoding and the result
-also consume bounded-by-page/row resources. No >64 MiB inventory, million-entry
-search or representative production-scale qualification is claimed here.
+also consume bounded-by-page/row resources. The opt-in
+[large-inventory experiment](inventory-proof.md) measures selective reads and
+isolation separately. It does not establish representative production-scale
+qualification or a whole-process memory guarantee.
 
 The opt-in `2.1.0` name-tree writer uses a fanout of 32 for long Unicode keys, within the
 same 128-child reader ceiling and 256 KiB index limit. Its encoded keys allow 4,096 bytes;

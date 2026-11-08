@@ -42,11 +42,13 @@ class CiRuntimeTests(unittest.TestCase):
               'implementation-identity.R','recovery-offline.R','run-ledger-offline.R','recovery.R','publication.R','run-ledger.R',
               'postgresql.R','observation.R','quantile-request.R','measurement.R','measurement.R','analysis-definitions.R',
               'registered-profile-offline.R','source-store-offline.R','measurement-baseline-offline.R','refresh-contract-offline.R','core-metadata-offline.R',
-              'persistence-offline.R','batch-plan.R','refresh-execution-offline.R','saved-selection.R','saved-transport.R','saved-provider.R','saved-concepts.R','saved-labels.R']
+              'persistence-offline.R','batch-plan.R','refresh-execution-offline.R','saved-selection.R','saved-transport.R','saved-provider.R','saved-concepts.R','saved-labels.R',
+              'canonical-json.R','validation-spool.R','inventory-inputs.R']
         expected=Counter(('tests/tracer/'+name,'compatibility') for name in core)
         expected.update({('tools/test_result_serving.py','compatibility'):3,
                          ('tools/benchmark/weighted_quantiles.py','compatibility'):1,
                          ('tools/benchmark/batch_primitives.py','compatibility'):1,
+                         ('tools/benchmark/inventory.py','compatibility'):1,
                          ('tests/tracer/domain-review-offline.R','domain'):1,
                          ('tools/test_population_baseline.py','domain'):1,
                          ('tools/test_domain_baseline.py','domain'):1,
@@ -55,6 +57,10 @@ class CiRuntimeTests(unittest.TestCase):
                          ('tools/test_characterization_refresh.py','measurement'):1,
                          ('tools/test_refresh_operations.py','measurement'):1})
         self.assertEqual(Counter((path,suite) for path,args,suite in assignments),expected)
+        inventory=[shlex.split(args) for path,args,suite in assignments if path=='tools/benchmark/inventory.py']
+        self.assertEqual(len(inventory),1)
+        self.assertEqual(inventory[0][inventory[0].index('--entries')+1],'96')
+        self.assertEqual(inventory[0][inventory[0].index('--samples')+1],'3')
         complete=[args for path,args,suite in assignments if path=='tools/test_core_characterization.py']
         self.assertEqual(len(complete),1)
         self.assertIn('--full-matrix',shlex.split(complete[0]))

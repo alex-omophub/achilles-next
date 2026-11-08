@@ -13,6 +13,11 @@
     return(paste0("[", paste(vapply(x, .json, ""), collapse = ","), "]"))
   }
   if (length(x) != 1L || anyNA(x)) stop("JSON values must be explicit scalars or lists", call. = FALSE)
+  # Plain ASCII without double quotes, slashes, backslashes or control bytes needs no escaping.
+  # Keep jsonlite authoritative for every other scalar, encoding and R class.
+  if (is.character(x) && is.null(attributes(x)) &&
+      grepl("\\A[\\x20-\\x21\\x23-\\x2e\\x30-\\x5b\\x5d-\\x7e]*\\z",x,perl=TRUE,useBytes=TRUE))
+    return(paste0('"',x,'"'))
   as.character(jsonlite::toJSON(x, auto_unbox = TRUE, digits = NA))
 }
 .hash <- function(x) digest::digest(charToRaw(enc2utf8(x)), algo = "sha256", serialize = FALSE)

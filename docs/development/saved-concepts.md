@@ -200,5 +200,8 @@ Run `tests/tracer/saved-labels.R` and the existing marked PostgreSQL publication
 suite for compatibility, signed/large IDs, long Unicode names, duplicate names,
 row/byte continuations, snapshots, explicit extension rollback/idempotence,
 both-mode exact bytes, audience scope, revocation and previous-publication safety.
-Million-entry search, >64 MiB inventory, process memory and production UI remain
-separate qualification work.
+The opt-in [large-inventory experiment](inventory-proof.md) covers a deterministic
+million-entry saved catalogue, scoped search, process telemetry and isolation.
+Its synthetic workload does not qualify arbitrary label distributions,
+representative generation, whole-process memory, browser/ATLAS lifecycle or
+production UI. Process telemetry describes the measured workers only.
