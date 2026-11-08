@@ -1,0 +1,93 @@
+tools/benchmark/inventory_fixture.py
+  s_895f6ebe145fd3::t_63fbad57a28330 1-111,114-149
+  s_895f6ebe145fd3::t_dafa6733fc12b5 112-113
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_c7e16c60a5d0ef 157-159
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_3830cb90b93d9e 45-46,51,60-63
+R/result-artifact.R
+  s_895f6ebe145fd3::t_027ce0288bb055 103-104,118,120,122-123
+  s_895f6ebe145fd3::t_c20528a41e630b 21-22
+  s_895f6ebe145fd3::t_7200692c07ff04 19,23,100-101,134,136-139,152,154,157-158,196-197,203-204,211-212
+R/count-tracer.R
+  s_895f6ebe145fd3::t_88665e8b558462 17-18,20
+  s_895f6ebe145fd3::t_1b3ccd232b488a 16,19
+R/validation-spool.R
+  s_895f6ebe145fd3::t_7200692c07ff04 8,16,38,47
+  s_895f6ebe145fd3::t_c20528a41e630b 4-5,42
+  s_895f6ebe145fd3::t_3d9bec7ccca7c1 1-3,6-7,9-15,17-37,39-41,43-46,48-92
+docs/development/inventory-proof.md
+  s_895f6ebe145fd3::t_66d0dcac800a49 43-44,79
+  s_895f6ebe145fd3::t_afc5ea0454b613 34-36
+  s_895f6ebe145fd3::t_6cc742c0f2fa74 101-106,116
+  s_895f6ebe145fd3::t_8ec2d67379686a 1-8,12-33,37-42,45-78,80-100,107-115,117-123
+  s_895f6ebe145fd3::t_30696570c45187 9-11
+tests/tracer/validation-spool.R
+  s_895f6ebe145fd3::t_9be8818504f099 1-21,34-35
+  s_895f6ebe145fd3::t_c7e16c60a5d0ef 22-33
+docs/development/saved-concepts.md
+  s_895f6ebe145fd3::t_afc5ea0454b613 203-206
+tests/tracer/inventory-proof.R
+  s_895f6ebe145fd3::t_bfc1aaee24f0de 1,3,5-6,10,12-13,15-16,20-42,45,53-58,71-74,76-99,101-104,106-108,110-113,125,127
+  s_895f6ebe145fd3::t_ace6ae7a0235d6 2,7-9,75,100,105,109,114-121
+  s_895f6ebe145fd3::t_0f5424113f3a01 11
+  s_895f6ebe145fd3::t_4c6d554196f7d1 17-19,122-124
+  s_895f6ebe145fd3::t_8c5f6d6fb4fafe 43-44,46-52
+  s_895f6ebe145fd3::t_c7e16c60a5d0ef 4,14,126
+  s_895f6ebe145fd3::t_6cc742c0f2fa74 59-70
+docs/development/saved-transports.md
+  s_895f6ebe145fd3::t_afc5ea0454b613 94-97
+tests/test_inventory_fixture.py
+  s_895f6ebe145fd3::t_e05efff9c770cb 5,7,10,15-17,50-74
+  s_895f6ebe145fd3::t_8ec2d67379686a 1-4,6,8-9,11-14,18-49,75-77
+docs/development/semantic-results.md
+  s_895f6ebe145fd3::t_afc5ea0454b613 178-180
+docs/development/ci.md
+  s_895f6ebe145fd3::t_afc5ea0454b613 131-136
+tools/benchmark/inventory.R
+  s_895f6ebe145fd3::t_9131c0b1517873 35,44,57
+  s_895f6ebe145fd3::t_6350a5ad3036d7 111
+  s_895f6ebe145fd3::t_66d0dcac800a49 118,120
+  s_895f6ebe145fd3::t_8311b718184837 74,76,112
+  s_895f6ebe145fd3::t_63fbad57a28330 1-2,9-12,24-25,28-34,69-70,72-73,75,77-79,81,83-91,121-122
+  s_895f6ebe145fd3::t_6f0875d866623d 115-117
+  s_895f6ebe145fd3::t_140b286c5dc725 6-7,13-23,26,82
+  s_895f6ebe145fd3::t_dafa6733fc12b5 60
+  s_895f6ebe145fd3::t_55221c6c88eecd 5,36-43,45-56,58-59,64-66,93-109
+  s_895f6ebe145fd3::t_88a43b0f94d923 8,27
+  s_895f6ebe145fd3::t_30696570c45187 67,80,114
+  s_895f6ebe145fd3::t_0f5424113f3a01 68,71,113
+  s_895f6ebe145fd3::t_125dd6307e83cc 3-4,92,119
+  s_895f6ebe145fd3::t_bfc1aaee24f0de 61-63,110
+tools/benchmark/inventory.py
+  s_895f6ebe145fd3::t_140b286c5dc725 1-7,9-15,17-20,22-27,30-34,47-79,89-96
+  s_895f6ebe145fd3::t_125dd6307e83cc 8,16,21,28-29,35-46,80-81
+  s_895f6ebe145fd3::t_4023327f26b606 82-88
+tests/tracer/canonical-json.R
+  s_895f6ebe145fd3::t_07c180ac7c9c89 27
+  s_895f6ebe145fd3::t_88665e8b558462 1-26,28-33
+README.md
+  s_895f6ebe145fd3::t_afc5ea0454b613 24-26
+tools/benchmark/inventory_database.py
+  s_895f6ebe145fd3::t_6350a5ad3036d7 109-117,154
+  s_895f6ebe145fd3::t_55221c6c88eecd 1-6,8-17,19-26,28-40,44-54,58-89,96-108,118-138,141-146,151-152,155-164
+  s_895f6ebe145fd3::t_125dd6307e83cc 18,139-140
+  s_895f6ebe145fd3::t_8311b718184837 27,41-43,55-57,147-150,153
+  s_895f6ebe145fd3::t_2e2ce91bd2028b 7,90-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f2fc4bd19f327649dd0b3e718659d6c22985bcf6",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
