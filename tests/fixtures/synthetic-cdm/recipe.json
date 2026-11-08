@@ -1,0 +1,25 @@
+{
+  "id": "synthetic-cdm-preview-v1",
+  "revision": "1.0.0",
+  "default_seed": 2026110801,
+  "history_start": "2020-01-01",
+  "history_end": "2020-03-31",
+  "concepts_per_domain": 10,
+  "known_unit_ids": [200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215],
+  "domain_weights": {
+    "condition": 1200,
+    "drug": 1800,
+    "procedure": 800,
+    "visit": 600,
+    "device": 200,
+    "observation": 1000,
+    "death": 10,
+    "specimen": 190,
+    "measurement": 4200
+  },
+  "limitations": [
+    "Invented data for contributor preview and correctness checks, not clinical data or a calibrated scale workload.",
+    "Clinical tables intentionally retain repeated source IDs and identical rows; primary keys/foreign keys are not installed.",
+    "Large tiers are disabled by hard code limits; no override or scale-qualification claim."
+  ]
+}
