@@ -1,0 +1,26 @@
+tests/tracer/saved-walkthrough.R
+  s_895f6ebe145fd3::t_669cf7c3149d73 113
+docs/development/saved-walkthrough.md
+  s_895f6ebe145fd3::t_669cf7c3149d73 40
+  s_895f6ebe145fd3::t_5a894019f431b1 41-42
+docs/development/semantic-results.md
+  s_895f6ebe145fd3::t_669cf7c3149d73 168-170
+  s_895f6ebe145fd3::t_5a894019f431b1 174-175
+  s_895f6ebe145fd3::t_33620aa5131ba7 173
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "76ffc5a1baf5b6b1c333f04c663210761a5364c2",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
