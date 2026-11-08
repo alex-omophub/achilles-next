@@ -35,8 +35,13 @@ Enablement is explicit, transactional and owner-only through PostgreSQL privileg
 It locks before reading store state and uses read-committed isolation for concurrent
 first-call idempotence. It verifies the installed base version, exact publication
 guard body and its enabled unconditional row-level BEFORE INSERT/UPDATE trigger
-binding before
-adding extension marker saved-terminology/1.0.0 and support for roots 2.0.0/2.1.0.
+binding. It holds a publication-table lock against trigger DDL and reapplies the
+guard's existing COST with owner-permitted ALTER FUNCTION before reading its body.
+The resulting catalog tuple write lock protects body validation/replacement and
+the already-enabled check until commit, without requiring catalog UPDATE grants.
+Committed customizations are refused and concurrent catalog conflicts abort
+without repair. Enablement adds extension marker saved-terminology/1.0.0 and
+support for roots 2.0.0/2.1.0.
 A modified guard or incompatible marker is refused; no automatic repair occurs.
 Existing pages, releases, current pointers and the base storage version are unchanged.
 No source access occurs during enablement. It is not an in-place artifact migration.

@@ -29,6 +29,15 @@ enableSavedTerminology <- function(connectionDetails,resultsSchema) {
       .store_literal(resultsSchema)," AND c.relname='achillesnext_publication' AND t.tgname='publication_transition' AND NOT t.tgisinternal AND t.tgenabled IN ('O','A') AND t.tgtype=23 AND t.tgnargs=0 AND t.tgqual IS NULL AND t.tgattr=''::pg_catalog.int2vector AND f.nspname=",
       .store_literal(resultsSchema)," AND p.proname='guard_publication_transition' AND p.pronargs=0 AND p.prorettype='pg_catalog.trigger'::pg_catalog.regtype"))
     .nv_need(identical(binding,"1"),"Modified publication trigger; no migration or repair attempted")
+    # The relation lock above protects trigger DDL, not pg_proc updates. A
+    # same-cost owner ALTER takes the catalog tuple write lock until commit;
+    # only then read the body. Direct SELECT FOR UPDATE on pg_proc would require
+    # catalog UPDATE privileges, which the store owner must not need.
+    cost<-tx$one(paste0("SELECT p.procost::text FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=",
+      .store_literal(resultsSchema)," AND p.proname='guard_publication_transition' AND p.pronargs=0"))
+    .nv_need(grepl("^[0-9]+([.][0-9]+)?([eE][+-]?[0-9]+)?$",cost)&&is.finite(as.numeric(cost))&&as.numeric(cost)>0,
+      "Invalid publication guard cost; no migration or repair attempted")
+    tx$execute(paste0("ALTER FUNCTION ",tx$schema,".guard_publication_transition() COST ",cost))
     body<-tx$one(paste0("SELECT p.prosrc FROM pg_catalog.pg_proc p JOIN pg_catalog.pg_namespace n ON n.oid=p.pronamespace WHERE n.nspname=",
       .store_literal(resultsSchema)," AND p.proname='guard_publication_transition' AND p.pronargs=0"))
     exists<-tx$one(paste0("SELECT (pg_catalog.to_regclass(",.store_literal(paste0(tx$schema,".achillesnext_storage_extension")),") IS NOT NULL)::text"))=="true"

@@ -70,7 +70,13 @@ store `2.0.0`. It locks before reading store state and uses read-committed
 transactions so concurrent first calls yield one installation and one no-op.
 It verifies the exact installed publication guard and its enabled, unconditional,
 row-level BEFORE INSERT/UPDATE trigger binding while holding a publication-table
-lock against trigger DDL. It adds `saved-terminology/1.0.0` capability and allows
+lock against trigger DDL. Before reading the guard body, it reapplies the function's
+existing `COST` using owner-permitted `ALTER FUNCTION`. This holds the `pg_proc`
+tuple write lock until commit, serializing concurrent function replacement with
+both first enablement and the already-enabled check. Catalog `UPDATE` grants are
+not required. A customization committed before that lock is checked and refused;
+a concurrent catalog conflict aborts the transaction without repair.
+It adds `saved-terminology/1.0.0` capability and allows
 physical roots `2.0.0`/`2.1.0`.
 Repeated enablement is a no-op only when marker and definition agree; modified
 functions/markers are refused without repair. The base storage version stays
