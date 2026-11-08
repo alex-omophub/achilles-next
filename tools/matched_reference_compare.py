@@ -88,10 +88,19 @@ def expected_capabilities(model):
     return result
 
 
+def metadata_values(rows,dimension):
+    result={}
+    for row in rows:
+        key=row['dimensions'][dimension]
+        need(key not in result,'Duplicate metadata dimension: '+dimension)
+        result[key]=row['values']
+    return result
+
+
 def check_metadata(snapshot,model):
     semantic(snapshot)
     rows=snapshot['rows'];datasets=snapshot['datasets']
-    got={r['dimensions']['probe_id']:r['values'] for r in rows['core.source.capabilities']}
+    got=metadata_values(rows['core.source.capabilities'],'probe_id')
     need(got==expected_capabilities(model),'Independent physical capability expectations differ')
     passport=rows['core.source.passport'][0]['values']
     need(passport['source_id']==snapshot['source_id'] and passport['declared_cdm_version']==snapshot['version'],'Source passport mismatch')
@@ -101,7 +110,7 @@ def check_metadata(snapshot,model):
     unknown=dict(state='unknown',value=None,basis=None,assertion_id=None,reason_code='source.no_verified_release')
     need(passport['source_release']==unknown and passport['vocabulary_release']==unknown,'Unverified source identity claimed')
     need(passport['profile']==dict(id=PROFILE['profile_id'],revision=PROFILE['revision'],sha256=hashlib.sha256(PROFILE_PATH.read_bytes()).hexdigest()),'Profile passport mismatch')
-    ledger={r['dimensions']['metric_id']:r['values'] for r in rows['core.execution.output_status']}
+    ledger=metadata_values(rows['core.execution.output_status'],'metric_id')
     need(set(ledger)==IDS,'Incomplete output ledger')
     for mid,d in datasets.items():
         need(ledger[mid]==dict(state=d['state'],reason_code=d['reason_code'],required=d['required'],coverage=d['completeness'],integrity=dict(state='not_validated',sha256=None,reason_code='validation.pending_receipt')),'Output ledger differs: '+mid)

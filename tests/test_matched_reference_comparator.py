@@ -1,5 +1,6 @@
 """Independent-comparator scope, precision and factual-normalization safeguards."""
 import copy
+import hashlib
 import json
 import tempfile
 from unittest.mock import Mock,patch
@@ -39,6 +40,26 @@ def snapshot():
     return dict(datasets=datasets,rows=rows)
 
 
+def metadata_snapshot():
+    # Complete metadata inputs for the checker; no native clinical-validity claim.
+    model=dict(columns=dict(person=dict(person_id='bigint')),tables=dict(person=[dict(person_id='1')]),denied_tables=[])
+    value=snapshot();value.update(source_id='fixture:metadata',version='5.5',schema_sha256='a'*64)
+    for d in value['datasets'].values():d.update(required=True,reason_code=None)
+    unknown=dict(state='unknown',value=None,basis=None,assertion_id=None,reason_code='source.no_verified_release')
+    passport=dict(source_id=value['source_id'],declared_cdm_version=value['version'],source_release=unknown,vocabulary_release=unknown,
+        observed_schema=dict(sha256=value['schema_sha256'],reason_code=None),
+        coverage=dict(scope_kind='standard_full',complete=True,excluded_record_count='0',reason_code=None),
+        consistency=dict(within_run='single_repeatable_read',reusable=False,reason_code='source.no_verified_release'),
+        profile=dict(id=SQL.PROFILE['profile_id'],revision=SQL.PROFILE['revision'],sha256=hashlib.sha256(SQL.PROFILE_PATH.read_bytes()).hexdigest()),
+        generation=value['rows']['core.source.passport'][0]['values']['generation'])
+    value['rows']['core.source.passport'][0]['values']=passport
+    value['rows']['core.source.capabilities']=[cell('probe-'+p,v,dict(probe_id=p)) for p,v in COMPARE.expected_capabilities(model).items()]
+    value['rows']['core.execution.output_status']=[cell('ledger-'+mid,dict(state=d['state'],reason_code=None,required=True,coverage=d['completeness'],
+        integrity=dict(state='not_validated',sha256=None,reason_code='validation.pending_receipt')),dict(metric_id=mid)) for mid,d in value['datasets'].items()]
+    for mid,d in value['datasets'].items():d['rows']=str(len(value['rows'][mid]))
+    return value,model
+
+
 class MatchedReferenceTest(unittest.TestCase):
     def test_all_versions_compile_complete_pinned_numerical_inventory(self):
         for version in ['5.3','5.4','5.5']:
@@ -65,8 +86,10 @@ class MatchedReferenceTest(unittest.TestCase):
         timing=b['rows'][COMPARE.TIMING];timing[0]['values']['duration_ms']='1000'
         timing.append(cell('stage',copy.deepcopy(timing[0]['values']),dict(operation_id='stage.reference.numeric',phase='materialization')))
         b['datasets'][COMPARE.TIMING]['rows']=str(len(timing))
+        before_a,before_b=copy.deepcopy(a),copy.deepcopy(b)
         self.assertEqual(COMPARE.compare_pair(a,b)['metric_count'],142)
-        self.assertNotEqual(a,b) # The comparison does not modify its inputs.
+        self.assertEqual(a,before_a)
+        self.assertEqual(b,before_b)
 
     def test_precision_states_denominators_and_null_tags_are_not_normalized(self):
         for change in ['decimal','count','state','reason','denominator','tag','row_key','schema']:
@@ -148,6 +171,19 @@ class MatchedReferenceTest(unittest.TestCase):
         self.assertEqual(denied['measurement.value_as_number']['state'],'inaccessible')
         self.assertEqual(denied['measurement.value_as_number']['reason_code'],'capability.select_denied')
         self.assertEqual(denied['person.person_id']['state'],'available')
+
+    def test_metadata_rejects_repeated_logical_ids_even_with_distinct_row_keys(self):
+        original,model=metadata_snapshot()
+        COMPARE.check_metadata(original,model)
+        for mid,dimension in [('core.source.capabilities','probe_id'),('core.execution.output_status','metric_id')]:
+            for different_values in [False,True]:
+                with self.subTest(mid=mid,different_values=different_values):
+                    bad=copy.deepcopy(original);rows=bad['rows'][mid];duplicate=copy.deepcopy(rows[0])
+                    duplicate['row_key']='different-row-key'
+                    if different_values:duplicate['values']['state']='wrong'
+                    rows.insert(0,duplicate) # The old dict comprehension kept the final correct row.
+                    bad['datasets'][mid]['rows']=str(len(rows))
+                    with self.assertRaisesRegex(ValueError,'Duplicate metadata dimension: '+dimension):COMPARE.check_metadata(bad,model)
 
 
 if __name__=='__main__':unittest.main()

@@ -213,6 +213,8 @@ dependencies. Node remains unnecessary for end-user admission/viewing. See the
 [concept guide](saved-concepts.md) for format/matching/capture boundaries. These
 are bounded synthetic proofs, not million-entry or representative-scale evidence.
 
+## Matched reference comparator
+
 The opt-in [full-profile matched reference comparator](../benchmark/matched-reference.md)
 executes independent numerical SQL and the installed optimized generator against
 one imported PostgreSQL snapshot, then checks all 142 outputs and complete

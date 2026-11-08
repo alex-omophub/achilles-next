@@ -65,9 +65,10 @@ with source manifests and preserved duplicate bags. Independent count and
 exact-summary checks run in the opt-in PostgreSQL proof. Larger tiers are
 disabled; this is contributor test data, not scale qualification.
 
-The [matched reference comparator](docs/benchmark/matched-reference.md) checks all
-142 core outputs on small sources, using independent per-output numerical SQL
-and the same native validation, projection, publication and export boundaries.
+The [matched reference comparator](docs/benchmark/matched-reference.md) uses
+independent SQL for 138 numerical outputs and separately compares four operational
+metadata outputs. Both paths use the same native validation, projection,
+publication and export boundaries on small sources.
 
 The contributor [saved-representation experiment](docs/benchmark/saved-representation.md)
 compares tree and flat-index routing over identical precomputed pages. The

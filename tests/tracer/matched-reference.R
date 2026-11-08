@@ -68,7 +68,8 @@ local({
       candidate<-if(path=='optimized')referenceOptimized(env$fixtureConnection(),one$schema,sourceId,results,one$version,snapshot$ID,witnesses) else
         referenceGenerate(env$fixtureConnection(),one$schema,sourceId,results,one$version,compiled,snapshot$ID,witnesses)
       generationMs<-f('.run_ms')(begin)
-      snap<-capture(candidate);snap$source_id<-sourceId;snap$version<-one$version;snap$generated_metric_count<-'142'
+      stopifnot(identical(candidate$generated_metric_count,'142'),isTRUE(candidate$profile_complete),identical(candidate$publishable,FALSE))
+      snap<-capture(candidate);snap$source_id<-sourceId;snap$version<-one$version;snap$generated_metric_count<-candidate$generated_metric_count
       stopifnot(snap$rows[['core.person.count']][[1]]$values$person_count==before)
       paths[[path]]<-list(snapshot=snap,generation_ms=generationMs);candidates[[path]]<-candidate
     }

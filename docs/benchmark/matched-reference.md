@@ -56,6 +56,13 @@ separate compiler is broader than `numericStrategy="reference"`, which switches
 only the existing measurement rank kernel while retaining shared production
 classification/report logic.
 
+Numeric-summary eligibility counts are local to the allowed summary strata:
+known units, and NULL/zero operators for measurement. Unit/operator exclusions
+therefore have zero counts within those strata; full-source exclusions are
+reported by each domain's `numeric_eligibility_count`. Range-boundary summaries
+have a separate frozen rule retaining excluded-unit eligibility-only rows. That
+exception does not apply to numeric summaries.
+
 The reference and optimized paths deliberately share the exact row codec,
 denominator binding, bounded aggregate writer/store, capability preflight and
 provenance serialization, native validation, policy/projection, publication/export
