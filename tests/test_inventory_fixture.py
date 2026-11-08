@@ -118,7 +118,7 @@ with tempfile.TemporaryDirectory() as folder:
         else:raise RuntimeError('Optimized build accepted an oversized page')
 '''
         import subprocess
-        subprocess.run([sys.executable,'-O','-c',code,str(MODULE.parent)],check=True,capture_output=True)
+        subprocess.run([sys.executable,'-O','-c',code,str(MODULE.parent)],check=True)
 
 
 if __name__ == '__main__':unittest.main()

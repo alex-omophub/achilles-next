@@ -7,6 +7,7 @@
 }
 .inventory_reader_server <- function(host,database) {
   if(!is.character(host)||length(host)!=1L||is.na(host)||!nzchar(host)||grepl('[/\\\\\r\n]',host)||
-     !identical(database,'achilles_next_fixtures'))stop('Invalid inventory reader target',call.=FALSE)
+     grepl('[[:space:]]',host)||!identical(database,'achilles_next_fixtures'))
+    stop('Invalid inventory reader target',call.=FALSE)
   paste0(host,'/',database)
 }

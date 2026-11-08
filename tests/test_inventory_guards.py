@@ -6,9 +6,12 @@ import tempfile
 import unittest
 from unittest.mock import Mock,patch
 
-sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools/benchmark'))
-import inventory_database as MIRROR
-sys.path.pop(0)
+_import_path = sys.path[:]
+try:
+    sys.path.insert(0,str(Path(__file__).resolve().parents[1]/'tools/benchmark'))
+    import inventory_database as MIRROR
+finally:
+    sys.path[:] = _import_path
 
 
 class InventoryGuardsTest(unittest.TestCase):
@@ -56,4 +59,6 @@ class InventoryGuardsTest(unittest.TestCase):
         self.assertEqual(MIRROR.reader_host('127.0.0.2'),'127.0.0.2')
         self.assertEqual(MIRROR.reader_host('/tmp'),'127.0.0.1')
         self.assertEqual(MIRROR.reader_host('/tmp','localhost'),'localhost')
-        with self.assertRaisesRegex(ValueError,'TCP hostname'):MIRROR.reader_host('/tmp','/other/socket')
+        for host in ['/other/socket','',' localhost','localhost ','host name','host\tname','host\nname']:
+            with self.subTest(host=host),self.assertRaisesRegex(ValueError,'TCP hostname'):
+                MIRROR.reader_host('/tmp',host)

@@ -76,6 +76,7 @@ owner are guarded before mutation; the owner must be the fixture owner in the
 marked fixture database and match the admin server's startup/port identity.
 The JDBC reader uses the selected TCP admin host; socket paths default to
 `127.0.0.1`, with `--reader-host` available for an explicit TCP mapping.
+Reader hosts containing whitespace are rejected rather than trimmed.
 It refuses an unmarked database. A temporary
 NOSUPERUSER role gets only serving-schema/view access; explicit privilege checks
 deny CDM and mirror-store schema access. Schemas and role are removed in `finally`.

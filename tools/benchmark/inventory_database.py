@@ -30,7 +30,7 @@ def guard_connections(admin, owner):
 def reader_host(admin_host, override=None):
     # JDBC requires TCP; preserve a selected TCP host and map socket defaults.
     host = override if override is not None else '127.0.0.1' if admin_host.startswith('/') else admin_host
-    if not host or any(c in host for c in '/\\\r\n\x00'):
+    if not host or any(c in host for c in '/\\\r\n\x00') or any(c.isspace() for c in host):
         raise ValueError('Reader host must be a TCP hostname or address')
     return host
 
