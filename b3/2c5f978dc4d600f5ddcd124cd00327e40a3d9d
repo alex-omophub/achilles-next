@@ -1,0 +1,28 @@
+tests/tracer/result-store.R
+  s_895f6ebe145fd3::t_ae85f2a5c5026d 144-145,151
+  s_895f6ebe145fd3::t_87912f4364429b 142-143,146-150,153-205,207-214
+  s_895f6ebe145fd3::t_991f3d5049316d 152,206
+R/terminology-extension.R
+  s_895f6ebe145fd3::t_12dc01151a1256 32-40
+man/savedTerminology.Rd
+  s_895f6ebe145fd3::t_e2cf018d950c73 38-42
+  s_895f6ebe145fd3::t_991f3d5049316d 43-44
+docs/development/saved-concepts.md
+  s_895f6ebe145fd3::t_e2cf018d950c73 73-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b32c5f978dc4d600f5ddcd124cd00327e40a3d9d",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
