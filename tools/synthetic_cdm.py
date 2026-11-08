@@ -34,7 +34,9 @@ def mix(value):
     return value ^ (value >> 31)
 
 
-def plan(people=20, events=1000, seed=2026110801, version='5.5'):
+def plan(people=20, events=1000, seed=None, version='5.5'):
+    if seed is None:
+        seed = json.loads(RECIPE.read_bytes())['default_seed']
     if (type(people) is not int or not 0 <= people <= MAX_PEOPLE or
         type(events) is not int or not 0 <= events <= MAX_EVENTS or
         type(seed) is not int or not 0 <= seed <= 2**32-1 or
@@ -241,7 +243,7 @@ def materialize(parameters, directory=None):
                 qualification='bounded_preview_only_not_large_tier_or_clinical_validation')
 
 
-def generate(directory, people=20, events=1000, seed=2026110801, version='5.5'):
+def generate(directory, people=20, events=1000, seed=None, version='5.5'):
     parameters = plan(people,events,seed,version) # Reject large work before any output.
     assets(parameters) # Check pinned inputs before creating the new directory.
     directory = Path(directory);directory.mkdir(mode=0o700)
@@ -252,6 +254,8 @@ def generate(directory, people=20, events=1000, seed=2026110801, version='5.5'):
         (directory/'manifest.json').write_bytes(raw)
         return manifest
     except BaseException:
+        # Python exceptions (including KeyboardInterrupt) unwind here. Process
+        # termination such as SIGTERM/SIGKILL does not guarantee cleanup.
         shutil.rmtree(directory)
         raise
 

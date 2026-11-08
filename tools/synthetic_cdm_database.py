@@ -44,9 +44,12 @@ def drop_preview(pg, loaded):
     schema = loaded['schema']
     if not re.fullmatch('cdm_synthetic_[0-9a-f]{12}',schema):
         raise ValueError('Not a generated preview schema')
+    marker = loaded.get('marker')
+    if not isinstance(marker,str) or not re.fullmatch(re.escape(MARKER)+r': preview:[0-9a-f]{64}',marker):
+        raise ValueError('Refusing cleanup of unowned/unmarked preview schema: invalid marker')
     found = pg.rows("SELECT obj_description(oid,'pg_namespace') AS marker, "
                     "nspowner=(SELECT oid FROM pg_roles WHERE rolname=current_user) AS owned "
                     f"FROM pg_namespace WHERE nspname={literal(schema)}")
-    if found != [dict(marker=loaded['marker'],owned=True)]:
+    if found != [dict(marker=marker,owned=True)]:
         raise ValueError('Refusing cleanup of unowned/unmarked preview schema')
     pg.run('DROP SCHEMA '+identifier(schema)+' CASCADE;')

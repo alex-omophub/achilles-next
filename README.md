@@ -55,9 +55,10 @@ The [v1 result/provider/embed contracts](docs/contracts/v1.md) add versioned sch
 The [synthetic PostgreSQL reference benchmark](docs/benchmark/reference.md) checks pinned legacy counts/distributions against an independent oracle and captures separate execution/export timings on fixture and deterministic cardinality workloads.
 
 The [bounded synthetic CDM generator](docs/benchmark/synthetic-cdm.md) creates
-reproducible small PostgreSQL CDM 5.3/5.4/5.5 previews with source manifests,
-preserved duplicate bags and independent count/exact-summary checks. Larger
-tiers are disabled; this is contributor test data, not scale qualification.
+reproducible small CSV previews for the pinned PostgreSQL CDM 5.3/5.4/5.5 DDL,
+with source manifests and preserved duplicate bags. Independent count and
+exact-summary checks run in the opt-in PostgreSQL proof. Larger tiers are
+disabled; this is contributor test data, not scale qualification.
 
 The contributor [saved-representation experiment](docs/benchmark/saved-representation.md)
 compares tree and flat-index routing over identical precomputed pages. The

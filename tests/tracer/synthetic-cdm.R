@@ -46,7 +46,7 @@ local({
     denied<-tryCatch({
       f('.store_transaction')(env$fixtureConnection(),results,function(tx)tx$one(paste0('SELECT count(*)::text FROM "',one$schema,'".person')),readOnly=TRUE)
       FALSE
-    },error=function(e)TRUE)
+    },error=function(e)grepl('permission denied',conditionMessage(e),fixed=TRUE))
     stopifnot(denied)
     sealResultRelease(env$fixtureConnection('owner'),results,generated$release_id)
     validateResultRelease(env$fixtureConnection('owner'),results,generated$release_id)

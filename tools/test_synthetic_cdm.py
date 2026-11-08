@@ -54,7 +54,7 @@ def main():
         if cleanup_errors:raise RuntimeError('Preview cleanup failed; inspect owned synthetic schemas') from cleanup_errors[0]
     report['source_cleanup_completed']=True
     (out/'oracle.json').write_text(json.dumps(report,indent=2)+'\n')
-    print(f'PASS: {len(proofs)} tiny synthetic CDM cases; bag counts, exact summaries and complete native candidates; disposable sources removed')
+    print(f'PASS: {len(proofs)} tiny synthetic CDM cases; source row counts, duplicate lower bounds, selected independent counts/day sets/exact summaries and complete native validation; disposable sources removed; no full comparator or scale evidence')
 
 
 if __name__=='__main__':main()

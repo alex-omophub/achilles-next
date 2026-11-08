@@ -67,6 +67,21 @@ class SyntheticCdmTest(unittest.TestCase):
             a=GENERATOR.generate(root/'a',seed=1);b=GENERATOR.generate(root/'b',seed=2)
             self.assertNotEqual(a['tables']['measurement']['sha256'],b['tables']['measurement']['sha256'])
 
+    def test_recipe_default_seed_is_authoritative_and_validated(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder);recipe=json.loads(GENERATOR.RECIPE.read_bytes())
+            recipe['default_seed']=123456;path=root/'recipe.json';path.write_text(json.dumps(recipe))
+            with patch.object(GENERATOR,'RECIPE',path):
+                self.assertEqual(GENERATOR.plan()['seed'],123456)
+                default=GENERATOR.generate(root/'default');explicit=GENERATOR.generate(root/'explicit',seed=123456)
+                self.assertEqual(default,explicit)
+                self.assertEqual(GENERATOR.verify(root/'default'),default)
+                self.assertEqual(GENERATOR.plan(seed=0)['seed'],0)
+                for invalid in [True,-1,2**32,'123']:
+                    recipe['default_seed']=invalid;path.write_text(json.dumps(recipe))
+                    with self.assertRaisesRegex(ValueError,'uint32 seed'):GENERATOR.generate(root/'invalid')
+                    self.assertFalse((root/'invalid').exists())
+
     def test_empty_source_and_max_preview_remain_bounded(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);empty=GENERATOR.generate(root/'empty',people=0,events=0)
@@ -75,6 +90,26 @@ class SyntheticCdmTest(unittest.TestCase):
             maximum=GENERATOR.generate(root/'maximum',people=1000,events=10000)
             self.assertLess(maximum['bytes'],32*1024**2)
             self.assertEqual(sum(maximum['rows_per_domain'].values()),10000)
+            self.assertEqual(ORACLE.expected(root/'maximum')['observed_people'],900)
+
+    def test_oracle_rejects_interval_and_cumulative_day_budgets_before_expansion(self):
+        with tempfile.TemporaryDirectory() as folder:
+            root=Path(folder)/'fixture';GENERATOR.generate(root)
+            manifest,tables=ORACLE.read_tables(root)
+            row=tables['observation_period'][0]
+            row['observation_period_start_date']='0001-01-01'
+            row['observation_period_end_date']='9999-12-31'
+            with patch.object(ORACLE,'read_tables',return_value=(manifest,tables)),\
+                 patch.object(ORACLE,'timedelta',side_effect=AssertionError('expanded oversized interval')) as delta:
+                with self.assertRaisesRegex(ValueError,'day expansion budget'):ORACLE.expected(root)
+                delta.assert_not_called()
+            row['observation_period_start_date']='2020-01-01';row['observation_period_end_date']='2020-01-03'
+            tables['observation_period']=[row,row.copy()]
+            with patch.object(ORACLE,'read_tables',return_value=(manifest,tables)),\
+                 patch.object(ORACLE,'MAX_EXPANDED_DAYS',5),\
+                 patch.object(ORACLE,'timedelta',wraps=ORACLE.timedelta) as delta:
+                with self.assertRaisesRegex(ValueError,'day expansion budget'):ORACLE.expected(root)
+                self.assertEqual(delta.call_count,3) # The second interval is never expanded.
 
     def test_bad_controls_refuse_before_creating_output(self):
         cases=[dict(people=1001),dict(events=10001),dict(people=1000000,events=100000000),dict(events=-1),
@@ -159,9 +194,25 @@ class SyntheticCdmTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError,'existing schema'):DATABASE.load_preview(pg,root)
             sql=pg.run.call_args.args[0];self.assertNotIn('DROP',sql);self.assertNotIn('IF NOT EXISTS',sql)
             self.assertIn('BEGIN;',sql);self.assertIn('COMMIT;',sql);self.assertIn('REVOKE ALL ON SCHEMA',sql)
-            pg=sandbox();pg.rows.side_effect=[pg.rows.return_value,[dict(marker='right',owned=False)]]
-            with self.assertRaisesRegex(ValueError,'unowned/unmarked'):DATABASE.drop_preview(pg,dict(schema='cdm_synthetic_'+'a'*12,marker='right'))
+            marker=DATABASE.MARKER+': preview:'+'a'*64
+            pg=sandbox();pg.rows.side_effect=[pg.rows.return_value,[dict(marker=marker,owned=False)]]
+            with self.assertRaisesRegex(ValueError,'unowned/unmarked'):DATABASE.drop_preview(pg,dict(schema='cdm_synthetic_'+'a'*12,marker=marker))
             pg.run.assert_not_called()
+
+    def test_cleanup_requires_valid_exact_preview_marker(self):
+        schema='cdm_synthetic_'+'a'*12;marker=DATABASE.MARKER+': preview:'+'a'*64
+        for value in [None,'',DATABASE.MARKER,'wrong',marker[:-1],marker+'\n',marker.upper(),123]:
+            with self.subTest(marker=value):
+                pg=sandbox();pg.rows.side_effect=[pg.rows.return_value,[dict(marker=value,owned=True)]]
+                with self.assertRaisesRegex(ValueError,'invalid marker'):DATABASE.drop_preview(pg,dict(schema=schema,marker=value))
+                self.assertEqual(pg.rows.call_count,1) # Database guard only; no target lookup or DROP.
+                pg.run.assert_not_called()
+        pg=sandbox();pg.rows.side_effect=[pg.rows.return_value,[dict(marker=marker,owned=True)]]
+        DATABASE.drop_preview(pg,dict(schema=schema,marker=marker))
+        pg.run.assert_called_once_with('DROP SCHEMA "'+schema+'" CASCADE;')
+        pg=sandbox();pg.rows.side_effect=[pg.rows.return_value,[dict(marker=marker[:-1]+'b',owned=True)]]
+        with self.assertRaisesRegex(ValueError,'unowned/unmarked'):DATABASE.drop_preview(pg,dict(schema=schema,marker=marker))
+        pg.run.assert_not_called()
 
     def test_cli_cannot_execute_large_tier_or_ignore_verify_overrides(self):
         with tempfile.TemporaryDirectory() as folder:

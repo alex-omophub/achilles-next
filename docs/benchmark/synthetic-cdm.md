@@ -21,8 +21,11 @@ Hard limits are **1,000 people, 10,000 combined clinical events and 32 MiB of CS
 bytes**, with bounded histogram and manifest sizes. Events require people; an
 empty source uses zero for both. Invalid controls and larger tiers are refused
 before output creation. No flag overrides these limits or launches S1/S2 work.
-Failed or cancelled builds remove only the new directory they created. Existing
-output is never reset or overwritten. Verification takes its parameters from the
+Builds that unwind through a Python exception, including Ctrl-C
+(`KeyboardInterrupt`), remove only the new directory they created. SIGTERM,
+SIGKILL, process crashes and power loss can leave a partial directory; use a new
+output directory for a retry. Existing output is never reset or overwritten.
+Verification takes its parameters from the
 manifest and rejects parameter overrides, extra files, symlinks, rehashed data
 changes and input/DDL drift.
 
@@ -34,6 +37,8 @@ NULL counts, named marginal histograms and a declared joint-histogram projection
 Row widths describe encoded CSV bytes, not PostgreSQL heap/index/WAL sizes or a
 calibrated storage projection. Those require separate database measurements.
 Verification replays the bounded recipe and checks exact manifest/file bytes.
+An omitted `--seed` uses the recipe's `default_seed`; an explicit seed overrides it
+and is recorded in the manifest.
 This is reproducible synthetic source identity, not institutional approval or a
 permission to reuse analytical outputs across changing inputs.
 
@@ -109,13 +114,18 @@ current-pointer promotion is performed. This does not demonstrate a serving/UI
 workflow; use the separate publication conformance suite for that boundary.
 
 An independent small oracle reads the CSV files rather than generator functions.
-It checks source counts and duplicate bags, PERSON/demographic counts, all nine
+It checks exact source row counts and lower bounds on scheduled duplicate bags,
+PERSON/demographic counts, all nine
 domains' full-scope all-recorded/observed capture counts, density, explicit day-set
 observation coverage and exact measurement summaries using sorted Decimal values
 and integer quantile ranks. These **25 selected metrics** complement complete
 native validation; they are not the full 142-output independent execution
 comparator required for performance qualification. This oracle is intentionally
-in memory and hard-capped to small previews; do not use it for large data.
+in memory and hard-capped to small previews, including a maximum of 366 days per
+valid observation interval and 100,000 expanded days across all intervals
+(counting overlaps and repeats before deduplication). Longer spans or cumulative
+expansion are rejected before expanding the offending interval. Do not use it
+for large data.
 
 Routine Python discovery runs `tests/test_synthetic_cdm_generator.py` offline for
 determinism, bounds, duplicate/CSV facts, cancellation, checksum/symlink/input-race

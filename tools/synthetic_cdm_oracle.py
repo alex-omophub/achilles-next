@@ -8,6 +8,10 @@ from pathlib import Path
 import re
 
 ROOT = Path(__file__).resolve().parents[1]
+# Bound expansion independently of the manifest's byte/row limits. A preview
+# needs at most 91 days per valid interval; retain some headroom for small edits.
+MAX_PERIOD_DAYS = 366
+MAX_EXPANDED_DAYS = 100000
 
 
 def read_tables(directory):
@@ -55,10 +59,15 @@ def expected(directory):
     for field,suffix in [('gender_concept_id','gender_count'),('race_concept_id','race_count'),('ethnicity_concept_id','ethnicity_count')]:
         result['core.person.'+suffix] = {key({field:v}):dict(person_count=str(n)) for v,n in Counter(p[field] for p in tables['person']).items()}
     days = defaultdict(set)
+    expanded_days = 0
     for row in tables['observation_period']:
         lo,hi = date.fromisoformat(row['observation_period_start_date']),date.fromisoformat(row['observation_period_end_date'])
         if lo<=hi:
-            days[row['person_id']].update(lo+timedelta(days=i) for i in range((hi-lo).days+1))
+            span = (hi-lo).days+1
+            if span>MAX_PERIOD_DAYS or expanded_days+span>MAX_EXPANDED_DAYS:
+                raise ValueError('Oracle observation day expansion budget exceeded')
+            expanded_days += span
+            days[row['person_id']].update(lo+timedelta(days=i) for i in range(span))
     duplicates = {};presence = defaultdict(set)
     for domain,spec in profile['domains'].items():
         data = tables[spec['table']]
