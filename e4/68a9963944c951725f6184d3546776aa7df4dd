@@ -1,0 +1,61 @@
+tests/tracer/saved-label-integration.R
+  s_895f6ebe145fd3::t_997577064875a7 12-26,29,34,38,41,102,104-105,109-110,113-114,117-133,142-146,148-151
+  s_895f6ebe145fd3::t_b6dd2b4b809235 111-112,115-116,134-141,147,152
+R/saved-concepts.R
+  s_895f6ebe145fd3::t_a37590d7af3a69 81-85
+docs/development/saved-concepts.md
+  s_895f6ebe145fd3::t_1ed9e156ff180a 79-82
+  s_895f6ebe145fd3::t_d4fc2d857df299 69-74
+README.md
+  s_895f6ebe145fd3::t_f3767cfff3e1f7 103-105
+  s_895f6ebe145fd3::t_1ed9e156ff180a 23
+docs/development/ci.md
+  s_895f6ebe145fd3::t_1ed9e156ff180a 122-126
+packages/contracts/tools/validate-terminology-corpus.mjs
+  s_895f6ebe145fd3::t_c848faf55fe613 9
+  s_895f6ebe145fd3::t_b1b241157b64a4 5
+docs/development/validator-boundary.md
+  s_895f6ebe145fd3::t_d4fc2d857df299 34-36
+tests/tracer/saved-result-fixture.R
+  s_895f6ebe145fd3::t_f9f677637ca70a 83
+R/saved-terminology-format.R
+  s_895f6ebe145fd3::t_a37590d7af3a69 36
+man/resultPublication.Rd
+  s_895f6ebe145fd3::t_d4fc2d857df299 25
+packages/contracts/tools/terminology-lock.mjs
+  s_895f6ebe145fd3::t_b1b241157b64a4 1-9
+man/savedTerminology.Rd
+  s_895f6ebe145fd3::t_d4fc2d857df299 35-38
+tests/tracer/saved-labels.R
+  s_895f6ebe145fd3::t_f9f677637ca70a 96-116
+  s_895f6ebe145fd3::t_997577064875a7 90-92
+R/result-export.R
+  s_895f6ebe145fd3::t_4e5834ebb8e003 71-80,82,89,94,99,105,122,135,160,175
+  s_895f6ebe145fd3::t_b6dd2b4b809235 179,183,193
+tests/tracer/result-store.R
+  s_895f6ebe145fd3::t_d93e98e708ecf4 81-108,117-140
+  s_895f6ebe145fd3::t_a68dd0ed9835dc 141
+packages/contracts/tests/terminology-lock.test.mjs
+  s_895f6ebe145fd3::t_b1b241157b64a4 4,16
+  s_895f6ebe145fd3::t_315f722c269463 1-3,5-15,17
+R/result-artifact.R
+  s_895f6ebe145fd3::t_b6dd2b4b809235 14-15,30,41,95,110,135,144,152,217,236,242,245,248
+R/terminology-extension.R
+  s_895f6ebe145fd3::t_a37590d7af3a69 14-15,24-31,40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e468a9963944c951725f6184d3546776aa7df4dd",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
