@@ -70,6 +70,10 @@ independent SQL for 138 numerical outputs and separately compares four operation
 metadata outputs. Both paths use the same native validation, projection,
 publication and export boundaries on small sources.
 
+The opt-in [resource and phase telemetry harness](docs/benchmark/resource-telemetry.md)
+adds scoped R/JVM, PostgreSQL, storage and phase observations on a tiny matched
+pair, including failure retention and cancellation cleanup.
+
 The contributor [saved-representation experiment](docs/benchmark/saved-representation.md)
 compares tree and flat-index routing over identical precomputed pages. The
 [validator boundary](docs/development/validator-boundary.md) describes complete

@@ -136,3 +136,7 @@ for failure recovery. Ordinary cleanup attempts exporter, stores and temporary
 privilege restoration independently; Python attempts every source cleanup. Process
 termination can still require manual recovery from these records. No automatic
 reset, cloud allocation, server configuration change or S1/S2 execution occurs.
+
+The optional [resource/phase harness](resource-telemetry.md) enables additional
+observer wrappers around unchanged function bodies on a smaller fixture. The
+ordinary comparator keeps its transaction-only adapter and numerical behavior.
