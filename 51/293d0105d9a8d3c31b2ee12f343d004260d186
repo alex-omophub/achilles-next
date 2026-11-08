@@ -1,0 +1,32 @@
+docs/benchmark/matched-reference.md
+  s_895f6ebe145fd3::t_ccaced3c6b61d0 59-65
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_ccaced3c6b61d0 216-217
+tests/tracer/matched-reference.R
+  s_895f6ebe145fd3::t_ccaced3c6b61d0 71-72
+tests/test_matched_reference_comparator.py
+  s_895f6ebe145fd3::t_f8a3847717a560 47
+  s_895f6ebe145fd3::t_43cdb92ca24325 3,43-46,48-62,175-186
+  s_895f6ebe145fd3::t_ccaced3c6b61d0 89,91-92
+  s_895f6ebe145fd3::t_998ecb94aec367 187
+tools/matched_reference_compare.py
+  s_895f6ebe145fd3::t_ccaced3c6b61d0 91-99,103,113
+README.md
+  s_895f6ebe145fd3::t_ccaced3c6b61d0 68-71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "51293d0105d9a8d3c31b2ee12f343d004260d186",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
