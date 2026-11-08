@@ -37,8 +37,9 @@ authorization from their own institutional records; copying an artifact's contex
 is not approval. Constructed label provenance is synthetic fixture metadata, not
 evidence of a vocabulary snapshot capture or shared aggregate/vocabulary snapshot.
 
-All database connection attempts are actively denied after admission. The driver
-uses the public semantic methods; it does not compute aggregates, join source
+After admission, the driver stubs `DatabaseConnector::connect` to reject and count
+attempts. This is an API-level sentinel, not a process-wide network sandbox.
+The driver uses the public semantic methods; it does not compute aggregates, join source
 tables, reinterpret marginal reports or submit jobs. Catalogue discovery uses
 bounded 25-entry pages. The complete matrix is a deliberate contributor export
 assembled across those pages, not a download required for each interaction.

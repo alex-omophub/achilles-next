@@ -165,12 +165,14 @@ closed or stale operations cannot return late rows. Call `close()` when finished
 
 The runnable [saved-result walkthrough](saved-walkthrough.md) combines owner and
 researcher tasks, produces the complete 142-report filter matrix and records
-typed outcomes with all database connections denied. It is an automated synthetic
-API dry run; participant and production UI evaluation remain separate.
+typed outcomes with `DatabaseConnector::connect` attempts denied and counted.
+It is an automated synthetic API dry run; participant and production UI evaluation
+remain separate.
 
 The self-contained contributor fixture passes native full artifact admission,
-then disables all database connections while testing saved-ID lookup and 142-metric discovery,
-within-page pagination, summaries/eligibility, recursive denominators, typed
+then denies and counts `DatabaseConnector::connect` attempts while testing
+saved-ID lookup, 142-metric discovery, within-page pagination,
+summaries/eligibility, recursive denominators, typed
 states, corruption, budgets, cursor isolation and cancellation. Rehashed negative
 fixtures are deliberately not certified publications. Installed count-extension
 capabilities are also checked; that is not certification of arbitrary modules.

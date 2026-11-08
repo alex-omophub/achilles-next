@@ -110,7 +110,7 @@ local({
   dims<-o(concept_tag=concept,unit_concept_tag=o(kind='id',value='456'),raw_operator_tag=o(kind='null'))
   summary<-select('measurement-unit','researcher','Select one saved measurement unit/operator stratum',
     list(metricId='core.measurement.numeric_summary',filters=dims),'available',
-    'The saved p50 is2.5; the exact mean remains20.5/6. Do not average percentiles or pool units.')
+    'The saved p50 is 2.5; the exact mean remains 20.5/6. Do not average percentiles or pool units.')
   stopifnot(length(summary$rows)==1L,summary$rows[[1]]$values$p50=='2.5',
     summary$rows[[1]]$values$mean_numerator=='20.5',summary$rows[[1]]$values$mean_denominator=='6',
     length(summary$dependencies)==1L,summary$dependencies[[1]]$row$values$record_count=='6')
