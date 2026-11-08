@@ -1,0 +1,54 @@
+tests/fixtures/synthetic-cdm/recipe.json
+  s_895f6ebe145fd3::t_86c6154972554c 1-25
+tests/test_synthetic_cdm_generator.py
+  s_895f6ebe145fd3::t_d8dc3f972a3736 19,173-196
+  s_895f6ebe145fd3::t_7068ad1a5d443a 31-36,88-90
+  s_895f6ebe145fd3::t_35033571802681 1-18,20-30,37-87,91-172,197-199
+README.md
+  s_895f6ebe145fd3::t_781011dc69f6b6 57-61
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_781011dc69f6b6 53
+docs/benchmark/synthetic-cdm.md
+  s_895f6ebe145fd3::t_2c922ee39b2bfc 34-35
+  s_895f6ebe145fd3::t_c0dbbe7ba15539 1-33,36-123
+tools/test_synthetic_cdm.py
+  s_895f6ebe145fd3::t_771ea5fb9fa532 1-4,6-8,10-37,40-49,57-60
+  s_895f6ebe145fd3::t_d8dc3f972a3736 55-56
+  s_895f6ebe145fd3::t_838df8025dfdab 9,50-54
+  s_895f6ebe145fd3::t_4c61d9c3385ec3 5,38-39
+tools/generate_synthetic_cdm.py
+  s_895f6ebe145fd3::t_7fc8e1ec199d52 1-11,16,19,21-24
+  s_895f6ebe145fd3::t_4c61d9c3385ec3 12-15,17-18,20
+tools/synthetic_cdm.py
+  s_895f6ebe145fd3::t_7fc8e1ec199d52 64,262-264
+  s_895f6ebe145fd3::t_77da4a1b75ddfa 114-115
+  s_895f6ebe145fd3::t_86c6154972554c 1-30,32-63,65-113,116-138,141-143,149,152-160,162-194,197-201,204-218,220-223,226-230,233-237,239-261,265-280
+  s_895f6ebe145fd3::t_838df8025dfdab 139-140,144-148,150-151,202-203,219,224-225,231-232,238
+  s_895f6ebe145fd3::t_7068ad1a5d443a 31,195-196
+  s_895f6ebe145fd3::t_04bd748c53f58d 161
+tests/tracer/synthetic-cdm.R
+  s_895f6ebe145fd3::t_771ea5fb9fa532 1-61
+tools/synthetic_cdm_database.py
+  s_895f6ebe145fd3::t_74c5665db84d09 1-26,29-30,32-52
+  s_895f6ebe145fd3::t_838df8025dfdab 27-28,31
+tools/synthetic_cdm_oracle.py
+  s_895f6ebe145fd3::t_74c5665db84d09 1-7,9-14,19,21,26,32-72,74-120
+  s_895f6ebe145fd3::t_838df8025dfdab 8,15-18,20,22-25,27-31
+  s_895f6ebe145fd3::t_4c61d9c3385ec3 73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c4a37f3ddeb6098f71268cd11e825665f2186f26",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
