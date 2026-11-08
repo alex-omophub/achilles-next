@@ -1,0 +1,53 @@
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_230c6c4ccd69ad 155
+docs/development/saved-walkthrough.md
+  s_895f6ebe145fd3::t_5c5f7c474ef116 47-50
+  s_895f6ebe145fd3::t_230c6c4ccd69ad 1-24,27-42,44-46,51-55,60,64-65,67-107
+  s_3e206b4a2cf4c3::t_afc796e011d113 25-26,43,56-59,61-63,66
+docs/development/semantic-results.md
+  s_3e206b4a2cf4c3::t_afc796e011d113 167
+  s_895f6ebe145fd3::t_230c6c4ccd69ad 166,168-170
+README.md
+  s_3e206b4a2cf4c3::t_afc796e011d113 111
+  s_895f6ebe145fd3::t_230c6c4ccd69ad 109-110
+tests/tracer/saved-walkthrough.R
+  s_895f6ebe145fd3::t_ba4528f82e187e 1-34,37-117,119,125-129,131-151,161,163-172,174-178
+  s_895f6ebe145fd3::t_c450fc4dd04ed6 118,120-124,152-160,162,173
+  s_895f6ebe145fd3::t_ce3c1396de5a34 35-36,130
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_230c6c4ccd69ad 46
+docs/development/conformance.md
+  s_3e206b4a2cf4c3::t_afc796e011d113 58
+  s_895f6ebe145fd3::t_230c6c4ccd69ad 187-196
+  s_3e206b4a2cf4c3::t_bbe42688869543 197
+docs/development/saved-selection.md
+  s_3e206b4a2cf4c3::t_afc796e011d113 91-92
+  s_895f6ebe145fd3::t_230c6c4ccd69ad 90,93-95
+tests/tracer/saved-result-fixture.R
+  s_895f6ebe145fd3::t_ba4528f82e187e 2,18-22,24
+  s_895f6ebe145fd3::t_c450fc4dd04ed6 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e3936cd182338e7e098af2ea06b4abb70293c400",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
