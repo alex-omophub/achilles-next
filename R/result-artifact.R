@@ -16,10 +16,11 @@
   rootDir <- normalizePath(directory,mustWork=TRUE)
   .nv_need(dir.exists(rootDir) && !nzchar(Sys.readlink(directory)),"Artifact must be a directory")
   scratch <- tempfile("achilles-validate-");.nv_need(dir.create(scratch,mode="0700"));on.exit(unlink(scratch,recursive=TRUE))
-  dir.create(file.path(scratch,"seen"),mode="0700");dir.create(file.path(scratch,"rows"),mode="0700")
+  dir.create(file.path(scratch,"seen"),mode="0700")
   dir.create(file.path(scratch,"groups"),mode="0700")
-  for(n in c("concepts","used_concepts","names"))dir.create(file.path(scratch,n),mode="0700")
-  termPath<-function(kind,key)file.path(scratch,kind,.v2_hash(charToRaw(key)))
+  rows<-.v2_spool(file.path(scratch,"rows"),check);on.exit(rows$close(),add=TRUE,after=FALSE)
+  concepts<-.v2_spool(file.path(scratch,"concepts"),check);on.exit(concepts$close(),add=TRUE,after=FALSE)
+  termKey<-function(key).v2_hash(charToRaw(key))
   suppressed <- list();captureTotals <- list()
   groupPath <- function(mid,key)file.path(scratch,"groups",mid,.v2_hash(.v2_bytes(key)))
   accumulate <- function(mid,key,value) {
@@ -36,7 +37,6 @@
   .v2_keys(pointer,c("contract_version","publication_id","source_id","access_scope_id","root"))
   .nv_need(.term_version(pointer$contract_version))
   context <- NULL;assets <- NULL;catalogue <- list();counts <- list();sums <- list();last <- list()
-  spool <- function(hash) file.path(scratch,"rows",hash)
   read <- function(d,expectedKind,depth=0L) {
     check()
     .v2_descriptor_check(d)
@@ -97,11 +97,11 @@
         last[[mid]] <<- key;keys <- c(keys,key)
         counts[[mid]] <<- .nv_add(counts[[mid]],"1")
         if(!is.null(row$values$person_count)) sums[[mid]] <<- .nv_add(sums[[mid]],row$values$person_count)
-        path <- spool(row$row_key);.nv_need(!file.exists(path),"Repeated row identity")
-        writeBin(.v2_bytes(c(.object(metric_id=mid),row)),path)
+        .nv_need(!rows$has(row$row_key),"Repeated row identity")
+        rows$put(row$row_key,.v2_bytes(c(.object(metric_id=mid),row)))
         if(context$contract_version=="2.1.0")for(id in .term_row_ids(row)) {
-          .nv_need(file.exists(termPath("concepts",id)),"Missing retained concept metadata")
-          mark<-termPath("used_concepts",id);if(!file.exists(mark)).nv_need(file.create(mark))
+          hash<-termKey(id);.nv_need(concepts$has(hash),"Missing retained concept metadata")
+          concepts$flags(hash,1L)
         }
       }
     } else {
@@ -115,12 +115,12 @@
         }
         key<-.term_entry(entry,d$kind,doc$contract_version)
         if(context$contract_version=="2.1.0") {
-          id<-.v2_component(entry$concept_tag,"concept_tag");path<-termPath("concepts",id)
+          id<-.v2_component(entry$concept_tag,"concept_tag");hash<-termKey(id)
           if(d$kind=="concept_catalogue") {
-            .nv_need(!file.exists(path),"Duplicate concept ID");writeBin(.v2_bytes(entry),path)
+            .nv_need(!concepts$has(hash),"Duplicate concept ID");concepts$put(hash,.v2_bytes(entry))
           } else {
-            .nv_need(file.exists(path)&&identical(readBin(path,"raw",n=8193L),.v2_bytes(entry)),"Name index/ID label mismatch")
-            mark<-termPath("names",id);.nv_need(!file.exists(mark)&&file.create(mark),"Duplicate name-index ID")
+            .nv_need(concepts$has(hash)&&identical(concepts$get(hash),.v2_bytes(entry)),"Name index/ID label mismatch")
+            .nv_need(concepts$flags(hash,2L),"Duplicate name-index ID")
           }
         }
         key
@@ -131,11 +131,12 @@
     list(lo=keys[[1]],hi=keys[[length(keys)]])
   }
   root <- read(pointer$root,"root")
-  if(context$contract_version=="2.1.0").v2_directory_entries(file.path(scratch,"concepts"),function(name) {
+  if(context$contract_version=="2.1.0")concepts$walk(function(key,raw) {
     check()
-    .nv_need(file.exists(file.path(scratch,"used_concepts",name)),"Concept metadata outside retained scope")
-    entry<-.nv_json(readBin(file.path(scratch,"concepts",name),"raw",n=8193L))
-    .nv_need(identical(file.exists(file.path(scratch,"names",name)),entry$label_state=="available"),"Missing or extra name-index entry")
+    flags<-concepts$flags(key)
+    .nv_need(bitwAnd(flags,1L)!=0L,"Concept metadata outside retained scope")
+    entry<-.nv_json(raw)
+    .nv_need(identical(bitwAnd(flags,2L)!=0L,entry$label_state=="available"),"Missing or extra name-index entry")
   })
   capabilities <- list();ledger <- list()
   .nv_need(setequal(names(catalogue),names(assets$metrics)),"Incomplete catalogue")
@@ -148,13 +149,13 @@
     if(!mid %in% allowed) .nv_need(d$state=="suppressed" && d$rows=="0","Policy output leak")
   }
   # Disk-spooled second pass validates references without an in-memory row map.
-  .v2_directory_entries(file.path(scratch,"rows"),function(name) {
+  rows$walk(function(name,raw) {
     check()
-    row <- .nv_json(readBin(spool(name),"raw",n=131073L));mid <- row$metric_id;row$metric_id <- NULL
+    row <- .nv_json(raw);mid <- row$metric_id;row$metric_id <- NULL
     targets <- list()
     for(ref in row$denominator_refs) {
-      .nv_need(file.exists(spool(ref$row_key)),"Missing projected denominator")
-      target <- .nv_json(readBin(spool(ref$row_key),"raw",n=131073L))
+      .nv_need(rows$has(ref$row_key),"Missing projected denominator")
+      target <- .nv_json(rows$get(ref$row_key))
       .nv_need(target$metric_id==ref$metric_id && target$state!="suppressed" && identical(target$values[[ref$field]],ref$value),"Invalid projected denominator")
       targets[[paste(ref$metric_id,ref$row_key,sep="|")]] <- target
     }
@@ -192,23 +193,23 @@
     if(row$row_kind=="summary" && row$state!="suppressed") {
       eligible <- row;eligible$row_kind <- "eligibility_counts";eligible$dimensions <- c(row$dimensions,.object(eligibility_reason="eligible"))
       key <- .v2_row_identity(assets$rows[[mid]],eligible)
-      .nv_need(file.exists(spool(key)),"Missing projected eligibility count")
-      value <- .nv_json(readBin(spool(key),"raw",n=131073L))
+      .nv_need(rows$has(key),"Missing projected eligibility count")
+      value <- .nv_json(rows$get(key))
       .nv_need(value$state!="suppressed" && identical(value$values$record_count %||% value$values$person_count,row$values$n),"Projected summary n does not reconcile")
     }
     if(row$row_kind=="eligibility_counts" && row$state!="suppressed" && row$dimensions$eligibility_reason=="eligible") {
       expected <- row;expected$row_kind <- "summary";expected$dimensions$eligibility_reason <- NULL
       key <- .v2_row_identity(assets$rows[[mid]],expected)
-      .nv_need(file.exists(spool(key)),"Missing eligible summary")
-      target <- .nv_json(readBin(spool(key),"raw",n=131073L))
+      .nv_need(rows$has(key),"Missing eligible summary")
+      target <- .nv_json(rows$get(key))
       .nv_need(target$state=="suppressed" || identical(target$values$n,row$values$record_count %||% row$values$person_count),"Projected eligible summary does not reconcile")
     }
     if(grepl("^observed[.][a-z_]+[.]capture_count$",mid) && row$state!="suppressed") {
       core <- sub("^observed[.]","core.",mid)
       if(!catalogue[[core]]$state%in%c("suppressed","unsupported")) {
         key <- .v2_row_identity(assets$rows[[core]],row)
-        .nv_need(file.exists(spool(key)),"Missing matching all-recorded cell")
-        target <- .nv_json(readBin(spool(key),"raw",n=131073L))
+        .nv_need(rows$has(key),"Missing matching all-recorded cell")
+        target <- .nv_json(rows$get(key))
         if(target$state!="suppressed") for(field in c("record_count","person_count")) .nv_need(.nv_unsigned_cmp(row$values[[field]],target$values[[field]])<=0L,"Observed counts exceed matching all-recorded counts")
       }
     }
