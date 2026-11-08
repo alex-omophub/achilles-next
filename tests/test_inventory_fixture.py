@@ -52,12 +52,12 @@ class InventoryFixtureTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder); source=root/'tools/benchmark'; source.mkdir(parents=True)
             proof=root/'tests/tracer';proof.mkdir(parents=True)
-            for path in [source/'inventory.R',source/'implementation_identity.R',proof/'inventory-proof.R']:
+            for path in [source/'inventory.R',source/'inventory-inputs.R',source/'implementation_identity.R',proof/'inventory-proof.R']:
                 path.write_text('original\n')
             target=root/'snapshot'
             with patch.object(PROTOCOL,'__file__',str(source/'inventory.py')):
                 command,env=PROTOCOL.protocol_command('read',root,root/'result.json',3,target)
-            for path in [source/'inventory.R',source/'implementation_identity.R',proof/'inventory-proof.R']:
+            for path in [source/'inventory.R',source/'inventory-inputs.R',source/'implementation_identity.R',proof/'inventory-proof.R']:
                 path.write_text('edited during run\n')
             self.assertEqual(Path(command[2]),target/'inventory.R')
             self.assertEqual(env['ACHILLES_NEXT_INVENTORY_PROTOCOL_DIR'],str(target))
@@ -72,6 +72,53 @@ class InventoryFixtureTest(unittest.TestCase):
             result=json.loads(log.with_suffix('.log.metrics.json').read_text())
             self.assertEqual(result['exit_code'],7)
             self.assertGreater(result['peak_process_rss_bytes'],0)
+
+    def test_missing_telemetry_rejects_before_fixture_work(self):
+        for phase in ['all','read','admit']:
+            with tempfile.TemporaryDirectory() as folder,patch.dict(PROTOCOL.os.__dict__):
+                PROTOCOL.os.__dict__.pop('wait4',None)
+                output=Path(folder)/'must-not-exist'
+                with patch.object(sys,'argv',['inventory.py',phase,'--output-dir',str(output)]),patch.object(PROTOCOL,'build') as build:
+                    with self.assertRaisesRegex(RuntimeError,'Unix wait4'):
+                        PROTOCOL.main()
+                    build.assert_not_called()
+                self.assertFalse(output.exists())
+
+    def test_build_only_does_not_require_telemetry(self):
+        with tempfile.TemporaryDirectory() as folder,patch.dict(PROTOCOL.os.__dict__):
+            PROTOCOL.os.__dict__.pop('wait4',None);output=Path(folder)/'fixture'
+            with patch.object(sys,'argv',['inventory.py','build','--output-dir',str(output),'--entries','1']):
+                PROTOCOL.main()
+            self.assertTrue((output/'fixture.json').is_file())
+
+    def test_integrity_and_page_limits_survive_python_optimization(self):
+        # Test in an actual -O interpreter, which removes Python assert guards.
+        code='''
+import json,sys,tempfile
+from pathlib import Path
+from unittest.mock import patch
+sys.path.insert(0,sys.argv[1])
+import inventory_fixture as fixture
+with tempfile.TemporaryDirectory() as folder:
+    root=Path(folder);(root/'inst/analysis').mkdir(parents=True);(root/'inst/contracts/v2').mkdir(parents=True)
+    package=Path(fixture.__file__).resolve().parents[2]
+    profile=(package/'inst/analysis/core-characterization-v2.json').read_bytes()
+    rows=json.loads((package/'inst/contracts/v2/rows.json').read_bytes());rows['profile_sha256']='0'*64
+    (root/'inst/analysis/core-characterization-v2.json').write_bytes(profile)
+    (root/'inst/contracts/v2/rows.json').write_text(json.dumps(rows))
+    with patch.object(fixture,'__file__',str(root/'tools/benchmark/inventory_fixture.py')):
+        try:fixture.build(root/'bad-hash',1)
+        except ValueError as error:
+            if str(error)!='Profile hash does not match the row contract':raise
+        else:raise RuntimeError('Optimized build accepted the wrong profile')
+    with patch.object(fixture,'canonical',return_value=b'x'*4194305):
+        try:fixture.build(root/'bad-size',1)
+        except ValueError as error:
+            if str(error)!='Fixture page exceeds physical byte limit':raise
+        else:raise RuntimeError('Optimized build accepted an oversized page')
+'''
+        import subprocess
+        subprocess.run([sys.executable,'-O','-c',code,str(MODULE.parent)],check=True,capture_output=True)
 
 
 if __name__ == '__main__':unittest.main()

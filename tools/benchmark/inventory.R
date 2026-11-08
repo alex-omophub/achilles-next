@@ -2,13 +2,15 @@
 library(AchillesNext)
 protocolDir<-Sys.getenv('ACHILLES_NEXT_INVENTORY_PROTOCOL_DIR')
 source(if(nzchar(protocolDir))file.path(protocolDir,'implementation_identity.R') else 'tools/benchmark/implementation_identity.R')
+inputsPath<-if(nzchar(protocolDir))file.path(protocolDir,'inventory-inputs.R') else 'tools/benchmark/inventory-inputs.R'
+source(inputsPath)
 args<-commandArgs(TRUE);stopifnot(length(args)%in%c(3L,4L),args[[1]]%in%c('admit','read','database'))
 samples<-if(length(args)==4L)as.integer(args[[4]]) else 3L
 stopifnot(!is.na(samples),samples>=1L,samples<=100L)
 implementation<-implementationIdentity(getwd());f<-function(n)get(n,asNamespace('AchillesNext'));o<-f('.object');wire<-f('.v2_bytes')
 base<-normalizePath(args[[2]],mustWork=TRUE);manifestPath<-file.path(base,'fixture.json')
 manifest<-jsonlite::fromJSON(manifestPath,simplifyVector=FALSE);stopifnot(identical(manifest$fixture,'saved-inventory-v1'))
-directory<-file.path(base,'artifact');context<-manifest$context;count<-manifest$count
+directory<-file.path(base,'artifact');context<-manifest$context;count<-.inventory_count(manifest$count)
 if(args[[1]]=='admit') {
   visited<-0L;spools<-list();original<-f('.v2_spool')
   observed<-function(directory,check=function()NULL) {
@@ -37,7 +39,7 @@ if(args[[1]]=='admit') {
   if(database) {
     config<-jsonlite::fromJSON(Sys.getenv('ACHILLES_NEXT_INVENTORY_READER'),simplifyVector=FALSE)
     stopifnot(config$database=='achilles_next_fixtures')
-    details<-DatabaseConnector::createConnectionDetails(dbms='postgresql',server='127.0.0.1/achilles_next_fixtures',
+    details<-DatabaseConnector::createConnectionDetails(dbms='postgresql',server=.inventory_reader_server(config$host,config$database),
       port=as.integer(config$port),user=config$user,password=config$password)
     transaction<-f('.store_transaction')
     observed<-function(connectionDetails,schema,work,...) {
@@ -117,6 +119,7 @@ if(args[[1]]=='admit') {
     inspect=p$inspect(),proof=proof,
     approved_view_statements=length(sql),provider_CDM_statements=0L,implementation=implementation,
     protocol_sha256=stats::setNames(lapply(if(nzchar(protocolDir))file.path(protocolDir,c('inventory.R','inventory-proof.R')) else c('tools/benchmark/inventory.R','tests/tracer/inventory-proof.R'),
-      function(path)digest::digest(file=path,algo='sha256')),c('worker','proof')))
+      function(path)digest::digest(file=path,algo='sha256')),c('worker','proof')),
+    inputs_sha256=digest::digest(file=inputsPath,algo='sha256'))
   writeBin(wire(result),args[[3]]);cat('SAVED_INVENTORY_SELECTIVE_READS_OK entries=',count,'\n')
 }

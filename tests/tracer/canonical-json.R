@@ -27,6 +27,7 @@ local({
     if(!identical(a,b)){dput(list(input=value,actual=a,reference=b));stop('Canonical byte mismatch')}
   }
   for(value in values)compare(value)
+  for(key in strings)compare(stats::setNames(list('key-value'),key))
   for(i in seq_along(strings))compare(o(z=list(o(value=strings[[i]],null=NULL),list('x',TRUE,1L)),a=strings[[i]]))
   for(value in list(NA_character_,NA,character(),c('a','b'),o(a=1,a=2)))compare(value)
   cat('CANONICAL_JSON_FROZEN_ORACLE_ASCII_UTF8_ESCAPES_CLASSES_REJECTIONS_PARITY_OK\n')

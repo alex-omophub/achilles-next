@@ -112,12 +112,19 @@ proveSavedInventory <- function(directory,context,count,constructor=NULL,transpo
   fail('late-byte-corruption',function()broken$lookupConcepts('1'),'integrity_failure',broken)
   # A mutable pointer cannot switch a pinned reader mid-interaction.
   if(!database) {
+    pinned<-open(budget=list(cacheBytes=0L))
+    stopifnot(pinned$lookupConcepts('1')$concepts[[1]]$state=='available')
+    continuation<-if(count>1L)pinned$searchConcepts('Synthetic',limit=1L)$cursor else NULL
+    fetched<-pinned$inspect()$fetched_objects
     pointer<-file.path(directory,'publication.json');saved<-readBin(pointer,'raw',n=file.info(pointer)$size)
     tryCatch({
       writeBin(charToRaw('{}\n'),pointer)
+      stopifnot(pinned$lookupConcepts('1')$concepts[[1]]$label==sprintf('Synthetic concept %07d',1L),
+        pinned$inspect()$cache_bytes==0L,pinned$inspect()$fetched_objects>fetched)
+      if(!is.null(continuation))stopifnot(pinned$searchConcepts('Synthetic',limit=1L,cursor=continuation)$concepts[[1]]$concept_tag$value=='2')
       fresh<-open();stopifnot(fresh$lookupConcepts('1')$concepts[[1]]$label==sprintf('Synthetic concept %07d',1L))
     },finally=writeBin(saved,pointer))
-    cases<-c(cases,'pinned-root-ignores-current-file')
+    cases<-c(cases,'existing-pinned-reader-ignores-current-file','fresh-pinned-reader-ignores-current-file')
   }
   stopifnot(independent$lookupConcepts('1')$concepts[[1]]$state=='available')
   if(!is.null(independentCursor))stopifnot(independent$searchConcepts('Synthetic',limit=1L,cursor=independentCursor)$concepts[[1]]$concept_tag$value=='2')

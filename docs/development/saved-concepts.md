@@ -203,4 +203,5 @@ both-mode exact bytes, audience scope, revocation and previous-publication safet
 The opt-in [large-inventory experiment](inventory-proof.md) covers a deterministic
 million-entry saved catalogue, scoped search, process telemetry and isolation.
 Its synthetic workload does not qualify arbitrary label distributions,
-representative generation or production UI.
+representative generation, whole-process memory, browser/ATLAS lifecycle or
+production UI. Process telemetry describes the measured workers only.

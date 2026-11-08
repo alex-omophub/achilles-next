@@ -17,6 +17,13 @@ checks scope, row identity, counts, exact references and partition reconciliatio
 before a reader can use the fixture. No predicate or approval step is skipped to
 make the stress run faster.
 
+All capture/provenance fields in this constructed fixture are synthetic
+placeholders, not evidence of a vocabulary capture or database snapshot. In
+particular, `snapshot_sha256` is a deterministic digest of the canonical entries,
+not the digest of a `captureConceptSnapshot()` file. No capture file is created.
+Actual capture-file provenance is tested by the separate saved-label integration
+suite; this experiment tests the saved inventory and read boundary.
+
 ## Run the artifact experiment
 
 Install the current package and configure the already required R/JVM dependencies
@@ -34,12 +41,15 @@ reads in a fresh process, supply a new `--run-id`; existing results are refused.
 Each worker runs frozen copies of its protocol sources, so later checkout edits
 cannot alter a running experiment. Per-worker metric sidecars are retained even
 when the worker fails; a failed controller is never reported as a successful run.
-The small CI smoke uses 96 entries and three sample IDs. The million-entry run is
+The small CI smoke uses 96 entries and six unique IDs: first, midpoint and last,
+plus three deterministic IDs selected by `--samples 3`. The million-entry run is
 deliberately excluded from routine CI; it needs time and local disk for artifacts
 and temporary native validation data. No new dependency install or job is needed.
 
-The current measurement controller uses Unix `wait4`. It reports worker lifetime
-peak RSS (including the in-process JVM), CPU and elapsed time. R GC region usage
+The current measurement controller uses Unix `wait4`. Unsupported platforms fail
+before fixture generation for measured runs; standalone `build` does not require
+process telemetry. It reports worker lifetime peak RSS (including the in-process
+JVM), CPU and elapsed time. R GC region usage
 is reported separately. Build time/bytes are recorded, but RSS measurements cover
 the R admission/read workers, not the Python controller. These measurements exclude database memory and OS page
 cache. A fresh worker is not an OS-cold read: OS cache is explicitly uncontrolled.
@@ -61,7 +71,12 @@ python3 tools/benchmark/inventory_database.py \
 
 The fixture setup requires the same local administrative access used by the
 [synthetic serving harness](conformance.md). `--admin-host`, `--admin-user` and
-`--port` select that connection. It refuses an unmarked database. A temporary
+`--port` select that connection. Both the admin target and the service-resolved
+owner are guarded before mutation; the owner must be the fixture owner in the
+marked fixture database and match the admin server's startup/port identity.
+The JDBC reader uses the selected TCP admin host; socket paths default to
+`127.0.0.1`, with `--reader-host` available for an explicit TCP mapping.
+It refuses an unmarked database. A temporary
 NOSUPERUSER role gets only serving-schema/view access; explicit privilege checks
 deny CDM and mirror-store schema access. Schemas and role are removed in `finally`.
 No passwords are serialized in read results or command arguments.
@@ -108,7 +123,7 @@ use smaller pages rather than interpreting that rejection as an absent concept.
 ## Native validation scratch
 
 Native full admission now spools row and concept witnesses into two disk maps,
-each with one value stream and a fixed-width hash index. The index grows at at
+each with one value stream and a fixed-width hash index. The index grows at
 most half occupancy and rehashes one slot at a time. Exact keys, duplicate checks,
 reference lookups, label equality, retained-ID/name markers and the second pass
 are preserved. No million-row/name map is loaded into R. Rehashing checks the
@@ -118,6 +133,7 @@ witnesses remain separate. This changes scratch implementation, not wire/storage
 contracts, numerical definitions, institution policy or admission ownership.
 
 Canonical serialization has a byte-preserving fast path for plain printable
-ASCII strings without quotes or slashes. jsonlite still handles escapes, Unicode,
+ASCII strings without double quotes, slashes, backslashes or control characters.
+jsonlite still handles escapes, Unicode,
 classes and other scalars. A frozen pre-optimization oracle checks exact byte and
 rejection parity, including controls, closing tags, UTF-8 and large-ID strings.

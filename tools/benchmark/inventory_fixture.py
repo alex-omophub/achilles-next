@@ -43,7 +43,8 @@ def build(directory, count, page_rows=512):
     rows = json.loads((package / 'inst/contracts/v2/rows.json').read_bytes())
     definitions = {m['id']: m for m in profile['metrics']}
     row_schemas = {m['id']: m for m in rows['metrics']}
-    assert sha(profile_raw) == rows['profile_sha256']
+    if sha(profile_raw) != rows['profile_sha256']:
+        raise ValueError('Profile hash does not match the row contract')
     context = dict(contract_version='2.1.0',
                    publication_id='00000000-0000-4000-8000-000000000061',
                    release_id='00000000-0000-4000-8000-000000000062',
@@ -55,7 +56,8 @@ def build(directory, count, page_rows=512):
     def emit(document, kind, n):
         raw = canonical(document); digest = sha(raw)
         limit = 262144 if kind in ('root', 'index') else 4194304 if kind == 'data' else 1048576
-        assert len(raw) <= limit
+        if len(raw) > limit:
+            raise ValueError('Fixture page exceeds physical byte limit')
         (objects / (digest + '.json')).write_bytes(raw)
         totals['objects'] += 1; totals['bytes'] += len(raw)
         if kind not in ('root', 'index'):
@@ -87,6 +89,8 @@ def build(directory, count, page_rows=512):
     person_key = person_metric + '|E:counts'
     data = [dict(lower_key=person_key, upper_key=person_key, object=person_page)]
     concept_nodes = []; name_nodes = []; gender_nodes = []
+    # Synthetic provenance placeholder, NOT a captureConceptSnapshot file digest.
+    # Keep the deterministic entries-only hash; this fixture performs no capture.
     snapshot = hashlib.sha256()
     # Pages and per-page lists only; never allocate a million-row/name map.
     for start in range(1, count+1, page_rows):

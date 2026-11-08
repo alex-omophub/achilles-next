@@ -13,9 +13,13 @@ import time
 from inventory_fixture import build, canonical
 
 
-def measured(command, log, env=None):
+def require_process_telemetry():
     if not hasattr(os, 'wait4'):
         raise RuntimeError('This experiment requires Unix wait4 process telemetry')
+
+
+def measured(command, log, env=None):
+    require_process_telemetry()
     start = time.monotonic()
     with log.open('xb') as stream:
         process = subprocess.Popen(command, stdout=stream, stderr=subprocess.STDOUT, env=env)
@@ -37,6 +41,7 @@ def protocol_command(phase, fixture, result, samples, snapshot):
     snapshot.mkdir(mode=0o700)
     root = Path(__file__).resolve().parents[2]
     for source, name in [('tools/benchmark/inventory.R','inventory.R'),
+                         ('tools/benchmark/inventory-inputs.R','inventory-inputs.R'),
                          ('tools/benchmark/implementation_identity.R','implementation_identity.R'),
                          ('tests/tracer/inventory-proof.R','inventory-proof.R')]:
         shutil.copy2(root/source,snapshot/name)
@@ -55,6 +60,8 @@ def main():
     args = parser.parse_args()
     if not 1 <= args.samples <= 100 or not args.run_id.replace('-', '').isalnum():
         parser.error('Samples must be 1..100 and run-id must be alphanumeric/hyphen')
+    if args.phase != 'build':
+        require_process_telemetry() # Before generating or reading any fixture.
     output = args.output_dir.resolve()
     if args.phase in ('build', 'all'):
         start = time.monotonic();manifest = build(output, args.entries, args.page_rows)

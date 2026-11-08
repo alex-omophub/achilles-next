@@ -13,9 +13,26 @@ import threading
 import time
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from postgresql_fixtures import Postgres, DB, MARKER, identifier, literal
+from postgresql_fixtures import Postgres, DB, MARKER, identifier, literal, guard_database
 from inventory_fixture import canonical, sha
-from inventory import measured, protocol_command
+from inventory import measured, protocol_command, require_process_telemetry
+
+
+def guard_connections(admin, owner):
+    if admin.value(f"SELECT shobj_description(oid,'pg_database') FROM pg_database WHERE datname={literal(DB)}") != MARKER:
+        raise RuntimeError('Refusing unmarked synthetic database')
+    guard_database(owner) # Resolve and guard the service connection itself.
+    identity = "SELECT json_build_object('started',pg_postmaster_start_time()::text,'port',current_setting('port'))::text"
+    if json.loads(admin.value(identity)) != json.loads(owner.value(identity)):
+        raise ValueError('Admin and owner connections target different PostgreSQL instances')
+
+
+def reader_host(admin_host, override=None):
+    # JDBC requires TCP; preserve a selected TCP host and map socket defaults.
+    host = override if override is not None else '127.0.0.1' if admin_host.startswith('/') else admin_host
+    if not host or any(c in host for c in '/\\\r\n\x00'):
+        raise ValueError('Reader host must be a TCP hostname or address')
+    return host
 
 
 def main():
@@ -28,9 +45,12 @@ def main():
     parser.add_argument('--port', type=int, default=5432)
     parser.add_argument('--admin-host', default='/tmp')
     parser.add_argument('--admin-user')
+    parser.add_argument('--reader-host', help='TCP host for JDBC; defaults to admin TCP host or 127.0.0.1 for sockets')
     args = parser.parse_args()
     if not 1 <= args.samples <= 100:
         parser.error('Samples must be 1..100')
+    require_process_telemetry()
+    host = reader_host(args.admin_host,args.reader_host)
     fixture = args.fixture.resolve(strict=True)
     manifest_raw = (fixture/'fixture.json').read_bytes(); manifest = json.loads(manifest_raw)
     receipt_raw = (fixture/'admission.json').read_bytes(); receipt = json.loads(receipt_raw)
@@ -43,8 +63,7 @@ def main():
         raise ValueError('Matching artifact read proof is required for parity')
     admin = Postgres(args.state.resolve(), admin=True, host=args.admin_host, port=args.port, admin_user=args.admin_user)
     owner = Postgres(args.state.resolve())
-    if admin.value(f"SELECT shobj_description(oid,'pg_database') FROM pg_database WHERE datname={literal(DB)}") != MARKER:
-        raise RuntimeError('Refusing unmarked synthetic database')
+    guard_connections(admin,owner)
     output = args.output_dir.resolve(); output.mkdir(mode=0o700)
     token = secrets.token_hex(6); role = 'achilles_inv_reader_'+token
     store = 'inventory_mirror_'+token; serve = 'inventory_serve_'+token
@@ -105,6 +124,7 @@ INSERT INTO {s}.achillesnext_publication VALUES ({literal(context['publication_i
                 process.kill();process.wait();raise
         if total != manifest['inventory']['objects'] or size != manifest['inventory']['bytes']:
             raise ValueError('Mirror inventory disagrees with admitted fixture')
+        copy_seconds = time.monotonic()-start
         owner.run(f"INSERT INTO {s}.achillesnext_audience_grant VALUES ({literal(context['access_scope_id'])},{literal(role)},true); GRANT USAGE ON SCHEMA {v} TO {r}; GRANT SELECT ON {v}.achillesnext_approved_pages TO {r}")
         privileges = json.loads(owner.value(f"""SELECT json_build_object(
 'superuser',(SELECT rolsuper FROM pg_roles WHERE rolname={literal(role)}),
@@ -115,7 +135,6 @@ INSERT INTO {s}.achillesnext_publication VALUES ({literal(context['publication_i
         if privileges != dict(superuser=False,source_schema_usage=False,restricted_schema_usage=False,
                               serving_schema_usage=True,approved_view_select=True):
             raise RuntimeError('Synthetic serving privilege boundary failed')
-        copy_seconds = time.monotonic()-start
         errors = []; stop = threading.Event()
         def grants():
             try:
@@ -131,7 +150,7 @@ INSERT INTO {s}.achillesnext_publication VALUES ({literal(context['publication_i
         thread = threading.Thread(target=grants, daemon=True); thread.start()
         with tempfile.TemporaryDirectory(prefix='inventory-reader-') as folder:
             config = Path(folder)/'reader.json';config.touch(mode=0o600)
-            config.write_text(json.dumps(dict(database=DB,user=role,password=password,port=args.port,
+            config.write_text(json.dumps(dict(database=DB,host=host,user=role,password=password,port=args.port,
                 serving_schema=serve,control_dir=str(output))))
             old = os.environ.get('ACHILLES_NEXT_INVENTORY_READER')
             os.environ['ACHILLES_NEXT_INVENTORY_READER'] = str(config)

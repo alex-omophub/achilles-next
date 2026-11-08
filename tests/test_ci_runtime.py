@@ -43,7 +43,7 @@ class CiRuntimeTests(unittest.TestCase):
               'postgresql.R','observation.R','quantile-request.R','measurement.R','measurement.R','analysis-definitions.R',
               'registered-profile-offline.R','source-store-offline.R','measurement-baseline-offline.R','refresh-contract-offline.R','core-metadata-offline.R',
               'persistence-offline.R','batch-plan.R','refresh-execution-offline.R','saved-selection.R','saved-transport.R','saved-provider.R','saved-concepts.R','saved-labels.R',
-              'canonical-json.R','validation-spool.R']
+              'canonical-json.R','validation-spool.R','inventory-inputs.R']
         expected=Counter(('tests/tracer/'+name,'compatibility') for name in core)
         expected.update({('tools/test_result_serving.py','compatibility'):3,
                          ('tools/benchmark/weighted_quantiles.py','compatibility'):1,

@@ -129,7 +129,8 @@ must still target only approved serving views. Local timings do not measure the
 additional hosted duration or certify production scale.
 
 Compatibility also runs the frozen canonical-byte oracle, disk-scratch tests and
-a 96-entry [inventory smoke](inventory-proof.md) with three sampled IDs. An
+a 96-entry [inventory smoke](inventory-proof.md) with six unique IDs: first,
+midpoint and last, plus three deterministic samples. An
 ownership test freezes those small CI controls; million-entry and PostgreSQL
 mirror experiments are opt-in. They reuse the installed dependencies and add no
 workflow job or dependency installation.
