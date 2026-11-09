@@ -1,0 +1,93 @@
+x-runner: &runner
+  image: ${ACHILLESNEXT_VALIDATION_IMAGE:-achillesnext-validation:local}
+  build:
+    context: ../..
+    dockerfile: tools/docker/Dockerfile
+    args:
+      VALIDATION_UID: ${VALIDATION_UID:-1000}
+      VALIDATION_GID: ${VALIDATION_GID:-1000}
+  init: true
+  restart: "no"
+  security_opt: ["no-new-privileges:true"]
+  cap_drop: [ALL]
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "2"}
+
+services:
+  bootstrap:
+    <<: *runner
+    user: "0:0"
+    profiles: [tools]
+    network_mode: none
+    command: [bootstrap]
+    cap_add: [CHOWN, DAC_OVERRIDE, FOWNER]
+    cpus: 0.5
+    mem_limit: 256m
+    memswap_limit: 256m
+    pids_limit: 64
+    environment:
+      VALIDATION_UID: ${VALIDATION_UID:-1000}
+      VALIDATION_GID: ${VALIDATION_GID:-1000}
+    volumes:
+      - state:/validation/state
+      - credentials:/validation/secrets
+
+  postgres:
+    image: postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f
+    restart: "no"
+    environment:
+      POSTGRES_PASSWORD_FILE: /run/validation-secrets/postgres_password
+      POSTGRES_INITDB_ARGS: --data-checksums
+    command: [postgres, -c, huge_pages=off, -c, shared_buffers=256MB, -c, work_mem=16MB, -c, max_connections=30, -c, max_parallel_workers_per_gather=2, -c, track_io_timing=on, -c, track_wal_io_timing=on, -c, log_temp_files=0, -c, temp_file_limit=524288]
+    cpus: ${ACHILLESNEXT_POSTGRES_CPUS:-2}
+    mem_limit: ${ACHILLESNEXT_POSTGRES_MEMORY:-4g}
+    memswap_limit: ${ACHILLESNEXT_POSTGRES_MEMORY:-4g}
+    pids_limit: 128
+    shm_size: 256m
+    stop_grace_period: 60s
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres -d postgres"]
+      interval: 2s
+      timeout: 3s
+      retries: 60
+    networks: [validation]
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - credentials:/run/validation-secrets:ro
+    logging:
+      driver: json-file
+      options: {max-size: "10m", max-file: "2"}
+
+  validator:
+    <<: *runner
+    user: "${VALIDATION_UID:-1000}:${VALIDATION_GID:-1000}"
+    # Keep the fixture tools' loopback-only database guard intact.
+    network_mode: service:postgres
+    depends_on:
+      postgres: {condition: service_healthy}
+    cpus: ${ACHILLESNEXT_RUNNER_CPUS:-2}
+    mem_limit: ${ACHILLESNEXT_RUNNER_MEMORY:-4g}
+    memswap_limit: ${ACHILLESNEXT_RUNNER_MEMORY:-4g}
+    pids_limit: 512
+    stop_signal: SIGINT
+    stop_grace_period: 75s
+    environment:
+      ACHILLESNEXT_VALIDATION_PROJECT: ${ACHILLESNEXT_VALIDATION_PROJECT:-achillesnext-validation}
+      ACHILLESNEXT_VALIDATION_IMAGE_ID: ${ACHILLESNEXT_VALIDATION_IMAGE_ID:-}
+    volumes:
+      - state:/validation/state
+      - credentials:/validation/secrets:ro
+      - type: bind
+        source: ${ACHILLESNEXT_VALIDATION_OUTPUT:?Set an existing absolute output directory outside the checkout}
+        target: /output
+        bind: {create_host_path: false}
+
+networks:
+  validation:
+    internal: true
+
+volumes:
+  state:
+  credentials:
+  postgres-data:

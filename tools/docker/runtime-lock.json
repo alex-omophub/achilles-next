@@ -1,0 +1,520 @@
+{
+  "format_version": 1,
+  "scope": "Bounded contributor Docker validation, not a production or scale reference allocation",
+  "images": {
+    "r": "rocker/r-ver:4.2.3@sha256:6dff804fb051f7c38cf9ebcaf307b5102b46e5187ffe2ce921d760a26facd693",
+    "node": "node:24.11.1-bookworm-slim@sha256:48abc13a19400ca3985071e287bd405a1d99306770eb81d61202fb6b65cf0b57",
+    "postgres": "postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f"
+  },
+  "postgresql_client": {
+    "version": "17.10",
+    "url": "https://ftp.postgresql.org/pub/source/v17.10/postgresql-17.10.tar.bz2",
+    "sha256": "078a03516dcdbdb705fecaf415ea3d13a956c589e46f09fed68a06fb00598c90"
+  },
+  "jdbc": {
+    "file": "postgresql-42.2.18.jar",
+    "url": "https://repo.maven.apache.org/maven2/org/postgresql/postgresql/42.2.18/postgresql-42.2.18.jar",
+    "sha256": "0c891979f1eb2fe44432da114d09760b5063dad9e669ac0ac6b0b6bfb91bb3ba"
+  },
+  "R_packages": [
+    {
+      "name": "backports",
+      "version": "1.5.0",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/backports/backports_1.5.0.tar.gz",
+      "sha256": "0d3ed9db8f1505e88967f48d669b2a257e0c6b7e6320ea64b946c1bd40897ca2"
+    },
+    {
+      "name": "bit",
+      "version": "4.5.0",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/bit/bit_4.5.0.tar.gz",
+      "sha256": "89ddc5e38c2d61718d117a0288828ab61dee93269ca61c609d3e173a85e7cbed"
+    },
+    {
+      "name": "bit64",
+      "version": "4.5.2",
+      "dependencies": [
+        "bit"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/bit64/bit64_4.5.2.tar.gz",
+      "sha256": "a321563fd8830800ad51697055a2e580cda4fb84102420e4caeae44a5b6ac72e"
+    },
+    {
+      "name": "blob",
+      "version": "1.2.4",
+      "dependencies": [
+        "rlang",
+        "vctrs"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/blob/blob_1.2.4.tar.gz",
+      "sha256": "d08922ebc4147d930fe4762b1b289935217308c6d3fcaa5ae028ce3f5cf2728f"
+    },
+    {
+      "name": "checkmate",
+      "version": "2.3.3",
+      "dependencies": [
+        "backports"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/checkmate/checkmate_2.3.3.tar.gz",
+      "sha256": "f7af5c701b85505141f68ea3d35e01034752bb22bc0578fc72bd58c0043ae57f"
+    },
+    {
+      "name": "cli",
+      "version": "3.6.5",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/cli/cli_3.6.5.tar.gz",
+      "sha256": "8ebe3146e66a285d8ad6ddcff87e2a9790ea7c9cdfce7fdd8bf13095fa459679"
+    },
+    {
+      "name": "clipr",
+      "version": "0.8.0",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/clipr/clipr_0.8.0.tar.gz",
+      "sha256": "32c2931992fbec9c31b71de3e27059f1cbb45b4b1f45fd42e0e8dbcec6de3be9"
+    },
+    {
+      "name": "cpp11",
+      "version": "0.5.0",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/cpp11/cpp11_0.5.0.tar.gz",
+      "sha256": "75dd64b7a5bfd92471cb71e0c22e24a7d7484fe0580d067cecadf288cc4334a3"
+    },
+    {
+      "name": "crayon",
+      "version": "1.5.3",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/crayon_1.5.3.tar.gz",
+      "sha256": "3e74a0685541efb5ea763b92cfd5c859df71c46b0605967a0b5dbb7326e9da69"
+    },
+    {
+      "name": "DatabaseConnector",
+      "version": "6.3.2",
+      "dependencies": [
+        "bit64",
+        "checkmate",
+        "DBI",
+        "dbplyr",
+        "digest",
+        "readr",
+        "rJava",
+        "rlang",
+        "SqlRender",
+        "stringr",
+        "urltools"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/DatabaseConnector/DatabaseConnector_6.3.2.tar.gz",
+      "sha256": "f7db6c0e559132082740d56f349ab10d34b3ab171cae80675b0d7b2a854287f2"
+    },
+    {
+      "name": "DBI",
+      "version": "1.2.3",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/DBI/DBI_1.2.3.tar.gz",
+      "sha256": "cf6708a7566a80929f06575aa345fae354714159ed5fab5db14306fc5d0d2dbe"
+    },
+    {
+      "name": "dbplyr",
+      "version": "2.5.0",
+      "dependencies": [
+        "blob",
+        "cli",
+        "DBI",
+        "dplyr",
+        "glue",
+        "lifecycle",
+        "magrittr",
+        "pillar",
+        "purrr",
+        "R6",
+        "rlang",
+        "tibble",
+        "tidyr",
+        "tidyselect",
+        "vctrs",
+        "withr"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/dbplyr/dbplyr_2.5.0.tar.gz",
+      "sha256": "bb475bdbe89487b189ecc257b5c92007a7458803c81aa77bfc4ed46f5f24bcff"
+    },
+    {
+      "name": "digest",
+      "version": "0.6.37",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/digest/digest_0.6.37.tar.gz",
+      "sha256": "82c4d149994b8a4a9af930f5a8e47420829935abed41f3f9030e94b6a48f0321"
+    },
+    {
+      "name": "dplyr",
+      "version": "1.1.4",
+      "dependencies": [
+        "cli",
+        "generics",
+        "glue",
+        "lifecycle",
+        "magrittr",
+        "pillar",
+        "R6",
+        "rlang",
+        "tibble",
+        "tidyselect",
+        "vctrs"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/dplyr/dplyr_1.1.4.tar.gz",
+      "sha256": "cf730414d5d4ab387b4e9890a4b1df9d17a3903488e8da8df1cf2e11e44558cb"
+    },
+    {
+      "name": "fastmap",
+      "version": "1.2.0",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/fastmap_1.2.0.tar.gz",
+      "sha256": "b1da04a2915d1d057f3c2525e295ef15016a64e6667eac83a14641bbd83b9246"
+    },
+    {
+      "name": "generics",
+      "version": "0.1.3",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/generics/generics_0.1.3.tar.gz",
+      "sha256": "75046163bfa8b8a4f4214c1b689e796207f6447182f2e5062cf570302387d053"
+    },
+    {
+      "name": "glue",
+      "version": "1.8.0",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/glue/glue_1.8.0.tar.gz",
+      "sha256": "c86f364ba899b8662f5da3e1a75f43ae081ab04e0d51171d052356e7ee4b72a0"
+    },
+    {
+      "name": "hms",
+      "version": "1.1.3",
+      "dependencies": [
+        "lifecycle",
+        "pkgconfig",
+        "rlang",
+        "vctrs"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/hms/hms_1.1.3.tar.gz",
+      "sha256": "e626f4c60af46efd53ea631b316a103e089470d8fd63c0e0c0efb99364990282"
+    },
+    {
+      "name": "httpuv",
+      "version": "1.6.15",
+      "dependencies": [
+        "later",
+        "promises",
+        "R6",
+        "Rcpp"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/httpuv/httpuv_1.6.15.tar.gz",
+      "sha256": "5e6ded3623a39df3e1db6cb7e7292b4c03c80b3c6c5faaac3b78b711cb205ed0"
+    },
+    {
+      "name": "jsonlite",
+      "version": "1.8.9",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/jsonlite/jsonlite_1.8.9.tar.gz",
+      "sha256": "89f130e0e1163328c01decd54e7712b5ebf3d0a667da0052833722cb9a6e90b0"
+    },
+    {
+      "name": "later",
+      "version": "1.3.2",
+      "dependencies": [
+        "Rcpp",
+        "rlang"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/later/later_1.3.2.tar.gz",
+      "sha256": "52f5073d33cd0d3c12e56526c9c53c323ebafcc79b22cc6e51fb0c41ee2b561e"
+    },
+    {
+      "name": "lifecycle",
+      "version": "1.0.4",
+      "dependencies": [
+        "cli",
+        "glue",
+        "rlang"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/lifecycle/lifecycle_1.0.4.tar.gz",
+      "sha256": "ada4d3c7e84b0c93105e888647c5754219a8334f6e1f82d5afaf83d4855b91cc"
+    },
+    {
+      "name": "magrittr",
+      "version": "2.0.4",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/magrittr/magrittr_2.0.4.tar.gz",
+      "sha256": "6aba790c40de70d8fb4d2db4bebb377418971761b0da7df2141b5d4ad95981f3"
+    },
+    {
+      "name": "pillar",
+      "version": "1.11.1",
+      "dependencies": [
+        "cli",
+        "glue",
+        "lifecycle",
+        "rlang",
+        "utf8",
+        "vctrs"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/pillar_1.11.1.tar.gz",
+      "sha256": "056ce154238c9b5b8d5dcbcb52e1bc51d33870ce08c8a9ca9496478bd59f4653"
+    },
+    {
+      "name": "pkgconfig",
+      "version": "2.0.3",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/pkgconfig_2.0.3.tar.gz",
+      "sha256": "330fef440ffeb842a7dcfffc8303743f1feae83e8d6131078b5a44ff11bc3850"
+    },
+    {
+      "name": "prettyunits",
+      "version": "1.2.0",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/prettyunits_1.2.0.tar.gz",
+      "sha256": "f059f27e2a5c82e351fe05b87ad712f7afc273c651450453f59d99af5deeacea"
+    },
+    {
+      "name": "progress",
+      "version": "1.2.3",
+      "dependencies": [
+        "crayon",
+        "hms",
+        "prettyunits",
+        "R6"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/progress_1.2.3.tar.gz",
+      "sha256": "ea2b079b894de85c3ab12088c9c52aec06432245047a961d5b4b8aa6889f9276"
+    },
+    {
+      "name": "promises",
+      "version": "1.3.0",
+      "dependencies": [
+        "fastmap",
+        "later",
+        "magrittr",
+        "R6",
+        "Rcpp",
+        "rlang"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/promises/promises_1.3.0.tar.gz",
+      "sha256": "f8209df3bab33340c1bc8c0d26caee2890fafb93129ff1423302abae5931fad3"
+    },
+    {
+      "name": "purrr",
+      "version": "1.2.0",
+      "dependencies": [
+        "cli",
+        "lifecycle",
+        "magrittr",
+        "rlang",
+        "vctrs"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/purrr/purrr_1.2.0.tar.gz",
+      "sha256": "bb3f59fed9b83d9fafda75480e47c72a72d134c322ff597cb031aac871773bb3"
+    },
+    {
+      "name": "R6",
+      "version": "2.6.1",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/R6_2.6.1.tar.gz",
+      "sha256": "59c6eba8b1b912eb7e104f65053235604be853425ee67c152ac4e86a1f2073b4"
+    },
+    {
+      "name": "Rcpp",
+      "version": "1.0.13-1",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/Rcpp/Rcpp_1.0.13-1.tar.gz",
+      "sha256": "1d1fc623d27082b5749f9584a9204de410134b6412a192157a3e42e2ba43969a"
+    },
+    {
+      "name": "readr",
+      "version": "2.1.5",
+      "dependencies": [
+        "cli",
+        "clipr",
+        "cpp11",
+        "crayon",
+        "hms",
+        "lifecycle",
+        "R6",
+        "rlang",
+        "tibble",
+        "tzdb",
+        "vroom"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/readr/readr_2.1.5.tar.gz",
+      "sha256": "0fa65a5fe0a46cffe221b7696b52adb82dd4d7a692a895484e438e439594e10a"
+    },
+    {
+      "name": "rJava",
+      "version": "1.0-11",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/rJava/rJava_1.0-11.tar.gz",
+      "sha256": "9ea0ccf5553d86f7de8649a8324766c4f0810f35b7be561640dd87fd37986417"
+    },
+    {
+      "name": "rlang",
+      "version": "1.1.6",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/rlang/rlang_1.1.6.tar.gz",
+      "sha256": "18544c876f4e18ec554edecc308362a52fbc7e0805c4794cf59bcc4d0b57f330"
+    },
+    {
+      "name": "SqlRender",
+      "version": "1.19.0",
+      "dependencies": [
+        "checkmate",
+        "rJava",
+        "rlang"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/SqlRender/SqlRender_1.19.0.tar.gz",
+      "sha256": "ebfd822bb9052bc880669b20489a2c61b81803b08051e8b4cdcd4cb454d903d7"
+    },
+    {
+      "name": "stringi",
+      "version": "1.8.4",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/stringi/stringi_1.8.4.tar.gz",
+      "sha256": "c219f8f64d1a2bfd4ca9528452d44d30db1899af14f4b9ef248412443bc669f3"
+    },
+    {
+      "name": "stringr",
+      "version": "1.5.1",
+      "dependencies": [
+        "cli",
+        "glue",
+        "lifecycle",
+        "magrittr",
+        "rlang",
+        "stringi",
+        "vctrs"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/stringr/stringr_1.5.1.tar.gz",
+      "sha256": "a4adec51bb3f04214b1d8ef40d3a58949f21b1497cbeaf2ba552e0891eef45de"
+    },
+    {
+      "name": "tibble",
+      "version": "3.3.0",
+      "dependencies": [
+        "cli",
+        "lifecycle",
+        "magrittr",
+        "pillar",
+        "pkgconfig",
+        "rlang",
+        "vctrs"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/tibble/tibble_3.3.0.tar.gz",
+      "sha256": "7f4c439f11b1aca4a45923d8d76f90fbab4e01acf0ba7ad0c38c3a7f22fee192"
+    },
+    {
+      "name": "tidyr",
+      "version": "1.3.1",
+      "dependencies": [
+        "cli",
+        "cpp11",
+        "dplyr",
+        "glue",
+        "lifecycle",
+        "magrittr",
+        "purrr",
+        "rlang",
+        "stringr",
+        "tibble",
+        "tidyselect",
+        "vctrs"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/tidyr/tidyr_1.3.1.tar.gz",
+      "sha256": "e820c261cb5543f572f49276a7bdc7302aa4215da4bf850b1b939a315353835d"
+    },
+    {
+      "name": "tidyselect",
+      "version": "1.2.1",
+      "dependencies": [
+        "cli",
+        "glue",
+        "lifecycle",
+        "rlang",
+        "vctrs",
+        "withr"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/tidyselect_1.2.1.tar.gz",
+      "sha256": "169e97ba0bbfbcdf4a80534322751f87a04370310c40e27f04aac6525d45903c"
+    },
+    {
+      "name": "triebeard",
+      "version": "0.4.1",
+      "dependencies": [
+        "Rcpp"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/triebeard_0.4.1.tar.gz",
+      "sha256": "192f2fef6341e43bd56ef4f9841e813e07be990f4ffcf38c5606259630efe0f7"
+    },
+    {
+      "name": "tzdb",
+      "version": "0.4.0",
+      "dependencies": [
+        "cpp11"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/tzdb/tzdb_0.4.0.tar.gz",
+      "sha256": "4253c66041bdddfd463c98183bf0052fbcacdb7c5cff9eadbb858b3dcf9d3a23"
+    },
+    {
+      "name": "urltools",
+      "version": "1.7.3",
+      "dependencies": [
+        "Rcpp",
+        "triebeard"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/urltools/urltools_1.7.3.tar.gz",
+      "sha256": "6020355c1b16a9e3956674e5dea9ac5c035c8eb3eb6bbdd841a2b5528cafa313"
+    },
+    {
+      "name": "utf8",
+      "version": "1.2.6",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/utf8_1.2.6.tar.gz",
+      "sha256": "4589f8b72291329e70b7f3a8c20f2feb4e7764eebad2e6976bc9a3eee7686ce9"
+    },
+    {
+      "name": "vctrs",
+      "version": "0.6.5",
+      "dependencies": [
+        "cli",
+        "glue",
+        "lifecycle",
+        "rlang"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/vctrs/vctrs_0.6.5.tar.gz",
+      "sha256": "43167d2248fd699594044b5c8f1dbb7ed163f2d64761e08ba805b04e7ec8e402"
+    },
+    {
+      "name": "vroom",
+      "version": "1.6.5",
+      "dependencies": [
+        "bit64",
+        "cli",
+        "cpp11",
+        "crayon",
+        "glue",
+        "hms",
+        "lifecycle",
+        "progress",
+        "rlang",
+        "tibble",
+        "tidyselect",
+        "tzdb",
+        "vctrs",
+        "withr"
+      ],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/vroom/vroom_1.6.5.tar.gz",
+      "sha256": "7bdca21e58c9c5049d7445d182f59fd399193cb2f4318d083de0a559ec9b5761"
+    },
+    {
+      "name": "withr",
+      "version": "3.0.2",
+      "dependencies": [],
+      "url": "https://cloud.r-project.org/src/contrib/Archive/withr/withr_3.0.2.tar.gz",
+      "sha256": "0a3a05f493d275cca4bf13c8c1b95a1a4eed7f83b2493f41fde02ce3fc92c1a3"
+    }
+  ],
+  "system_packages": "apt patch versions captured in image manifest; immutable built image ID is the replay unit"
+}

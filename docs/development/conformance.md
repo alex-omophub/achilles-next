@@ -223,6 +223,9 @@ and does not qualify scale or comparative performance.
 
 ## Resource and phase telemetry
 
+The [Docker validation environment](docker-validation.md) supplies the required
+toolchain and isolated synthetic PostgreSQL without host R/JDBC installations.
+
 The opt-in [small-fixture telemetry harness](../benchmark/resource-telemetry.md)
 checks observed/unobserved generation parity, full/projected native exports and
 after-approval cancellation. It preserves scoped measurements on failure and
