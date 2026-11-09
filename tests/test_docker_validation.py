@@ -180,6 +180,22 @@ if 'stop' in sys.argv and os.environ.get('FAKE_STOP_FAILS')=='1':raise SystemExi
             with self.assertRaisesRegex(ValueError,'checksum mismatch'):FETCH.download(dict(url='https://example.invalid',sha256='0'*64),path)
             self.assertFalse(path.exists());self.assertTrue(process.stdout.closed)
 
+    def test_download_transfer_failure_reports_bounded_curl_diagnostic(self):
+        for diagnostic in [b'curl: (60) certificate verification failed\n',b'curl: invalid \xff\n',b'',b'x'*20000]:
+            with self.subTest(diagnostic=diagnostic[:64]),tempfile.TemporaryDirectory() as folder:
+                process=self.download_process(b'partial');process.returncode=60
+                def launch(*args,**kwargs):
+                    kwargs['stderr'].write(diagnostic);kwargs['stderr'].flush()
+                    return process
+                with patch.object(FETCH.subprocess,'Popen',side_effect=launch):
+                    path=Path(folder)/'source'
+                    with self.assertRaises(RuntimeError) as raised:
+                        FETCH.download(dict(url='https://example.invalid',sha256='0'*64),path)
+                    detail=diagnostic[:16384].decode('utf-8','replace').strip()
+                    expected='Build source transfer failed (curl exit 60): source'+(': '+detail if detail else '')
+                    self.assertEqual(str(raised.exception),expected)
+                    self.assertFalse(path.exists());self.assertTrue(process.stdout.closed)
+
     def test_unknown_length_download_stops_at_byte_cap_and_reaps_child(self):
         process=self.download_process(b'0123456789')
         with tempfile.TemporaryDirectory() as folder,patch.object(FETCH.subprocess,'Popen',return_value=process):

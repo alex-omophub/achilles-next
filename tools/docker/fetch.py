@@ -26,7 +26,9 @@ def download(entry,path,byte_limit=MAX_BYTES):
                 if total>byte_limit:raise ValueError('Build source exceeds byte limit: '+path.name)
                 output.write(chunk);digest.update(chunk)
             code=process.wait(timeout=15)
-            if code:raise RuntimeError('Build source transfer failed (curl exit '+str(code)+'): '+path.name)
+            if code:
+                errors.seek(0);detail=errors.read(16384).decode('utf-8','replace').strip()
+                raise RuntimeError('Build source transfer failed (curl exit '+str(code)+'): '+path.name+(': '+detail if detail else ''))
             if digest.hexdigest()!=entry['sha256']:raise ValueError('Build source checksum mismatch: '+path.name)
     except BaseException:
         if owned:path.unlink(missing_ok=True)
