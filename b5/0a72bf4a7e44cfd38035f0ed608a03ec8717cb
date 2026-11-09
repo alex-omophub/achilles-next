@@ -1,0 +1,66 @@
+tools/docker/runner.py
+  s_895f6ebe145fd3::t_a65cf873a9752e 11,94-95,117,151
+  s_895f6ebe145fd3::t_d75b6a09d6ea57 129
+  s_895f6ebe145fd3::t_656ee8b688569a 1-7,9-10,12-93,96-116,118-128,130-146,149-150,152-205
+  s_895f6ebe145fd3::t_4b226a8cf59780 8,148
+  s_895f6ebe145fd3::t_f4acc5ce6ee7cb 147
+README.md
+  s_895f6ebe145fd3::t_c39abb49ba90fb 77-80
+tools/docker/install.R
+  s_895f6ebe145fd3::t_6a10a7dd75b972 2-8,10-15,17-25
+  s_895f6ebe145fd3::t_8c3131b470bd71 16
+  s_895f6ebe145fd3::t_8987e6afa724a1 1,9
+tools/docker/Dockerfile.dockerignore
+  s_895f6ebe145fd3::t_afbce7ccb477f7 29-33
+  s_895f6ebe145fd3::t_8987e6afa724a1 1-7,12-28,34-40
+  s_895f6ebe145fd3::t_3f51a3c802393b 8-11
+docs/development/conformance.md
+  s_895f6ebe145fd3::t_c39abb49ba90fb 226-228
+tools/docker/runtime-lock.json
+  s_895f6ebe145fd3::t_76a3c7b9a2456c 1-520
+docs/development/docker-validation.md
+  s_895f6ebe145fd3::t_808dae4aa582df 52-53
+  s_895f6ebe145fd3::t_646e0e98ef3a32 5,33-34,41-42,46,48,96
+  s_895f6ebe145fd3::t_b4b85467017469 78
+  s_895f6ebe145fd3::t_c39abb49ba90fb 1-4,6-32,35-40,43-45,47,49-51,54-77,79-95,97-99,102-119
+  s_895f6ebe145fd3::t_d75b6a09d6ea57 100-101
+tools/docker/runtime.R
+  s_895f6ebe145fd3::t_2e1b666c52a8d2 1-7,9-16
+  s_895f6ebe145fd3::t_8c3131b470bd71 8
+tools/docker/validate.sh
+  s_895f6ebe145fd3::t_2e1b666c52a8d2 1-15,17,21-31,36,46-50
+  s_895f6ebe145fd3::t_f4acc5ce6ee7cb 18-20,32-35
+  s_895f6ebe145fd3::t_b4b85467017469 16,37-45
+tools/docker/compose.yaml
+  s_895f6ebe145fd3::t_f4acc5ce6ee7cb 2,77
+  s_895f6ebe145fd3::t_2e1b666c52a8d2 1,3-23,25-76,78-93
+  s_895f6ebe145fd3::t_a65cf873a9752e 24
+tools/docker/Dockerfile
+  s_895f6ebe145fd3::t_8c3131b470bd71 18,23-25,42
+  s_895f6ebe145fd3::t_8987e6afa724a1 1-8,10-17,19-22,26-39,43-46
+  s_895f6ebe145fd3::t_c39abb49ba90fb 9
+  s_895f6ebe145fd3::t_808dae4aa582df 40-41
+tools/docker/fetch.py
+  s_895f6ebe145fd3::t_8987e6afa724a1 1-21
+tests/test_docker_validation.py
+  s_895f6ebe145fd3::t_82a6eb44fdb4c3 6,17-23,26-31,40-54,56-58
+  s_895f6ebe145fd3::t_a65cf873a9752e 1-5,7-16,59-85,87-115
+  s_895f6ebe145fd3::t_d75b6a09d6ea57 86
+  s_895f6ebe145fd3::t_b4b85467017469 24-25,32-39,55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b50a72bf4a7e44cfd38035f0ed608a03ec8717cb",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
