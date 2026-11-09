@@ -1,0 +1,34 @@
+tools/docker/runner.py
+  s_895f6ebe145fd3::t_8ba55feff86130 68-71,79
+tools/docker/Dockerfile
+  s_895f6ebe145fd3::t_8ba55feff86130 18,23-24
+tests/test_docker_validation.py
+  s_895f6ebe145fd3::t_060b091087a821 3-4,9,11,18-19,26,30-32,55-58,63-97,138-189
+  s_895f6ebe145fd3::t_6cbfec84431ef3 190
+tools/docker/compose.yaml
+  s_895f6ebe145fd3::t_4a797aa5cf9028 41-43
+  s_895f6ebe145fd3::t_8ba55feff86130 39-40,55
+tools/docker/validate.sh
+  s_895f6ebe145fd3::t_8ba55feff86130 10-20,27-28,56,58
+docs/development/docker-validation.md
+  s_895f6ebe145fd3::t_8ba55feff86130 70-71,83-84,92-95
+  s_895f6ebe145fd3::t_4a797aa5cf9028 52-56
+tools/docker/fetch.py
+  s_895f6ebe145fd3::t_f0e964049ef130 6-40,49
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bd0a8f390f976f15179d44b7d3f1ca6937d5cc86",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
