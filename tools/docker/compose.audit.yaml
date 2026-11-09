@@ -1,0 +1,7 @@
+# Opt-in placement only. An operator must register this dedicated parent and
+# its limits first; this file does not provision or reserve host resources.
+services:
+  postgres:
+    cgroup_parent: ${ACHILLESNEXT_VALIDATION_CGROUP_PARENT:?Set the registered dedicated cgroup parent}
+  validator:
+    cgroup_parent: ${ACHILLESNEXT_VALIDATION_CGROUP_PARENT:?Set the registered dedicated cgroup parent}
