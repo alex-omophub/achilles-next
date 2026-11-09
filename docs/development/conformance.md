@@ -220,3 +220,11 @@ executes independent numerical SQL and the installed optimized generator against
 one imported PostgreSQL snapshot, then checks all 142 outputs and complete
 full/projected publications/exports on small fixtures. It adds no routine CI job
 and does not qualify scale or comparative performance.
+
+## Resource and phase telemetry
+
+The opt-in [small-fixture telemetry harness](../benchmark/resource-telemetry.md)
+checks observed/unobserved generation parity, full/projected native exports and
+after-approval cancellation. It preserves scoped measurements on failure and
+marks unavailable database/cgroup/browser metrics explicitly. No routine CI job
+or scale qualification is added.

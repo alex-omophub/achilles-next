@@ -1,6 +1,7 @@
 # Contributor adapters. Shared persistence/codec/metadata are intentionally used;
 # numerical SQL comes exclusively from the independent Python compiler.
-referenceTransaction <- function(snapshot,witnesses=NULL) {
+referenceTransaction <- function(snapshot,witnesses=NULL,observer=NULL) {
+  if(!is.null(observer))return(observer$transaction(snapshot,witnesses))
   real <- get('.store_transaction',asNamespace('AchillesNext'))
   stopifnot(is.character(snapshot),length(snapshot)==1L,grepl('^[0-9A-Fa-f]+-[0-9A-Fa-f]+-[0-9]+$',snapshot))
   function(details,schema,work,...) real(details,schema,function(tx) {
@@ -12,27 +13,32 @@ referenceTransaction <- function(snapshot,witnesses=NULL) {
   },...)
 }
 
-referenceOptimized <- function(details,source,sourceId,results,version,snapshot,witnesses,maxRows=50000L) {
+referenceOptimized <- function(details,source,sourceId,results,version,snapshot,witnesses,maxRows=50000L,observer=NULL) {
   ns<-asNamespace('AchillesNext');scope<-new.env(parent=ns)
   # The installed public and internal generator function bodies are unchanged.
   # The sole transaction override imports the coordinator's snapshot; no binding
   # in the namespace, query body or analytical helper is replaced.
-  scope$.store_transaction<-referenceTransaction(snapshot,witnesses)
+  scope$.store_transaction<-referenceTransaction(snapshot,witnesses,observer)
+  if(!is.null(observer)) {
+    lookup<-observer$lookup(function(n)get(n,ns))
+    scope$.store_writer<-lookup('.store_writer');scope$.core_write_metadata<-lookup('.core_write_metadata')
+  }
   scope$.baseline_generate<-get('.baseline_generate',ns)
   environment(scope$.baseline_generate)<-scope
   generate<-get('generateCharacterizationCandidate',ns);environment(generate)<-scope
   stopifnot(identical(body(generate),body(get('generateCharacterizationCandidate',ns))),
     identical(body(scope$.baseline_generate),body(get('.baseline_generate',ns))),
-    setequal(ls(scope,all.names=TRUE),c('.baseline_generate','.store_transaction')))
-  generate(details,source,sourceId,results,version,maxAggregateRows=maxRows)
+    setequal(ls(scope,all.names=TRUE),c('.baseline_generate','.store_transaction',if(!is.null(observer))c('.store_writer','.core_write_metadata'))))
+  generate(details,source,sourceId,results,version,maxAggregateRows=maxRows,check=if(is.null(observer))NULL else observer$check)
 }
 
-referenceGenerate <- function(details,source,sourceId,results,version,compiled,snapshot,witnesses,maxRows=50000L) {
+referenceGenerate <- function(details,source,sourceId,results,version,compiled,snapshot,witnesses,maxRows=50000L,observer=NULL) {
   f<-function(n)get(n,asNamespace('AchillesNext'));lit<-f('.store_literal');uuid<-f('.store_uuid');o<-f('.object')
+  if(!is.null(observer))f<-observer$lookup(f)
   assets<-f('.v2_assets')();metadata<-c('core.source.passport','core.source.capabilities','core.execution.output_status','core.execution.timing')
   stopifnot(identical(compiled$profile_sha256,assets$hash),setequal(names(compiled$queries),setdiff(names(assets$metrics),metadata)))
   started<-f('.stamp')();clock<-proc.time()[['elapsed']]
-  referenceTransaction(snapshot,witnesses)(details,results,function(tx) {
+  referenceTransaction(snapshot,witnesses,observer)(details,results,function(tx) {
     tx$execute("SET LOCAL statement_timeout=30000; SET LOCAL lock_timeout=2000; SET LOCAL timezone='UTC'; SET LOCAL datestyle='ISO,YMD'")
     f('.store_version')(tx)
     f('.population_preflight')(tx,source);f('.domain_preflight')(tx,source,TRUE)
