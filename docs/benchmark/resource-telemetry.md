@@ -97,8 +97,9 @@ budgets are still required before any scale/performance claim.
 
 ## Observer regressions
 
-Run `Rscript --vanilla tests/tracer/resource-telemetry-observer.R` after installing
-the current package to check journal failure handling without PostgreSQL. Add
+From the checkout root, run `Rscript --vanilla tests/tracer/resource-telemetry-observer.R`
+after installing the current package to check journal failure handling without
+PostgreSQL. Add
 `tools/tracer_fixture_config.R` as its argument to reproduce a real SQL probe
 failure and verify savepoint recovery on the marked synthetic database. Failed
 temporary-allocation samples are counted separately as unavailable; probe errors
