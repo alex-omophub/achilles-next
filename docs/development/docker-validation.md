@@ -125,3 +125,7 @@ record use that container's PID namespace. Do not sum separate lifetime memory
 peaks or treat them as a measured whole-job peak. No common parent group, exclusive
 CPU/I/O allocation or cold-cache reset is established here; every receipt sets
 `qualifying=false`. Build/install work is outside validation/telemetry timings.
+
+For an optional, read-only check of a separately registered Linux common parent,
+see the [resource attribution audit](docker-resource-audit.md). It leaves these
+default validation modes and their evidence scope unchanged.
