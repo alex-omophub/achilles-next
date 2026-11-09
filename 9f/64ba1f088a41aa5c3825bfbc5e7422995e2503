@@ -1,0 +1,31 @@
+tests/fixtures/synthetic-cdm/scale-recipe.json
+  s_895f6ebe145fd3::t_11ff33c3ea1333 1-21
+docs/benchmark/synthetic-cdm.md
+  s_895f6ebe145fd3::t_eb390711be8778 8-11
+tests/test_scale_cdm.py
+  s_895f6ebe145fd3::t_eadd6ab9ed96e3 1-123,125-167,190-192
+  s_895f6ebe145fd3::t_f6d1e7fa4b37ba 124,168-189
+docs/benchmark/indexed-scale-cdm.md
+  s_895f6ebe145fd3::t_eb390711be8778 1-90
+tools/scale_cdm.py
+  s_895f6ebe145fd3::t_11ff33c3ea1333 1-29,33-36,40-50,53-146,148-159,161-185,187-197,201-203,209-210,212-213,220-241,243-247
+  s_895f6ebe145fd3::t_eadd6ab9ed96e3 30-32,37,39,214-219
+  s_895f6ebe145fd3::t_f6d1e7fa4b37ba 198-200,204-208,211,242
+  s_895f6ebe145fd3::t_eb390711be8778 38,51-52,147,160,186
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9f64ba1f088a41aa5c3825bfbc5e7422995e2503",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
