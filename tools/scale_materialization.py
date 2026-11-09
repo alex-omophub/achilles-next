@@ -150,6 +150,8 @@ def checkpoint(plan, entries):
 def prepare(root, tier, version, windows, **limits):
     if fcntl is None: raise ValueError('POSIX file locking is required')
     plan = build_plan(tier, version, windows, **limits)
+    root = Path(root)
+    if root.is_symlink(): raise ValueError('Output directory must not be a symlink')
     root = SCALE.outside(root).resolve()
     if shutil.disk_usage(root.parent).free < plan['limits']['min_free_bytes']:
         raise ValueError('Materialization free-space floor reached')

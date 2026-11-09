@@ -218,6 +218,21 @@ class MaterializationTest(unittest.TestCase):
             self.assertFalse(self.root.exists())
         with self.assertRaises(ValueError): M.prepare(self.root,'S2','5.5',[dict(table='measurement',start=0,rows=129)],chunk_rows=1)
 
+    def test_prepare_refuses_dangling_and_existing_output_symlinks(self):
+        for existing in [False,True]:
+            with self.subTest(existing=existing):
+                target=self.home/('existing' if existing else 'missing'); alias=self.home/('alias-'+str(existing))
+                if existing:
+                    target.mkdir(); (target/'keep').write_bytes(b'user content')
+                alias.symlink_to(target,target_is_directory=True)
+                with self.assertRaisesRegex(ValueError,'must not be a symlink'):
+                    M.prepare(alias,'S2','5.5',[dict(table='measurement',start=0,rows=1)])
+                self.assertTrue(alias.is_symlink())
+                if existing:
+                    self.assertEqual([p.name for p in target.iterdir()],['keep'])
+                    self.assertEqual((target/'keep').read_bytes(),b'user content')
+                else:self.assertFalse(target.exists())
+
     def test_prior_complete_selection_is_untouched_when_new_selection_fails(self):
         self.prepare(); M.run(self.root); before=self.hashes()
         other=self.home/'other'; M.prepare(other,'S2','5.5',[dict(table='measurement',start=0,rows=10)],byte_limit=1)
