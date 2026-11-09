@@ -1,0 +1,29 @@
+tests/test_resource_telemetry.py
+  s_895f6ebe145fd3::t_5f8c2e40c5cc27 3,47,55,64
+  s_895f6ebe145fd3::t_fc266b2c65ba8a 81
+tools/benchmark/resource_telemetry.R
+  s_895f6ebe145fd3::t_5f8c2e40c5cc27 5,27,30-34,68-73,75,129-130,133,135
+tests/tracer/resource-telemetry-observer.R
+  s_895f6ebe145fd3::t_d53b30226ee7c6 77-78
+  s_895f6ebe145fd3::t_cb9ee887dbb83b 1-76,79-86
+tools/benchmark/telemetry.py
+  s_895f6ebe145fd3::t_5f8c2e40c5cc27 18,74
+docs/benchmark/resource-telemetry.md
+  s_895f6ebe145fd3::t_cb9ee887dbb83b 4-7,97-105
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "dfd95f739970fe64539dba62a362146d7766730b",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
