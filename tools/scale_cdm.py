@@ -156,8 +156,8 @@ def render(source, table, start, rows, stream=None, directory=None):
         digest.update(raw)
         if stream is not None: stream.write(raw)
     emit((','.join(nulls)+'\n').encode())
-    for index in range(start, start+rows):
-        if directory is not None and index%64 == 0 and shutil.disk_usage(directory).free < MIN_FREE:
+    for offset, index in enumerate(range(start, start+rows)):
+        if directory is not None and offset%64 == 0 and shutil.disk_usage(directory).free < MIN_FREE:
             raise ValueError('Probe free-space floor reached')
         row = source.row(table, index); raw = BASE.encode_row(row, source.columns[table]); emit(raw)
         low = len(raw) if low is None else min(low, len(raw)); high = max(high, len(raw))

@@ -1,6 +1,6 @@
 """Independent indexed-source facts and bounded-work/failure controls."""
 import csv
-from datetime import date
+from datetime import date, timedelta
 import io
 import json
 from pathlib import Path
@@ -63,7 +63,8 @@ class IndexedScaleTest(unittest.TestCase):
                 self.assertFalse(ids.intersection(values)); ids.update(values)
         for index in [0, 1, 50000, 450000, 450001, 450016, 450017, 14850016]:
             row = source.row('concept', index)
-            self.assertNotIn(row['concept_id'], source.units if row['domain_id'] != 'Unit' else [])
+            if row['domain_id'] == 'Unit': self.assertIn(row['concept_id'], source.units)
+            else: self.assertNotIn(row['concept_id'], source.units)
         self.assertEqual(source.row('concept', 14850016)['concept_id'], 114399999)
         self.assertEqual(source.row('concept', 450001)['concept_id'], 9000001)
 
@@ -87,6 +88,38 @@ class IndexedScaleTest(unittest.TestCase):
         self.assertGreater(first[5]['observation_period_start_date'],first[5]['observation_period_end_date'])
         self.assertEqual(source.row('observation_period',1199999)['person_id'],999999)
         self.assertEqual(source.row('observation_period',1199999)['observation_period_id'],1200000)
+
+    def test_schedule_metadata_and_independent_row_rules_cannot_drift(self):
+        # These are the published schedule promises, checked against row facts
+        # below rather than introspecting or importing implementation constants.
+        schedule = dict(
+            concept_assignment='80 of every 100 base rows select the first 20 percent of domain concepts; remaining rows select the other 80 percent; every 97th base row uses concept zero',
+            person_assignment='four of every five base rows select the first 20 percent of people; remaining rows select all people',
+            duplicates='each physical row with zero-based index99 modulo100 repeats the preceding complete row including its source ID',
+            observation_periods='people ending in0 have none; ending in1 have an overlapping interval; ending in2 have an adjacent interval; ending in3 have an additional invalid interval',
+            measurement='missing numeric values at base index0 modulo10; explicit operator at base index3 modulo20; 16 possible known units plus null,zero,unknown; finite and non-finite values retained')
+        for tier in ['S1','S2']:
+            source = SCALE.Source(tier); self.assertEqual(source.plan()['schedule'],schedule)
+            units, numbers = set(), set(); previous = None
+            for index in range(1000):
+                row = source.row('measurement',index); base = index-1 if index%100 == 99 else index
+                if index%100 == 99: self.assertEqual(row,previous)
+                hot = source.concepts//5
+                concept = draw(source.parameters['seed'],8,base,2,hot) if base%100 < 80 else hot+draw(source.parameters['seed'],8,base,2,source.concepts-hot)
+                self.assertEqual(row['measurement_concept_id'],0 if base%97 == 0 else 1800000+concept)
+                people = source.parameters['people']; population = people//5 if base%5 != 4 else people
+                self.assertEqual(int(row['person_id']),1+draw(source.parameters['seed'],8,base,1,population))
+                self.assertEqual(row['value_as_number'] is None,base%10 == 0)
+                self.assertEqual(row['operator_concept_id']==4172703,base%20 == 3)
+                units.add(row['unit_concept_id']); numbers.add(row['value_as_number']); previous=row
+            self.assertEqual(units,set(source.units)|{None,0,999})
+            self.assertTrue({None,'NaN','Infinity','2.5'}<=numbers)
+            periods = [source.row('observation_period',i) for i in range(12)]
+            self.assertEqual([r['person_id'] for r in periods],[1,1,2,2,3,3,4,5,6,7,8,9])
+            lo,hi = 'observation_period_start_date','observation_period_end_date'
+            self.assertTrue(periods[0][lo] <= periods[1][lo] <= periods[1][hi] <= periods[0][hi])
+            self.assertEqual(date.fromisoformat(periods[3][lo]),date.fromisoformat(periods[2][hi])+timedelta(days=1))
+            self.assertGreater(periods[5][lo],periods[5][hi])
 
     def test_all_version_columns_encode_first_last_rows_without_required_nulls(self):
         for version, count in [('5.3',37),('5.4',39),('5.5',42)]:
@@ -144,6 +177,28 @@ class IndexedScaleTest(unittest.TestCase):
             with patch.object(SCALE.shutil,'disk_usage',return_value=type('Usage',(),{'free':0})()),self.assertRaises(ValueError):
                 SCALE.probe(root/'disk','S2','5.5','measurement',0,1)
             self.assertFalse((root/'disk').exists())
+
+    def test_short_offset_window_checks_space_before_first_row(self):
+        with tempfile.TemporaryDirectory() as folder:
+            out = Path(folder)/'probe'; usage = lambda free:type('Usage',(),{'free':free})()
+            with patch.object(SCALE.shutil,'disk_usage',side_effect=[usage(2**30),usage(0)]) as disk,patch.object(SCALE.Source,'row') as row:
+                with self.assertRaisesRegex(ValueError,'free-space floor'):
+                    SCALE.probe(out,'S2','5.5','measurement',41999991,1)
+                self.assertEqual([call.args[0] for call in disk.call_args_list],[out.parent,out])
+                row.assert_not_called()
+            self.assertTrue((out/'failed.json').exists()); self.assertFalse((out/'probe.json').exists())
+
+    def test_space_checks_follow_window_offsets_not_absolute_indices(self):
+        with tempfile.TemporaryDirectory() as folder:
+            rows,checks = [],[]; original = SCALE.Source.row
+            def row(source,table,index):
+                rows.append(index); return original(source,table,index)
+            def space(directory):
+                checks.append(len(rows)); return type('Usage',(),{'free':2**30})()
+            with patch.object(SCALE.Source,'row',row),patch.object(SCALE.shutil,'disk_usage',side_effect=space):
+                SCALE.probe(Path(folder)/'probe','S2','5.5','measurement',63,130)
+            self.assertEqual(checks,[0,0,64,128])
+            self.assertEqual(rows,list(range(63,193)))
 
     def test_recipe_source_drift_existing_outputs_and_csv_tampering_refuse(self):
         with tempfile.TemporaryDirectory() as folder:
