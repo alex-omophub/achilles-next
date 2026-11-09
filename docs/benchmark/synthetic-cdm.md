@@ -5,6 +5,10 @@ files using the repository's pinned PostgreSQL CDM 5.3, 5.4 or 5.5 DDL. It needs
 only Python's standard library. It is a small correctness/development fixture,
 not a clinical dataset, full CDM conformance test or representative-scale workload.
 
+For separately versioned larger logical workloads and capped high-offset CSV
+slices, see [indexed source probes](indexed-scale-cdm.md). They do not enable
+full-tier generation or change this preview's limits.
+
 ## Generate and verify files
 
 Run from the package checkout. The output directory must be new and its parent

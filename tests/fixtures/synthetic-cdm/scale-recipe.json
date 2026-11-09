@@ -1,0 +1,21 @@
+{
+  "id": "indexed-synthetic-cdm-v1",
+  "revision": "1.0.0",
+  "history_start": "2010-01-01",
+  "history_end": "2024-12-31",
+  "source_fanout": 32,
+  "unit_count": 16,
+  "tiers": {
+    "S1": {"people": 100000, "events": 5000000, "seed": 2026103101, "concepts_per_domain": 5000},
+    "S2": {"people": 1000000, "events": 100000000, "seed": 2026103102, "concepts_per_domain": 50000}
+  },
+  "domains": ["condition", "drug", "procedure", "visit", "device", "observation", "death", "specimen", "measurement"],
+  "domain_weights": {"condition": 1200, "drug": 1800, "procedure": 800, "visit": 600, "device": 200, "observation": 1000, "death": 10, "specimen": 190, "measurement": 4200},
+  "schedule": {
+    "concept_assignment": "80 of every 100 base rows select the first 20 percent of domain concepts; remaining rows select the other 80 percent; every 97th base row uses concept zero",
+    "person_assignment": "four of every five base rows select the first 20 percent of people; remaining rows select all people",
+    "duplicates": "each physical row with zero-based index99 modulo100 repeats the preceding complete row including its source ID",
+    "observation_periods": "people ending in0 have none; ending in1 have an overlapping interval; ending in2 have an adjacent interval; ending in3 have an additional invalid interval",
+    "measurement": "missing numeric values at base index0 modulo10; explicit operator at base index3 modulo20; 16 possible known units plus null,zero,unknown; finite and non-finite values retained"
+  }
+}
