@@ -74,6 +74,10 @@ The opt-in [resource and phase telemetry harness](docs/benchmark/resource-teleme
 adds scoped R/JVM, PostgreSQL, storage and phase observations on a tiny matched
 pair, including failure retention and cancellation cleanup.
 
+The [Docker validation environment](docs/development/docker-validation.md) packages
+the pinned contributor dependencies and an isolated PostgreSQL service for bounded
+offline, fixture smoke and tiny telemetry checks.
+
 The contributor [saved-representation experiment](docs/benchmark/saved-representation.md)
 compares tree and flat-index routing over identical precomputed pages. The
 [validator boundary](docs/development/validator-boundary.md) describes complete
