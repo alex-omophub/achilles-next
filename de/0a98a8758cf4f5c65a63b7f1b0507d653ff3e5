@@ -1,0 +1,22 @@
+tests/test_scale_cdm.py
+  s_895f6ebe145fd3::t_4375a1a15f8ed4 3,66-67,92-123,181-201
+  s_895f6ebe145fd3::t_0c5be4761a573d 202
+tools/scale_cdm.py
+  s_895f6ebe145fd3::t_4375a1a15f8ed4 159-160
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "de0a98a8758cf4f5c65a63b7f1b0507d653ff3e5",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
