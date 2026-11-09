@@ -56,7 +56,11 @@ Pass these operator-supplied identities to the observer. It checks them against
 the host process start ticks, cgroup membership and full ID in the cgroup name;
 it does not query Docker labels or establish authorization from a name. Container
 restarts, PID reuse/movement, unrelated descendants and observer inclusion fail
-the audit. A short-lived PostgreSQL worker can come and go between samples; this
+the audit. Every sampled live PID must share its container init PID's namespace
+and remain in the enumerated cgroup. Separate container PID namespaces are
+required; host/shared PID namespaces and nested worker PID namespaces are refused.
+A worker that exits before its metadata is read is excluded from the live count;
+missing metadata permissions fail the audit. A short-lived PostgreSQL worker can come and go between samples; this
 is sampled structural evidence, not a complete process-event trace.
 
 ## Run the read-only observer
@@ -71,12 +75,16 @@ python3 tools/docker/resource_audit.py \
 ```
 
 For a Docker-only host, bind the observer script read-only into the immutable
-validation image. The output parent directory must exist and be writable by the
-selected non-root user. Replace the IDs, PIDs, parent path and image ID below:
+validation image. Reading namespace links across the runner/PostgreSQL UIDs
+normally requires root with `SYS_PTRACE`. This observer-only permission grants
+process-inspection authority; the script uses namespace metadata reads, never
+ptrace calls or process signals. The workload containers keep their existing
+non-root/capability settings. The output parent must exist; the root example
+creates root-owned audit files. Replace the IDs, PIDs, parent path and image ID:
 
 ```sh
-docker run --rm --network none --read-only --cap-drop ALL \
-  --security-opt no-new-privileges:true --user "$(id -u):$(id -g)" \
+docker run --rm --network none --read-only --cap-drop ALL --cap-add SYS_PTRACE \
+  --security-opt no-new-privileges:true --user 0:0 \
   --pid host --cgroupns host --cpus 0.25 --memory 128m --memory-swap 128m \
   --pids-limit 32 --entrypoint python3 \
   --mount type=bind,source=/sys/fs/cgroup,target=/sys/fs/cgroup,readonly \
@@ -92,14 +100,15 @@ Host PID visibility exposes process metadata to this observer. No Docker socket,
 host filesystem root, credentials, network or writable cgroup mount is granted.
 Do not put the observer under the measured parent. This mode requires the host
 PID/cgroup namespaces and permission to read the selected metadata; rootless or
-remapped configurations may refuse it. Missing access is a failed audit, not0.
+remapped configurations may refuse it. Missing access is a failed audit, not 0.
 
-The observer lasts1–60seconds with0.25–5second intervals and bounded file, group,
+The observer accepts 1–60 second durations with 0.25–5 second intervals and bounded file, group,
 process, sample and journal sizes. It exclusively creates its output directory.
 It retains `samples.jsonl` and `audit.json`, including explicit missing counters
-and failure reasons. Exit0/`status=observed` means the requested observation
-completed; it is never a qualification receipt. An error/interruption returns
-nonzero and retains earlier samples. Forced termination may leave an incomplete
+and failure reasons. Exit 0 with `status=observed` means the requested observation
+completed; it is never a qualification receipt. An error or interruption returns
+exit status 1 and retains earlier samples; invalid CLI timing values return usage
+status 2 before creating output. Forced termination may leave an incomplete
 journal without a final record. The observer does not stop the workload when it
 exits; inspect its exit/logs, then stop only the owned project's containers.
 
@@ -127,6 +136,7 @@ Every record sets `qualifying=false` and `allocation_verified=false`.
 
 For the kernel semantics see [cgroup-v2 memory interfaces](https://www.kernel.org/doc/html/latest/admin-guide/cgroup-v2.html)
 and [Compose cgroup parent configuration](https://docs.docker.com/reference/compose-file/services/#cgroup_parent).
+Namespace identity and read-access rules follow the [Linux namespace interfaces](https://man7.org/linux/man-pages/man7/namespaces.7.html).
 Image build/bootstrap and observer overhead are outside the parent. End-to-end
 qualification still needs a registered fresh-parent lifecycle, complete job
 coverage, limits/stop authority, calibrated storage and the matched workload.

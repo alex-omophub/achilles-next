@@ -1,5 +1,6 @@
 """Verify resource attribution fails closed on namespace, identity and scope drift."""
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -25,9 +26,20 @@ class DockerResourceAuditTest(unittest.TestCase):
         for role, data in self.containers.items():
             self.make_group(self.paths[role], str(data['pid']))
             self.process(data['pid'], self.paths[role])
+        # Children intentionally have different counters from the parent, so
+        # selecting either container as the source cannot pass attribution tests.
+        for role, peak, cache, written in [('runner', 250, 80, 10), ('postgres', 350, 120, 20)]:
+            directory = self.root/self.paths[role].lstrip('/')
+            (directory/'memory.current').write_text('200\n')
+            (directory/'memory.peak').write_text(str(peak)+'\n')
+            (directory/'memory.stat').write_text('anon 100\nfile '+str(cache)+'\n')
+            (directory/'cpu.stat').write_text('usage_usec '+str(written*2)+'\n')
+            (directory/'io.stat').write_text('8:0 rbytes=4 wbytes='+str(written)+'\n')
         self.make_group('/observer', str(os.getpid()))
         (self.proc/'self').mkdir(parents=True)
         (self.proc/'self/cgroup').write_text('0::/observer\n')
+        (self.proc/'self/ns').mkdir()
+        (self.proc/'self/ns/pid').symlink_to('pid:[1000]')
         self.clock = 0
 
     def make_group(self, group, pids):
@@ -38,10 +50,15 @@ class DockerResourceAuditTest(unittest.TestCase):
         files['cgroup.procs'] = pids+'\n'
         for name, value in files.items(): (directory/name).write_text(value)
 
-    def process(self, pid, group, start=123):
+    def process(self, pid, group, start=123, namespace=None):
         directory = self.proc/str(pid); directory.mkdir(parents=True, exist_ok=True)
         (directory/'cgroup').write_text('0::'+group+'\n')
         (directory/'stat').write_text(str(pid)+' (name with ) spaces) S '+'0 '*18+str(start)+' 0\n')
+        if namespace is None:
+            namespace = 1001 if group.startswith(self.paths['runner']) else 1002
+        (directory/'ns').mkdir(exist_ok=True)
+        link = directory/'ns/pid'; link.unlink(missing_ok=True)
+        link.symlink_to('pid:['+str(namespace)+']')
 
     def audit(self):
         return AUDIT.Audit(self.root, self.proc, self.parent, self.containers)
@@ -57,16 +74,19 @@ class DockerResourceAuditTest(unittest.TestCase):
         result = self.capture()
         self.assertEqual(result['status'], 'observed')
         self.assertEqual(result['memory_lifetime_peak_bytes'], 900)
-        self.assertNotEqual(result['memory_lifetime_peak_bytes'], 1800)
+        self.assertNotEqual(result['memory_lifetime_peak_bytes'], 250+350)
         self.assertEqual(result['cpu_interval_usec'], 0)
         self.assertFalse(result['qualifying']); self.assertFalse(result['allocation_verified'])
         samples = [json.loads(line) for line in (self.home/'out/samples.jsonl').read_text().splitlines()]
+        self.assertEqual(samples[0]['metrics']['memory_current_bytes'], 500)
+        self.assertEqual(samples[0]['metrics']['cpu']['usage_usec'], 100)
         self.assertEqual(samples[0]['metrics']['memory']['file'], 400)
         self.assertEqual(samples[0]['metrics']['io']['8:0']['wbytes'], 60)
         self.assertEqual(samples[0]['membership']['processes'], dict(runner=1, postgres=1))
 
     def test_nested_workers_are_counted_without_host_process_scan(self):
         self.make_group(self.paths['postgres']+'/workers', '203\n204')
+        for pid in [203, 204]: self.process(pid, self.paths['postgres']+'/workers')
         self.assertEqual(self.audit().sample()['membership']['processes']['postgres'], 3)
 
     def test_outside_process_and_observer_do_not_enter_parent_totals(self):
@@ -94,12 +114,43 @@ class DockerResourceAuditTest(unittest.TestCase):
         (self.root/'observer/cgroup.procs').write_text('999\n')
         with self.assertRaisesRegex(ValueError, 'namespace'): self.audit()
 
-    def test_wrong_container_id_parent_and_duplicate_roles_are_refused(self):
+    def test_wrong_container_id_and_parent_are_refused(self):
         self.containers['runner']['id'] = 'c'*64
         with self.assertRaisesRegex(ValueError, 'direct child'): self.audit()
         for parent in ['/', '/system.slice', '/achillesnext-validation-test/../other', '//achillesnext-validation-test']:
             with self.subTest(parent=parent), self.assertRaises(ValueError):
                 AUDIT.Audit(self.root, self.proc, parent, self.containers)
+
+    def test_both_roles_referencing_same_valid_container_are_refused(self):
+        self.containers['postgres'] = dict(self.containers['runner'])
+        with self.assertRaisesRegex(ValueError, 'distinct containers'): self.audit()
+
+    def test_foreign_pid_namespace_in_recognized_cgroup_is_refused(self):
+        audit = self.audit()
+        self.process(303, self.paths['runner'], namespace=9999)
+        (self.root/self.paths['runner'].lstrip('/')/'cgroup.procs').write_text('101\n303\n')
+        result = self.capture()
+        self.assertEqual(result['status'], 'failed'); self.assertIn('Unrelated PID namespace', result['error'])
+        with self.assertRaisesRegex(ValueError, 'Unrelated PID namespace'): audit.sample()
+
+    def test_missing_namespace_permission_fails_instead_of_accepting_membership(self):
+        with patch.object(AUDIT.os, 'readlink', side_effect=PermissionError('namespace denied')):
+            result = self.capture()
+        self.assertEqual(result['status'], 'failed'); self.assertIn('namespace denied', result['error'])
+
+    def test_invalid_or_shared_pid_namespaces_are_refused(self):
+        for namespace in [1000, 1001]:
+            self.process(202, self.paths['postgres'], namespace=namespace)
+            with self.subTest(namespace=namespace), self.assertRaisesRegex(ValueError, 'separate PID namespaces'): self.audit()
+        with patch.object(AUDIT.os, 'readlink', return_value=''):
+            with self.assertRaisesRegex(ValueError, 'namespace identifier unavailable'): self.audit()
+
+    def test_exited_worker_is_not_counted_and_process_move_is_refused(self):
+        audit = self.audit(); directory = self.root/self.paths['runner'].lstrip('/')
+        (directory/'cgroup.procs').write_text('101\n303\n')
+        self.assertEqual(audit.sample()['membership']['processes']['runner'], 1)
+        self.process(303, '/other', namespace=1001)
+        with self.assertRaisesRegex(ValueError, 'process cgroup changed'): audit.sample()
 
     def test_symlink_and_replaced_cgroup_fail(self):
         audit = self.audit(); group = self.root/self.paths['runner'].lstrip('/')
@@ -189,6 +240,16 @@ class DockerResourceAuditTest(unittest.TestCase):
         with patch.object(AUDIT.Audit, 'sample', increasing): result = self.capture()
         self.assertEqual(result['cpu_interval_usec'], 100)
         self.assertEqual(result['status'], 'observed')
+
+    def test_cli_nonfinite_and_out_of_range_times_are_usage_errors(self):
+        base = ['resource_audit.py', '--parent', self.parent, '--runner', 'a'*64+':101',
+                '--postgres', 'b'*64+':202', '--output', str(self.home/'out')]
+        for option, value in [(name, value) for name in ['seconds', 'interval'] for value in ['nan', 'inf', '-inf']]+[('seconds', '61'), ('interval', '.1')]:
+            with self.subTest(option=option, value=value), patch.object(AUDIT.sys, 'argv', base+['--'+option+'='+value]), patch.object(AUDIT.sys, 'platform', 'linux'), patch.object(AUDIT, 'capture') as capture, patch('sys.stderr', new_callable=io.StringIO) as errors:
+                with self.assertRaises(SystemExit) as raised: AUDIT.main()
+                self.assertEqual(raised.exception.code, 2)
+                self.assertIn('error:', errors.getvalue()); self.assertNotIn('Traceback', errors.getvalue())
+                capture.assert_not_called(); self.assertFalse((self.home/'out').exists())
 
 
 if __name__ == '__main__': unittest.main()

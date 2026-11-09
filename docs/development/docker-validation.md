@@ -126,6 +126,7 @@ peaks or treat them as a measured whole-job peak. No common parent group, exclus
 CPU/I/O allocation or cold-cache reset is established here; every receipt sets
 `qualifying=false`. Build/install work is outside validation/telemetry timings.
 
-For an optional, read-only check of a separately registered Linux common parent,
-see the [resource attribution audit](docker-resource-audit.md). It leaves these
-default validation modes and their evidence scope unchanged.
+For an optional resource attribution procedure using a separately registered
+Linux common parent, see the [resource attribution audit](docker-resource-audit.md).
+Its observer is read-only; the preparation steps start workload containers under
+that parent. The default validation modes and their evidence scope are unchanged.

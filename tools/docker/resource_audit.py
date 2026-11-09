@@ -76,12 +76,19 @@ def controls(raw):
                 pids=limit(raw['pids.max']), cpu_quota_usec=limit(quota), cpu_period_usec=period)
 
 
+def pid_namespace(directory):
+    namespace = os.readlink(directory / 'ns/pid')
+    if not re.fullmatch(r'pid:\[[0-9]+\]', namespace):
+        raise ValueError('PID namespace identifier unavailable or invalid')
+    return namespace
+
+
 def proc_identity(proc, pid):
     directory = proc / str(pid)
     # comm can contain spaces and parentheses. Fields after its final ')' start
     # at field3, so starttime (field22) is index19 in the remaining sequence.
     stat = read(directory / 'stat').rsplit(')', 1)[1].split()
-    return dict(pid=pid, start_ticks=number(stat[19]),
+    return dict(pid=pid, start_ticks=number(stat[19]), pid_namespace=pid_namespace(directory),
                 cgroup=str(unified(read(directory / 'cgroup'))))
 
 
@@ -105,6 +112,10 @@ class Audit:
             self.groups[role], self.identities[role] = group, identity
         if len(set(self.groups.values())) != 2:
             raise ValueError('Runner and postgres must be distinct containers')
+        self.observer_namespace = pid_namespace(self.proc / 'self')
+        namespaces = {value['pid_namespace'] for value in self.identities.values()}
+        if len(namespaces) != 2 or self.observer_namespace in namespaces:
+            raise ValueError('Containers require separate PID namespaces outside the observer host namespace')
         for group in [self.parent, *self.groups.values()]:
             directory = self.directory(group)
             st = directory.stat()
@@ -161,9 +172,20 @@ class Audit:
             if group == self.parent and pids:
                 raise ValueError('Unattributed process in measured parent')
             if role:
-                counts[role] += len(pids)
-                if self.identities[role]['pid'] in pids:
-                    found.add(role)
+                for pid in pids:
+                    try:
+                        identity = proc_identity(self.proc, pid)
+                    except FileNotFoundError:
+                        # A worker may exit between cgroup.procs and /proc reads.
+                        # Missing init PIDs still fail the required found check.
+                        continue
+                    if identity['pid_namespace'] != self.identities[role]['pid_namespace']:
+                        raise ValueError('Unrelated PID namespace in container cgroup: ' + role)
+                    if identity['cgroup'] != str(group):
+                        raise ValueError('Sampled process cgroup changed: ' + role)
+                    counts[role] += 1
+                    if pid == self.identities[role]['pid']:
+                        found.add(role)
             # Bound enumeration itself, including empty/foreign groups. Files
             # such as memory.stat are ignored without reading process commands.
             with os.scandir(directory) as entries:
@@ -226,11 +248,15 @@ class Audit:
                     unavailable=missing, metrics=metrics)
 
 
-def capture(root, proc, parent, containers, output, seconds=5, interval=.5):
+def sampling_limits(seconds, interval):
     if not all(type(v) in (int, float) and math.isfinite(v) for v in (seconds, interval)):
         raise ValueError('Finite audit interval/duration required')
     if not 1 <= seconds <= 60 or not .25 <= interval <= 5:
         raise ValueError('Audit needs 1..60 seconds and .25..5 second samples')
+
+
+def capture(root, proc, parent, containers, output, seconds=5, interval=.5):
+    sampling_limits(seconds, interval)
     output = Path(output)
     output.mkdir(mode=0o700)  # exclusive: never overwrite a prior audit
     record = dict(status='running', qualifying=False, samples=0,
@@ -250,6 +276,7 @@ def capture(root, proc, parent, containers, output, seconds=5, interval=.5):
         audit = Audit(root, proc, parent, containers)
         record['identities'] = audit.identities
         record['observer_cgroup'] = str(audit.observer)
+        record['observer_pid_namespace'] = audit.observer_namespace
         with (output / 'samples.jsonl').open('x') as journal:
             while True:
                 sample = audit.sample()
@@ -306,6 +333,10 @@ def main():
     parser.add_argument('--seconds', type=float, default=5)
     parser.add_argument('--interval', type=float, default=.5)
     args = parser.parse_args()
+    try:
+        sampling_limits(args.seconds, args.interval)
+    except ValueError as error:
+        parser.error(str(error))
     if not sys.platform.startswith('linux'):
         parser.error('Linux host PID/cgroup namespaces required')
     result = capture('/sys/fs/cgroup', '/proc', args.parent,
