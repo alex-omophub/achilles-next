@@ -2,7 +2,7 @@
 resourceTelemetry <- function(out,owner,schemas,source) {
   ns<-asNamespace('AchillesNext');getn<-function(n)get(n,ns);lit<-getn('.store_literal')
   journal<-file.path(out,'phases.jsonl');stopifnot(!file.exists(journal))
-  log<-file(journal,'wb');rows<-0L;counter<-0L;stack<-integer();sqlStats<-list();writerStats<-list();tempPeak<-0;tempSamples<-0L;closed<-FALSE;afterStatement<-NULL
+  log<-file(journal,'wb');rows<-0L;counter<-0L;stack<-integer();sqlStats<-list();writerStats<-list();tempPeak<-0;tempSamples<-0L;tempUnavailable<-0L;closed<-FALSE;afterStatement<-NULL
   clock<-proc.time()[['elapsed']]
   write<-function(value) {
     rows<<-rows+1L;stopifnot(rows<=10000L)
@@ -24,10 +24,14 @@ resourceTelemetry <- function(out,owner,schemas,source) {
     stack<<-c(stack,id)
     on.exit({
       end<-proc.time();stack<<-head(stack,-1L)
-      write(list(event='end',id=id,parent=parent,phase=name,status=status,elapsed_seconds=end[['elapsed']]-clock,
+      tryCatch(write(list(event='end',id=id,parent=parent,phase=name,status=status,elapsed_seconds=end[['elapsed']]-clock,
         wall_seconds=end[['elapsed']]-begin[['elapsed']],R_self_CPU_seconds=sum(end[c('user.self','sys.self')]-begin[c('user.self','sys.self')]),
         cpu_scope='R process self CPU including in-process JVM; excludes PostgreSQL and child comparisons',scope=scope,
-        before=beforeDB,after=if(database)snapshot() else NULL))
+        before=beforeDB,after=if(database)snapshot() else NULL)),error=function(e) {
+          # Preserve an analytical failure; a successful phase must still fail
+          # when its required journal record cannot be written.
+          if(status=='completed')stop(e)
+        })
     },add=TRUE)
     result<-work();status<-'completed';result
   }
@@ -61,8 +65,14 @@ resourceTelemetry <- function(out,owner,schemas,source) {
       value<-aggregate(sqlEnv,key,work)
       if(!is.null(afterStatement))afterStatement(sql)
       if(grepl('^CREATE (TEMP|INDEX)',sql)) {
-        bytes<-tryCatch(as.numeric(one("SELECT COALESCE(sum(pg_total_relation_size(oid)),0)::text FROM pg_class WHERE relnamespace=pg_my_temp_schema() AND relkind IN ('r','m')")),error=function(e)NA_real_)
+        # A failed optional probe must not abort the analytical transaction.
+        execute('SAVEPOINT achillesnext_telemetry_probe')
+        bytes<-tryCatch(as.numeric(one("SELECT COALESCE(sum(pg_total_relation_size(oid)),0)::text FROM pg_class WHERE relnamespace=pg_my_temp_schema() AND relkind IN ('r','m')")),error=function(e) {
+          execute('ROLLBACK TO SAVEPOINT achillesnext_telemetry_probe');NA_real_
+        })
+        execute('RELEASE SAVEPOINT achillesnext_telemetry_probe')
         if(!is.na(bytes)){tempPeak<<-max(tempPeak,bytes);tempSamples<<-tempSamples+1L}
+        else tempUnavailable<<-tempUnavailable+1L
       }
       check();value
     }
@@ -116,11 +126,13 @@ resourceTelemetry <- function(out,owner,schemas,source) {
   }
   finish<-function(status) {
     if(closed)return(invisible(NULL))
+    failed<-TRUE
+    on.exit({closed<<-TRUE;tryCatch(close(log),error=function(e)if(!failed)stop(e))},add=TRUE)
     write(list(event='summary',status=status,sql=as.list(sqlEnv),writer=as.list(writerEnv),
       persistence_scope='inclusive writer methods and SQL; flush/add/finish overlap; SQL includes trigger revision costs, which are not isolated',
-      sampled_temp_relation_peak_bytes=if(tempSamples)observation(tempPeak,scope='sampled transaction temp relation allocation') else observation(reason='no_successful_temp_sample'),temp_samples=tempSamples,temp_scope='transaction-local allocated temp relations sampled after CREATE/index; excludes executor spill/short-lived peaks',
+      sampled_temp_relation_peak_bytes=if(tempSamples)observation(tempPeak,scope='sampled transaction temp relation allocation') else observation(reason='no_successful_temp_sample'),temp_samples=tempSamples,temp_samples_unavailable=tempUnavailable,temp_scope='transaction-local allocated temp relations sampled after CREATE/index; excludes executor spill/short-lived peaks',
       missing=list(database_CPU_memory='not attributed',job_cache_peak='no dedicated verified cgroup',revision_trigger_CPU='included in statements, not isolated',physical_volume_peak='not measured')))
-    close(log);closed<<-TRUE
+    failed<-FALSE;invisible(NULL)
   }
   list(phase=measure,check=check,transaction=transaction,lookup=lookup,public=public,snapshot=snapshot,finish=finish,
     set_after_statement=function(hook){stopifnot(is.null(hook)||is.function(hook));afterStatement<<-hook})

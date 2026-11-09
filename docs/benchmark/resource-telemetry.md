@@ -1,9 +1,10 @@
 # Small-fixture resource and phase telemetry
 
 This opt-in contributor harness observes one synthetic PostgreSQL core-profile
-pair with four people and 24 clinical events. It runs all 142 outputs with and without observers,
-checks exact parity, natively validates and publishes both paths, and tests
-cancellation after approval. Measurements are sidecars, not changes to analytical
+pair with four people and 24 clinical events. It runs all 142 outputs with and
+without observers, checks parity after declared timestamp/timing normalization,
+natively validates and publishes both paths, and tests cancellation after
+approval. Measurements are sidecars, not changes to analytical
 metadata, package APIs or the frozen result contract.
 
 ## Run
@@ -93,3 +94,12 @@ On a development Mac, database CPU/memory, a verified whole-job cgroup peak and
 browser heap remain unavailable. A dedicated registered reference environment,
 complete process/cgroup membership, sampler validation on that host and measured
 budgets are still required before any scale/performance claim.
+
+## Observer regressions
+
+Run `Rscript --vanilla tests/tracer/resource-telemetry-observer.R` after installing
+the current package to check journal failure handling without PostgreSQL. Add
+`tools/tracer_fixture_config.R` as its argument to reproduce a real SQL probe
+failure and verify savepoint recovery on the marked synthetic database. Failed
+temporary-allocation samples are counted separately as unavailable; probe errors
+roll back to their savepoint before analytical SQL continues.

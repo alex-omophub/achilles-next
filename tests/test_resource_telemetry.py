@@ -1,5 +1,6 @@
 """Resource scope, missing-counter, budget and failure-retention regressions."""
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -43,6 +44,7 @@ class ResourceTelemetryTest(unittest.TestCase):
         self.assertEqual(REPORT.delta(SAMPLE.metric(dict(bytes='8')),SAMPLE.metric(dict(bytes='3')),'storage')['value']['bytes']['value'],'-5')
         self.assertEqual(REPORT.delta(SAMPLE.metric(dict(stats_reset='e',count='8')),SAMPLE.metric(dict(stats_reset='e',count='3')),'database')['state'],'unavailable')
 
+    @unittest.skipUnless(hasattr(os,'wait4'),'Unix process telemetry')
     def test_failed_owned_child_preserves_log_and_wait4_metrics(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder);value=SAMPLE.observe([sys.executable,'-c','print("expected failure");raise SystemExit(7)'],root,interval=.1,wall_seconds=5)
@@ -50,6 +52,7 @@ class ResourceTelemetryTest(unittest.TestCase):
             self.assertEqual(value['worker_peak_rss_bytes']['state'],'available');self.assertFalse(value['qualifying'])
             self.assertIn('expected failure',(root/'worker.log').read_text());self.assertTrue((root/'process-telemetry.json').exists())
 
+    @unittest.skipUnless(hasattr(os,'wait4'),'Unix process telemetry')
     def test_deadline_requests_cooperative_stop_even_with_clean_worker_exit(self):
         with tempfile.TemporaryDirectory() as folder:
             root=Path(folder)
@@ -58,6 +61,7 @@ class ResourceTelemetryTest(unittest.TestCase):
             self.assertEqual(value['exit_code'],0);self.assertNotEqual(value['status'],'completed');self.assertIsNotNone(value['stop_reason'])
             self.assertTrue((root/'stop.json').exists())
 
+    @unittest.skipUnless(hasattr(os,'wait4'),'Unix process telemetry')
     def test_sampler_failure_reaps_its_child_before_propagating(self):
         with tempfile.TemporaryDirectory() as folder,patch.object(SAMPLE.shutil,'disk_usage',side_effect=OSError('probe failed')):
             root=Path(folder)
@@ -74,6 +78,7 @@ class ResourceTelemetryTest(unittest.TestCase):
             end['parent']=2;p.write_text('\n'.join(map(json.dumps,[start,end]))+'\n')
             with self.assertRaises(ValueError):REPORT.phases(p)
 
+    @unittest.skipUnless(hasattr(os,'wait4'),'Unix process telemetry')
     def test_output_scan_refuses_symlinks_and_does_not_overwrite_records(self):
         with tempfile.TemporaryDirectory() as folder:
             p=Path(folder);(p/'link').symlink_to(ROOT/'README.md')

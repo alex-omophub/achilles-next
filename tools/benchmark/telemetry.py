@@ -15,7 +15,7 @@ ROOT=Path(__file__).resolve().parents[2]
 _saved=sys.path[:]
 try:
     sys.path.insert(0,str(ROOT/'tools'))
-    from postgresql_fixtures import Postgres,guard_database,identifier,literal
+    from postgresql_fixtures import Postgres,guard_database,identifier,literal,RUNNER
     from synthetic_cdm import generate,assets,plan,canonical,sha
     from synthetic_cdm_database import load_preview,drop_preview
     from synthetic_cdm_oracle import read_tables,expected
@@ -71,7 +71,7 @@ def main():
         if loaded is not None:drop_preview(pg,loaded)
     state=json.loads((out/'fixture-state.json').read_text());names=[loaded['schema'],state['results_schema'],state['serving_schema']]
     if pg.rows('SELECT nspname FROM pg_namespace WHERE nspname IN ('+','.join(map(literal,names))+')'):raise ValueError('Disposable namespace cleanup incomplete')
-    temp=pg.value("SELECT has_database_privilege('achilles_next_runner',current_database(),'TEMPORARY')::text")=='true'
+    temp=pg.value('SELECT has_database_privilege('+literal(RUNNER)+",current_database(),'TEMPORARY')::text")=='true'
     if temp!=state['runner_had_temp']:raise ValueError('Fixture TEMP not restored')
     receipt=dict(status='passed',qualifying=False,kind='small_fixture_instrumentation_proof',code_sha256=before,profile_sha256=sha((ROOT/'inst/analysis/core-characterization-v2.json').read_bytes()),
         process=result,exports=exports,cancel_probe=report['cancel_probe'],cleanup=dict(namespaces_removed=True,fixture_TEMP_restored=True),
