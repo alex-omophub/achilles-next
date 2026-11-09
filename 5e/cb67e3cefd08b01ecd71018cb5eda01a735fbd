@@ -1,0 +1,20 @@
+docs/development/docker-resource-audit.md
+  s_895f6ebe145fd3::t_537fcd36f7f74a 89-90
+  s_895f6ebe145fd3::t_9e6bc4daeb649d 5-6,14-17,72-76,85-88,91-103
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5ecb67e3cefd08b01ecd71018cb5eda01a735fbd",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
