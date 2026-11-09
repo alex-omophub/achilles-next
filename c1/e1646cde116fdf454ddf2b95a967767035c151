@@ -1,0 +1,20 @@
+docs/benchmark/resource-telemetry.md
+  s_895f6ebe145fd3::t_955cec36be712e 100
+  s_895f6ebe145fd3::t_383cacec6f43c3 101-102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c1e1646cde116fdf454ddf2b95a967767035c151",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
