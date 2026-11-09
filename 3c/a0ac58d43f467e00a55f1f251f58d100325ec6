@@ -1,0 +1,30 @@
+tests/test_docker_resource_audit.py
+  s_895f6ebe145fd3::t_f73fd8c6fd130b 41-42,140-146
+  s_895f6ebe145fd3::t_3af2e5dccd9fdc 3,29-35,37,53,57-61,77,89,117,124-139,147-154,244-252
+  s_895f6ebe145fd3::t_6b24e270f812d7 36,81-82
+  s_895f6ebe145fd3::t_9fc0c5355b72ea 253
+docs/development/docker-validation.md
+  s_895f6ebe145fd3::t_f73fd8c6fd130b 129-132
+docs/development/docker-resource-audit.md
+  s_895f6ebe145fd3::t_6b24e270f812d7 105
+  s_895f6ebe145fd3::t_f73fd8c6fd130b 59-63,78-83,86-87,103,108-111,139
+tools/docker/resource_audit.py
+  s_895f6ebe145fd3::t_f73fd8c6fd130b 79-85,91,115-118,279
+  s_895f6ebe145fd3::t_3af2e5dccd9fdc 175-188,251,256-259,336-339
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3ca0ac58d43f467e00a55f1f251f58d100325ec6",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
