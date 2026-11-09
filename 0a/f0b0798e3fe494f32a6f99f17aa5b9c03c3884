@@ -1,0 +1,21 @@
+tools/docker/fetch.py
+  s_895f6ebe145fd3::t_17ac78725ec8ff 29-31
+tests/test_docker_validation.py
+  s_895f6ebe145fd3::t_17ac78725ec8ff 183-198
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0af0b0798e3fe494f32a6f99f17aa5b9c03c3884",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
