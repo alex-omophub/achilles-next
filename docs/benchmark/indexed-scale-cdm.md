@@ -84,7 +84,9 @@ clinical plausibility, end-to-end analytical parity, observed full-tier
 histograms, disk amplification or a performance/resource budget. Sample row
 widths do not establish a complete generation/publication storage projection.
 
-Full streaming materialization, checkpoint/restart and registered resource/stop
-controls are subsequent work. Larger runs still require allocated resources,
+For immutable chunks, guarded bounded selections and checkpoint/restart, see
+[streaming materialization](streaming-scale-cdm.md). It retains a 100,000-row
+selection cap; full-tier orchestration and registered resource/stop controls
+remain subsequent work. Larger runs still require allocated resources,
 scoped observer access, calibrated capacity/headroom and the matched analysis
 and publication protocol. No shared-host action follows from producing a plan.
