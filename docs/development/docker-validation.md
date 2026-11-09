@@ -49,6 +49,11 @@ with 0.5 CPU/256 MiB. These are ceilings, not dedicated host reservations. The
 validator runs as the invoking user's non-root UID/GID; bootstrap has only the
 capabilities needed to initialize/chown its own volumes. The validator has no
 extra capabilities, Docker socket, host network or production mounts.
+PostgreSQL also drops all capabilities and uses no-new-privileges. For the pinned
+image and its project-owned named volumes, its root entrypoint needs only
+DAC_OVERRIDE to read the private password file, plus SETUID/SETGID for `gosu`.
+The database process runs as postgres with no effective capabilities. This setup
+does not repair foreign/misowned data directories or support arbitrary data binds.
 These runtime caps do not constrain image builds; builder resources are managed
 separately. The dependency build compiles with one make worker by default.
 
@@ -62,7 +67,8 @@ sh tools/docker/validate.sh telemetry
 
 Choose limits from actual available host resources before running on a shared
 machine. Non-root IDs default to `id -u`/`id -g`; explicitly set `VALIDATION_UID`
-and `VALIDATION_GID` to a non-root account if invoking from a root shell. Changing
+and `VALIDATION_GID` to a non-root account if invoking from a root shell. Both
+IDs must be in the range 1..2147483647 and are checked before Docker starts. Changing
 IDs for existing marked volumes is refused. Use a new guarded project name for
 a different owner/isolated copy; do not overwrite old credentials.
 
@@ -74,8 +80,8 @@ PostgreSQL data stays on its volume, not its writable container layer. Its test
 configuration uses explicit huge-pages-off and bounded work/temp settings; it does
 not change host huge-page pools or other databases.
 
-Output is a bind mount selected by `ACHILLESNEXT_VALIDATION_OUTPUT`; its parent
-must exist. The wrapper refuses the checkout, its children and its ancestors. It checks a 10 GiB
+Output is a bind mount selected by `ACHILLESNEXT_VALIDATION_OUTPUT`; that directory
+itself must already exist. The wrapper refuses the checkout, its children and its ancestors. It checks a 10 GiB
 free-space floor on state/output before steps. This is observation, not a disk
 quota or reservation. PostgreSQL/backend temp limits and native telemetry output
 limits remain scoped controls; actual storage pools can be shared or aliased.
@@ -83,8 +89,10 @@ Keep production/backup headroom independently. Cleanup never prunes global image
 or volumes; `down` preserves credentials/data for examination and reruns. Remove
 this project's retained volumes manually only when its data is no longer needed.
 
-Each run retains `validation.json`, image/runtime manifests, step logs and cgroup
-endpoints. A running/failed record is not a success receipt. Successful telemetry
+Runs that create an output directory retain `validation.json` and the logs from
+steps that started. Image/runtime manifests are available only after their
+corresponding loading/check steps succeed; cgroup endpoints are captured when
+that collection completes. A running/failed record is not a success receipt. Successful telemetry
 also retains the original fully checked `telemetry/receipt.json`. Ordinary signals
 are forwarded to the owned subprocess group. A step timeout first sends SIGINT,
 then SIGTERM and ultimately SIGKILL if the child ignores stopping; Docker itself

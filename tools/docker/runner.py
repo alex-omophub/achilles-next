@@ -65,6 +65,10 @@ def fixtures():
     module=importlib.util.module_from_spec(spec);spec.loader.exec_module(module);return module
 
 
+def client_version_matches(client,pin):
+    return re.search(r'(?<![0-9.])'+re.escape(pin)+r'(?![0-9.])',client) is not None
+
+
 def build_manifest():
     target=Path('/opt/validation/image-manifest.json')
     runtime=Path('/tmp/achillesnext-build-runtime.json')
@@ -72,7 +76,7 @@ def build_manifest():
     tuple=json.loads((ROOT/'tests/tracer/runtime-lock.json').read_text())
     client=subprocess.check_output(['psql','--version'],text=True).strip()
     node=subprocess.check_output(['node','--version'],text=True).strip()
-    if not re.search(r'\b'+re.escape(tuple['psql_client'])+r'\b',client) or node!='v'+tuple['node']:
+    if not client_version_matches(client,tuple['psql_client']) or node!='v'+tuple['node']:
         raise ValueError('Client/Node tuple mismatch')
     write_json(target,dict(source_sha256=source_pins(),runtime=json.loads(runtime.read_text()),psql=client,node=node,
         lock_sha256=hashlib.sha256((ROOT/'tools/docker/runtime-lock.json').read_bytes()).hexdigest(),

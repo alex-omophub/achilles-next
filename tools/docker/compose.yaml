@@ -36,6 +36,11 @@ services:
   postgres:
     image: postgres:17.11@sha256:ff87138949ad9a46f32ff23bd6852b52ce024a13dffe9b4087be98292cdd3b4f
     restart: "no"
+    security_opt: ["no-new-privileges:true"]
+    cap_drop: [ALL]
+    # Image-owned PG volumes need no ownership repair; root reads the private
+    # password file, then gosu drops UID/GID. Unexpected ownership fails closed.
+    cap_add: [DAC_OVERRIDE, SETUID, SETGID]
     environment:
       POSTGRES_PASSWORD_FILE: /run/validation-secrets/postgres_password
       POSTGRES_INITDB_ARGS: --data-checksums
@@ -47,7 +52,7 @@ services:
     shm_size: 256m
     stop_grace_period: 60s
     healthcheck:
-      test: [CMD-SHELL, "pg_isready -U postgres -d postgres"]
+      test: [CMD-SHELL, "pg_isready -h 127.0.0.1 -U postgres -d postgres"]
       interval: 2s
       timeout: 3s
       retries: 60

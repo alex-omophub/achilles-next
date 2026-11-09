@@ -15,14 +15,13 @@ COPY --from=node /usr/local/bin/node /usr/local/bin/node
 COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 RUN ln -s ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
     && ln -s ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-COPY tools/docker/runtime-lock.json tools/docker/fetch.py /opt/validation/
+COPY tools/docker/runtime-lock.json tools/docker/fetch.py tools/docker/install.R /opt/validation/
 RUN python3 /opt/validation/fetch.py \
     && mkdir -p /tmp/pg-build && tar -xjf /opt/validation/downloads/postgresql.tar.bz2 -C /tmp/pg-build --strip-components=1 \
     && cd /tmp/pg-build && ./configure --prefix=/opt/pgsql --without-readline --without-icu --with-openssl \
     && make -C src/interfaces/libpq install && make -C src/bin/psql install \
-    && cd / && rm -rf /tmp/pg-build
-COPY tools/docker/install.R /opt/validation/
-RUN Rscript --vanilla /opt/validation/install.R \
+    && cd / && rm -rf /tmp/pg-build \
+    && Rscript --vanilla /opt/validation/install.R \
     && dpkg-query -W > /opt/validation/system-packages.txt \
     && rm -rf /opt/validation/downloads
 

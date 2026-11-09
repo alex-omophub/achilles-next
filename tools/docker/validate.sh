@@ -7,16 +7,25 @@ case "$validationProject" in achillesnext-validation|achillesnext-validation-*) 
 case "$validationProject" in *[!a-z0-9-]*) echo 'Invalid project characters' >&2; exit 2;; esac
 [ "${#validationProject}" -le 63 ] || exit 2
 export ACHILLESNEXT_VALIDATION_PROJECT="$validationProject"
-export VALIDATION_UID="${VALIDATION_UID:-$(id -u)}" VALIDATION_GID="${VALIDATION_GID:-$(id -g)}"
-case "$VALIDATION_UID:$VALIDATION_GID" in *[!0-9:]*) echo 'Numeric UID/GID required' >&2; exit 2;; esac
-[ "$VALIDATION_UID" -gt 0 ] || { echo 'Select a non-root VALIDATION_UID/GID' >&2; exit 2; }
+validation_id() {
+  validationID=$1
+  case "$validationID" in ''|*[!0-9]*) return 1;; esac
+  while [ "${validationID#0}" != "$validationID" ]; do validationID=${validationID#0}; done
+  [ -n "$validationID" ] && [ "${#validationID}" -le 10 ] && [ "$validationID" -le 2147483647 ] || return 1
+  printf '%s' "$validationID"
+}
+VALIDATION_UID=$(validation_id "${VALIDATION_UID:-$(id -u)}") && VALIDATION_GID=$(validation_id "${VALIDATION_GID:-$(id -g)}") || {
+  echo 'Select numeric VALIDATION_UID/GID in the range 1..2147483647' >&2; exit 2;
+}
+export VALIDATION_UID VALIDATION_GID
 case "${ACHILLESNEXT_VALIDATION_OUTPUT:-}" in /*) ;; *) echo 'Set ACHILLESNEXT_VALIDATION_OUTPUT to an existing absolute directory' >&2; exit 2;; esac
 validationOutput=$(CDPATH= cd -- "$ACHILLESNEXT_VALIDATION_OUTPUT" && pwd -P)
 case "$validationOutput/" in "$validationRoot/"*) echo 'Output must be outside the checkout' >&2; exit 2;; esac
 case "$validationRoot/" in "$validationOutput/"*) echo 'Output must not contain the checkout' >&2; exit 2;; esac
 export ACHILLESNEXT_VALIDATION_OUTPUT="$validationOutput"
 validationTag=${ACHILLESNEXT_VALIDATION_TAG:-local}
-case "$validationTag" in ''|*[!a-zA-Z0-9_.-]*) echo 'Invalid validation image tag' >&2; exit 2;; esac
+case "$validationTag" in ''|[.-]*|*[!a-zA-Z0-9_.-]*) echo 'Invalid validation image tag' >&2; exit 2;; esac
+[ "${#validationTag}" -le 128 ] || { echo 'Validation image tag exceeds 128 characters' >&2; exit 2; }
 export ACHILLESNEXT_VALIDATION_IMAGE="achillesnext-validation:$validationTag"
 compose() { docker compose --project-name "$validationProject" --file "$validationRoot/tools/docker/compose.yaml" "$@"; }
 validationMode=${1:-smoke}
@@ -44,7 +53,9 @@ cleanup() {
   exit "$validationExit"
 }
 trap cleanup EXIT
+trap 'exit 129' HUP
 trap 'exit 130' INT
+trap 'exit 131' QUIT
 trap 'exit 143' TERM
 compose up --detach --wait --wait-timeout 120 postgres
 compose run --rm --no-deps validator "$validationMode"
