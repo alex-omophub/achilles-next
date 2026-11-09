@@ -2,8 +2,8 @@
 
 The optional observer in [resource_audit.py](../../tools/docker/resource_audit.py)
 checks an already running synthetic PostgreSQL/validator pair in a declared
-common cgroup-v2 parent. It needs Python3 on Linux, or the existing validation
-image and Docker. It reads counters and process identities; it creates no
+common cgroup-v2 parent. Run this observer on Linux with Python3 under a dedicated
+non-root operator account with scoped metadata access. It reads counters and process identities; it creates no
 cgroups, resets no statistics and never signals either workload.
 
 This is a small sampler-attribution trial. It does not authorize a shared-host
@@ -11,6 +11,10 @@ allocation, launch a benchmark, qualify a release or enable larger source tiers.
 Register the host, operator, resource limits, storage headroom and stop authority
 before running any workload there. A shared machine's available resources are
 not a dedicated reservation.
+Verify the operator's namespace-read permissions before starting the pair. The
+supplied mixed-UID Compose setup does not provide a scoped operator permission
+boundary automatically; shared-host auditing remains unavailable until one is
+established and verified. Ordinary Docker validation does not require this audit.
 
 ## Place the two containers
 
@@ -65,7 +69,11 @@ is sampled structural evidence, not a complete process-event trace.
 
 ## Run the read-only observer
 
-On a Linux host with Python3 and access to its process/cgroup metadata:
+Run the observer directly on Linux under the dedicated non-root operator account,
+without host-wide `SYS_PTRACE`. That account must have verified permission to read
+the two workloads' process/cgroup/namespace metadata without inspection authority
+over unrelated services. The observer cannot create or enforce that permission
+boundary. The following command assumes it has already been established:
 
 ```sh
 python3 tools/docker/resource_audit.py \
@@ -74,33 +82,25 @@ python3 tools/docker/resource_audit.py \
   --output /absolute/new-audit-directory --seconds 5 --interval 0.5
 ```
 
-For a Docker-only host, bind the observer script read-only into the immutable
-validation image. Reading namespace links across the runner/PostgreSQL UIDs
-normally requires root with `SYS_PTRACE`. This observer-only permission grants
-process-inspection authority; the script uses namespace metadata reads, never
-ptrace calls or process signals. The workload containers keep their existing
-non-root/capability settings. The output parent must exist; the root example
-creates root-owned audit files. Replace the IDs, PIDs, parent path and image ID:
+A root container combining `SYS_PTRACE` with `--pid host` can inspect and modify
+unrelated host processes, subject to kernel security policy. Its authority is
+not restricted to the selected PostgreSQL/validator pair. A read-only filesystem,
+no-new-privileges and a script that only reads metadata do not confine that
+process authority. See the [Linux capability reference](https://man7.org/linux/man-pages/man7/capabilities.7.html).
+That Docker-only example is therefore not provided here.
 
-```sh
-docker run --rm --network none --read-only --cap-drop ALL --cap-add SYS_PTRACE \
-  --security-opt no-new-privileges:true --user 0:0 \
-  --pid host --cgroupns host --cpus 0.25 --memory 128m --memory-swap 128m \
-  --pids-limit 32 --entrypoint python3 \
-  --mount type=bind,source=/sys/fs/cgroup,target=/sys/fs/cgroup,readonly \
-  --mount "type=bind,source=$PWD/tools/docker/resource_audit.py,target=/audit.py,readonly" \
-  --mount "type=bind,source=$ACHILLESNEXT_VALIDATION_OUTPUT,target=/output" \
-  sha256:IMMUTABLE_VALIDATION_IMAGE_ID /audit.py \
-  --parent /achillesnext-validation-trial \
-  --runner FULL_RUNNER_ID:HOST_PID --postgres FULL_POSTGRES_ID:HOST_PID \
-  --output /output/new-resource-audit --seconds 5 --interval 0.5
-```
+The current mixed-UID containers may deny namespace-link reads to an unprivileged
+operator. A dedicated account alone does not fix that access. If the required
+scoped permission configuration cannot be verified, leave the audit unavailable
+and arrange a separately reviewed isolated validation environment. Do not add
+host-wide `SYS_PTRACE`, run the observer as host root or weaken PID checks to
+make the audit pass on a shared host. No Docker-only shared-host observer route
+is established by this guide.
 
-Host PID visibility exposes process metadata to this observer. No Docker socket,
-host filesystem root, credentials, network or writable cgroup mount is granted.
-Do not put the observer under the measured parent. This mode requires the host
-PID/cgroup namespaces and permission to read the selected metadata; rootless or
-remapped configurations may refuse it. Missing access is a failed audit, not 0.
+The output parent must exist and be writable by the operator. Keep the observer
+outside the measured cgroup and use the host PID/cgroup view for the registered
+workloads. Missing metadata access is a failed audit, not 0. These prerequisites
+do not change the workload containers' user/capability settings.
 
 The observer accepts 1–60 second durations with 0.25–5 second intervals and bounded file, group,
 process, sample and journal sizes. It exclusively creates its output directory.
