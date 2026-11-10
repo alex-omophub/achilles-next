@@ -150,3 +150,7 @@ Every receipt sets `full_tier_generated=false` and `qualifying=false`. Even a
 complete inventory of a selected auxiliary table does not establish a complete
 S1/S2 source, source-wide clinical distributions, calibrated storage headroom or
 representative-scale analytical performance.
+
+For a frozen target with resource observations and an optional verified inventory
+witness, see [source-run registration](source-run-registration.md). Registration
+records preparation evidence; it does not enable a full-tier run.
