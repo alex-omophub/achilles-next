@@ -1,0 +1,37 @@
+docs/benchmark/source-run-registration.md
+  s_895f6ebe145fd3::t_f5280b985a5dc0 117,120-123
+  s_895f6ebe145fd3::t_de82091b57dbf4 124
+tests/test_bounded_source_loader.py
+  s_895f6ebe145fd3::t_5e504253f60ec2 22,36-37,80
+  s_895f6ebe145fd3::t_3b761035db88c5 94
+  s_895f6ebe145fd3::t_a4c508eaca5c69 1-21,23-35,38-79,81-93,95-149,155-156
+  s_895f6ebe145fd3::t_eccc2d7d1825d7 150-154
+docs/benchmark/bounded-source-loader.md
+  s_895f6ebe145fd3::t_f5280b985a5dc0 1-81,83-85,88-122
+  s_895f6ebe145fd3::t_6307322274df3a 82,86-87
+tools/bounded_source_loader.py
+  s_895f6ebe145fd3::t_eccc2d7d1825d7 214-228,238-241
+  s_895f6ebe145fd3::t_1d8a722788a45a 1-10,12-100,102-111,113-141,143,148-157,159-213,229-237,242,247-276,278-283
+  s_895f6ebe145fd3::t_f5280b985a5dc0 11,277
+  s_895f6ebe145fd3::t_46c1946df22f9b 101
+  s_895f6ebe145fd3::t_a4c508eaca5c69 112,243-246
+  s_895f6ebe145fd3::t_5e504253f60ec2 142,144-147,158
+tools/source_run_registration.py
+  s_895f6ebe145fd3::t_50cdfdae639c24 212,215,233,236,262,271
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "819344a44dad59ea800da65f08a571088e8af892",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
