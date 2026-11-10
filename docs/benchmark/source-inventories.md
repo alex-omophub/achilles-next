@@ -115,11 +115,14 @@ inputs; a small window can miss whole recipe strata.
 | Source selection | Materializer limits: 100,000 rows, 64 windows, 128 chunks, 64 MiB CSV |
 | Main SQLite file | `--database-bytes`: 128 MiB; minimum 64 KiB, rounded down to 4 KiB pages |
 | Distinct stored keys | `--bins`: 1,000,000, across marginal/joint/width bins **and** the exact row bag |
-| Counter cache | 4,096 keys and 2 MiB accounted key payload; flushed to disk at either boundary |
+| Counter cache | 4,096 keys and 2 MiB accounted key payload; flushed into the SQLite transaction at either boundary |
 | Encoded data row / histogram value | At most 64 KiB per row / 4 KiB per encoded JSON value |
 | SQLite page cache | Requested 4 MiB per connection |
 | Invocation time | `--seconds`: 120 seconds, minimum 1; includes source replay |
 | Sampled free-space floor | `--min-free-bytes`: 16 MiB; allowed maximum 1 GiB |
+
+Counter-cache flushes are not durable checkpoints. SQLite commits once after all
+source scans and validation succeed.
 
 SQLite's [max_page_count](https://www.sqlite.org/pragma.html#pragma_max_page_count)
 caps the main database. Its rollback journal, filesystem allocation, metadata,

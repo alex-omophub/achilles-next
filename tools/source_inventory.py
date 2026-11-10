@@ -131,7 +131,8 @@ def scan(root, plan, complete, source, guard):
         for chunk in complete['chunks']:
             table=chunk['table']; columns=[c['name'] for c in source.columns[table]]
             count=0; size=0; lo=None; hi=None; nulls={name:0 for name in columns}; digest=hashlib.sha256()
-            path=root/chunk['file']; M.regular(path,S.MAX_BYTES)
+            # checked_prefix already verified that all CSV hard links are internal.
+            path=root/chunk['file']; M.regular(path,S.MAX_BYTES,(1,2))
             with M.open_file(path) as stream:
                 header=stream.readline(MAX_ROW+1)
                 if header!=(','.join(columns)+'\n').encode(): raise ValueError('Inventory CSV header mismatch')

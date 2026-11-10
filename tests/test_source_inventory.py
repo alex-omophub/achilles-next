@@ -6,6 +6,7 @@ from decimal import Decimal
 import hashlib
 import io
 import json
+import os
 from pathlib import Path
 import shutil
 import sqlite3
@@ -145,6 +146,30 @@ class InventoryTest(unittest.TestCase):
     def test_source_lock_prevents_inventory(self):
         self.prepare()
         with I.M.locked(self.source),self.assertRaises(BlockingIOError): I.collect(self.source,self.output)
+        self.assertFalse(self.output.exists())
+
+    def test_internal_hard_links_preserve_logical_rows_and_duplicates(self):
+        # Indexed rows98/99 are identical, so the verifier accepts two names
+        # sharing an inode when both links are inside the expected inventory.
+        I.M.prepare(self.source,'S2','5.5',[dict(table='measurement',start=98,rows=2)],chunk_rows=1)
+        self.assertEqual(I.M.run(self.source)['status'],'complete')
+        first=self.source/'chunk-000000.csv'; second=self.source/'chunk-000001.csv'
+        self.assertEqual(first.read_bytes(),second.read_bytes())
+        second.unlink(); os.link(first,second)
+        self.assertEqual(first.stat().st_nlink,2); self.assertEqual(I.M.verify(self.source)['rows'],2)
+        before=self.hashes(self.source)
+        result=I.collect(self.source,self.output); self.assertEqual(I.verify(self.source,self.output),result)
+        info=result['tables']['measurement']
+        self.assertEqual(info['selected_rows'],2); self.assertEqual(info['distinct_rows'],1)
+        self.assertEqual(info['duplicate_rows'],1)
+        self.assertEqual(info['histograms']['encoded_row_bytes']['observations'],2)
+        self.assertEqual(self.hashes(self.source),before)
+        self.assertEqual(first.stat().st_ino,second.stat().st_ino); self.assertEqual(first.stat().st_nlink,2)
+
+    def test_external_hard_links_are_still_refused_before_output_creation(self):
+        self.prepare(); os.link(self.source/'chunk-000000.csv',self.home/'external.csv')
+        with self.assertRaisesRegex(ValueError,'External hard link'): I.M.verify(self.source)
+        with self.assertRaisesRegex(ValueError,'External hard link'): I.collect(self.source,self.output)
         self.assertFalse(self.output.exists())
 
     def test_existing_output_and_aliases_never_overwritten(self):
