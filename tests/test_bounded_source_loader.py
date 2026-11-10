@@ -2,6 +2,8 @@
 import hashlib
 from pathlib import Path
 import re
+import signal
+import subprocess
 import sys
 import tempfile
 import unittest
@@ -13,13 +15,15 @@ try:
     sys.path.insert(0,str(ROOT/'tools'))
     import bounded_source_loader as L
 finally: sys.path[:]=_saved
+NativeClient=L.Client
 
 
 class FakeClient:
-    instances=[]; failure=None; cleanup_rows=[]; bad_target=False
+    instances=[]; failure=None; validation_failure=False; cleanup_rows=[]; bad_target=False
 
     def __init__(self,state,guard,application):
-        self.guard=guard; self.last_error=None; self.sql=[]; self.payloads={}; self.links={}; self.__class__.instances.append(self)
+        self.guard=guard; self.last_error=None; self.sql=[]; self.payloads={}; self.links={}
+        self.executed=[]; self.committed=False; self.__class__.instances.append(self)
 
     def rows(self,sql):
         self.guard.check()
@@ -36,6 +40,12 @@ class FakeClient:
         for path in re.findall(r"FROM '([^']+)' WITH",sql):
             self.payloads[Path(path).name]=Path(path).read_bytes(); self.links[Path(path).name]=Path(path).stat().st_nlink
         if self.failure: self.last_error='simulated SQL failure'; raise RuntimeError(self.failure)
+        for statement in sql.splitlines():
+            self.executed.append(statement)
+            if self.validation_failure and statement.startswith('DO $selection_check$'):
+                self.last_error='Loaded selection facts differ'
+                raise RuntimeError(self.last_error)
+            if statement=='COMMIT;': self.committed=True
 
 
 @unittest.skipUnless(L.M.fcntl is not None,'POSIX source verifier')
@@ -47,7 +57,7 @@ class LoaderTest(unittest.TestCase):
         L.M.prepare(self.source,'S2','5.5',[dict(table='measurement',start=95,rows=24),dict(table='note',start=0,rows=0)],chunk_rows=4)
         self.assertEqual(L.M.run(self.source)['status'],'complete'); L.I.collect(self.source,self.inventory)
         L.R.register(self.registration,'load-check','S2','5.5',{r:str(self.home) for r in L.R.ROLES},self.source,self.inventory)
-        FakeClient.instances=[]; FakeClient.failure=None; FakeClient.cleanup_rows=[]; FakeClient.bad_target=False
+        FakeClient.instances=[]; FakeClient.failure=None; FakeClient.validation_failure=False; FakeClient.cleanup_rows=[]; FakeClient.bad_target=False
         self.mock=patch.object(L,'Client',FakeClient); self.mock.start(); self.addCleanup(self.mock.stop)
 
     def load(self,**kwargs): return L.load(self.registration,self.output,self.home/'unused-state',**kwargs)
@@ -95,7 +105,38 @@ class LoaderTest(unittest.TestCase):
             return original(root,name,value,exclusive)
         with patch.object(L.M,'atomic_json',fail),self.assertRaisesRegex(OSError,'completion write'): self.load()
         request=L.M.read_json(self.output/'request.json'); self.assertRegex(request['schema'],'^cdm_selection_[0-9a-f]{16}$')
-        self.assertEqual(L.M.read_json(self.output/'attempt.json')['commit_outcome'],'unknown')
+        self.assertTrue(FakeClient.instances[-1].committed)
+        self.assertEqual(L.M.read_json(self.output/'attempt.json')['commit_outcome'],'committed')
+
+    def test_validation_failure_never_reaches_commit_or_success_receipt(self):
+        before=self.hashes(); FakeClient.validation_failure=True
+        with self.assertRaisesRegex(RuntimeError,'Loaded selection facts differ'): self.load()
+        client=FakeClient.instances[-1]
+        self.assertTrue(client.executed[-1].startswith('DO $selection_check$'))
+        self.assertNotIn('COMMIT;',client.executed); self.assertFalse(client.committed)
+        self.assertEqual(before,self.hashes()); self.assertTrue((self.output/'request.json').exists())
+        self.assertFalse((self.output/'complete.json').exists())
+        attempt=L.M.read_json(self.output/'attempt.json')
+        self.assertEqual(attempt['status'],'failed'); self.assertEqual(attempt['commit_outcome'],'unknown')
+        self.assertEqual(attempt['database_error'],'Loaded selection facts differ')
+
+    def test_version_probe_preserves_stop_status_before_process_error(self):
+        client=object.__new__(NativeClient); client.env={}; stopped=[None]
+        client.guard=L.Guard([self.home],stop=lambda:stopped[0])
+        for reason,signum,code in [('SIGINT',signal.SIGINT,130),('SIGTERM',signal.SIGTERM,143)]:
+            stopped[0]=None
+            def probe(*args,**kwargs):
+                self.assertFalse(kwargs['check']); stopped[0]=reason
+                return subprocess.CompletedProcess(args[0],-signum,'','')
+            with self.subTest(reason=reason),patch.object(NativeClient,'value',return_value=L.F.LOCK['postgresql_server']),patch.object(L.subprocess,'run',side_effect=probe),self.assertRaises(L.M.Stopped) as error:
+                client.versions()
+            self.assertEqual(error.exception.code,code)
+
+    def test_version_probe_rejects_nonzero_exit_without_stop(self):
+        client=object.__new__(NativeClient); client.env={}; client.guard=L.Guard([self.home])
+        result=subprocess.CompletedProcess(['psql','--version'],1,'','probe failed')
+        with patch.object(NativeClient,'value',return_value=L.F.LOCK['postgresql_server']),patch.object(L.subprocess,'run',return_value=result),self.assertRaises(subprocess.CalledProcessError):
+            client.versions()
 
     def test_wrong_target_cannot_issue_source_ddl(self):
         FakeClient.bad_target=True

@@ -84,7 +84,10 @@ class Client(F.Postgres):
 
     def versions(self):
         server=self.value('SHOW server_version;').split()[0]
-        client=subprocess.run(['psql','--version'],capture_output=True,text=True,env=self.env,timeout=5,check=True).stdout.strip()
+        probe=subprocess.run(['psql','--version'],capture_output=True,text=True,env=self.env,timeout=5,check=False)
+        self.guard.check()
+        probe.check_returncode()
+        client=probe.stdout.strip()
         if server!=F.LOCK['postgresql_server'] or not re.search(r'PostgreSQL\) '+re.escape(F.LOCK['psql_client'])+r'(?:\s|$)',client):
             raise ValueError('Loader requires the locked PostgreSQL server/native psql tuple')
         return dict(server=server,client=client)
@@ -208,7 +211,7 @@ def load(registration_dir,output,state,seconds=120,min_free=64*1024**2,stop=None
     request=dict(kind='bounded_selection_database_load_request',version=1,schema=schema,marker=marker,
                  registration_sha256=registration['registration_sha256'],code=identity,limits=guard.controls,
                  source_binding=registration['sample']['source_binding'],qualifying=False,whole_source_loaded=False)
-    client=None; attempted=False; created=False
+    client=None; attempted=False; committed=False; created=False
     try:
         output.mkdir(mode=0o700); created=True; M.sync_directory(output.parent)
         with M.open_file(output/'.lock',True): pass
@@ -218,7 +221,7 @@ def load(registration_dir,output,state,seconds=120,min_free=64*1024**2,stop=None
                 client=Client(state,guard,'achillesnext-selection-'+load_id); versions=check_target(client)
                 script=build_script(frozen,plan,complete,schema,marker)
                 if pins()!=identity: raise ValueError('Loader code changed before database work')
-                guard.check(disk=True); attempted=True; client.run(script)
+                guard.check(disk=True); attempted=True; client.run(script); committed=True
                 if pins()!=identity: raise ValueError('Loader code changed during database work')
                 guard.check(disk=True)
                 receipt=dict(kind='bounded_selection_database_load',version=1,status='complete',request=request,
@@ -229,7 +232,7 @@ def load(registration_dir,output,state,seconds=120,min_free=64*1024**2,stop=None
     except (Exception,KeyboardInterrupt) as error:
         if created:
             M.atomic_json(output,'attempt.json',dict(status='stopped' if isinstance(error,(M.Stopped,KeyboardInterrupt)) else 'failed',
-                reason=str(error) or 'KeyboardInterrupt',commit_outcome='unknown' if attempted else 'not_attempted',
+                reason=str(error) or 'KeyboardInterrupt',commit_outcome='committed' if committed else 'unknown' if attempted else 'not_attempted',
                 database_error=None if client is None else client.last_error,qualifying=False,whole_source_loaded=False))
         raise
 

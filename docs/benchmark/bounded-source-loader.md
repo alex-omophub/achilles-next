@@ -100,10 +100,12 @@ are sent to unrelated database or host processes. CLI exits are 0 on success,
 
 `request.json` is persisted before submitting DDL and retains the exact generated
 schema/marker even if writing the success receipt later fails. `attempt.json`
-retains failure/stop diagnostics when writable. If mutating SQL was attempted,
-an unsuccessful invocation conservatively reports `commit_outcome=unknown`.
-A connection loss, late stop or receipt-write failure can occur after commit;
-do not infer rollback or retry into the same directory from a missing receipt.
+retains failure/stop diagnostics when writable. If psql returned successfully
+after `COMMIT`, a later failure reports `commit_outcome=committed`. If mutating
+SQL was attempted without confirmed success, it reports `commit_outcome=unknown`;
+otherwise it reports `not_attempted`. A connection loss or late stop can prevent
+confirmation even after commit. Do not infer rollback or retry into the same
+directory from a missing receipt.
 Input failures before output initialization may leave no attempt directory.
 
 Preserve the evidence and wait for the owned client to stop. To inspect and remove
