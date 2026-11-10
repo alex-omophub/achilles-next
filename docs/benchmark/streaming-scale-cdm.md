@@ -138,3 +138,8 @@ Full-tier streaming orchestration, source-wide histograms, resource registration
 scoped native observer access, calibrated capacity/headroom and matched analytical
 qualification remain separate work. This command never allocates a server,
 changes host permissions or launches a full S1/S2 source.
+
+For measured widths, exact duplicates, marginals and conditional distributions of
+a completed selection, use the separate [source inventory collector](source-inventories.md).
+Its output belongs outside the materialization directory; it does not broaden
+the selected windows or establish full-tier coverage.
