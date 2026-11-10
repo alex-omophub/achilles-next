@@ -1,0 +1,32 @@
+docs/benchmark/source-inventories.md
+  s_895f6ebe145fd3::t_31eafb2b70c0ca 1-90,92-94,96-118,120-149
+  s_895f6ebe145fd3::t_d1615dee3f0cc0 91,95,119
+tools/source_inventory.py
+  s_895f6ebe145fd3::t_0e6aa0d7fafb65 1-3,5-43,45-46,48-58,66,76-203,205-290,292-307,309-313,315-318,325-328,330,333-334,339-347,350-355,357,361-370,374,378-381,383-393
+  s_895f6ebe145fd3::t_c117fe85930e85 371-373,375-377,382
+  s_895f6ebe145fd3::t_bce9856d30d8a9 204,319-324,331-332,335,337-338,348,356,358-360
+  s_895f6ebe145fd3::t_7ed9f5837c8ba3 4,44,47,59-65,67-75,291,308,314,329,336,349
+tests/test_source_inventory.py
+  s_895f6ebe145fd3::t_417f70fc692f6e 1-2,4-77,79-108,136-146,148-190,192-194,196-201,203-218,220-222,245-246
+  s_895f6ebe145fd3::t_e54975de087877 223-244
+  s_895f6ebe145fd3::t_9f67f8a3a728d4 3,78,147,191,195,202,219
+  s_895f6ebe145fd3::t_7bb03f398bb5d3 109-135
+docs/benchmark/streaming-scale-cdm.md
+  s_895f6ebe145fd3::t_31eafb2b70c0ca 141-145
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fb56aef75cfd617a53bb28b51c9bcee987796ef1",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
