@@ -114,8 +114,13 @@ database/cache inclusion or a common measured parent.
 Even apparently sufficient observations leave dedicated allocation, physical
 storage reservations, operator stop authority, common-parent auditing and
 calibrated capacity unverified. The full-tier executor, source-wide inventory
-and chunk database loader are explicitly unavailable in this increment. A missing
+and full-tier chunk database loader remain unavailable. A missing
 bounded witness is recorded separately. No successful probe removes these gates.
+
+For an explicit developer-only import into the marked fixture sandbox, use the
+[bounded source loader](bounded-source-loader.md). It retains the existing
+selection caps and does not change full-tier readiness. Recreate registrations
+after tool-code changes to keep their pins current.
 
 `verify` checks canonical metadata, current tool/source bindings, optional sample
 replay and recomputed assessment. It validates the **recorded snapshot**, without

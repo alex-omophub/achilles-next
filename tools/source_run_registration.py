@@ -209,10 +209,10 @@ def assessment(observations):
                 cgroup_scope='Current process endpoints in its mounted namespace; ancestor constraints, whole-job inclusion and stop authority unverified')
 
 
-def sample(source_dir,inventory_dir,target):
+def sample(source_dir,inventory_dir,target,stop=None):
     if (source_dir is None)!=(inventory_dir is None): raise ValueError('Specify both sample source and inventory directories')
     if source_dir is None: return None
-    record=I.verify(source_dir,inventory_dir)
+    record=I.verify(source_dir,inventory_dir,stop=stop)
     plan=M.load_plan(Path(source_dir).resolve())
     if S.BASE.canonical(plan['source'])!=S.BASE.canonical(target): raise ValueError('Sample target differs from registered tier/version')
     return dict(source_dir=str(Path(source_dir).resolve()),inventory_dir=str(Path(inventory_dir).resolve()),
@@ -230,10 +230,10 @@ def request(run_id,tier,version,paths,source_dir,inventory_dir):
                 sample_inventory=None if inventory_dir is None else str(Path(inventory_dir).resolve()))
 
 
-def body(req,observations):
+def body(req,observations,stop=None):
     if S.BASE.sha(Path(__file__).read_bytes())!=SOURCE_SHA: raise ValueError('Registration tool changed after import')
     target=S.Source(req['tier'],req['cdm_version']).plan()
-    witness=sample(req['sample_source'],req['sample_inventory'],target)
+    witness=sample(req['sample_source'],req['sample_inventory'],target,stop=stop)
     result=assessment(observations)
     if witness is None: result['blocking_reasons']=sorted(result['blocking_reasons']+['bounded_source_witness_missing'])
     return dict(kind='source_run_registration',version=1,status='planned_not_admitted',request=req,
@@ -259,7 +259,7 @@ def register(output,run_id,tier,version,paths,source_dir=None,inventory_dir=None
     return record
 
 
-def verify(output):
+def verify(output,stop=None):
     output=Path(output)
     if output.is_symlink(): raise ValueError('Registration output must not be a symlink')
     output=S.outside(output).resolve()
@@ -268,7 +268,7 @@ def verify(output):
         if first is None or first.name!='registration.json' or extra is not None: raise ValueError('Unexpected registration inventory')
     record=M.read_json(output/'registration.json'); req=record['request']
     normalized=request(req['run_id'],req['tier'],req['cdm_version'],req['storage'],req['sample_source'],req['sample_inventory'])
-    value=body(normalized,record['observations'])
+    value=body(normalized,record['observations'],stop=stop)
     expected=dict(value,registration_sha256=S.BASE.sha(S.BASE.canonical(value)))
     if S.BASE.canonical(expected)!=S.BASE.canonical(record): raise ValueError('Registration identity/summary differs')
     return record
