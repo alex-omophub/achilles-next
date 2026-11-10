@@ -220,8 +220,9 @@ class ResourceProbeTest(unittest.TestCase):
         self.assertEqual(self.limit('memory.max'),dict(bytes=268435456))
 
     def test_most_specific_root_and_escaped_mount_paths(self):
-        mount=self.home/'cg space\\literal'; mount.mkdir()
+        mount=self.home/'zz mount\\literal'; mount.mkdir()
         target=mount/'session.scope'; target.mkdir(); (target/'memory.max').write_text('268435456\n')
+        self.assertLess(str(self.member),str(target))  # A lexical choice must pick the wrong group.
         escaped=str(mount).replace('\\',r'\134').replace(' ',r'\040')
         with (self.proc/'mountinfo').open('a') as stream:
             stream.write(f'32 22 0:28 /user.slice {escaped} ro shared:1 extra:field - cgroup2 cgroup rw\n')
@@ -237,6 +238,10 @@ class ResourceProbeTest(unittest.TestCase):
     def test_ambiguous_mounts_and_missing_member_counter_are_unavailable(self):
         (self.member/'memory.max').unlink()
         with self.assertRaises(OSError): self.limit('memory.max')
+        with patch.object(R,'PROC_SELF',self.proc):
+            snapshot=R.observe({role:str(self.home) for role in R.ROLES})
+        self.assertEqual(snapshot['cgroup_memory_max'],dict(state='unavailable',value=None))
+        self.assertEqual(snapshot['cgroup_cpu_max']['state'],'observed')
         (self.member/'memory.max').write_text('536870912\n')
         other=self.home/'other'; (other/'user.slice/session.scope').mkdir(parents=True)
         with (self.proc/'mountinfo').open('a') as stream: stream.write(f'32 22 0:28 / {other} ro - cgroup2 cgroup rw\n')
