@@ -1,0 +1,23 @@
+docs/benchmark/bounded-source-loader.md
+  s_895f6ebe145fd3::t_b865f8c17b3ef6 103-108
+tests/test_bounded_source_loader.py
+  s_895f6ebe145fd3::t_b865f8c17b3ef6 5-6,18,22,25-26,43-48,60,108-139
+tools/bounded_source_loader.py
+  s_895f6ebe145fd3::t_b865f8c17b3ef6 87-90,214,224,235
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8524c7314332bfe158b8998b0575aadc4da05f6e",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
