@@ -1,0 +1,25 @@
+tests/test_source_inventory.py
+  s_895f6ebe145fd3::t_02e4484d3574fa 9,150-172
+  s_895f6ebe145fd3::t_6d7bb660c5b708 173
+tools/source_inventory.py
+  s_895f6ebe145fd3::t_19c5a64d46ee11 134-135
+docs/benchmark/source-inventories.md
+  s_895f6ebe145fd3::t_19c5a64d46ee11 118,124-125
+  s_895f6ebe145fd3::t_265931ff5ae5d0 126
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "92726a6bdf43d8470631986e028f2ccf527b5034",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
