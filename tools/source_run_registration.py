@@ -7,7 +7,7 @@ import argparse
 import datetime
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import platform
 import re
 import shutil
@@ -25,6 +25,8 @@ REFERENCE=dict(platform='Linux',cpus=8,memory_bytes=32*1024**3,
 UNVERIFIED=('dedicated_allocation','storage_pool_reservations','common_parent_audit',
             'operator_stop_authority','capacity_projection')
 UNAVAILABLE=('full_tier_executor','full_source_inventory','chunk_database_loader')
+PROC_SELF=Path('/proc/self')
+MAX_PROC_BYTES=1024**2
 
 
 def storage_plan(value):
@@ -56,10 +58,64 @@ def memory_bytes():
     return positive_integer(os.sysconf('SC_PHYS_PAGES')*os.sysconf('SC_PAGE_SIZE'))
 
 
+def process_cpus():
+    affinity=getattr(os,'sched_getaffinity',None)
+    if affinity is None: raise ValueError('Process CPU affinity unavailable')
+    try: return positive_integer(len(affinity(0)))
+    except NotImplementedError: raise ValueError('Process CPU affinity unavailable') from None
+
+
+def proc_text(name):
+    with (PROC_SELF/name).open('rb') as stream: raw=stream.read(MAX_PROC_BYTES+1)
+    if len(raw)>MAX_PROC_BYTES: raise ValueError('Proc metadata byte budget exceeded')
+    return raw.decode('utf-8')
+
+
+def group_path(value):
+    path=PurePosixPath(value)
+    if not value.startswith('/') or value.startswith('//') or str(path)!=value or '..' in path.parts or '\0' in value:
+        raise ValueError('Canonical absolute cgroup path required')
+    return path
+
+
+def mount_path(value):
+    if re.search(r'\\(?!040|011|012|134)',value): raise ValueError('Unknown mount path escape')
+    return group_path(re.sub(r'\\(040|011|012|134)',lambda match:chr(int(match[1],8)),value))
+
+
+def cgroup_directory():
+    members=[line[3:] for line in proc_text('cgroup').splitlines() if line.startswith('0::')]
+    if len(members)!=1: raise ValueError('One unified cgroup membership required')
+    member=group_path(members[0]); candidates=[]
+    for line in proc_text('mountinfo').splitlines():
+        before,separator,after=line.partition(' - '); tail=after.split()
+        if not separator or not tail: raise ValueError('Malformed mount metadata')
+        if tail[0]!='cgroup2': continue
+        fields=before.split()
+        if len(fields)<6: raise ValueError('Incomplete cgroup mount metadata')
+        root,mount=mount_path(fields[3]),mount_path(fields[4])
+        if member.is_relative_to(root):
+            candidates.append((len(root.parts),Path(str(mount))/member.relative_to(root)))
+    if not candidates: raise ValueError('Current cgroup is outside the mounted view')
+    depth=max(d for d,path in candidates)
+    paths={path for d,path in candidates if d==depth}
+    # Multiple aliases are acceptable only when they resolve to the same group.
+    identities=set()
+    for path in paths:
+        if not path.is_dir(): raise ValueError('Current cgroup directory unavailable')
+        st=path.stat(); identities.add((st.st_dev,st.st_ino))
+    if len(identities)!=1: raise ValueError('Ambiguous current cgroup mount view')
+    return min(paths,key=str)
+
+
 def cgroup_value(name):
-    # Only the current namespace's read-only view; no host PID/socket access.
-    with (Path('/sys/fs/cgroup')/name).open('rb') as stream: raw=stream.read(129)
+    # Resolve the process membership within its mount view; never use the root
+    # as a fallback for an unreadable or unmapped nested group.
+    if name not in ('memory.max','cpu.max'): raise ValueError('Unknown cgroup limit')
+    directory=cgroup_directory()
+    with (directory/name).open('rb') as stream: raw=stream.read(129)
     if len(raw)>128: raise ValueError('Oversized cgroup limit')
+    if cgroup_directory()!=directory: raise ValueError('Cgroup membership changed during observation')
     value=raw.decode('ascii').strip()
     if name=='cpu.max':
         quota,period=value.split()
@@ -81,7 +137,7 @@ def disk(path):
 def observe(paths):
     return dict(captured_at=datetime.datetime.now(datetime.timezone.utc).isoformat(),
                 platform=platform.system(),architecture=platform.machine(),
-                visible_cpus=measured(lambda:positive_integer(os.cpu_count())),
+                visible_cpus=measured(process_cpus),
                 physical_memory_bytes=measured(memory_bytes),
                 cgroup_memory_max=measured(lambda:cgroup_value('memory.max')),
                 cgroup_cpu_max=measured(lambda:cgroup_value('cpu.max')),
@@ -150,7 +206,7 @@ def assessment(observations):
     return dict(full_tier_ready=False,execution_enabled=False,blocking_reasons=sorted(blockers),
                 logical_device_groups=devices,
                 storage_scope='Logical device aliases grouped without summing free space; physical pools/reservations unverified',
-                cgroup_scope='Current namespace endpoints only; ancestor constraints, whole-job inclusion and stop authority unverified')
+                cgroup_scope='Current process endpoints in its mounted namespace; ancestor constraints, whole-job inclusion and stop authority unverified')
 
 
 def sample(source_dir,inventory_dir,target):

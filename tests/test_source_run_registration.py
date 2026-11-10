@@ -174,4 +174,96 @@ class SampleRegistrationTest(RegistrationCase):
         with self.assertRaisesRegex(ValueError,'must not be symlinks'): self.register(source_dir=alias,inventory_dir=self.inventory)
 
 
+class ResourceProbeTest(unittest.TestCase):
+    def setUp(self):
+        temp=tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
+        self.home=Path(temp.name); self.proc=self.home/'proc'; self.proc.mkdir()
+        self.root=self.home/'cgroup'; self.root.mkdir()
+        (self.root/'memory.max').write_text('max\n'); (self.root/'cpu.max').write_text('max 100000\n')
+        self.member=self.root/'user.slice/session.scope'; self.member.mkdir(parents=True)
+        (self.member/'memory.max').write_text('536870912\n'); (self.member/'cpu.max').write_text('100000 100000\n')
+        (self.proc/'cgroup').write_text('0::/user.slice/session.scope\n')
+        (self.proc/'mountinfo').write_text(f'31 22 0:28 / {self.root} ro shared:7 - cgroup2 cgroup rw\n')
+
+    def legacy_path(self,value,*args):
+        return self.root if str(value)=='/sys/fs/cgroup' else Path(value,*args)
+
+    def test_nested_cgroup_limits_override_unlimited_root(self):
+        with patch.object(R,'PROC_SELF',self.proc,create=True),patch.object(R,'Path',side_effect=self.legacy_path):
+            self.assertEqual(R.cgroup_value('memory.max'),dict(bytes=536870912))
+            self.assertEqual(R.cgroup_value('cpu.max'),dict(quota_usec=100000,period_usec=100000))
+
+    def test_cpu_snapshot_uses_affinity_not_host_count(self):
+        with patch.object(R.os,'sched_getaffinity',return_value={2},create=True) as affinity,patch.object(R.os,'cpu_count',return_value=64):
+            snapshot=R.observe({role:str(self.home) for role in R.ROLES})
+        self.assertEqual(snapshot['visible_cpus'],dict(state='observed',value=1))
+        affinity.assert_called_once_with(0)
+
+    def limit(self,name):
+        with patch.object(R,'PROC_SELF',self.proc): return R.cgroup_value(name)
+
+    def test_nested_limits_reach_the_assessment(self):
+        with patch.object(R,'PROC_SELF',self.proc),patch.object(R.os,'sched_getaffinity',return_value=set(range(8)),create=True),patch.object(R,'memory_bytes',return_value=32*1024**3):
+            snapshot=R.observe({role:str(self.home) for role in R.ROLES})
+        blockers=R.assessment(snapshot)['blocking_reasons']
+        self.assertIn('cgroup_memory_max_below_reference',blockers)
+        self.assertIn('cgroup_cpu_max_below_reference',blockers)
+
+    def test_private_namespace_root_maps_to_its_mount(self):
+        (self.proc/'cgroup').write_text('0::/\n')
+        (self.proc/'mountinfo').write_text(f'31 22 0:28 / {self.member} ro - cgroup2 cgroup rw\n')
+        self.assertEqual(self.limit('memory.max'),dict(bytes=536870912))
+
+    def test_subtree_mount_uses_membership_relative_to_mount_root(self):
+        (self.proc/'mountinfo').write_text(f'31 22 0:28 /user.slice {self.root} ro - cgroup2 cgroup rw\n')
+        target=self.root/'session.scope'; target.mkdir(); (target/'memory.max').write_text('268435456\n')
+        self.assertEqual(self.limit('memory.max'),dict(bytes=268435456))
+
+    def test_most_specific_root_and_escaped_mount_paths(self):
+        mount=self.home/'cg space\\literal'; mount.mkdir()
+        target=mount/'session.scope'; target.mkdir(); (target/'memory.max').write_text('268435456\n')
+        escaped=str(mount).replace('\\',r'\134').replace(' ',r'\040')
+        with (self.proc/'mountinfo').open('a') as stream:
+            stream.write(f'32 22 0:28 /user.slice {escaped} ro shared:1 extra:field - cgroup2 cgroup rw\n')
+        self.assertEqual(self.limit('memory.max'),dict(bytes=268435456))
+
+    def test_unmapped_or_invalid_membership_never_falls_back_to_root(self):
+        for text in ['2:cpu:/user.slice/session.scope\n','0::/missing\n','0::/../outside\n',
+                     '0::/user.slice/session.scope\n0::/\n']:
+            (self.proc/'cgroup').write_text(text)
+            with self.subTest(text=text),patch.object(R,'PROC_SELF',self.proc):
+                self.assertEqual(R.measured(lambda:R.cgroup_value('memory.max')),dict(state='unavailable',value=None))
+
+    def test_ambiguous_mounts_and_missing_member_counter_are_unavailable(self):
+        (self.member/'memory.max').unlink()
+        with self.assertRaises(OSError): self.limit('memory.max')
+        (self.member/'memory.max').write_text('536870912\n')
+        other=self.home/'other'; (other/'user.slice/session.scope').mkdir(parents=True)
+        with (self.proc/'mountinfo').open('a') as stream: stream.write(f'32 22 0:28 / {other} ro - cgroup2 cgroup rw\n')
+        with self.assertRaisesRegex(ValueError,'Ambiguous'): self.limit('memory.max')
+
+    def test_alias_mounts_can_identify_the_same_group(self):
+        alias=self.home/'alias'; alias.symlink_to(self.root,target_is_directory=True)
+        with (self.proc/'mountinfo').open('a') as stream: stream.write(f'32 22 0:28 / {alias} ro - cgroup2 cgroup rw\n')
+        self.assertEqual(self.limit('memory.max'),dict(bytes=536870912))
+
+    def test_malformed_oversized_and_namespace_escape_mounts_are_unavailable(self):
+        for text in ['not mountinfo\n',f'31 22 0:28 /.. {self.root} ro - cgroup2 cgroup rw\n',
+                     '31 22 0:28 / /bad\\999 ro - cgroup2 cgroup rw\n','x'*(R.MAX_PROC_BYTES+1)]:
+            (self.proc/'mountinfo').write_text(text)
+            with self.subTest(size=len(text)),patch.object(R,'PROC_SELF',self.proc):
+                self.assertEqual(R.measured(lambda:R.cgroup_value('memory.max')),dict(state='unavailable',value=None))
+
+    def test_membership_change_during_read_is_not_a_root_value(self):
+        with patch.object(R,'cgroup_directory',side_effect=[self.member,self.root]),self.assertRaisesRegex(ValueError,'membership changed'):
+            R.cgroup_value('memory.max')
+
+    def test_unavailable_affinity_never_uses_host_cpu_total(self):
+        cases=[None,OSError('denied'),NotImplementedError(),set()]
+        for value in cases:
+            replacement=None if value is None else unittest.mock.Mock(side_effect=value) if isinstance(value,Exception) else unittest.mock.Mock(return_value=value)
+            with self.subTest(value=value),patch.object(R.os,'sched_getaffinity',replacement,create=True),patch.object(R.os,'cpu_count',side_effect=AssertionError('host total must not be used')):
+                self.assertEqual(R.measured(R.process_cpus),dict(state='unavailable',value=None))
+
+
 if __name__=='__main__': unittest.main()
