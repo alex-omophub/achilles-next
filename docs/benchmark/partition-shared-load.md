@@ -101,6 +101,8 @@ the load; cleanup does not rewrite it to claim the schema still exists. If no
 child request was saved, cleanup refuses rather than inferring database state.
 
 This adds one-schema **bounded** loading and an exact inventory of that selection.
+For a separate candidate with committed chunk checkpoints and resumable loading,
+pass this output's `registration/` to the [incremental loader](incremental-source-load.md).
 Full-tier incremental loading, whole-source measured inventories, resource
 allocation, observer/stop authority and capacity calibration remain separate
 requirements before large S1/S2 execution or scale qualification.
