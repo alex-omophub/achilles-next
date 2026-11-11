@@ -1,0 +1,26 @@
+tests/test_partition_execution.py
+  s_895f6ebe145fd3::t_14b9c242c3e816 178-186,188-192,200-228,240
+  s_895f6ebe145fd3::t_fa8c8024a574db 187,193-199
+tools/partition_execution.py
+  s_895f6ebe145fd3::t_fa8c8024a574db 3-4,66,113,118-120
+docs/benchmark/partition-execution.md
+  s_895f6ebe145fd3::t_fa8c8024a574db 7-8,93-95
+tests/test_source_partition_plan.py
+  s_895f6ebe145fd3::t_14b9c242c3e816 165,167-173,175-178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0e855d358cdc89e08aab77a29e5492d4cbb9d4ca",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
