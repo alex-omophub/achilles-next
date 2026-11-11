@@ -80,7 +80,7 @@ def create(registration_dir,output,rows_per_partition=100000,chunk_rows=10000):
     return value
 
 
-def verify(output):
+def verify(output,stop=None):
     output=Path(output)
     if output.is_symlink(): raise ValueError('Partition plan output must not be a symlink')
     output=S.outside(output).resolve()
@@ -90,7 +90,7 @@ def verify(output):
             raise ValueError('Unexpected partition plan inventory')
     saved=M.read_json(output/'partition-plan.json')
     directory=Path(saved['registration_dir'])
-    registration=R.verify(directory)
+    registration=R.verify(directory,stop=stop)
     isolated_output(output,directory,registration)
     c=saved['controls']; settings=controls(c['rows_per_partition'],c['chunk_rows'])
     expected=record(registration,directory.resolve(),settings)

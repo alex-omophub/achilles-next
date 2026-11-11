@@ -73,8 +73,9 @@ no status prefix. The command verifies the schedule and asks the unchanged
 materializer to build the exact bounded plan before returning the selection.
 Use the schedule's tier/version, `chunk_rows`, CSV byte budget, invocation budget
 and free-space floor when preparing the work unit. A selection array alone does
-not carry the parent schedule identity; a future execution controller must retain
-the parent digest, partition index and resulting materialization identity together.
+not carry the parent schedule identity. The [bounded partition executor](partition-execution.md)
+records the parent digest, partition index and materialization identity together,
+with checkpoints for selected source generation and inventory collection.
 
 Controls retain the existing limits: 1–100,000 rows per partition, 1–10,000 rows per
 chunk, at most 128 chunks, 64 MiB CSV, 120-second materializer invocation and 64 MiB
@@ -89,4 +90,4 @@ registration with that witness, and the [fixture loader](bounded-source-loader.m
 That loader creates a separate disposable schema per selection. It does not
 assemble partitions into one whole-source database. Do not loop over a full tier
 as a substitute for resource admission, full-tier loading or source-wide inventory
-verification. Those execution/controller capabilities remain unavailable.
+verification. Full-tier execution/controller capabilities remain unavailable.
