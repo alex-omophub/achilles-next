@@ -90,8 +90,11 @@ class PartitionTest(PartitionCase):
 
     def test_invalid_controls_are_rejected_without_output(self):
         for rows,chunks in [(True,1),(0,1),(100001,10000),(1000,True),(1000,0),(1000,10001),(100000,1),(1.0,1)]:
-            with self.subTest(rows=rows,chunks=chunks),self.assertRaises(ValueError):P.controls(rows,chunks)
-        self.assertFalse(self.output.exists())
+            with self.subTest(rows=rows,chunks=chunks),patch.object(P.R,'verify',side_effect=AssertionError('registration read before control validation')) as verify:
+                with self.assertRaisesRegex(ValueError,'Partition controls'):
+                    P.create(self.registration,self.output,rows_per_partition=rows,chunk_rows=chunks)
+                verify.assert_not_called()
+                self.assertFalse(self.output.exists())
 
     def test_invalid_partition_indices_are_rejected(self):
         plan=self.create()
