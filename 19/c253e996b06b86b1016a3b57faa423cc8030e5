@@ -1,0 +1,22 @@
+tests/test_partition_shared_load.py
+  s_895f6ebe145fd3::t_d05cc374460e31 3,192-210
+  s_895f6ebe145fd3::t_a7325caa202c77 211
+tools/partition_shared_load.py
+  s_895f6ebe145fd3::t_654eb0fc48e4c3 166
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "19c253e996b06b86b1016a3b57faa423cc8030e5",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
