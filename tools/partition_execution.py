@@ -203,19 +203,24 @@ def run(output,seconds=120,max_units=MAX_UNITS,retry_incomplete_inventory=False,
             raise
 
 
+def verify_locked(root,guard):
+    """Caller holds the operation lock; return receipt, request and schedule."""
+    guard.check(disk=True);req,plan,cp=load_request(root,guard);results=[]
+    for unit,state in zip(req['units'],cp['units']):
+        if state['result'] is None:raise ValueError('Execution is not complete')
+        folder=root/unit['directory'];source=source_ready(folder,plan,unit,guard,False)
+        inventory=folder/f"inventory-{state['inventory_attempt']:03}"
+        record=I.verify(source,inventory,stop=guard.callback);result=unit_result(req,unit,source,inventory,record)
+        if S.BASE.canonical(state['result'])!=S.BASE.canonical(result):raise ValueError('Completed unit identity differs')
+        results.append(result)
+    expected=receipt(req,results)
+    if S.BASE.canonical(M.read_json(root/'complete.json'))!=S.BASE.canonical(expected):raise ValueError('Execution completion differs')
+    guard.check();return expected,req,plan
+
+
 def verify(output,seconds=120,stop=None):
     with M.locked(output) as root:
-        guard=Guard(root,seconds,stop);guard.check(disk=True);req,plan,cp=load_request(root,guard);results=[]
-        for unit,state in zip(req['units'],cp['units']):
-            if state['result'] is None:raise ValueError('Execution is not complete')
-            folder=root/unit['directory'];source=source_ready(folder,plan,unit,guard,False)
-            inventory=folder/f"inventory-{state['inventory_attempt']:03}"
-            record=I.verify(source,inventory,stop=guard.callback);result=unit_result(req,unit,source,inventory,record)
-            if S.BASE.canonical(state['result'])!=S.BASE.canonical(result):raise ValueError('Completed unit identity differs')
-            results.append(result)
-        expected=receipt(req,results)
-        if S.BASE.canonical(M.read_json(root/'complete.json'))!=S.BASE.canonical(expected):raise ValueError('Execution completion differs')
-        guard.check();return expected
+        return verify_locked(root,Guard(root,seconds,stop))[0]
 
 
 def main():

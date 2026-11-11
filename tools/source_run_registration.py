@@ -243,9 +243,9 @@ def body(req,observations,stop=None):
                 full_tier_generated=False,qualifying=False)
 
 
-def register(output,run_id,tier,version,paths,source_dir=None,inventory_dir=None):
+def register(output,run_id,tier,version,paths,source_dir=None,inventory_dir=None,stop=None):
     req=request(run_id,tier,version,paths,source_dir,inventory_dir)
-    value=body(req,observe(req['storage']))
+    value=body(req,observe(req['storage']),stop=stop)
     record=dict(value,registration_sha256=S.BASE.sha(S.BASE.canonical(value)))
     output=Path(output)
     if output.is_symlink(): raise ValueError('Registration output must not be a symlink')

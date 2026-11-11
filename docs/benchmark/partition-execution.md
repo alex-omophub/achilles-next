@@ -109,7 +109,9 @@ calls can outlast a cooperative deadline. No external processes are launched.
 
 This is bounded development execution, not a full-tier controller or admission
 decision. The registered resource observations remain `planned_not_admitted`.
-Shared-schema loading across partitions, source-wide measured inventories,
+The [bounded shared loader](partition-shared-load.md) can combine verified units
+into one candidate schema and calculate an exact inventory of that selection.
+Full-tier loading, whole-source measured inventories,
 allocated reference resources, observer/stop access and calibration remain separate
 prerequisites for large S1/S2 execution. A verified unit may be registered as a
 fresh bounded witness for the existing [fixture loader](bounded-source-loader.md),

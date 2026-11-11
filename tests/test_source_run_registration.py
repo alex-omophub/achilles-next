@@ -158,6 +158,13 @@ class SampleRegistrationTest(RegistrationCase):
         R.M.atomic_json(self.inventory,'inventory.json',dict(status='edited'))
         with self.assertRaises((ValueError,KeyError)): R.verify(self.output)
 
+    def test_registration_forwards_stop_into_real_witness_replay(self):
+        self.prepare_sample();stop=lambda:'SIGTERM'
+        with patch.object(R.I,'verify',wraps=R.I.verify) as verify,self.assertRaises(R.M.Stopped) as error:
+            self.register(source_dir=self.source,inventory_dir=self.inventory,stop=stop)
+        verify.assert_called_once_with(str(self.source.resolve()),str(self.inventory.resolve()),stop=stop)
+        self.assertEqual(error.exception.code,143);self.assertFalse(self.output.exists())
+
     def test_mismatched_sample_target_or_unpaired_paths_fail(self):
         self.prepare_sample()
         with self.assertRaisesRegex(ValueError,'target differs'):
