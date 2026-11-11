@@ -1,6 +1,7 @@
 """Resume a bounded set of source partitions through generation and inventory.
 
-No database work, full-tier admission or analytical-result publication.
+Local SQLite inventories only; no source/PostgreSQL access, full-tier admission
+or analytical-result publication.
 """
 import argparse
 import json
@@ -62,7 +63,7 @@ def prepare(schedule_dir,output,indices,stop=None):
     if M.fcntl is None:raise ValueError('POSIX file locking is required')
     guard=Guard(Path(output).parent,stop=stop);guard.root=Path(output);guard.check()
     req,plan=request(schedule_dir,indices,guard.callback)
-    output=P.isolated_output(output,plan['registration_dir'],R.verify(plan['registration_dir']))
+    output=P.isolated_output(output,plan['registration_dir'],R.verify(plan['registration_dir'],stop=guard.callback))
     parent=Path(schedule_dir).resolve()
     if output.is_relative_to(parent) or parent.is_relative_to(output):
         raise ValueError('Keep execution output separate from the partition schedule')
@@ -109,10 +110,14 @@ def load_request(root,guard):
         folder=root/unit['directory']
         if folder.exists():
             allowed_unit={'source'}|{f'inventory-{n:03}' for n in range((state['inventory_attempt'] if state['inventory_attempt'] is not None else -1)+1)}
+            present=set()
             with os.scandir(folder) as entries:
                 for entry in entries:
                     if entry.name not in allowed_unit or not entry.is_dir(follow_symlinks=False):
                         raise ValueError('Unexpected execution unit artifact')
+                    present.add(entry.name)
+            retained={f'inventory-{n:03}' for n in range(state['inventory_attempt'] or 0)}
+            if not retained<=present:raise ValueError('Missing retained inventory attempt')
         elif state['inventory_attempt'] is not None:raise ValueError('Missing execution unit')
     if (root/'complete.json').exists() and any(state['result'] is None for state in cp['units']):
         raise ValueError('Completion receipt contradicts execution checkpoint')

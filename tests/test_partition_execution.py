@@ -175,6 +175,57 @@ class ExecutionTest(unittest.TestCase):
             with self.subTest(args=args),self.assertRaises(ValueError):E.run(self.output,**args)
         self.assertEqual(before,self.hashes(self.output))
 
+    def test_prepare_second_witness_scan_preserves_stop_and_outer_deadline(self):
+        source=self.home/'witness-source';inventory=self.home/'witness-inventory'
+        E.M.prepare(source,'S2','5.5',[dict(table='measurement',start=98,rows=2)])
+        self.assertEqual(E.M.run(source)['status'],'complete');E.I.collect(source,inventory)
+        registration=self.home/'witness-registration';schedule=self.home/'witness-schedule'
+        E.R.register(registration,'prepare-stop','S2','5.5',{r:str(self.home) for r in E.R.ROLES},source,inventory)
+        E.P.create(registration,schedule,rows_per_partition=20,chunk_rows=5)
+        original=E.I.verify
+        for mode,code in [('signal',143),('deadline',3)]:
+            calls=[];completed=[];stopped=[None];clock=[100.0]
+            def scan(*args,**kwargs):
+                calls.append(kwargs.get('stop'))
+                if len(calls)==2:
+                    if mode=='signal':stopped[0]='SIGTERM'
+                    else:clock[0]=221.0
+                value=original(*args,**kwargs);completed.append(len(calls));return value
+            with self.subTest(mode=mode):
+                with patch.object(E.I,'verify',side_effect=scan),patch.object(E.I.time,'monotonic',side_effect=lambda:clock[0]),self.assertRaises(E.M.Stopped) as error:
+                    E.prepare(schedule,self.output,[self.care],stop=lambda:stopped[0])
+                self.assertEqual(error.exception.code,code);self.assertEqual(len(calls),2)
+                self.assertEqual(completed,[1]);self.assertTrue(all(callable(callback) for callback in calls))
+                self.assertFalse(self.output.exists())
+
+    def test_missing_or_replaced_retained_attempts_block_run_retry_and_verify(self):
+        self.prepare();original=E.I.collect
+        def partial(source,output,**kwargs):
+            if output.name in ('inventory-000','inventory-001'):
+                output.mkdir();E.M.atomic_json(output,'failed.json',dict(status='failed'))
+                raise OSError('injected incomplete inventory')
+            return original(source,output,**kwargs)
+        with patch.object(E.I,'collect',side_effect=partial):
+            for retry in [False,True]:
+                with self.assertRaisesRegex(OSError,'incomplete'):E.run(self.output,retry_incomplete_inventory=retry)
+            E.run(self.output,retry_incomplete_inventory=True)
+        folder=self.output/'unit-000';active=folder/'inventory-002';before=self.hashes(active)
+        for index in [0,1]:
+            retired=folder/f'inventory-{index:03}';saved=self.home/f'saved-{index}';retired.rename(saved)
+            try:
+                for replacement in ['missing','file','symlink']:
+                    if replacement=='file':retired.write_bytes(b'retained placeholder')
+                    elif replacement=='symlink':retired.symlink_to(saved,target_is_directory=True)
+                    try:
+                        with self.subTest(index=index,replacement=replacement),patch.object(E.I,'collect',side_effect=AssertionError('must not rebuild missing evidence')):
+                            for action in [lambda:E.run(self.output),lambda:E.run(self.output,retry_incomplete_inventory=True),lambda:E.verify(self.output)]:
+                                with self.assertRaises(ValueError):action()
+                        self.assertEqual(before,self.hashes(active))
+                    finally:
+                        if replacement!='missing':retired.unlink()
+            finally:saved.rename(retired)
+        self.assertEqual(E.verify(self.output)['selected_rows'],20)
+
     def test_path_isolation_and_unexpected_files_preserve_inputs(self):
         before=self.hashes(self.schedule)
         for output in [self.schedule/'inside',self.home,self.registration/'inside']:
@@ -186,7 +237,7 @@ class ExecutionTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'Unexpected'):E.run(self.output)
         self.assertEqual((self.output/'foreign').read_bytes(),b'preserve')
 
-    def test_prepare_and_verification_never_launch_database_work(self):
+    def test_prepare_run_and_verify_never_launch_source_database_processes(self):
         with patch.object(subprocess,'Popen',side_effect=AssertionError('no process/database transport')):
             self.prepare();E.run(self.output);E.verify(self.output)
 

@@ -162,11 +162,20 @@ class PartitionTest(PartitionCase):
         plan=self.create();plan['source']['parameters']['seed']+=1
         with self.assertRaisesRegex(ValueError,'source changed'):P.materialization_plan(plan,0)
 
+    @unittest.skipUnless(P.M.fcntl is not None,'POSIX source witness')
     def test_verification_forwards_outer_stop_callback_to_witness_scan(self):
-        plan=self.create();stop=lambda:'SIGINT'
-        with patch.object(P.R,'verify',wraps=P.R.verify) as verify:
+        source=self.home/'source';inventory=self.home/'inventory'
+        P.M.prepare(source,'S2','5.5',[dict(table='measurement',start=98,rows=2)])
+        self.assertEqual(P.M.run(source)['status'],'complete');P.R.I.collect(source,inventory)
+        P.R.register(self.registration,'witness-stop','S2','5.5',self.paths,source,inventory)
+        plan=P.create(self.registration,self.output);checks=[]
+        def stop():checks.append(True);return None
+        with patch.object(P.R.I,'verify',wraps=P.R.I.verify) as verify:
             self.assertEqual(P.verify(self.output,stop=stop),plan)
-        verify.assert_called_once_with(self.registration.resolve(),stop=stop)
+        verify.assert_called_once_with(str(source.resolve()),str(inventory.resolve()),stop=stop)
+        self.assertTrue(checks)
+        with self.assertRaises(P.M.Stopped) as error:P.verify(self.output,stop=lambda:'SIGINT')
+        self.assertEqual(error.exception.code,130)
 
     def test_cli_selection_is_only_a_json_array_accepted_by_materializer(self):
         self.create()

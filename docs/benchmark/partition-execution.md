@@ -4,7 +4,8 @@
 bounded set of partitions from a verified [schedule](source-partition-plan.md).
 It connects chunk generation, source checkpoints and measured inventory collection
 with durable parent/partition/materialization identities. It uses local POSIX
-storage and does not connect to a database or publish analytical results.
+storage and local SQLite databases for inventories. It does not connect to the
+source/PostgreSQL database or publish analytical results.
 
 ## Prepare, run and verify
 
@@ -89,7 +90,9 @@ python3 tools/partition_execution.py run \
 ```
 
 This retains the old directory and allocates the next named attempt, with at most
-three attempts per unit. A corrupt inventory that claims completion is refused
+three attempts per unit. Every earlier attempt must remain a nonsymlink directory;
+missing or replaced retained attempts block run, retry and verification.
+A corrupt inventory that claims completion is refused
 even with the retry flag. Lost or corrupt initial source/controller metadata is
 also refused; there is no destructive repair or automatic reset. Preserve the
 evidence and prepare a new execution directory after inspecting such failures.
