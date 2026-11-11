@@ -122,6 +122,10 @@ For an explicit developer-only import into the marked fixture sandbox, use the
 selection caps and does not change full-tier readiness. Recreate registrations
 after tool-code changes to keep their pins current.
 
+The [source partition planner](source-partition-plan.md) freezes exact logical
+coverage for every physical table and emits one bounded selection at a time.
+Scheduling does not generate source data or remove the execution gates.
+
 `verify` checks canonical metadata, current tool/source bindings, optional sample
 replay and recomputed assessment. It validates the **recorded snapshot**, without
 replacing it with current free-space or resource facts. Collect a new registration
