@@ -163,6 +163,7 @@ def drop(output,state_dir,seconds=30,stop=None):
     """Cleanup uses saved identity, even if original inputs/code were archived."""
     with M.locked(output) as root:
         binding=M.read_json(root/'binding.json')
+        if type(binding) is not dict:raise ValueError('Invalid shared-load binding')
         unsigned={k:v for k,v in binding.items() if k!='binding_sha256'}
         if (binding.get('kind')!='bounded_partition_shared_load_binding' or
             type(binding.get('version')) is not int or binding['version']!=1 or

@@ -1,5 +1,6 @@
 """One-schema loading and exact selected-union inventories from saved partitions."""
 import hashlib
+import io
 import os
 from pathlib import Path
 import re
@@ -187,6 +188,26 @@ class SharedLoadTest(unittest.TestCase):
         self.load();self.execution.rename(self.home/'archived')
         with patch.object(H.E,'verify_locked',side_effect=AssertionError('cleanup must not replay inputs')):
             self.assertEqual(H.drop(self.output,self.home/'state')['status'],'absent')
+
+    def test_cleanup_refuses_non_object_binding_before_database_access(self):
+        self.output.mkdir()
+        with H.M.open_file(self.output/'.lock',True):pass
+        for value in [None,[],['bad'],True,0,1.5,'bad']:
+            H.M.atomic_json(self.output,'binding.json',value)
+            with self.subTest(value=value),patch.object(H.L,'drop',side_effect=AssertionError('must not reach database cleanup')):
+                with self.assertRaisesRegex(ValueError,'Invalid shared-load binding'):H.drop(self.output,self.home/'state')
+            self.assertEqual(Client.instances,[])
+
+    def test_cli_cleanup_reports_malformed_binding_without_traceback(self):
+        self.output.mkdir()
+        with H.M.open_file(self.output/'.lock',True):pass
+        H.M.atomic_json(self.output,'binding.json',[])
+        args=['shared','drop','--output-dir',str(self.output),'--state-dir',str(self.home/'state')]
+        with patch.object(sys,'argv',args),patch.object(sys,'stderr',new_callable=io.StringIO) as err,patch.object(sys,'stdout',new_callable=io.StringIO) as out:
+            self.assertEqual(H.main(),1)
+        self.assertIn('Shared load refused: Invalid shared-load binding',err.getvalue())
+        self.assertNotIn('Traceback',err.getvalue());self.assertEqual(out.getvalue(),'')
+        self.assertEqual(Client.instances,[])
 
 
 if __name__=='__main__':unittest.main()
