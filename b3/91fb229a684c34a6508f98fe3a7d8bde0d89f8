@@ -1,0 +1,36 @@
+tools/partition_shared_load.py
+  s_895f6ebe145fd3::t_b3a50c67f72e2d 162-178,181-182,185-186,190-192
+  s_895f6ebe145fd3::t_5c62a410a5e4e3 6,9,101-102,106-107,113,127,131-132,195
+  s_895f6ebe145fd3::t_8b22aea1a23b1e 1-5,7-8,10-100,103-105,108-112,114-126,128-130,133-161,179-180,183-184,187-189,193-194,196-201
+docs/benchmark/partition-execution.md
+  s_895f6ebe145fd3::t_0529471f79ff05 112-114
+tests/test_source_run_registration.py
+  s_895f6ebe145fd3::t_7b4e5f91d85215 161-167
+docs/benchmark/partition-shared-load.md
+  s_895f6ebe145fd3::t_0529471f79ff05 1-106
+tools/partition_execution.py
+  s_895f6ebe145fd3::t_8b22aea1a23b1e 206-220,223
+tools/source_run_registration.py
+  s_895f6ebe145fd3::t_8b22aea1a23b1e 246,248
+tests/test_partition_shared_load.py
+  s_895f6ebe145fd3::t_7b4e5f91d85215 1-117,119-166,172-175,191-192
+  s_895f6ebe145fd3::t_b3a50c67f72e2d 176-190
+  s_895f6ebe145fd3::t_f65070f2a603d3 167-171
+  s_895f6ebe145fd3::t_6a1cd71136138d 118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b391fb229a684c34a6508f98fe3a7d8bde0d89f8",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
