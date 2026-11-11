@@ -162,6 +162,12 @@ class PartitionTest(PartitionCase):
         plan=self.create();plan['source']['parameters']['seed']+=1
         with self.assertRaisesRegex(ValueError,'source changed'):P.materialization_plan(plan,0)
 
+    def test_verification_forwards_outer_stop_callback_to_witness_scan(self):
+        plan=self.create();stop=lambda:'SIGINT'
+        with patch.object(P.R,'verify',wraps=P.R.verify) as verify:
+            self.assertEqual(P.verify(self.output,stop=stop),plan)
+        verify.assert_called_once_with(self.registration.resolve(),stop=stop)
+
     def test_cli_selection_is_only_a_json_array_accepted_by_materializer(self):
         self.create()
         args=['planner','selection','--output-dir',str(self.output),'--partition','0']
