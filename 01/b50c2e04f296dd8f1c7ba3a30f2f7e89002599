@@ -1,0 +1,29 @@
+docs/benchmark/incremental-source-load.md
+  s_895f6ebe145fd3::t_de81864216ce22 1-120
+tools/incremental_source_load.py
+  s_895f6ebe145fd3::t_2a8da3b7a81931 1-230
+tools/bounded_source_loader.py
+  s_895f6ebe145fd3::t_2a8da3b7a81931 169-179,190,264-269
+docs/benchmark/partition-shared-load.md
+  s_895f6ebe145fd3::t_de81864216ce22 104-105
+tests/test_incremental_source_load.py
+  s_895f6ebe145fd3::t_fdd3fc39a8e9a9 1-85,87-156,172-173
+  s_895f6ebe145fd3::t_8f380d601253b3 86
+  s_895f6ebe145fd3::t_e3f2a44ffe56a6 157-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "01b50c2e04f296dd8f1c7ba3a30f2f7e89002599",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
