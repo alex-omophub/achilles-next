@@ -166,6 +166,17 @@ def freeze(registration,guard):
         finally: guard.paths.remove(frozen)
 
 
+def fact_checks(expected,schema):
+    """Generate read-only aggregate assertions for the specified tables."""
+    q=F.identifier(schema);commands=[]
+    for table,info in expected.items():
+        nulls=','.join(F.literal(c)+',count(*) FILTER (WHERE '+F.identifier(c)+' IS NULL)' for c in info['nulls'])
+        expression="jsonb_build_object('rows',count(*),'nulls',jsonb_build_object("+nulls+'))'
+        value=F.literal(S.BASE.canonical(info).decode().strip())+'::jsonb'
+        commands.append(f"DO $selection_check$ BEGIN IF (SELECT {expression} FROM {q}.{F.identifier(table)}) IS DISTINCT FROM {value} THEN RAISE EXCEPTION 'Loaded selection facts differ'; END IF; END; $selection_check$;")
+    return commands
+
+
 def build_script(frozen,plan,complete,schema,marker):
     q=F.identifier(schema); version=plan['source']['parameters']['cdm_version']
     ddl=(S.BASE.DDL/(version+'.sql')).read_bytes()
@@ -176,11 +187,7 @@ def build_script(frozen,plan,complete,schema,marker):
     for chunk in complete['chunks']:
         table=chunk['table']; names=','.join(F.identifier(c['name']) for c in columns[table])
         commands.append(f"\\copy {q}.{F.identifier(table)} ({names}) FROM '{frozen/chunk['file']}' WITH (FORMAT csv, HEADER true, NULL '\\N')")
-    for table,info in facts(plan,complete).items():
-        nulls=','.join(F.literal(c)+',count(*) FILTER (WHERE '+F.identifier(c)+' IS NULL)' for c in info['nulls'])
-        expression="jsonb_build_object('rows',count(*),'nulls',jsonb_build_object("+nulls+'))'
-        expected=F.literal(S.BASE.canonical(info).decode().strip())+'::jsonb'
-        commands.append(f"DO $selection_check$ BEGIN IF (SELECT {expression} FROM {q}.{F.identifier(table)}) IS DISTINCT FROM {expected} THEN RAISE EXCEPTION 'Loaded selection facts differ'; END IF; END; $selection_check$;")
+    commands.extend(fact_checks(facts(plan,complete),schema))
     commands.extend([F.grants_sql(schema),'COMMIT;'])
     script='\n'.join(commands)
     if len(script.encode())>MAX_IO: raise ValueError('Loader SQL byte budget exceeded')
@@ -254,11 +261,14 @@ def drop_locked(state,output,seconds,stop):
     if rows!=[dict(marker=marker,owned=True)]: raise ValueError('Refusing cleanup of an unowned or differently marked schema')
     # Recheck in the same transaction that performs the drop; a stale client-side
     # owner/marker observation is never the sole cleanup authority.
-    guard_sql=("DO $selection_drop$ DECLARE owned boolean; marker text; BEGIN SELECT nspowner=(SELECT oid FROM pg_roles WHERE rolname=current_user),obj_description(oid,'pg_namespace') INTO owned,marker FROM pg_namespace WHERE nspname="+F.literal(schema)+
+    client.run('BEGIN;\n'+target_guard_sql()+'\n'+drop_guard_sql(schema,marker)+'\nCOMMIT;')
+    return dict(status='dropped',schema=schema)
+
+
+def drop_guard_sql(schema,marker):
+    return ("DO $selection_drop$ DECLARE owned boolean; marker text; BEGIN SELECT nspowner=(SELECT oid FROM pg_roles WHERE rolname=current_user),obj_description(oid,'pg_namespace') INTO owned,marker FROM pg_namespace WHERE nspname="+F.literal(schema)+
                "; IF NOT FOUND THEN RETURN; END IF; IF owned IS DISTINCT FROM true OR marker IS DISTINCT FROM "+F.literal(marker)+
                " THEN RAISE EXCEPTION 'Selection cleanup owner/marker changed'; END IF; EXECUTE "+F.literal('DROP SCHEMA '+F.identifier(schema)+' CASCADE;')+"; END; $selection_drop$;")
-    client.run('BEGIN;\n'+target_guard_sql()+'\n'+guard_sql+'\nCOMMIT;')
-    return dict(status='dropped',schema=schema)
 
 
 def main():

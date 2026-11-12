@@ -120,8 +120,11 @@ jobs:
           mkdir -p .local/bin
           chmod 700 .local
           docker pull postgres:17.10
-          docker run --detach --rm --name achillesnext-psql-client --network host \
+          # Preserve the loaders' loopback-only guard inside PostgreSQL's namespace.
+          docker run --detach --rm --name achillesnext-psql-client \
+            --network "container:${{ job.services.postgres.id }}" \
             --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" --workdir "$GITHUB_WORKSPACE" \
+            --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
             --entrypoint sleep postgres:17.10 infinity
           cp tools/ci/psql .local/bin/psql
           chmod +x .local/bin/psql
@@ -132,6 +135,13 @@ jobs:
         env:
           PGPASSFILE: ${{ github.workspace }}/.local/admin.pgpass
         run: python3 tools/postgresql_fixtures.py setup --host 127.0.0.1 --admin-user postgres
+      - name: Verify incremental fixture transactions and cleanup cancellation
+        if: matrix.suite == 'compatibility'
+        env:
+          ACHILLES_NEXT_TEST_STATE: ${{ env.ACHILLES_NEXT_FIXTURE_STATE }}
+          # COPY paths are shared with the pinned client container.
+          TMPDIR: ${{ runner.temp }}
+        run: python3 -m unittest discover -s tests -p test_incremental_source_load_postgresql.py
       - name: Rebuild and verify the shipped viewer before R installation
         if: matrix.suite == 'compatibility'
         run: |
