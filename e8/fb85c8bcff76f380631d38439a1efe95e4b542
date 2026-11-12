@@ -1,0 +1,46 @@
+tools/partition_inventory_audit.py
+  s_895f6ebe145fd3::t_5f49f72b2693ea 101-102,104-105,156,327
+  s_895f6ebe145fd3::t_6404548a853295 1-25,29-57,60-64,70-74,76,80-86,89-98,107-119,122-138,140-143,152-155,157-165,167-181,183-184,186-187,190-193,210-218,220-222,224-232,235-256,258-268,270-272,274-282,284-294,309-311,313-319,323-325,328-335,343-347,349-355,357-372,374-378,381-389
+  s_895f6ebe145fd3::t_58919015f27165 26,58-59,75,77-79,283,295-308,312,320-322,348,356
+  s_895f6ebe145fd3::t_539fd9e6d0cfce 87-88,269,273,326,336-342,373,379-380
+  s_895f6ebe145fd3::t_6c9647f21cb0bc 27-28,182,185,188-189,194-209,219,223,233-234,257
+  s_895f6ebe145fd3::t_15d263cb0e3a43 65-69,103,106,120-121,166
+  s_895f6ebe145fd3::t_cce14aa55c5af8 99-100
+  s_895f6ebe145fd3::t_8faa7f84ad8b7b 139,144-151
+docs/benchmark/partition-inventory-audit.md
+  s_895f6ebe145fd3::t_d03c78bc33c1c6 127-129
+  s_3e206b4a2cf4c3::t_05a1e4f2453ae2 1-42,45-99,103-126,130-132
+  s_895f6ebe145fd3::t_929c8cfe72ffa6 43-44,100-102
+tests/test_partition_inventory_audit.py
+  s_895f6ebe145fd3::t_5f49f72b2693ea 201-206
+  s_895f6ebe145fd3::t_6c9647f21cb0bc 226-230
+  s_895f6ebe145fd3::t_772bcb05276731 30,33,38,120,154,184-191,215,219-224
+  s_895f6ebe145fd3::t_1fe52df5ce88f3 1-5,7-29,31-32,34-37,39-119,121-153,155-161,177-183,192-200,207-214,216-218,225,231-259
+  s_895f6ebe145fd3::t_8faa7f84ad8b7b 6,162-176
+docs/benchmark/partition-inventory.md
+  s_895f6ebe145fd3::t_0273d5d3393a67 108-111
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e8fb85c8bcff76f380631d38439a1efe95e4b542",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
