@@ -90,9 +90,31 @@ class AuditTest(unittest.TestCase):
         self.mutate("INSERT INTO bins VALUES('measurement','extra','{}',1)");self.prepare()
         with self.assertRaisesRegex(ValueError,'Global bins'):self.complete()
 
-    def test_missing_partition_and_cached_summary_are_independently_detected(self):
+    def test_missing_partition_is_detected_by_row_multiplicity_comparison(self):
         self.mutate('DELETE FROM '+A.PARTS+' WHERE partition_no=(SELECT max(partition_no) FROM '+A.PARTS+')');self.prepare()
-        with self.assertRaisesRegex(ValueError,'Global rows|cached summary'):self.complete()
+        with self.assertRaisesRegex(ValueError,'^Global rows inventory differs from independently regenerated source$'):self.complete()
+        state=self.checkpoint();self.assertEqual(state['phase'],'rows')
+        self.assertEqual(state['expected']['partitions'],1);self.assertEqual(state['row_keys_compared'],0)
+        self.assertFalse((self.out/'complete.json').exists())
+
+    def test_schedule_outputs_are_refused_without_poisoning_the_source_plan(self):
+        catalog=self.home/'catalog';catalog.mkdir();schedule=catalog/'schedule'
+        plan=A.P.create(self.home/'registration',schedule,rows_per_partition=1,chunk_rows=1)
+        source=self.home/'isolated-reducer';A.prepare(schedule,source)
+        alias=self.home/'schedule-alias';alias.symlink_to(schedule,target_is_directory=True)
+        before=(schedule/'partition-plan.json').read_bytes();source_bytes=(source/'inventory.sqlite').read_bytes()
+        nested=schedule/'audit'
+        for output in [catalog,schedule,nested,alias/'audit']:
+            with self.subTest(output=output):
+                try:
+                    with self.assertRaisesRegex(ValueError,'Keep reducer separate from schedule/source/inventory'):V.prepare(source,output)
+                    self.assertFalse(nested.exists())
+                finally:
+                    # Keeps the pre-fix reproduction isolated to this fixture.
+                    if nested.exists():shutil.rmtree(nested)
+                self.assertEqual((schedule/'partition-plan.json').read_bytes(),before)
+                self.assertEqual(A.P.verify(schedule),plan)
+                self.assertEqual((source/'inventory.sqlite').read_bytes(),source_bytes)
 
     def test_regenerated_completion_sha_refuses_forged_receipt(self):
         with closing(sqlite3.connect(self.source/'inventory.sqlite')) as db,db:
@@ -107,7 +129,8 @@ class AuditTest(unittest.TestCase):
             value=json.loads(db.execute('SELECT document FROM '+A.META).fetchone()[0]);value['tables']['measurement']['null_counts']['person_id']=1
             db.execute('UPDATE '+A.META+' SET document=?',(json.dumps(value),))
         self.prepare()
-        with self.assertRaisesRegex(ValueError,'cached summary'):self.complete()
+        with self.assertRaisesRegex(ValueError,'^Global cached summary/journal differs from regenerated source$'):self.complete()
+        self.assertEqual(self.checkpoint()['phase'],'finalize')
 
     def test_whole_scope_refuses_gaps_without_certifying_selected_inventory(self):
         self.prepare(require_whole_source=True)
@@ -229,12 +252,21 @@ class AuditTest(unittest.TestCase):
         self.assertEqual(receipt['rows'],2000);self.assertEqual(receipt['row_keys'],1980)
 
     def test_byte_chain_reads_all_source_bytes_and_is_independently_reproducible(self):
-        self.prepare();result=self.complete();previous=V.ZERO
+        # Released free pages enlarge the physical file across an 8 MiB boundary
+        # without changing its schema, live rows, histograms or cached counts.
+        with closing(sqlite3.connect(self.source/'inventory.sqlite')) as db:
+            db.execute('PRAGMA auto_vacuum=NONE');db.execute('VACUUM')
+            db.execute("INSERT INTO row_bag VALUES('audit_padding',zeroblob(?),1)",(9*1024*1024+137,));db.commit()
+            db.execute("DELETE FROM row_bag WHERE table_name='audit_padding'");db.commit()
+        self.prepare();result=self.complete();previous='00'*32;chunks=0
         with (self.source/'inventory.sqlite').open('rb') as stream:
             offset=0
-            while raw:=stream.read(V.FILE_CHUNK):
+            while raw:=stream.read(8*1024*1024):
                 value=dict(offset=offset,bytes=len(raw),sha256=hashlib.sha256(raw).hexdigest())
-                previous=hashlib.sha256(bytes.fromhex(previous)+V.S.BASE.canonical(value)).hexdigest();offset+=len(raw)
+                canonical=json.dumps(value,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode('utf-8')+b'\n'
+                previous=hashlib.sha256(bytes.fromhex(previous)+canonical).hexdigest();offset+=len(raw);chunks+=1
+        self.assertGreaterEqual(chunks,2)
+        self.assertEqual(result['source_file_digest_algorithm'],'sha256-chain-8MiB-v1')
         self.assertEqual(result['source_file_bytes'],offset);self.assertEqual(result['source_file_chain'],previous)
 
     def test_corrupt_completion_checkpoint_is_refused(self):

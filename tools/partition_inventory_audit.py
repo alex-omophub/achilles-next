@@ -47,8 +47,8 @@ class Guard(A.Guard):
         if path.exists() or path.is_symlink():M.regular(path,0);raise M.Stopped('source_stop_file')
 
 
-def isolated(output,source,plan,stop):
-    output=A.separate(output,plan,[source],stop)
+def isolated(output,source,plan,stop,schedule_dir):
+    output=A.separate(output,plan,[source,schedule_dir],stop)
     return output
 
 
@@ -93,7 +93,7 @@ def prepare(source,output,require_whole_source=False,seconds=120,database_bytes=
     if type(require_whole_source) is not bool:raise ValueError('Whole-source scope must be boolean')
     with M.locked(source) as source:
         original,plan,source_guard=A.load(source,seconds,stop)
-        output=isolated(output,source,plan,source_guard.callback)
+        output=isolated(output,source,plan,source_guard.callback,schedule_dir=original['schedule_dir'])
         settings=A.controls(database_bytes if database_bytes is not None else original['limits']['database_bytes'],
             bins if bins is not None else original['limits']['bins'],seconds)
         guard=Guard(output,source,settings,stop);guard.began=source_guard.began
@@ -131,7 +131,7 @@ def load(root,source,seconds,stop):
         req.get('scope') not in ('selected_partitions','whole_source') or req.get('request_sha256')!=S.BASE.sha(S.BASE.canonical(raw)) or
         req.get('code')!=pins() or req['source_dir']!=str(source) or req['limits']!=settings):raise ValueError('Audit request/code identity differs')
     settings=dict(settings,seconds=A.controls(seconds=seconds)['seconds']);guard=Guard(root,source,settings,stop);guard.check(disk=True)
-    original,plan,_=A.load(source,seconds,guard.callback);isolated(root,source,plan,guard.callback)
+    original,plan,_=A.load(source,seconds,guard.callback);isolated(root,source,plan,guard.callback,schedule_dir=original['schedule_dir'])
     if original['request_sha256']!=req['source_request_sha256'] or plan['partition_plan_sha256']!=req['partition_plan_sha256']:raise ValueError('Audit source request changed')
     unchanged(source,req)
     allowed={'.lock','request.json','audit.sqlite','audit.sqlite-journal','progress.json','complete.json','attempt.json','STOP',
