@@ -120,7 +120,9 @@ jobs:
           mkdir -p .local/bin
           chmod 700 .local
           docker pull postgres:17.10
-          docker run --detach --rm --name achillesnext-psql-client --network host \
+          # Preserve the loaders' loopback-only guard inside PostgreSQL's namespace.
+          docker run --detach --rm --name achillesnext-psql-client \
+            --network "container:${{ job.services.postgres.id }}" \
             --volume "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" --workdir "$GITHUB_WORKSPACE" \
             --volume "$RUNNER_TEMP:$RUNNER_TEMP" \
             --entrypoint sleep postgres:17.10 infinity
