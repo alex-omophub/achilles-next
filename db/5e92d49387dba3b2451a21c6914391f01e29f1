@@ -1,0 +1,31 @@
+tests/test_partition_inventory.py
+  s_895f6ebe145fd3::t_f95211675f919a 1-206,214-241
+  s_895f6ebe145fd3::t_d416726b39c489 207-213
+tools/partition_inventory.py
+  s_895f6ebe145fd3::t_ad38442ff08535 1-10,12-108,112-174,190-263,265-305
+  s_895f6ebe145fd3::t_681c749a99fe79 109-111
+  s_895f6ebe145fd3::t_d416726b39c489 11,175-189,264
+docs/benchmark/partition-inventory.md
+  s_895f6ebe145fd3::t_681c749a99fe79 84-87
+  s_895f6ebe145fd3::t_93f2c38f3affd3 81-83
+  s_895f6ebe145fd3::t_fe1390ebb1e0b3 88-90
+  s_895f6ebe145fd3::t_a5e12f364182d9 1-80,91-107
+docs/benchmark/source-inventories.md
+  s_895f6ebe145fd3::t_a397c3497acad5 3-5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "db5e92d49387dba3b2451a21c6914391f01e29f1",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
