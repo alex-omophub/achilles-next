@@ -1,7 +1,7 @@
 """Request integrity, bounded resume orchestration and generated SQL guards.
 
-The orchestration double is not a PostgreSQL transaction simulator; native fixture
-validation is needed to establish commit, rollback and permission behavior.
+The orchestration double is not a PostgreSQL transaction simulator. Real rollback
+and permission regressions are in test_incremental_source_load_postgresql.py.
 """
 import json
 from pathlib import Path
@@ -153,6 +153,24 @@ class IncrementalTest(unittest.TestCase):
         N.drop(self.out,self.home/'state');sql=Client.instances[-1].sql[-1]
         self.assertLess(sql.index('pg_advisory_xact_lock'),sql.index('DROP SCHEMA'))
         self.assertIn('Selection cleanup owner/marker changed',sql);self.assertIn(self.request['marker'],sql)
+
+    def test_cleanup_stop_file_refuses_before_client(self):
+        (self.out/'STOP').touch()
+        with self.assertRaisesRegex(N.M.Stopped,'operator_stop_file') as error:
+            N.drop(self.out,self.home/'state')
+        self.assertEqual(error.exception.code,3)
+        self.assertEqual(Client.instances,[])
+        self.assertFalse((self.out/'dropped.json').exists())
+
+    def test_cleanup_keeps_stop_guard_after_client_creation(self):
+        def check(client):
+            (self.out/'STOP').touch();client.guard.check()
+        class GuardedClient(Client):
+            def __init__(self,state,guard,*args):super().__init__();self.guard=guard
+        with patch.object(N.L,'Client',GuardedClient),patch.object(N.L,'check_target',side_effect=check):
+            with self.assertRaisesRegex(N.M.Stopped,'operator_stop_file'):
+                N.drop(self.out,self.home/'state')
+        self.assertFalse((self.out/'dropped.json').exists())
 
     def test_non_object_request_is_refused_without_cleanup_connection(self):
         for value in [None,[],True,0,1.5,'text']:

@@ -111,10 +111,31 @@ python3 tools/incremental_source_load.py drop \
 ```
 
 Cleanup takes the local operation lock and the same transaction advisory lock,
-rechecks the marked target and saved schema owner/marker in the DROP transaction,
+and honors the output `STOP` file before connecting and while SQL is running.
+Remove `STOP` before requesting cleanup; an interrupted uncommitted DROP rolls back.
+Cleanup rechecks the marked target and saved schema owner/marker in the DROP transaction,
 and drops only that candidate. Original inputs/current generator code are not
 needed. It retains local evidence and writes `dropped.json`; subsequent runs of
 that local output refuse to recreate it. Repeating cleanup reports absence.
 Archive all cooperating copies of a request after cleanup: a separately copied
 output does not share the local dropped marker. No cross-host deletion tombstone
 or hostile-owner protection is claimed.
+
+## PostgreSQL regression tests
+
+After provisioning the isolated marked fixture sandbox, run:
+
+```sh
+ACHILLES_NEXT_TEST_STATE=.local/postgresql \
+  python3 -m unittest discover -s tests -p test_incremental_source_load_postgresql.py
+```
+
+The tests require the locked native client/server tuple, refuse foreign targets,
+and clean up only their randomly named candidates. They do not reset existing
+fixtures. Post-COPY validation failures must leave the committed prefix unchanged;
+failed finalization must roll back runner grants; successful resume must preserve
+exact rows and duplicates across CDM 5.3/5.4/5.5. STOP before cleanup must
+preserve the candidate. The compatibility CI job runs this suite against its
+existing PostgreSQL service. When using the containerized CI client, its mounted
+temporary directory must match Python's `TMPDIR` so frontend COPY can read the
+frozen CSV paths. Offline discovery skips these opt-in database tests.

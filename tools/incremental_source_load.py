@@ -193,7 +193,7 @@ def run(output,state_dir,seconds=120,max_chunks=M.MAX_CHUNKS,stop=None):
 
 def drop(output,state_dir,seconds=30,stop=None):
     with M.locked(output) as root:
-        request=saved_request(root);guard=L.Guard([root],seconds,stop=stop)
+        request=saved_request(root);guard=Guard(root,seconds,stop=stop);guard.check(disk=True)
         client=L.Client(state_dir,guard,'achillesnext-incremental-cleanup');L.check_target(client)
         sql='\n'.join(['BEGIN;',L.target_guard_sql(),transaction_lock(request),
             "SELECT (to_regnamespace("+F.literal(request['schema'])+") IS NOT NULL) AS achillesnext_drop \\gset",
