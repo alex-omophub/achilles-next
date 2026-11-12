@@ -1,7 +1,7 @@
-"""Stream a selected schedule into one private fixture candidate and audit it.
+"""Stream a selected or resource-admitted schedule into one fixture candidate.
 
 Only the current bounded partition's CSV/inventory files are retained. This local
-development path does not admit full-source S1/S2 or publish analytical results.
+path publishes no analytical results and does not qualify a benchmark tier.
 """
 import argparse
 from contextlib import closing
@@ -17,6 +17,7 @@ import sys
 
 import partition_inventory_audit as V
 import bounded_source_loader as L
+import source_execution_resources as Z
 
 A=V.A
 P=A.P
@@ -32,26 +33,29 @@ PARTS='achillesnext_stream_partition'
 
 def pins():
     if S.BASE.sha(Path(__file__).read_bytes())!=SOURCE_SHA:raise ValueError('Stream implementation changed after import')
-    return dict(stream=SOURCE_SHA,auditor=V.pins(),loader=L.pins())
+    return dict(stream=SOURCE_SHA,auditor=V.pins(),loader=L.pins(),resources=Z.pins())
 
 
 class Guard(L.Guard):
     def __init__(self,root,seconds=120,stop=None):
-        super().__init__([root],seconds,stop=stop);self.root=root
+        super().__init__([root],seconds,stop=stop);self.root=root;self.lease=None
     def check(self,disk=False):
         super().check(disk)
         path=self.root/'STOP'
         if path.exists() or path.is_symlink():M.regular(path,0);raise M.Stopped('operator_stop_file')
+        if self.lease is not None:self.lease.check()
 
 
-def request(schedule,plan,first,count,settings,schema):
+def request(schedule,plan,first,count,settings,schema,admission=None):
     if (type(first) is not int or type(count) is not int or first<0 or count<1 or first+count>plan['partition_count']):
         raise ValueError('Choose a positive contiguous range within the schedule')
-    if count==plan['partition_count']:raise ValueError('Whole-source execution needs resource admission; development selections only')
+    if count==plan['partition_count'] and admission is None:raise ValueError('Whole-source execution needs resource admission; development selections only')
+    if admission is not None and (first!=0 or count!=plan['partition_count']):raise ValueError('Admission requires the complete schedule')
     if type(schema) is not str or not re.fullmatch('cdm_stream_[0-9a-f]{16}',schema):raise ValueError('Invalid stream schema')
     body=dict(kind='selected_partition_stream',version=1,schedule_dir=str(Path(schedule).resolve()),
         partition_plan_sha256=plan['partition_plan_sha256'],first=first,count=count,schema=schema,
         limits=settings,code=pins(),whole_source_loaded=False,full_tier_generated=False,qualifying=False)
+    if admission is not None:body.update(kind='whole_source_partition_stream',version=2,admission=admission)
     digest=S.BASE.sha(S.BASE.canonical(body))
     return dict(body,request_sha256=digest,marker=F.MARKER+': partition-stream:'+digest)
 
@@ -61,16 +65,26 @@ def saved_request(root):
     if type(req) is not dict:raise ValueError('Invalid stream request')
     body={k:v for k,v in req.items() if k not in ('request_sha256','marker')}
     digest=S.BASE.sha(S.BASE.canonical(body))
-    if (req.get('kind')!='selected_partition_stream' or type(req.get('version')) is not int or req['version']!=1 or
+    if ((req.get('kind'),req.get('version')) not in (('selected_partition_stream',1),('whole_source_partition_stream',2)) or type(req.get('version')) is not int or
         type(req.get('schema')) is not str or not re.fullmatch('cdm_stream_[0-9a-f]{16}',req['schema']) or
         req.get('request_sha256')!=digest or req.get('marker')!=F.MARKER+': partition-stream:'+digest):raise ValueError('Invalid stream request identity')
     return req
 
 
-def prepare(schedule,output,first,count,seconds=120,database_bytes=I.MAX_DB,bins=I.MAX_BINS,stop=None):
+def prepare(schedule,output,first,count,seconds=120,database_bytes=I.MAX_DB,bins=I.MAX_BINS,stop=None,resource_dir=None):
     guard=Guard(Path(output),seconds,stop);guard.paths=[Path(output).parent];guard.check(disk=True)
     plan=P.verify(schedule,stop=guard.callback);output=A.separate(output,plan,[schedule],guard.callback)
-    req=request(schedule,plan,first,count,A.controls(database_bytes,bins), 'cdm_stream_'+secrets.token_hex(8))
+    admission=None
+    if resource_dir is not None:
+        A.separate(output,plan,[resource_dir],guard.callback)
+        admission,guard.lease,_=Z.verify_worker(resource_dir,output,plan,stop=guard.callback)
+        # Include both global databases, one rollback journal and the bounded
+        # current inventory in the operator-reviewed peak envelope.
+        config=Z.read_registration(resource_dir)['allocation']
+        if 4*database_bytes+I.MAX_DB+65536>config['projection']['peak_bytes']['inventory']:raise ValueError('Inventory ceilings exceed registered projection')
+        if M.MAX_BYTES>config['projection']['peak_bytes']['source'] or I.MAX_DB>config['projection']['peak_bytes']['temporary']:raise ValueError('Partition scratch exceeds registered projection')
+        guard.check()
+    req=request(schedule,plan,first,count,A.controls(database_bytes,bins), 'cdm_stream_'+secrets.token_hex(8),admission)
     output.mkdir(mode=0o700);M.sync_directory(output.parent)
     with M.open_file(output/'.lock',True):pass
     M.atomic_json(output,'request.json',req,exclusive=True)
@@ -223,11 +237,18 @@ def run(output,state_dir,seconds=120,max_partitions=1,max_steps=32,stop=None):
             guard.check(disk=True);req=saved_request(root)
             if (root/'dropped.json').exists():raise ValueError('Stream candidate was cleaned up')
             plan=P.verify(req['schedule_dir'],stop=guard.callback);A.separate(root,plan,[req['schedule_dir']],guard.callback)
+            admission=None;target=None
+            if req['kind']=='whole_source_partition_stream':
+                value=req['admission'];A.separate(root,plan,[value['directory']],guard.callback)
+                admission,guard.lease,target=Z.verify_worker(value['directory'],root,plan,stop=guard.callback)
+                if admission!=value:raise ValueError('Resource admission identity changed')
+                guard.check(disk=True)
             c=req['limits'];settings=A.controls(c['database_bytes'],c['bins'],c['seconds'],c['min_free_bytes'])
-            if req!=request(req['schedule_dir'],plan,req['first'],req['count'],settings,req['schema']):raise ValueError('Stream request/source/code changed')
+            if S.BASE.canonical(req)!=S.BASE.canonical(request(req['schedule_dir'],plan,req['first'],req['count'],settings,req['schema'],admission)):raise ValueError('Stream request/source/code changed')
+            client=L.Client(state_dir,guard,'achillesnext-stream-'+req['schema'][-16:]);L.check_target(client)
+            if target is not None and Z.target_identity(client)!=target:raise ValueError('Registered database identity/settings changed')
             reduction=child(root,'reduction',lambda p:A.prepare(req['schedule_dir'],p,stop=guard.callback,**dict(database_bytes=c['database_bytes'],bins=c['bins'])),guard)
             header=A.status(reduction,stop=guard.callback)
-            client=L.Client(state_dir,guard,'achillesnext-stream-'+req['schema'][-16:]);L.check_target(client)
             if client.value("SELECT has_database_privilege(current_user,current_database(),'TEMP')")!='t':raise ValueError('Stream owner needs TEMP')
             if (header['committed_partitions'] or (root/'audit').exists() or (root/'complete.json').exists()) and not client.rows('SELECT nspname FROM pg_namespace WHERE nspname='+F.literal(req['schema'])):
                 raise ValueError('Stream candidate schema is missing')
@@ -256,11 +277,12 @@ def run(output,state_dir,seconds=120,max_partitions=1,max_steps=32,stop=None):
                     state=execute(client,partition_script(req,unit,complete,frozen,index,manifest,state),req)
                 done+=1
             stage='audit';A.status(reduction,stop=guard.callback)
-            audit_dir=child(root,'audit',lambda p:V.prepare(reduction,p,stop=guard.callback),guard)
+            audit_dir=child(root,'audit',lambda p:V.prepare(reduction,p,stop=guard.callback,require_whole_source=admission is not None),guard)
             audited=V.run(audit_dir,max_steps=max_steps,stop=guard.callback)
             if audited['status']!='complete':return dict(status='incomplete',phase='audit',schema=req['schema'],qualifying=False)
             audit=audited['receipt'];audit=V.run(audit_dir,verify_only=True,stop=guard.callback)
             if audit['partitions']!=req['count']:raise ValueError('Audited stream partition count differs')
+            if admission is not None and (audit['scope']!='whole_source' or audit['whole_source_audited'] is not True):raise ValueError('Whole-source audit is incomplete')
             # Keep the independently audited source stable through the SQL
             # publication transaction, including between resumed journal pages.
             with M.locked(reduction):
@@ -280,6 +302,7 @@ def run(output,state_dir,seconds=120,max_partitions=1,max_steps=32,stop=None):
             receipt=dict(kind='selected_partition_stream_complete',version=1,status='complete',request_sha256=req['request_sha256'],
                 schema=req['schema'],partitions=req['count'],rows=audit['rows'],audit_sha256=state['audit_sha256'],
                 coverage='selected_partitions_only',whole_source_loaded=False,full_tier_generated=False,qualifying=False)
+            if admission is not None:receipt.update(kind='whole_source_partition_stream_complete',version=2,coverage='whole_source',whole_source_loaded=True,full_tier_generated=True,resource_registration_sha256=admission['registration_sha256'])
             if (root/'complete.json').exists() and M.read_json(root/'complete.json')!=receipt:raise ValueError('Stream completion receipt differs')
             M.atomic_json(root,'complete.json',receipt);return receipt
         except (Exception,KeyboardInterrupt) as error:
@@ -301,16 +324,17 @@ def main():
     parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('action',choices=['prepare','run','drop'])
     parser.add_argument('--output-dir',type=Path,required=True);parser.add_argument('--schedule-dir',type=Path);parser.add_argument('--state-dir',type=Path)
     parser.add_argument('--first',type=int);parser.add_argument('--count',type=int);parser.add_argument('--seconds',type=float,default=120)
+    parser.add_argument('--resource-dir',type=Path)
     parser.add_argument('--database-bytes',type=int,default=I.MAX_DB);parser.add_argument('--bins',type=int,default=I.MAX_BINS)
     parser.add_argument('--max-partitions',type=int,default=1);parser.add_argument('--max-steps',type=int,default=32)
     args=parser.parse_args()
     if args.action=='prepare' and None in (args.schedule_dir,args.first,args.count):parser.error('prepare needs schedule-dir, first and count')
-    if args.action!='prepare' and (args.state_dir is None or any(v is not None for v in [args.schedule_dir,args.first,args.count])):parser.error('run/drop need state-dir and use the frozen selection')
+    if args.action!='prepare' and (args.state_dir is None or any(v is not None for v in [args.schedule_dir,args.first,args.count,args.resource_dir])):parser.error('run/drop need state-dir and use the frozen selection')
     interrupted=[None]
     def interrupt(signum,frame):interrupted[0]=signal.Signals(signum).name
     previous={n:signal.signal(n,interrupt) for n in (signal.SIGINT,signal.SIGTERM)}
     try:
-        if args.action=='prepare':value=prepare(args.schedule_dir,args.output_dir,args.first,args.count,args.seconds,args.database_bytes,args.bins,lambda:interrupted[0])
+        if args.action=='prepare':value=prepare(args.schedule_dir,args.output_dir,args.first,args.count,args.seconds,args.database_bytes,args.bins,lambda:interrupted[0],args.resource_dir)
         elif args.action=='run':value=run(args.output_dir,args.state_dir,args.seconds,args.max_partitions,args.max_steps,lambda:interrupted[0])
         else:value=drop(args.output_dir,args.state_dir,args.seconds,lambda:interrupted[0])
         print(json.dumps(value,sort_keys=True));return 3 if value.get('status')=='incomplete' else 0

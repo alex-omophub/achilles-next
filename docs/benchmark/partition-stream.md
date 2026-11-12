@@ -7,10 +7,11 @@ It loads a frozen contiguous selection into one new marked fixture schema.
 The job retains the current partition's files, rather than concatenating all
 partitions or keeping a growing list of chunk manifests in Python/JSON.
 
-This is a local development integration path. It refuses a selection covering
-the entire logical schedule: resource admission and full-source S1/S2 execution
-remain separate. Completion does not qualify a benchmark tier or publish
-AchillesNext analytical results. The original standalone tools remain available.
+The default is a local selected-partition development path. Covering the entire
+logical schedule additionally requires an operator-approved
+[resource registration and live lease](source-execution-resources.md).
+Completion does not qualify a benchmark tier or publish AchillesNext analytical
+results. The original standalone tools remain available.
 
 ## Prepare and resume
 
@@ -43,6 +44,14 @@ remain unchanged. A selection can exceed the previous combined 100,000-row cap
 across invocations; no complete selection is assembled as CSV or a Python list.
 This does not reserve storage or authorize a full-tier run.
 
+To prepare the complete schedule, supply `--first 0`, its exact partition count,
+and `--resource-dir /absolute/private/resources`. The registration must bind this
+job, schedule and tier to the current runner/resources, with a verified bounded
+source witness. Whole-source preparation creates a version-2 request. Every
+resume uses the frozen resource identity and a fresh lease, checking the exact
+database/settings before child work or DDL. There is no bypass flag. Cleanup is
+still possible after resource expiry or revocation.
+
 ## Durable order and file retention
 
 1. Initialize a private marked candidate namespace and PostgreSQL header/journal.
@@ -65,6 +74,14 @@ This does not reserve storage or authorize a full-tier run.
 8. Under the inventory operation lock, recheck the audited source binding and
    validate final database table/null counts. Commit reader grants, completed
    database state and audit binding atomically; export `complete.json` afterward.
+
+Whole-source mode requires the auditor's mandatory whole-source scope, covering
+every scheduled partition and physical table. Only after that audit, journal
+comparison and final database checks succeed does the version-2 completion say
+`coverage=whole_source`, `whole_source_loaded=true` and `full_tier_generated=true`.
+Selected receipts retain their false flags. Both remain `qualifying=false`;
+generation/loading is distinct from matched reference execution, complete
+telemetry and benchmark acceptance.
 
 PostgreSQL is authoritative for the committed loading prefix. Local `active.json`
 identifies the currently retained work; `journal.json` records the resumable

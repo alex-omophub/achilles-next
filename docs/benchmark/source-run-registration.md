@@ -11,6 +11,11 @@ assessment, `full_tier_generated=false` and `qualifying=false`. There is no flag
 enable execution. A verified registration does not certify resources or admit
 full-tier generation.
 
+Whole-source execution uses a separate
+[resource registration and live lease](source-execution-resources.md), verified
+by the partition stream. It does not reinterpret this planning artifact as an
+allocation or change its `planned_not_admitted` status.
+
 ## Register and verify
 
 Use Python 3.10+ on a local POSIX filesystem. From the checkout root, prepare a
