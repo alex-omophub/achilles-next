@@ -1,0 +1,21 @@
+tests/test_partition_stream_postgresql.py
+  s_3e206b4a2cf4c3::t_71b8adcf4e383b 243
+  s_3e206b4a2cf4c3::t_7450bf5f82de40 169-175,184,246
+  s_3e206b4a2cf4c3::t_b9882c836bb6a3 235-242,244-245,247-249
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4fc694f8fe58b46ed3003500764384f78280cc66",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
