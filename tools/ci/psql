@@ -1,5 +1,74 @@
 #!/bin/sh
-# Use one pinned client container per job, instead of one container per query.
-exec docker exec -i \
+# One pinned client container per job. Forward cancellation to the owned remote
+# supervisor: killing docker exec alone leaves psql (and its transaction) alive.
+set -u
+local_dir=$(mktemp -d) || exit 1
+remote_dir=/tmp/achillesnext-psql.$(basename "$local_dir")
+cleanup() { rm -rf "$local_dir"; }
+trap cleanup EXIT
+cancel() {
+  trap '' INT TERM HUP
+  docker exec achillesnext-psql-client sh -c '
+    dir=$1
+    # The sentinel also covers cancellation before the supervisor starts.
+    : > "$dir.cancel"
+    if read -r pid expected < "$dir/pid" 2>/dev/null; then
+      if read -r stat < "/proc/$pid/stat" 2>/dev/null; then
+        fields=${stat##*) }; set -- $fields
+        if [ "$#" -ge 20 ]; then
+          shift 19
+          [ "$1" != "$expected" ] || kill -TERM "$pid" 2>/dev/null
+        fi
+      fi
+    fi
+    exit 0
+  ' sh "$remote_dir" >/dev/null 2>&1
+  # Reap the Docker client after remote cancellation, before returning to caller.
+  if [ -n "$client" ]; then wait "$client" 2>/dev/null || true; fi
+  exit 130
+}
+client=
+trap cancel INT TERM HUP
+# Explicit stdin duplication is needed: asynchronous shell commands otherwise
+# receive /dev/null. Keep SQL as stdin, never part of a shell command string.
+exec 3<&0
+docker exec -i \
   --env PGCLIENTENCODING --env PGOPTIONS --env PGPASSFILE --env PGSERVICEFILE \
-  achillesnext-psql-client psql "$@"
+  --env PGAPPNAME --env PGCONNECT_TIMEOUT \
+  achillesnext-psql-client sh -c '
+    dir=$1; shift
+    umask 077
+    child=
+    cleanup() { rm -rf "$dir"; rm -f "$dir.cancel"; }
+    cancel() {
+      trap "" INT TERM HUP
+      if [ -n "$child" ]; then
+        kill -INT "$child" 2>/dev/null || true
+        wait "$child" 2>/dev/null || true
+      fi
+      exit 130
+    }
+    trap cleanup EXIT
+    trap cancel INT TERM HUP
+    mkdir "$dir" || exit 1
+    [ ! -f "$dir.cancel" ] || exit 130
+    read -r stat < "/proc/$$/stat" || exit 1
+    fields=${stat##*) }
+    # Extract the supervisor start time without consuming the psql arguments.
+    started=$(set -- $fields; shift 19; printf "%s" "$1")
+    printf "%s %s\n" "$$" "$started" > "$dir/pid"
+    [ ! -f "$dir.cancel" ] || exit 130
+    # Defer a startup signal until the child PID is recorded.
+    cancelled=0
+    trap "cancelled=1" INT TERM HUP
+    exec 3<&0
+    psql "$@" <&3 &
+    child=$!
+    trap cancel INT TERM HUP
+    [ "$cancelled" = 0 ] && [ ! -f "$dir.cancel" ] || cancel
+    wait "$child"
+    exit $?
+  ' sh "$remote_dir" "$@" <&3 &
+client=$!
+wait "$client"
+exit $?

@@ -33,6 +33,10 @@ def now():return time.time()
 def stamp(value):return DT.datetime.fromtimestamp(value,DT.timezone.utc).isoformat()
 def timestamp(value):
     if type(value) is not str or not 1<=len(value)<=40:raise ValueError('Bounded UTC timestamp required')
+    # PostgreSQL emits +00; Python 3.10 requires the minute component.
+    if value.endswith('+00'):value+=':00'
+    # PostgreSQL omits trailing fractional zeroes; 3.10 accepts only 3/6 digits.
+    value=re.sub(r'\.([0-9]{1,5})(?=\+00:00$)',lambda m:'.'+m[1].ljust(6,'0'),value)
     parsed=DT.datetime.fromisoformat(value)
     if parsed.utcoffset()!=DT.timedelta(0):raise ValueError('UTC timestamp required')
     return parsed.timestamp()
@@ -105,13 +109,13 @@ def allocation(value):
         for n in p['peak_bytes'].values():integer(n,1)
     d=value['database']
     if d is not None:
-        if type(d) is not dict or set(d)!={'database','owner','database_oid','postmaster_started_at','server_version','address','port','settings'}:raise ValueError('Invalid database identity')
+        if type(d) is not dict or set(d)!={'database','owner','database_oid','postmaster_started_at','server_version','address','port','settings','initial_database_bytes'}:raise ValueError('Invalid database identity')
         for name in ['database','owner','postmaster_started_at','server_version']:
             if type(d[name]) is not str or not 1<=len(d[name])<=128:raise ValueError('Invalid database identity text')
-        integer(d['database_oid'],1);integer(d['port'],1)
+        integer(d['database_oid'],1);integer(d['port'],1);integer(d['initial_database_bytes'])
         if (d['address'] not in ('127.0.0.1','::1',None) or type(d['settings']) is not dict or
-            set(d['settings'])!={'shared_buffers','work_mem','hash_mem_multiplier','max_parallel_workers_per_gather','huge_pages'} or
-            any(type(x) is not str or not 1<=len(x)<=128 for x in d['settings'].values())):raise ValueError('Local database/settings identity required')
+            set(d['settings'])!={'shared_buffers','work_mem','hash_mem_multiplier','max_parallel_workers_per_gather','huge_pages','default_tablespace','temp_tablespaces'} or
+            any(type(x) is not str or not 0<=len(x)<=128 for x in d['settings'].values())):raise ValueError('Local database/settings identity required')
     return value
 
 
@@ -125,11 +129,47 @@ def file_sha(filename):
 def boot_id():return C.read(Path('/proc/sys/kernel/random/boot_id')).strip()
 
 
+def directory_identity(directory):
+    directory=Path(directory)
+    if directory.is_symlink() or not directory.is_dir():raise ValueError('Nonsymlink storage directory required')
+    st=directory.stat();return [st.st_dev,st.st_ino]
+
+
+def database_volume(config,proc=Path('/proc')):
+    """Observe only the registered postmaster's mounted PGDATA metadata.
+
+    The existing scoped observer needs read/stat access; missing permission fails
+    closed. No Docker socket, SQL superuser function or host-wide capability.
+    External WAL/tablespaces are deliberately unsupported by this admission.
+    """
+    item=config['storage']['database'];postgres=config['containers']['postgres'];target=config['database']
+    if postgres is None or target is None:raise ValueError('Database volume identity unavailable')
+    process=Path(proc)/str(postgres['pid']);root=process/'root'
+    data=root/Path(item['worker_path']).relative_to('/')
+    identity=directory_identity(data)
+    if directory_identity(item['host_path'])!=identity:raise ValueError('Database host/container storage mapping differs')
+    pidfile=data/'postmaster.pid';M.regular(pidfile,8192)
+    with M.open_file(pidfile) as stream:lines=stream.read(8193).decode('utf-8').splitlines()
+    namespaces=[line.split()[1:] for line in C.read(process/'status').splitlines() if line.startswith('NSpid:')]
+    if (len(lines)<4 or len(namespaces)!=1 or not namespaces[0] or
+        lines[0]!=namespaces[0][-1] or lines[1]!=item['worker_path'] or
+        int(lines[2])!=int(timestamp(target['postmaster_started_at'])) or int(lines[3])!=target['port']):raise ValueError('Registered process/path is not the target postmaster')
+    children={name:directory_identity(data/name) for name in ('base','pg_wal','pg_tblspc')}
+    # The target database may itself be a mount below an otherwise stable base.
+    children['database']=directory_identity(data/'base'/str(target['database_oid']))
+    if any(value[0]!=identity[0] for value in children.values()):raise ValueError('Database storage spans unregistered filesystems')
+    with os.scandir(data/'pg_tblspc') as entries:
+        if next(entries,None) is not None:raise ValueError('External database tablespaces are not admitted')
+    return dict(data=identity,children=children,namespace_pid=lines[0],directory=lines[1])
+
+
 def host_observation(config):
     """No credentials, process commands, Docker control, SQL or setting changes."""
     value=dict(platform=platform.system(),operator_uid=os.geteuid(),boot_id=R.measured(boot_id),
         visible_cpus=R.measured(R.process_cpus),memory_bytes=R.measured(R.memory_bytes),
         storage={role:R.measured(lambda item=item:R.disk(item['host_path'])) for role,item in config['storage'].items()},
+        storage_directories={role:R.measured(lambda item=item:directory_identity(item['host_path'])) for role,item in config['storage'].items()},
+        database_volume=R.measured(lambda:database_volume(config)),
         projection_sha256=R.measured(lambda:file_sha(config['projection']['evidence_file'])) if config['projection'] else dict(state='unavailable',value=None),
         attribution=None,attribution_error=None)
     try:
@@ -158,6 +198,9 @@ def assess(config,observed,created,baseline=None):
     if observed['boot_id']['state']!='observed':blockers.append('boot_identity_unavailable')
     if config['database'] is None:blockers.append('database_identity_missing')
     elif config['database']['settings']['huge_pages']!='off':blockers.append('hugetlb_accounting_unverified')
+    if config['database'] is not None and (config['database']['settings']['default_tablespace'] not in ('','pg_default') or config['database']['settings']['temp_tablespaces']!=''):blockers.append('external_database_tablespaces_unverified')
+    if observed['database_volume']['state']!='observed':blockers.append('database_volume_unverified')
+    elif baseline and observed['database_volume']!=baseline['observed']['database_volume']:blockers.append('database_volume_identity_changed')
     projection=config['projection'];pools={};devices={}
     if projection is None:blockers.append('capacity_projection_missing')
     else:
@@ -165,6 +208,8 @@ def assess(config,observed,created,baseline=None):
         if observed['projection_sha256']!=dict(state='observed',value=projection['sha256']):blockers.append('capacity_projection_evidence_changed_or_missing')
         if sum(projection['peak_bytes'].values())>384*GIB:blockers.append('projected_disk_above_budget')
     for role,item in config['storage'].items():
+        if observed['storage_directories'][role]['state']!='observed':blockers.append(role+'_directory_identity_unavailable')
+        elif baseline and observed['storage_directories'][role]!=baseline['observed']['storage_directories'][role]:blockers.append(role+'_directory_identity_changed')
         fact=observed['storage'][role]
         if fact['state']!='observed':blockers.append(role+'_storage_unavailable');continue
         R.check_fact(fact,'disk');disk=fact['value'];pool=item['pool'];device=disk['logical_device']
@@ -238,7 +283,7 @@ def write_lease(root,record,observed,assessment):
 def register(config_file,output):
     config=allocation(M.read_json(Path(config_file)));output=S.outside(Path(output)).resolve()
     for other in [Path(config_file).resolve(),Path(config['job_dir']).resolve(),*(Path(x['host_path']).resolve() for x in config['storage'].values())]:
-        if other==output or other.is_relative_to(output):raise ValueError('Resource output cannot contain input/job/storage paths')
+        if other==output or other.is_relative_to(output) or output.is_relative_to(other):raise ValueError('Keep resource output separate from input/job/storage paths')
     observed=host_observation(config);created=now();checked=assess(config,observed,created)
     body=dict(kind='source_execution_resource_registration',version=1,created_at=stamp(created),allocation=config,
         observed=observed,pool_observations=checked['pool_observations'],code=pins(),
@@ -264,7 +309,7 @@ def worker_identity():
 
 
 class Lease:
-    def __init__(self,root,record):self.root=Path(root);self.record=record;self.last=None;self.until=0
+    def __init__(self,root,record,worker=False):self.root=Path(root);self.record=record;self.last=None;self.until=0;self.worker=worker
     def check(self):
         stop_files(self.root);tick=time.monotonic()
         if self.last is not None and tick-self.last<.5 and now()<self.until:return
@@ -275,6 +320,7 @@ class Lease:
             value.get('registration_sha256')!=self.record['registration_sha256'] or value.get('status')!='ready' or value.get('blocking_reasons')!=[] or
             not at-LEASE_SECONDS-2<=timestamp(value['issued_at'])<=at+2 or
             not at<timestamp(value['valid_until'])<=min(timestamp(value['issued_at'])+LEASE_SECONDS,timestamp(self.record['allocation']['expires_at']))):raise M.Stopped('resource_admission_lease_unavailable_or_expired')
+        if self.worker:check_worker(self.record)
         self.last=tick;self.until=timestamp(value['valid_until'])
 
 
@@ -286,6 +332,12 @@ def verify_worker(directory,job,plan,stop=None):
     if config['partition_plan_sha256']!=plan['partition_plan_sha256'] or config['tier']!=plan['source']['tier'] or Path(config['job_dir']).resolve()!=Path(job).resolve():raise ValueError('Resource admission source/job binding differs')
     witness=R.verify(plan['registration_dir'],stop=stop)['sample']
     if witness is None:raise ValueError('Whole-source admission needs a verified bounded source witness')
+    lease=Lease(root,record,worker=True);lease.check()
+    return dict(directory=str(root.resolve()),registration_sha256=record['registration_sha256']),lease,config['database']
+
+
+def check_worker(record):
+    config=record['allocation'];job=config['job_dir']
     identity=worker_identity();a=record['observed']['attribution'];runner=a['identities']['runner'];group=runner['cgroup']
     controls=C.controls(a['sample']['member_controls']['runner'])
     if (identity['platform']!='Linux' or identity['boot_id']!=record['observed']['boot_id']['value'] or identity['namespace']!=runner['pid_namespace'] or
@@ -294,13 +346,12 @@ def verify_worker(directory,job,plan,stop=None):
     for role in ('source','inventory','export','temporary'):
         item=config['storage'][role];base=Path(item['worker_path']).resolve();actual=R.disk(base)
         location=Path(tempfile.gettempdir()).resolve() if role=='temporary' else Path(job).resolve()
-        if not location.is_relative_to(base) or actual['logical_device']!=record['observed']['storage'][role]['value']['logical_device']:raise ValueError('Worker storage binding differs: '+role)
-    lease=Lease(root,record);lease.check()
-    return dict(directory=str(root.resolve()),registration_sha256=record['registration_sha256']),lease,config['database']
+        if (not location.is_relative_to(base) or actual['logical_device']!=record['observed']['storage'][role]['value']['logical_device'] or
+            dict(state='observed',value=directory_identity(base))!=record['observed']['storage_directories'][role]):raise ValueError('Worker storage binding differs: '+role)
 
 
 def target_identity(client):
-    rows=client.rows("SELECT current_database() AS database,current_user AS owner,(SELECT oid::bigint FROM pg_database WHERE datname=current_database()) AS database_oid,pg_postmaster_start_time()::text AS postmaster_started_at,current_setting('server_version') AS server_version,host(inet_server_addr()) AS address,current_setting('port')::integer AS port,json_build_object('shared_buffers',current_setting('shared_buffers'),'work_mem',current_setting('work_mem'),'hash_mem_multiplier',current_setting('hash_mem_multiplier'),'max_parallel_workers_per_gather',current_setting('max_parallel_workers_per_gather'),'huge_pages',current_setting('huge_pages')) AS settings")
+    rows=client.rows("SELECT current_database() AS database,current_user AS owner,(SELECT oid::bigint FROM pg_database WHERE datname=current_database()) AS database_oid,pg_postmaster_start_time()::text AS postmaster_started_at,current_setting('server_version') AS server_version,host(inet_server_addr()) AS address,current_setting('port')::integer AS port,pg_database_size(current_database()) AS initial_database_bytes,json_build_object('shared_buffers',current_setting('shared_buffers'),'work_mem',current_setting('work_mem'),'hash_mem_multiplier',current_setting('hash_mem_multiplier'),'max_parallel_workers_per_gather',current_setting('max_parallel_workers_per_gather'),'huge_pages',current_setting('huge_pages'),'default_tablespace',current_setting('default_tablespace'),'temp_tablespaces',current_setting('temp_tablespaces')) AS settings")
     if len(rows)!=1:raise ValueError('Database resource identity unavailable')
     return rows[0]
 

@@ -35,9 +35,16 @@ leases are never benchmark qualification receipts.
 
 Allocation, reservations, scoped authority, cache lifecycle and projection review
 are explicit operator attestations. Filesystem metadata cannot prove exclusive
-physical capacity or PostgreSQL volume placement. The operator must verify that
-mappings cover the actual PGDATA/WAL, temporary and output locations. The tool
-checks declared paths and identities/free space; it does not replace that review.
+physical capacity. The operator must establish the actual PGDATA, temporary and
+output mappings. Registration and renewal verify the database mapping through
+the registered postmaster's `/proc/PID/root` view: host/container directory
+device and inode must agree, `postmaster.pid` must match the process namespace,
+start time and port, and data/base/WAL must share the registered filesystem.
+The scoped observer needs read/stat access to these specific paths; missing
+access blocks admission. No Docker socket or extra host-wide capability is used.
+The registered postgres init PID must be the postmaster. External/symlink WAL
+and non-default tablespaces are unsupported and cause refusal. The tool does
+not replace allocation or infrastructure review.
 It checks projection identity/arithmetic, not the scientific validity of a cost
 model or the contents of arbitrary evidence files. Leave attestations false when
 those arrangements are unverified.
@@ -62,7 +69,7 @@ The template is deliberately unapproved. Complete these fields after review:
 | `partition_plan_sha256`, `tier`, `job_dir` | Exact schedule/tier and worker-visible job output |
 | `authority` | Explicit booleans for allocation, reservations, scoped access, stop authority, cache lifecycle and projection review |
 | `common_parent`, `containers` | Host cgroup path, full Docker IDs and host init PIDs |
-| `storage` | Five `host_path`/`worker_path`/`pool` mappings; source/inventory/export contain the job, temporary contains actual TMPDIR |
+| `storage` | Five dedicated I/O-directory `host_path`/`worker_path`/`pool` mappings; source/inventory/export contain the job, temporary contains actual TMPDIR, database is the exact canonical PGDATA in the postgres container |
 | `pools` | One `reserved_bytes` value per physical pool |
 | `projection` | `basis`, `evidence_file`, ordinary file `sha256`, and `peak_bytes` for each role |
 | `database` | Actual snapshot from the worker's fixture connection |
@@ -76,7 +83,8 @@ python3 tools/source_execution_resources.py database-identity \
 ```
 
 It includes database/owner/OID, postmaster start time, server version, loopback
-address/port and selected settings; no passwords. Register under the host observer
+address/port, initial database size and selected settings; no passwords. The size
+is a measured growth baseline, not an editable capacity estimate. Register under the host observer
 account outside the measured parent, with actual metadata/storage access:
 
 ```sh
@@ -86,7 +94,10 @@ python3 tools/source_execution_resources.py register \
   > /absolute/private/registration-report.json
 ```
 
-Keep resources separate from the job, schedule and source registration. Mount
+Keep resources separate from the job, schedule, source registration and every
+registered storage directory in both containment directions. Do not register an
+entire shared parent such as `/tmp` if it also contains the resource metadata;
+use dedicated sibling work/scratch/data directories instead. Mount
 the metadata read-only into the worker, without another writable alias. Establish
 required file-read permissions separately; the tool creates private files and
 does not configure cross-account ACLs/mounts. Host and worker paths may differ
@@ -117,7 +128,9 @@ regress; statistics are not reset. An initially blocked record cannot become
 ready through renewal.
 
 The worker matches its PID namespace, cgroup inode/member limits, boot and
-filesystem identities. Each invocation rechecks the source witness and exact
+filesystem device/inode identities. These worker checks repeat at cooperative
+lease checks during execution, including same-filesystem mapping changes.
+Each invocation rechecks the source witness and exact
 database/settings binding. During work, cooperative guards check the lease at
 least every half second. Expiry, revocation or a blocked lease uses the existing
 SQLite/owned-psql cancellation path. The observer itself signals no container.
@@ -140,4 +153,5 @@ evidence and candidate data. Guarded stream cleanup does not require a live leas
 
 Records are trusted operator-controlled local files, not cryptographic credentials
 or protection against a hostile owner. Every record sets `qualifying=false`.
-CLI exits: 0 success, 1 refusal, 2 syntax, 3 blocked/STOP/revoked/expired.
+CLI exits: 0 success (including a successful `revoke`), 1 refusal, 2 syntax,
+3 blocked, STOP, expired lease or refusal to use already-revoked resources.

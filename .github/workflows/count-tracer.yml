@@ -29,6 +29,7 @@ jobs:
         image: postgres:17.11
         env:
           POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_INITDB_ARGS: --set=huge_pages=off
         ports: ['5432:5432']
         options: >-
           --health-cmd "pg_isready -U postgres -d postgres" --health-interval 5s

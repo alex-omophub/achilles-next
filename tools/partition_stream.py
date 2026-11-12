@@ -46,7 +46,7 @@ class Guard(L.Guard):
         if self.lease is not None:self.lease.check()
 
 
-def request(schedule,plan,first,count,settings,schema,admission=None):
+def request(schedule,plan,first,count,settings,schema,admission=None,postgres_bytes=None,postgres_initial_bytes=None):
     if (type(first) is not int or type(count) is not int or first<0 or count<1 or first+count>plan['partition_count']):
         raise ValueError('Choose a positive contiguous range within the schedule')
     if count==plan['partition_count'] and admission is None:raise ValueError('Whole-source execution needs resource admission; development selections only')
@@ -55,7 +55,11 @@ def request(schedule,plan,first,count,settings,schema,admission=None):
     body=dict(kind='selected_partition_stream',version=1,schedule_dir=str(Path(schedule).resolve()),
         partition_plan_sha256=plan['partition_plan_sha256'],first=first,count=count,schema=schema,
         limits=settings,code=pins(),whole_source_loaded=False,full_tier_generated=False,qualifying=False)
-    if admission is not None:body.update(kind='whole_source_partition_stream',version=2,admission=admission)
+    if admission is not None:
+        Z.integer(postgres_bytes,128*1024**2);Z.integer(postgres_initial_bytes)
+        if postgres_bytes>384*Z.GIB:raise ValueError('PostgreSQL ceiling exceeds disk budget')
+        body.update(kind='whole_source_partition_stream',version=2,admission=admission,postgres_bytes=postgres_bytes,postgres_initial_bytes=postgres_initial_bytes)
+    elif postgres_bytes is not None:raise ValueError('PostgreSQL ceiling requires whole-source resource admission')
     digest=S.BASE.sha(S.BASE.canonical(body))
     return dict(body,request_sha256=digest,marker=F.MARKER+': partition-stream:'+digest)
 
@@ -71,20 +75,28 @@ def saved_request(root):
     return req
 
 
-def prepare(schedule,output,first,count,seconds=120,database_bytes=I.MAX_DB,bins=I.MAX_BINS,stop=None,resource_dir=None):
+def check_ceilings(config,database_bytes,postgres_bytes):
+    Z.integer(postgres_bytes,128*1024**2)
+    peaks=config['projection']['peak_bytes']
+    if postgres_bytes>peaks['database']:raise ValueError('PostgreSQL ceiling exceeds registered database projection')
+    if 4*database_bytes+I.MAX_DB+65536>peaks['inventory']:raise ValueError('Inventory ceilings exceed registered projection')
+    if M.MAX_BYTES>peaks['source'] or I.MAX_DB>peaks['temporary']:raise ValueError('Partition scratch exceeds registered projection')
+
+
+def prepare(schedule,output,first,count,seconds=120,database_bytes=I.MAX_DB,bins=I.MAX_BINS,stop=None,resource_dir=None,postgres_bytes=None):
     guard=Guard(Path(output),seconds,stop);guard.paths=[Path(output).parent];guard.check(disk=True)
     plan=P.verify(schedule,stop=guard.callback);output=A.separate(output,plan,[schedule],guard.callback)
-    admission=None
+    admission=None;initial_bytes=None
     if resource_dir is not None:
         A.separate(output,plan,[resource_dir],guard.callback)
         admission,guard.lease,_=Z.verify_worker(resource_dir,output,plan,stop=guard.callback)
         # Include both global databases, one rollback journal and the bounded
         # current inventory in the operator-reviewed peak envelope.
         config=Z.read_registration(resource_dir)['allocation']
-        if 4*database_bytes+I.MAX_DB+65536>config['projection']['peak_bytes']['inventory']:raise ValueError('Inventory ceilings exceed registered projection')
-        if M.MAX_BYTES>config['projection']['peak_bytes']['source'] or I.MAX_DB>config['projection']['peak_bytes']['temporary']:raise ValueError('Partition scratch exceeds registered projection')
+        check_ceilings(config,database_bytes,postgres_bytes)
+        initial_bytes=config['database']['initial_database_bytes']
         guard.check()
-    req=request(schedule,plan,first,count,A.controls(database_bytes,bins), 'cdm_stream_'+secrets.token_hex(8),admission)
+    req=request(schedule,plan,first,count,A.controls(database_bytes,bins), 'cdm_stream_'+secrets.token_hex(8),admission,postgres_bytes,initial_bytes)
     output.mkdir(mode=0o700);M.sync_directory(output.parent)
     with M.open_file(output/'.lock',True):pass
     M.atomic_json(output,'request.json',req,exclusive=True)
@@ -134,7 +146,13 @@ def owner_sql(req):
 
 
 def state_sql(req):return f'SELECT document FROM {table(req,HEADER)} WHERE id=1;'
-def begin(req):return ['BEGIN;',L.target_guard_sql(),lock_sql(req),owner_sql(req),f'LOCK TABLE {table(req,HEADER)} IN EXCLUSIVE MODE;']
+def capacity_sql(req,reserve='0'):
+    if req['kind']!='whole_source_partition_stream':return []
+    ceiling=req['postgres_initial_bytes']+req['postgres_bytes']
+    return [f"DO $stream_capacity$ BEGIN IF pg_database_size(current_database())+({reserve})>{ceiling} THEN RAISE EXCEPTION 'Registered PostgreSQL growth ceiling exceeded'; END IF; IF current_setting('default_tablespace') NOT IN ('','pg_default') OR current_setting('temp_tablespaces')<>'' THEN RAISE EXCEPTION 'Unregistered database tablespace'; END IF; END; $stream_capacity$;"]
+
+
+def begin(req):return ['BEGIN;',L.target_guard_sql(),lock_sql(req),owner_sql(req),f'LOCK TABLE {table(req,HEADER)} IN EXCLUSIVE MODE;']+capacity_sql(req)
 
 
 def execute(client,sql,req):
@@ -153,27 +171,29 @@ def execute(client,sql,req):
 def initialize_script(req,plan):
     schema=F.identifier(req['schema']);ddl=(S.BASE.DDL/(plan['source']['parameters']['cdm_version']+'.sql')).read_bytes()
     if S.BASE.sha(ddl)!=plan['source']['pins']['DDL']:raise ValueError('Pinned DDL changed')
-    return '\n'.join(['BEGIN;',L.target_guard_sql(),lock_sql(req),
+    return '\n'.join(['BEGIN;',L.target_guard_sql(),lock_sql(req),*capacity_sql(req),
         "SELECT (to_regnamespace("+F.literal(req['schema'])+") IS NULL) AS stream_create \\gset",'\\if :stream_create',
         f'CREATE SCHEMA {schema}; REVOKE ALL ON SCHEMA {schema} FROM PUBLIC;',f'COMMENT ON SCHEMA {schema} IS {F.literal(req["marker"])};',
         ddl.decode().replace('@cdmDatabaseSchema',schema),
         f'CREATE TABLE {table(req,HEADER)} (id integer PRIMARY KEY CHECK(id=1),document jsonb NOT NULL);',
         f'CREATE TABLE {table(req,PARTS)} (partition_no integer PRIMARY KEY,manifest jsonb NOT NULL);',
-        f'INSERT INTO {table(req,HEADER)} VALUES(1,{literal(initial(req))});','\\endif',owner_sql(req),state_sql(req),'COMMIT;'])
+        f'INSERT INTO {table(req,HEADER)} VALUES(1,{literal(initial(req))});','\\endif',owner_sql(req),*capacity_sql(req),state_sql(req),'COMMIT;'])
 
 
 def partition_script(req,plan,complete,frozen,index,manifest,state):
     commands=begin(req)+[f'DO $stream_prefix$ BEGIN IF (SELECT document FROM {table(req,HEADER)} WHERE id=1) IS DISTINCT FROM {literal(state)} THEN RAISE EXCEPTION \'Stream prefix changed\'; END IF; END; $stream_prefix$;']
     source=S.Source(plan['source']['tier'],plan['source']['parameters']['cdm_version']);name=plan['windows'][0]['table']
     columns=','.join(F.identifier(c['name']) for c in source.columns[name]);target=table(req,name)
+    commands.extend(capacity_sql(req,str(8*(complete['csv_bytes']+64*complete['rows'])+8*1024**2)))
     commands.append(f'CREATE TEMP TABLE achillesnext_stream_chunk (LIKE {target}) ON COMMIT DROP;')
     for chunk in complete['chunks']:
         commands.append(f"\\copy pg_temp.achillesnext_stream_chunk ({columns}) FROM '{frozen/chunk['file']}' WITH (FORMAT csv, HEADER true, NULL '\\N')")
     commands.extend(L.fact_checks({'achillesnext_stream_chunk':L.facts(plan,complete)[name]},'pg_temp'))
+    commands.extend(capacity_sql(req,"2*pg_total_relation_size('pg_temp.achillesnext_stream_chunk')+2097152"))
     commands.extend([f'INSERT INTO {target} ({columns}) SELECT {columns} FROM pg_temp.achillesnext_stream_chunk;',
         f'INSERT INTO {table(req,PARTS)} VALUES({index},{literal(manifest)});',
         f'UPDATE {table(req,HEADER)} SET document={literal(dict(state,next_partition=index+1,chain=V.chain(state["chain"],[index,manifest])))} WHERE id=1;',
-        state_sql(req),'COMMIT;'])
+        *capacity_sql(req),state_sql(req),'COMMIT;'])
     return '\n'.join(commands)
 
 
@@ -225,7 +245,7 @@ def finish_script(req,audit,state,header,plan):
     facts={name:dict(rows=header['tables'].get(name,{}).get('selected_rows',0),nulls=header['tables'].get(name,{}).get('null_counts',{c['name']:0 for c in cols})) for name,cols in columns.items()}
     commands.extend(L.fact_checks(facts,req['schema']))
     commands.extend([f'UPDATE {table(req,HEADER)} SET document={literal(dict(state,phase="complete",audit_sha256=digest))} WHERE id=1;',
-        F.grants_sql(req['schema']),state_sql(req),'COMMIT;'])
+        F.grants_sql(req['schema']),*capacity_sql(req),state_sql(req),'COMMIT;'])
     return '\n'.join(commands)
 
 
@@ -244,9 +264,12 @@ def run(output,state_dir,seconds=120,max_partitions=1,max_steps=32,stop=None):
                 if admission!=value:raise ValueError('Resource admission identity changed')
                 guard.check(disk=True)
             c=req['limits'];settings=A.controls(c['database_bytes'],c['bins'],c['seconds'],c['min_free_bytes'])
-            if S.BASE.canonical(req)!=S.BASE.canonical(request(req['schedule_dir'],plan,req['first'],req['count'],settings,req['schema'],admission)):raise ValueError('Stream request/source/code changed')
+            if admission is not None:check_ceilings(Z.read_registration(value['directory'])['allocation'],c['database_bytes'],req.get('postgres_bytes'))
+            if S.BASE.canonical(req)!=S.BASE.canonical(request(req['schedule_dir'],plan,req['first'],req['count'],settings,req['schema'],admission,req.get('postgres_bytes'),target['initial_database_bytes'] if target else None)):raise ValueError('Stream request/source/code changed')
             client=L.Client(state_dir,guard,'achillesnext-stream-'+req['schema'][-16:]);L.check_target(client)
-            if target is not None and Z.target_identity(client)!=target:raise ValueError('Registered database identity/settings changed')
+            if target is not None:
+                actual=Z.target_identity(client)
+                if {k:v for k,v in actual.items() if k!='initial_database_bytes'}!={k:v for k,v in target.items() if k!='initial_database_bytes'}:raise ValueError('Registered database identity/settings changed')
             reduction=child(root,'reduction',lambda p:A.prepare(req['schedule_dir'],p,stop=guard.callback,**dict(database_bytes=c['database_bytes'],bins=c['bins'])),guard)
             header=A.status(reduction,stop=guard.callback)
             if client.value("SELECT has_database_privilege(current_user,current_database(),'TEMP')")!='t':raise ValueError('Stream owner needs TEMP')
@@ -325,16 +348,17 @@ def main():
     parser.add_argument('--output-dir',type=Path,required=True);parser.add_argument('--schedule-dir',type=Path);parser.add_argument('--state-dir',type=Path)
     parser.add_argument('--first',type=int);parser.add_argument('--count',type=int);parser.add_argument('--seconds',type=float,default=120)
     parser.add_argument('--resource-dir',type=Path)
+    parser.add_argument('--postgres-bytes',type=int)
     parser.add_argument('--database-bytes',type=int,default=I.MAX_DB);parser.add_argument('--bins',type=int,default=I.MAX_BINS)
     parser.add_argument('--max-partitions',type=int,default=1);parser.add_argument('--max-steps',type=int,default=32)
     args=parser.parse_args()
     if args.action=='prepare' and None in (args.schedule_dir,args.first,args.count):parser.error('prepare needs schedule-dir, first and count')
-    if args.action!='prepare' and (args.state_dir is None or any(v is not None for v in [args.schedule_dir,args.first,args.count,args.resource_dir])):parser.error('run/drop need state-dir and use the frozen selection')
+    if args.action!='prepare' and (args.state_dir is None or any(v is not None for v in [args.schedule_dir,args.first,args.count,args.resource_dir,args.postgres_bytes])):parser.error('run/drop need state-dir and use the frozen selection')
     interrupted=[None]
     def interrupt(signum,frame):interrupted[0]=signal.Signals(signum).name
     previous={n:signal.signal(n,interrupt) for n in (signal.SIGINT,signal.SIGTERM)}
     try:
-        if args.action=='prepare':value=prepare(args.schedule_dir,args.output_dir,args.first,args.count,args.seconds,args.database_bytes,args.bins,lambda:interrupted[0],args.resource_dir)
+        if args.action=='prepare':value=prepare(args.schedule_dir,args.output_dir,args.first,args.count,args.seconds,args.database_bytes,args.bins,lambda:interrupted[0],args.resource_dir,args.postgres_bytes)
         elif args.action=='run':value=run(args.output_dir,args.state_dir,args.seconds,args.max_partitions,args.max_steps,lambda:interrupted[0])
         else:value=drop(args.output_dir,args.state_dir,args.seconds,lambda:interrupted[0])
         print(json.dumps(value,sort_keys=True));return 3 if value.get('status')=='incomplete' else 0

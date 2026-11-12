@@ -45,12 +45,28 @@ across invocations; no complete selection is assembled as CSV or a Python list.
 This does not reserve storage or authorize a full-tier run.
 
 To prepare the complete schedule, supply `--first 0`, its exact partition count,
-and `--resource-dir /absolute/private/resources`. The registration must bind this
+`--resource-dir /absolute/private/resources`, and an explicit `--postgres-bytes`
+growth ceiling between 128 MiB and 384 GiB. That ceiling must fit the registered
+database projection, independently of SQLite's `--database-bytes` limit.
+The registration must bind this
 job, schedule and tier to the current runner/resources, with a verified bounded
 source witness. Whole-source preparation creates a version-2 request. Every
 resume uses the frozen resource identity and a fresh lease, checking the exact
 database/settings before child work or DDL. There is no bypass flag. Cleanup is
 still possible after resource expiry or revocation.
+
+The PostgreSQL ceiling is checked at preparation and resume. SQL checks the
+measured database size against the registered initial size plus that ceiling
+before/after initialization, around partition COPY/insertion, and finalization.
+Before COPY it conservatively reserves eight times the sum of CSV bytes and
+64 bytes per row, plus 8 MiB; after staging it reserves twice the staged relation size plus
+2 MiB before insertion. These are conservative operation reserves, not a
+prediction of the complete source size. Insufficient allowance refuses work or
+rolls back the current transaction without advancing its journal. The database
+size counter includes other fixture schemas, so unrelated growth counts against
+the budget. It excludes WAL; the live verified filesystem/pool lease also guards
+WAL and actual free space. These sampled/transaction checks do not replace kernel
+limits or reservations and are not an exact hard filesystem quota.
 
 ## Durable order and file retention
 

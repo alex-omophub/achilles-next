@@ -170,7 +170,7 @@ class StreamPostgresTests(unittest.TestCase):
         # Reference capacities/host identities are simulated, not allocated.
         # PostgreSQL, source witnesses, COPY, journals and audit remain real.
         import test_source_execution_resources as support
-        root=self.home/name;root.mkdir();source=root/'witness';inventory=root/'witness-inventory';reg=root/'registration';schedule=root/'schedule';out=root/'stream';resources=root/'resources'
+        root=self.home/name;root.mkdir();source=root/'witness';inventory=root/'witness-inventory';reg=root/'registration';schedule=root/'schedule';out=root/'work/stream';resources=root/'resources'
         T.M.prepare(source,'S2','5.5',[dict(table='person',start=0,rows=2)],chunk_rows=2);T.M.run(source);T.I.collect(source,inventory)
         T.R.register(reg,'whole-contract-self-test','S2','5.5',{r:str(root) for r in T.R.ROLES},source,inventory)
         plan=T.P.create(reg,schedule,rows_per_partition=3,chunk_rows=2)
@@ -180,7 +180,8 @@ class StreamPostgresTests(unittest.TestCase):
         config_file=root/'allocation.json';config_file.write_bytes(T.S.BASE.canonical(config))
         host=patch.object(T.Z,'host_observation',return_value=observed);host.start();self.addCleanup(host.stop)
         identity=patch.object(T.Z,'worker_identity',return_value=worker);identity.start();self.addCleanup(identity.stop)
-        T.Z.register(config_file,resources);req=T.prepare(schedule,out,0,plan['partition_count'],resource_dir=resources)
+        temporary=patch.object(T.Z.tempfile,'tempdir',config['storage']['temporary']['worker_path']);temporary.start();self.addCleanup(temporary.stop)
+        T.Z.register(config_file,resources);req=T.prepare(schedule,out,0,plan['partition_count'],resource_dir=resources,postgres_bytes=128*1024**2)
         self.addCleanup(lambda:T.drop(out,self.state))
         return out,req,plan,resources
 
@@ -244,6 +245,19 @@ class StreamPostgresTests(unittest.TestCase):
             self.assertFalse(thread.is_alive());self.assertFalse(errors);self.assertTrue(found.is_set())
             self.assertEqual(self.state_value(req),before);self.denied(req);self.assertFalse((out/'complete.json').exists())
             (resources/'STOP').unlink();result=self.complete_admitted(out,resources);self.assertTrue(result['whole_source_loaded'])
+
+    def test_postgres_growth_limit_refuses_without_advancing_committed_prefix(self):
+        with self.compact_source():
+            out,req,_,resources=self.admitted();T.run(out,self.state,max_partitions=1);before=self.state_value(req)
+            capacity=T.capacity_sql
+            def exhausted(request,reserve='0'):
+                # Force an exhausted ceiling in the actual generated SQL. The
+                # real database-size function and transaction guards still run.
+                return capacity(dict(request,postgres_initial_bytes=0,postgres_bytes=1),reserve)
+            with patch.object(T,'capacity_sql',side_effect=exhausted),self.assertRaises(RuntimeError):T.run(out,self.state)
+            self.assertIn('Registered PostgreSQL growth ceiling exceeded',T.M.read_json(out/'attempt.json')['database_error'])
+            self.assertEqual(self.state_value(req),before);self.denied(req)
+            self.assertFalse((out/'complete.json').exists());result=self.complete_admitted(out,resources);self.assertTrue(result['whole_source_loaded'])
 
 
 if __name__=='__main__':unittest.main()
