@@ -1,0 +1,32 @@
+tests/test_partition_stream.py
+  s_895f6ebe145fd3::t_19ec1c95841e5a 1-101
+docs/benchmark/partition-inventory-audit.md
+  s_895f6ebe145fd3::t_08784cf6522c23 72-75
+tests/test_partition_stream_postgresql.py
+  s_895f6ebe145fd3::t_c847f9e098ef8f 144-168
+  s_895f6ebe145fd3::t_19ec1c95841e5a 1-143,169-170
+docs/benchmark/partition-stream.md
+  s_895f6ebe145fd3::t_08784cf6522c23 1-116
+tools/partition_stream.py
+  s_895f6ebe145fd3::t_475b236ff5e549 264-279
+  s_895f6ebe145fd3::t_6a6633e4883b1b 1-263,280-324
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_19ec1c95841e5a 144-146
+  s_895f6ebe145fd3::t_f574eac2b6b046 138
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "749feaf7da76388ba67cf79bef011ff80e126089",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
