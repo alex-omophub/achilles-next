@@ -166,6 +166,13 @@ class StreamPostgresTests(unittest.TestCase):
                 self.assertEqual(self.pg.value('SELECT count(*) FROM '+T.table(req,window['table']),role='runner'),str(window['rows']))
             self.assertEqual(result['rows'],wanted);self.assertFalse(result['full_tier_generated'])
 
+    def vacuum_catalogs(self):
+        # This isolated database owner can clean its non-shared catalogs. Finish
+        # earlier tests' schema churn before capturing a real size baseline;
+        # autovacuum may otherwise truncate that dead space during a later run.
+        names=('pg_class','pg_attribute','pg_depend','pg_description','pg_type','pg_constraint','pg_index','pg_statistic')
+        self.pg.run('VACUUM '+','.join('pg_catalog.'+name for name in names)+';')
+
     def admitted(self,name='whole',wrong_target=False,initial_size_delta=0):
         # Reference capacities/host identities are simulated, not allocated.
         # PostgreSQL, source witnesses, COPY, journals and audit remain real.
@@ -174,6 +181,7 @@ class StreamPostgresTests(unittest.TestCase):
         T.M.prepare(source,'S2','5.5',[dict(table='person',start=0,rows=2)],chunk_rows=2);T.M.run(source);T.I.collect(source,inventory)
         T.R.register(reg,'whole-contract-self-test','S2','5.5',{r:str(root) for r in T.R.ROLES},source,inventory)
         plan=T.P.create(reg,schedule,rows_per_partition=3,chunk_rows=2)
+        self.vacuum_catalogs()
         target=T.Z.target_identity(self.pg)
         target['initial_database_bytes']+=initial_size_delta
         if wrong_target:target=dict(target,database_oid=target['database_oid']+1)
@@ -223,6 +231,21 @@ class StreamPostgresTests(unittest.TestCase):
                         with self.assertRaisesRegex(ValueError,'database identity/settings changed'):T.run(out,self.state)
                     self.assertFalse((out/'reduction').exists())
                     self.assertEqual(self.pg.value('SELECT count(*) FROM pg_namespace WHERE nspname='+T.F.literal(req['schema'])),'0')
+
+    def test_catalog_vacuum_after_admission_keeps_the_clean_baseline_usable(self):
+        # Earlier cases create/drop many candidate tables. Reproduce that churn
+        # before registration, then force the cleanup that autovacuum can perform
+        # between invocations. Keep the real measured baseline and strict guard.
+        with self.compact_source():
+            schema='cdm_catalog_churn_'+T.secrets.token_hex(8)
+            self.pg.run('CREATE SCHEMA '+T.F.identifier(schema)+'; COMMENT ON SCHEMA '+T.F.identifier(schema)+' IS '+T.F.literal(T.F.MARKER+': catalog-churn')+';')
+            try:
+                self.pg.run('\n'.join('CREATE TABLE '+T.F.identifier(schema)+'.t'+str(i)+'('+','.join('c'+str(j)+' bigint' for j in range(24))+');' for i in range(500)))
+            finally:self.pg.run('DROP SCHEMA '+T.F.identifier(schema)+' CASCADE;')
+            out,req,_,resources=self.admitted()
+            self.vacuum_catalogs()
+            self.assertGreaterEqual(T.Z.target_identity(self.pg)['initial_database_bytes'],req['postgres_initial_bytes'])
+            self.assertTrue(self.complete_admitted(out,resources)['whole_source_loaded'])
 
     def test_inflated_database_baseline_refuses_before_child_work_or_ddl(self):
         with self.compact_source():
