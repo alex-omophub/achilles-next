@@ -166,7 +166,7 @@ class StreamPostgresTests(unittest.TestCase):
                 self.assertEqual(self.pg.value('SELECT count(*) FROM '+T.table(req,window['table']),role='runner'),str(window['rows']))
             self.assertEqual(result['rows'],wanted);self.assertFalse(result['full_tier_generated'])
 
-    def admitted(self,name='whole',wrong_target=False):
+    def admitted(self,name='whole',wrong_target=False,initial_size_delta=0):
         # Reference capacities/host identities are simulated, not allocated.
         # PostgreSQL, source witnesses, COPY, journals and audit remain real.
         import test_source_execution_resources as support
@@ -175,6 +175,7 @@ class StreamPostgresTests(unittest.TestCase):
         T.R.register(reg,'whole-contract-self-test','S2','5.5',{r:str(root) for r in T.R.ROLES},source,inventory)
         plan=T.P.create(reg,schedule,rows_per_partition=3,chunk_rows=2)
         target=T.Z.target_identity(self.pg)
+        target['initial_database_bytes']+=initial_size_delta
         if wrong_target:target=dict(target,database_oid=target['database_oid']+1)
         config,observed,worker=support.reference_fixture(root,plan['partition_plan_sha256'],'S2',out,target)
         config_file=root/'allocation.json';config_file.write_bytes(T.S.BASE.canonical(config))
@@ -222,6 +223,15 @@ class StreamPostgresTests(unittest.TestCase):
                         with self.assertRaisesRegex(ValueError,'database identity/settings changed'):T.run(out,self.state)
                     self.assertFalse((out/'reduction').exists())
                     self.assertEqual(self.pg.value('SELECT count(*) FROM pg_namespace WHERE nspname='+T.F.literal(req['schema'])),'0')
+
+    def test_inflated_database_baseline_refuses_before_child_work_or_ddl(self):
+        with self.compact_source():
+            out,req,_,resources=self.admitted(initial_size_delta=128*1024**2)
+            with patch.object(T,'child',side_effect=AssertionError('no child work before baseline validation')):
+                with self.assertRaisesRegex(ValueError,'below registered initial baseline'):T.run(out,self.state)
+            self.assertFalse((out/'reduction').exists());self.assertFalse((out/'active').exists())
+            self.assertFalse((out/'complete.json').exists())
+            self.assertEqual(self.pg.value('SELECT count(*) FROM pg_namespace WHERE nspname='+T.F.literal(req['schema'])),'0')
 
     def test_resource_stop_during_sql_rolls_back_then_resumes_same_prefix(self):
         import threading,time

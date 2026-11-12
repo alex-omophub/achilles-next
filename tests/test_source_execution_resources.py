@@ -69,6 +69,36 @@ class ResourceTests(unittest.TestCase):
         self.assertEqual(record['pool_observations']['pool']['projected_bytes'],10*Z.GIB)
         Z.Lease(self.output,record).check();self.assertFalse(record['qualifying'])
 
+    def test_core_database_settings_cannot_be_empty_before_registration(self):
+        settings=self.config['database']['settings']
+        self.assertEqual(Z.allocation(deepcopy(self.config))['database']['settings'],settings)
+        for name in settings:
+            for invalid in (129*'x',None):
+                with self.subTest(name=name,invalid=invalid):
+                    config=deepcopy(self.config);config['database']['settings'][name]=invalid
+                    with self.assertRaisesRegex(ValueError,'settings identity'):Z.allocation(config)
+            if name in ('default_tablespace','temp_tablespaces'):continue
+            with self.subTest(name=name):
+                config=deepcopy(self.config);config['database']['settings'][name]=''
+                self.file.write_bytes(Z.S.BASE.canonical(config))
+                with patch.object(Z,'host_observation',side_effect=AssertionError('must reject before observation')):
+                    with self.assertRaisesRegex(ValueError,'settings identity'):Z.register(self.file,self.output)
+                self.assertFalse(self.output.exists())
+
+    def test_external_storage_records_blocked_admission_and_exit_three(self):
+        for case in ('tablespace','volume'):
+            with self.subTest(case=case):
+                config=deepcopy(self.config);observed=deepcopy(self.observed)
+                if case=='tablespace':config['database']['settings']['default_tablespace']='external'
+                else:observed['database_volume']=dict(state='unavailable',value=None)
+                self.file.write_bytes(Z.S.BASE.canonical(config));output=self.root/('resources-'+case)
+                with patch.object(Z,'host_observation',return_value=observed),patch.object(sys,'argv',
+                        ['resources','register','--allocation-file',str(self.file),'--output-dir',str(output)]),patch.object(sys,'stdout',new_callable=io.StringIO) as stdout:
+                    self.assertEqual(Z.main(),3)
+                result=json.loads(stdout.getvalue());self.assertEqual(result['status'],'blocked')
+                self.assertIn('external_database_tablespaces_unverified' if case=='tablespace' else 'database_volume_unverified',result['blocking_reasons'])
+                self.assertEqual(Z.M.read_json(output/'registration.json')['status'],'blocked')
+
     def test_unapproved_template_records_blockers_and_cannot_be_renewed_ready(self):
         self.config=Z.template(self.root/'work/job','1'*64,'S1');record=self.register()
         self.assertEqual(record['status'],'blocked');self.assertIn('allocation_unassigned',record['blocking_reasons'])

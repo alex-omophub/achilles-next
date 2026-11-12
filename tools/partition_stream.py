@@ -270,6 +270,7 @@ def run(output,state_dir,seconds=120,max_partitions=1,max_steps=32,stop=None):
             if target is not None:
                 actual=Z.target_identity(client)
                 if {k:v for k,v in actual.items() if k!='initial_database_bytes'}!={k:v for k,v in target.items() if k!='initial_database_bytes'}:raise ValueError('Registered database identity/settings changed')
+                if actual['initial_database_bytes']<target['initial_database_bytes']:raise ValueError('Database size is below registered initial baseline')
             reduction=child(root,'reduction',lambda p:A.prepare(req['schedule_dir'],p,stop=guard.callback,**dict(database_bytes=c['database_bytes'],bins=c['bins'])),guard)
             header=A.status(reduction,stop=guard.callback)
             if client.value("SELECT has_database_privilege(current_user,current_database(),'TEMP')")!='t':raise ValueError('Stream owner needs TEMP')

@@ -55,9 +55,12 @@ resume uses the frozen resource identity and a fresh lease, checking the exact
 database/settings before child work or DDL. There is no bypass flag. Cleanup is
 still possible after resource expiry or revocation.
 
-The PostgreSQL ceiling is checked at preparation and resume. SQL checks the
-measured database size against the registered initial size plus that ceiling
-before/after initialization, around partition COPY/insertion, and finalization.
+Preparation validates the PostgreSQL ceiling against the registered projection;
+it does not connect to PostgreSQL or measure the current database size. Each
+resume repeats that projection validation and rejects a live database size below
+the frozen initial baseline before child work or DDL. SQL then checks the measured
+size against the registered initial size plus the ceiling before/after
+initialization, around partition COPY/insertion, and finalization.
 Before COPY it conservatively reserves eight times the sum of CSV bytes and
 64 bytes per row, plus 8 MiB; after staging it reserves twice the staged relation size plus
 2 MiB before insertion. These are conservative operation reserves, not a

@@ -115,7 +115,7 @@ def allocation(value):
         integer(d['database_oid'],1);integer(d['port'],1);integer(d['initial_database_bytes'])
         if (d['address'] not in ('127.0.0.1','::1',None) or type(d['settings']) is not dict or
             set(d['settings'])!={'shared_buffers','work_mem','hash_mem_multiplier','max_parallel_workers_per_gather','huge_pages','default_tablespace','temp_tablespaces'} or
-            any(type(x) is not str or not 0<=len(x)<=128 for x in d['settings'].values())):raise ValueError('Local database/settings identity required')
+            any(type(x) is not str or not (0 if name in ('default_tablespace','temp_tablespaces') else 1)<=len(x)<=128 for name,x in d['settings'].items())):raise ValueError('Local database/settings identity required')
     return value
 
 

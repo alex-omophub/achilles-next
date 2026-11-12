@@ -43,8 +43,8 @@ start time and port, and data/base/WAL must share the registered filesystem.
 The scoped observer needs read/stat access to these specific paths; missing
 access blocks admission. No Docker socket or extra host-wide capability is used.
 The registered postgres init PID must be the postmaster. External/symlink WAL
-and non-default tablespaces are unsupported and cause refusal. The tool does
-not replace allocation or infrastructure review.
+and non-default tablespaces are unsupported and block admission (CLI exit 3).
+The tool does not replace allocation or infrastructure review.
 It checks projection identity/arithmetic, not the scientific validity of a cost
 model or the contents of arbitrary evidence files. Leave attestations false when
 those arrangements are unverified.
