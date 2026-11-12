@@ -1,0 +1,31 @@
+tools/incremental_source_load.py
+  s_895f6ebe145fd3::t_e696790c08b4a6 196
+tests/test_incremental_source_load_postgresql.py
+  s_895f6ebe145fd3::t_e696790c08b4a6 1-105
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_e696790c08b4a6 125,136-142
+docs/benchmark/incremental-source-load.md
+  s_895f6ebe145fd3::t_88a7bcd3598088 116
+  s_895f6ebe145fd3::t_2f5ec1186fa546 135
+  s_895f6ebe145fd3::t_8ad46161116861 137
+  s_895f6ebe145fd3::t_e696790c08b4a6 114-115,123-134,136,138-141
+tests/test_incremental_source_load.py
+  s_895f6ebe145fd3::t_cfa7b8671377f6 157-174
+  s_895f6ebe145fd3::t_2f5ec1186fa546 3-4
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a594cf5a5a75d71c735f12b4003d19db18e7bab1",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
