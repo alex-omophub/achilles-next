@@ -166,5 +166,131 @@ class StreamPostgresTests(unittest.TestCase):
                 self.assertEqual(self.pg.value('SELECT count(*) FROM '+T.table(req,window['table']),role='runner'),str(window['rows']))
             self.assertEqual(result['rows'],wanted);self.assertFalse(result['full_tier_generated'])
 
+    def vacuum_catalogs(self):
+        # This isolated database owner can clean its non-shared catalogs. Finish
+        # earlier tests' schema churn before capturing a real size baseline;
+        # autovacuum may otherwise truncate that dead space during a later run.
+        names=('pg_class','pg_attribute','pg_depend','pg_description','pg_type','pg_constraint','pg_index','pg_statistic')
+        self.pg.run('VACUUM '+','.join('pg_catalog.'+name for name in names)+';')
+
+    def admitted(self,name='whole',wrong_target=False,initial_size_delta=0):
+        # Reference capacities/host identities are simulated, not allocated.
+        # PostgreSQL, source witnesses, COPY, journals and audit remain real.
+        import test_source_execution_resources as support
+        root=self.home/name;root.mkdir();source=root/'witness';inventory=root/'witness-inventory';reg=root/'registration';schedule=root/'schedule';out=root/'work/stream';resources=root/'resources'
+        T.M.prepare(source,'S2','5.5',[dict(table='person',start=0,rows=2)],chunk_rows=2);T.M.run(source);T.I.collect(source,inventory)
+        T.R.register(reg,'whole-contract-self-test','S2','5.5',{r:str(root) for r in T.R.ROLES},source,inventory)
+        plan=T.P.create(reg,schedule,rows_per_partition=3,chunk_rows=2)
+        self.vacuum_catalogs()
+        target=T.Z.target_identity(self.pg)
+        target['initial_database_bytes']+=initial_size_delta
+        if wrong_target:target=dict(target,database_oid=target['database_oid']+1)
+        config,observed,worker=support.reference_fixture(root,plan['partition_plan_sha256'],'S2',out,target)
+        config_file=root/'allocation.json';config_file.write_bytes(T.S.BASE.canonical(config))
+        host=patch.object(T.Z,'host_observation',return_value=observed);host.start();self.addCleanup(host.stop)
+        identity=patch.object(T.Z,'worker_identity',return_value=worker);identity.start();self.addCleanup(identity.stop)
+        temporary=patch.object(T.Z.tempfile,'tempdir',config['storage']['temporary']['worker_path']);temporary.start();self.addCleanup(temporary.stop)
+        T.Z.register(config_file,resources);req=T.prepare(schedule,out,0,plan['partition_count'],resource_dir=resources,postgres_bytes=128*1024**2)
+        self.addCleanup(lambda:T.drop(out,self.state))
+        return out,req,plan,resources
+
+    def complete_admitted(self,out,resources):
+        for _ in range(100):
+            T.Z.renew(resources)
+            value=T.run(out,self.state,max_partitions=1,max_steps=128)
+            if value['status']=='complete':return value
+        self.fail('admitted compact stream did not complete')
+
+    def compact_source(self):
+        init=T.S.Source.__init__
+        def compact(source,*args,**kwargs):
+            init(source,*args,**kwargs);source.counts={t:min(n,2) for t,n in source.counts.items()}
+        return patch.object(T.S.Source,'__init__',compact)
+
+    def test_whole_source_contract_audits_every_partition_and_table(self):
+        with self.compact_source():
+            out,req,plan,resources=self.admitted()
+            result=self.complete_admitted(out,resources)
+            self.assertEqual(result['coverage'],'whole_source');self.assertTrue(result['whole_source_loaded']);self.assertTrue(result['full_tier_generated']);self.assertFalse(result['qualifying'])
+            self.assertEqual(result['partitions'],plan['partition_count']);self.assertEqual(result['rows'],plan['total_rows'])
+            audit=T.V.run(out/'audit',verify_only=True);self.assertEqual(audit['scope'],'whole_source');self.assertTrue(audit['whole_source_audited'])
+            for name,n in plan['source']['table_rows'].items():self.assertEqual(self.pg.value('SELECT count(*) FROM '+T.table(req,name),role='runner'),str(n))
+            self.assertFalse(list(out.glob('**/*.csv')));self.assertFalse((out/'active').exists())
+        # Restoring the true source dimensions invalidates this explicit stand-in.
+        with self.assertRaises(ValueError):T.run(out,self.state)
+
+    def test_expired_admission_and_database_identity_drift_precede_mutation(self):
+        with self.compact_source():
+            for reason in ['expired','database']:
+                with self.subTest(reason=reason):
+                    out,req,_,resources=self.admitted(name=reason,wrong_target=reason=='database')
+                    if reason=='expired':
+                        lease=T.M.read_json(resources/'lease.json');lease['valid_until']=T.Z.stamp(T.Z.now()-1);T.M.atomic_json(resources,'lease.json',lease)
+                        with patch.object(T.L,'Client',side_effect=AssertionError('must refuse before connecting')),self.assertRaises(T.M.Stopped):T.run(out,self.state)
+                    else:
+                        with self.assertRaisesRegex(ValueError,'database identity/settings changed'):T.run(out,self.state)
+                    self.assertFalse((out/'reduction').exists())
+                    self.assertEqual(self.pg.value('SELECT count(*) FROM pg_namespace WHERE nspname='+T.F.literal(req['schema'])),'0')
+
+    def test_catalog_vacuum_after_admission_keeps_the_clean_baseline_usable(self):
+        # Earlier cases create/drop many candidate tables. Reproduce that churn
+        # before registration, then force the cleanup that autovacuum can perform
+        # between invocations. Keep the real measured baseline and strict guard.
+        with self.compact_source():
+            schema='cdm_catalog_churn_'+T.secrets.token_hex(8)
+            self.pg.run('CREATE SCHEMA '+T.F.identifier(schema)+'; COMMENT ON SCHEMA '+T.F.identifier(schema)+' IS '+T.F.literal(T.F.MARKER+': catalog-churn')+';')
+            try:
+                self.pg.run('\n'.join('CREATE TABLE '+T.F.identifier(schema)+'.t'+str(i)+'('+','.join('c'+str(j)+' bigint' for j in range(24))+');' for i in range(500)))
+            finally:self.pg.run('DROP SCHEMA '+T.F.identifier(schema)+' CASCADE;')
+            out,req,_,resources=self.admitted()
+            self.vacuum_catalogs()
+            self.assertGreaterEqual(T.Z.target_identity(self.pg)['initial_database_bytes'],req['postgres_initial_bytes'])
+            self.assertTrue(self.complete_admitted(out,resources)['whole_source_loaded'])
+
+    def test_inflated_database_baseline_refuses_before_child_work_or_ddl(self):
+        with self.compact_source():
+            out,req,_,resources=self.admitted(initial_size_delta=128*1024**2)
+            with patch.object(T,'child',side_effect=AssertionError('no child work before baseline validation')):
+                with self.assertRaisesRegex(ValueError,'below registered initial baseline'):T.run(out,self.state)
+            self.assertFalse((out/'reduction').exists());self.assertFalse((out/'active').exists())
+            self.assertFalse((out/'complete.json').exists())
+            self.assertEqual(self.pg.value('SELECT count(*) FROM pg_namespace WHERE nspname='+T.F.literal(req['schema'])),'0')
+
+    def test_resource_stop_during_sql_rolls_back_then_resumes_same_prefix(self):
+        import threading,time
+        with self.compact_source():
+            out,req,_,resources=self.admitted();T.run(out,self.state,max_partitions=1);before=self.state_value(req)
+            script=T.partition_script;found=threading.Event();done=threading.Event();errors=[]
+            def slow(*args):return script(*args).replace('COMMIT;','SELECT pg_sleep(20);\nCOMMIT;')
+            def revoke_on_sleep():
+                try:
+                    deadline=time.monotonic()+10
+                    while time.monotonic()<deadline and not done.is_set():
+                        rows=self.pg.rows("SELECT pid FROM pg_stat_activity WHERE application_name="+T.F.literal('achillesnext-stream-'+req['schema'][-16:])+" AND wait_event='PgSleep'")
+                        if rows:(resources/'STOP').touch();found.set();return
+                        time.sleep(.05)
+                except Exception as error:errors.append(error)
+            thread=threading.Thread(target=revoke_on_sleep);thread.start()
+            try:
+                T.Z.renew(resources)
+                with patch.object(T,'partition_script',side_effect=slow),self.assertRaisesRegex(T.M.Stopped,'resource_operator_stop_file'):T.run(out,self.state)
+            finally:done.set();thread.join(timeout=12)
+            self.assertFalse(thread.is_alive());self.assertFalse(errors);self.assertTrue(found.is_set())
+            self.assertEqual(self.state_value(req),before);self.denied(req);self.assertFalse((out/'complete.json').exists())
+            (resources/'STOP').unlink();result=self.complete_admitted(out,resources);self.assertTrue(result['whole_source_loaded'])
+
+    def test_postgres_growth_limit_refuses_without_advancing_committed_prefix(self):
+        with self.compact_source():
+            out,req,_,resources=self.admitted();T.run(out,self.state,max_partitions=1);before=self.state_value(req)
+            capacity=T.capacity_sql
+            def exhausted(request,reserve='0'):
+                # Force an exhausted ceiling in the actual generated SQL. The
+                # real database-size function and transaction guards still run.
+                return capacity(dict(request,postgres_initial_bytes=0,postgres_bytes=1),reserve)
+            with patch.object(T,'capacity_sql',side_effect=exhausted),self.assertRaises(RuntimeError):T.run(out,self.state)
+            self.assertIn('Registered PostgreSQL growth ceiling exceeded',T.M.read_json(out/'attempt.json')['database_error'])
+            self.assertEqual(self.state_value(req),before);self.denied(req)
+            self.assertFalse((out/'complete.json').exists());result=self.complete_admitted(out,resources);self.assertTrue(result['whole_source_loaded'])
+
 
 if __name__=='__main__':unittest.main()
