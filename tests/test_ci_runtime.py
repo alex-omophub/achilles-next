@@ -113,15 +113,23 @@ class CiRuntimeTests(unittest.TestCase):
     def test_psql_reuses_client_and_forwards_environment_and_arguments(self):
         with tempfile.TemporaryDirectory() as folder:
             folder=Path(folder);fake=folder/'docker'
-            fake.write_text('#!/usr/bin/env python3\nimport json,os,sys\nprint(json.dumps(dict(args=sys.argv[1:],options=os.getenv("PGOPTIONS"),input=sys.stdin.read())))\n');fake.chmod(0o700)
-            env=dict(os.environ,PATH=str(folder)+os.pathsep+os.environ['PATH'],PGOPTIONS='-c timezone=UTC')
+            fake.write_text('#!/usr/bin/env python3\nimport json,os,sys\nprint(json.dumps(dict(args=sys.argv[1:],options=os.getenv("PGOPTIONS"),application=os.getenv("PGAPPNAME"),timeout=os.getenv("PGCONNECT_TIMEOUT"),input=sys.stdin.read())))\n');fake.chmod(0o700)
+            env=dict(os.environ,PATH=str(folder)+os.pathsep+os.environ['PATH'],PGOPTIONS='-c timezone=UTC',PGAPPNAME='ci-transport-test',PGCONNECT_TIMEOUT='5')
             result=subprocess.run(['sh',str(ROOT/'tools/ci/psql'),'-X','-c','SELECT 1'],input='input unchanged',capture_output=True,text=True,env=env,check=True)
             value=json.loads(result.stdout);self.assertEqual(value['args'][:2],['exec','-i'])
             self.assertIn('achillesnext-psql-client',value['args']);self.assertNotIn('run',value['args'])
             pairs=[value['args'][i:i+2] for i in range(len(value['args'])-1)]
-            self.assertIn(['--env','PGOPTIONS'],pairs)
-            self.assertEqual(value['args'][-4:],['psql','-X','-c','SELECT 1'])
+            for name in ('PGOPTIONS','PGAPPNAME','PGCONNECT_TIMEOUT'):
+                self.assertIn(['--env',name],pairs)
+            # Docker starts a per-invocation supervisor in the existing client;
+            # psql receives the original vector as shell positional arguments.
+            command=value['args'][value['args'].index('achillesnext-psql-client')+1:]
+            self.assertEqual(command[:2],['sh','-c'])
+            self.assertEqual(command[3],'sh')
+            self.assertRegex(command[4],r'^/tmp/achillesnext-psql[.][^/]+$')
+            self.assertEqual(command[5:],['-X','-c','SELECT 1'])
             self.assertEqual(value['options'],'-c timezone=UTC');self.assertEqual(value['input'],'input unchanged')
+            self.assertEqual(value['application'],'ci-transport-test');self.assertEqual(value['timeout'],'5')
 
 
 if __name__=='__main__':unittest.main()
