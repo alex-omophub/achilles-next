@@ -105,3 +105,10 @@ observation, not certification. `whole_source_audited`, `full_tier_generated` an
 `qualifying` remain false. No full-source completion/publication receipt is emitted.
 Independent global audit/finalization, execution admission, source-to-database
 streaming and representative-scale qualification remain separate work.
+
+Use the [independent inventory auditor](partition-inventory-audit.md) to regenerate
+expected observations, audit global keys and finalize a separately scoped receipt.
+It supports resumable work and refuses reuse after the source inventory changes.
+By default the receipt covers the recorded selected partitions. Use
+`--require-whole-source` at preparation to require full schedule coverage.
+Neither mode certifies a benchmark tier.
