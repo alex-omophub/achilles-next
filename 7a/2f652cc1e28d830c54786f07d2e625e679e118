@@ -1,0 +1,57 @@
+tools/ci/psql
+  s_3e206b4a2cf4c3::t_e36660aecd3d0e 2-26,28-29,31-35,38-45,47-55,57-60,64-66,69-74
+  s_895f6ebe145fd3::t_bf6a89f00a418f 37
+  s_895f6ebe145fd3::t_8eac493005af1b 27,30,46,56,61-63,67-68
+docs/benchmark/source-execution-resources.md
+  s_895f6ebe145fd3::t_73b0e11bfc1558 156-157
+  s_895f6ebe145fd3::t_da082f19b2c0e7 38-47,72,86-87,97-100,131-133
+tests/test_partition_stream_postgresql.py
+  s_895f6ebe145fd3::t_73b0e11bfc1558 173,183-184
+  s_895f6ebe145fd3::t_417b3d8c40d526 249-261
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_cd922841d30784 32
+tools/partition_stream.py
+  s_895f6ebe145fd3::t_67afc04f7efe48 49,58-62,86,89,97,99,149-155,174,180,187,192,196,268,270-272,351,356,361
+  s_895f6ebe145fd3::t_dd06bd7c49d9ec 78-85,96,248,267
+tools/source_execution_resources.py
+  s_895f6ebe145fd3::t_7333df3500a6e2 38-39
+  s_895f6ebe145fd3::t_da082f19b2c0e7 36-37
+  s_895f6ebe145fd3::t_cd922841d30784 112,115,117-118,132-157,160-165,171-172,201-203,211-212,286,312,323,335-340,349-350,354
+  s_895f6ebe145fd3::t_3803d434806bb8 158-159
+tests/test_source_execution_resources.py
+  s_895f6ebe145fd3::t_08ee1c3646c0c7 110,122-123,156,160-164,172-199,201-228
+  s_895f6ebe145fd3::t_da082f19b2c0e7 230-231
+  s_895f6ebe145fd3::t_7333df3500a6e2 232-233
+  s_895f6ebe145fd3::t_417b3d8c40d526 22
+  s_895f6ebe145fd3::t_3803d434806bb8 200
+  s_895f6ebe145fd3::t_73b0e11bfc1558 28-30,34-35,39-40,45,47-48,73,165-167,171
+  s_895f6ebe145fd3::t_60d6e1d36df164 229
+docs/benchmark/partition-stream.md
+  s_895f6ebe145fd3::t_cc5f6b9439115a 61-62
+  s_895f6ebe145fd3::t_da082f19b2c0e7 48-51,58-60,63-69
+  s_895f6ebe145fd3::t_4d5fbbed6f43f2 70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7a2f652cc1e28d830c54786f07d2e625e679e118",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
