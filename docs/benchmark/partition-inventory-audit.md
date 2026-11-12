@@ -69,6 +69,10 @@ implements inventory accounting. This is a logical inventory audit, not a SQLite
 storage repair procedure or isolation from arbitrary hostile database writers.
 Trusted checkpoint storage and cooperating operation locks are required.
 
+The [selected-partition stream](partition-stream.md) coordinates generation,
+inventory accumulation, PostgreSQL loading and this audit while retiring completed
+partitions' files. It keeps reader grants blocked until final validation succeeds.
+
 ## Selected versus whole-source coverage
 
 The default `scope=selected_partitions` audits exactly the recorded receipt set.
