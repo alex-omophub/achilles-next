@@ -1,5 +1,8 @@
 # Measured source inventories
 
+To accumulate verified inventories from multiple scheduled partitions without
+retaining all their CSVs, use the [partition inventory reducer](partition-inventory.md).
+
 [source_inventory.py](../../tools/source_inventory.py) measures a completed
 [bounded source selection](streaming-scale-cdm.md). It stores exact counts on
 disk so a growing number of distinct values does not require an in-memory
