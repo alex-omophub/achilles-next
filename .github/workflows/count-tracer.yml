@@ -135,13 +135,15 @@ jobs:
         env:
           PGPASSFILE: ${{ github.workspace }}/.local/admin.pgpass
         run: python3 tools/postgresql_fixtures.py setup --host 127.0.0.1 --admin-user postgres
-      - name: Verify incremental fixture transactions and cleanup cancellation
+      - name: Verify incremental and streaming fixture transactions
         if: matrix.suite == 'compatibility'
         env:
           ACHILLES_NEXT_TEST_STATE: ${{ env.ACHILLES_NEXT_FIXTURE_STATE }}
           # COPY paths are shared with the pinned client container.
           TMPDIR: ${{ runner.temp }}
-        run: python3 -m unittest discover -s tests -p test_incremental_source_load_postgresql.py
+        run: |
+          python3 -m unittest discover -s tests -p test_incremental_source_load_postgresql.py
+          python3 -m unittest discover -s tests -p test_partition_stream_postgresql.py
       - name: Rebuild and verify the shipped viewer before R installation
         if: matrix.suite == 'compatibility'
         run: |
