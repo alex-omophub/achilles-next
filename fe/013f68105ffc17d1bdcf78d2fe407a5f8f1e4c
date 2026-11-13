@@ -1,0 +1,45 @@
+tests/tracer/stream-analysis-guards.R
+  s_895f6ebe145fd3::t_4e70ed11bc0d94 1-46
+tests/test_partition_stream_postgresql.py
+  s_3e206b4a2cf4c3::t_47a53615af34f1 288-290
+  s_895f6ebe145fd3::t_4e70ed11bc0d94 304-307
+tools/benchmark/stream_analysis_guards.R
+  s_895f6ebe145fd3::t_ef966828c57615 1-37
+tests/test_matched_reference_comparator.py
+  s_3e206b4a2cf4c3::t_47a53615af34f1 5,81-82,95-119
+tests/tracer/stream-analysis.R
+  s_895f6ebe145fd3::t_4e70ed11bc0d94 5,15,21,31,34,39-44,86-87,90,93
+tools/matched_reference_compare.py
+  s_895f6ebe145fd3::t_ef966828c57615 206-209,219-220
+docs/benchmark/source-analysis-handoff.md
+  s_895f6ebe145fd3::t_4e70ed11bc0d94 81,85-88,92-94
+tests/test_source_analysis_handoff.py
+  s_3e206b4a2cf4c3::t_47a53615af34f1 52,69-75
+  s_895f6ebe145fd3::t_faea3d1af14803 4-5,107-109
+  s_3e206b4a2cf4c3::t_edd45779c5ab7c 76
+  s_895f6ebe145fd3::t_ff6e24cb1235e6 110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fe013f68105ffc17d1bdcf78d2fe407a5f8f1e4c",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
