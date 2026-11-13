@@ -1,0 +1,33 @@
+tools/resource_admission_trial.py
+  s_895f6ebe145fd3::t_1a424764bf53b9 95-96,109
+  s_895f6ebe145fd3::t_dc5bac3dcda91e 7,9,97,117
+  s_895f6ebe145fd3::t_02a3c0d2d2a857 64,73,85,94,118
+  s_895f6ebe145fd3::t_9502287ffadef8 1-6,8,10-63,65-72,74-84,86-93,98-108,110-116,119-138
+docs/benchmark/resource-admission-trial.md
+  s_895f6ebe145fd3::t_dc5bac3dcda91e 1-11,14-79
+  s_895f6ebe145fd3::t_8240d725edeafc 12-13
+tests/test_resource_admission_trial.py
+  s_895f6ebe145fd3::t_1a424764bf53b9 1-56,58-121,127,132-133,141-176,185-187
+  s_895f6ebe145fd3::t_dc5bac3dcda91e 57,128-131,134-140
+  s_895f6ebe145fd3::t_8240d725edeafc 122-126,177-184
+docs/benchmark/source-execution-resources.md
+  s_895f6ebe145fd3::t_dc5bac3dcda91e 14-17
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_a6f286861eea56 148
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cf921e18c3c64054d3d2b9a5e6e8b2e5b1659c9b",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
