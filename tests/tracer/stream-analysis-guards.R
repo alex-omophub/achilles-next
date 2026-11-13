@@ -24,10 +24,20 @@ local({
   }
   facts<-streamVerifySource(handoff,query)
   stopifnot(identical(facts$table_rows,list(person='2',measurement='0')))
+  patterns<-c(usage='identical(grants$CAN_READ, "true")',create='identical(grants$CAN_CREATE, "false")',
+    select='identical(facts$CAN_READ, "true")',person='identical(facts$N, as.character(handoff$table_rows[[table]]))',
+    measurement='identical(facts$N, as.character(handoff$table_rows[[table]]))')
   for(field in names(observed)) {
     original<-observed[[field]];observed[[field]]<-switch(field,usage='false',create='true',select='false',person='3',measurement='1')
-    refuses(function()streamVerifySource(handoff,query));observed[[field]]<-original
+    refuses(function()streamVerifySource(handoff,query),patterns[[field]]);observed[[field]]<-original
   }
+  invalid<-handoff;invalid$source_schema<-'public; SELECT 1'
+  refuses(function()streamVerifySource(invalid,function(sql)stop('Unexpected query before schema validation')),
+    'grepl("^cdm_stream_[0-9a-f]{16}$", schema)')
+  invalid<-handoff;names(invalid$table_rows)[1]<-'person; SELECT 1';queries<-character()
+  recordingQuery<-function(sql){queries<<-c(queries,sql);query(sql)}
+  refuses(function()streamVerifySource(invalid,recordingQuery),'grepl("^[a-z][a-z0-9_]*$", table)')
+  stopifnot(length(queries)==1L,grepl('has_schema_privilege',queries[[1]],fixed=TRUE))
   calls<-character()
   actions<-list(function(){calls<<-c(calls,'rollback');stop('rollback denied')},
     function(){calls<<-c(calls,'disconnect')},function(){calls<<-c(calls,'revoke');stop('revoke denied')})
