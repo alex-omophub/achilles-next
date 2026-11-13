@@ -1,6 +1,8 @@
 """Frozen handoff input integrity and refusal before source access."""
 import copy
 import json
+import shutil
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -47,7 +49,7 @@ class HandoffTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'identity differs'):H.inspect(self.directory)
 
     def test_shape_and_authority_changes_fail_even_with_recomputed_hash(self):
-        for change in ('version','extra','scope','qualification','count','columns','marker','schema','source_plan','parent','hash'):
+        for change in ('version','extra','scope','qualification','count','columns','marker','schema','source_plan','parent','audit_shape'):
             with self.subTest(change=change):
                 body=copy.deepcopy(self.body)
                 if change=='version':body['version']=True
@@ -63,6 +65,14 @@ class HandoffTests(unittest.TestCase):
                 else:body['audit_sha256']=True
                 self.write(body)
                 with self.assertRaises(ValueError):H.inspect(self.directory)
+
+    def test_forged_digest_or_source_id_refuses_unchanged_body(self):
+        for field,value in [('handoff_sha256','0'*64),('source_id','fixture:stream:'+'0'*64)]:
+            with self.subTest(field=field):
+                saved=self.write(self.body);saved[field]=value
+                (self.directory/'handoff.json').write_bytes(H.S.BASE.canonical(saved))
+                with self.assertRaisesRegex(ValueError,'Handoff/reference/code identity differs'):
+                    H.inspect(self.directory)
 
     def test_noncanonical_and_aliased_inputs_refuse(self):
         path=self.directory/'handoff.json';original=path.read_bytes();path.write_bytes(original+b' ')
@@ -93,6 +103,10 @@ class HandoffTests(unittest.TestCase):
 
     def test_changed_handoff_implementation_is_rejected(self):
         with patch.object(H,'SOURCE_SHA','0'*64),self.assertRaisesRegex(ValueError,'changed after import'):H.inspect(self.directory)
+
+    @unittest.skipUnless(shutil.which('Rscript'),'Rscript is required for compact proof guard regressions')
+    def test_native_R_stop_grants_and_cleanup_guards(self):
+        subprocess.run(['Rscript','--vanilla','tests/tracer/stream-analysis-guards.R'],cwd=ROOT,check=True,timeout=30)
 
 
 if __name__=='__main__':unittest.main()

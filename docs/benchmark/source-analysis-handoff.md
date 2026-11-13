@@ -78,14 +78,20 @@ counts/capabilities, and seals/natively validates both candidates. Physical coun
 are additionally checked inside that captured snapshot. Candidate inspection is
 bounded to 50,000 rows; it is not the representative-scale comparison transport.
 
-Source STOP/dropped/active controls are checked at phase boundaries and during
+Source STOP/dropped/active controls, including dangling symlinks, are checked at phase boundaries and during
 candidate capture; per-statement timeouts bound SQL waits. This is not the
 reference run's live lease/telemetry controller.
 
-The proof preserves the source rows and source grants. Disposable result schemas
+The proof rechecks source counts and reader grants on the live owner connection
+before generation and after both candidate validations. The result records these
+observations; this count check does not attest to unchanged values within rows.
+Disposable result schemas
 and an originally absent fixture TEMP privilege are cleaned up. It writes
 `analysis-results.json` only after comparisons and both validations pass; a zero
 process exit is also required because cleanup runs at exit.
+Cleanup attempts every action and retains failures in the process log without
+masking a primary analysis error; a cleanup failure after successful analysis
+still makes the process fail.
 `analysis-fixture-state.json` records the disposable schema names and prior TEMP
 privilege for manual recovery if process termination prevents cleanup. No approval,
 publication/export, serving or browser-memory qualification is inferred. The

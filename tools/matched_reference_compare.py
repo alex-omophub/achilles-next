@@ -203,8 +203,10 @@ def check_candidates(path):
         return json.loads(p.read_text())
     model=sibling(payload['model']);expectations=sibling(payload['expectations'])
     result=compare_pair(paths['optimized']['snapshot'],paths['reference']['snapshot'])
-    for one in paths.values():
-        check_metadata(one['snapshot'],model);check_expectations(one['snapshot'],expectations)
+    result['expectation_kind']=expectations['kind'];result['expectations']={}
+    for name,one in paths.items():
+        check_metadata(one['snapshot'],model)
+        result['expectations'][name]=check_expectations(one['snapshot'],expectations)
     return result
 
 
@@ -214,4 +216,5 @@ if __name__=='__main__':
     parser.add_argument('candidates',type=Path)
     args=parser.parse_args()
     checked=check_candidates(args.candidates)
-    print('Matched candidate comparison passed: all142 outputs and independent fixture expectations; native validation/publication still pending')
+    scope=checked['expectations']['optimized'].get('scope',checked['expectation_kind']+' fixture expectations')
+    print('Matched candidate comparison passed: paired comparison of 142 outputs; independent expectations: '+scope+'; native validation/publication still pending')

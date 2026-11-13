@@ -285,8 +285,9 @@ class StreamPostgresTests(unittest.TestCase):
             T.M.atomic_json(out,'complete.json',receipt)
             self.assertEqual(H.verify(handoff,self.state),saved)
             (out/'STOP').touch()
-            with self.assertRaises(T.M.Stopped):H.verify(handoff,self.state)
-            (out/'STOP').unlink()
+            try:
+                with self.assertRaises(T.M.Stopped):H.verify(handoff,self.state)
+            finally:(out/'STOP').unlink(missing_ok=True)
 
     @unittest.skipUnless(os.environ.get('ACHILLES_NEXT_HANDOFF_R_PROOF')=='1','Opt-in compact native R handoff proof')
     def test_completed_source_handoff_matched_R_candidates(self):
@@ -300,6 +301,10 @@ class StreamPostgresTests(unittest.TestCase):
             result=H.json.loads((handoff/'analysis-results.json').read_text())
             self.assertEqual(result['status'],'passed');self.assertEqual(result['metric_count'],'142')
             self.assertTrue(result['candidates_natively_validated']);self.assertFalse(result['published']);self.assertFalse(result['qualifying'])
+            self.assertTrue(result['source_counts_and_reader_grants_verified'])
+            self.assertEqual(result['source_verification']['table_rows'],{t:str(n) for t,n in saved['table_rows'].items()})
+            self.assertTrue(result['source_verification']['reader_usage']);self.assertTrue(result['source_verification']['reader_select'])
+            self.assertFalse(result['source_verification']['reader_create'])
             self.assertEqual(H.verify(handoff,self.state),saved)
             evidence=os.environ.get('ACHILLES_NEXT_HANDOFF_EVIDENCE')
             if evidence:

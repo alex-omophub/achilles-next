@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+import subprocess
 import tempfile
 from unittest.mock import Mock,patch
 from pathlib import Path
@@ -77,6 +78,8 @@ class MatchedReferenceTest(unittest.TestCase):
         value,model=metadata_snapshot();counted=dict(columns=model['columns'],table_rows={'person':1},denied_tables=[])
         self.assertEqual(COMPARE.expected_capabilities(model),COMPARE.expected_capabilities(counted))
         COMPARE.check_metadata(value,counted)
+        empty=COMPARE.expected_capabilities(dict(counted,table_rows={'person':0}))
+        self.assertEqual(empty['person.person_id']['state'],'available_empty')
         for n in (True,-1,'1'):
             with self.subTest(n=n),self.assertRaises(ValueError):COMPARE.expected_capabilities(dict(counted,table_rows={'person':n}))
 
@@ -89,7 +92,31 @@ class MatchedReferenceTest(unittest.TestCase):
         want=dict(kind='source_inventory',table_rows=counts)
         self.assertEqual(COMPARE.check_expectations(value,want)['metrics'],10)
         value['rows']['core.measurement.capture_count'][0]['values']['record_count']='3'
-        with self.assertRaisesRegex(ValueError,'domain count differs'):COMPARE.check_expectations(value,want)
+        with self.assertRaisesRegex(ValueError,'domain count differs: measurement'):COMPARE.check_expectations(value,want)
+
+    def test_candidate_cli_reports_limited_source_inventory_scope(self):
+        value,model=metadata_snapshot();counts={'person':9007199254740993}
+        for domain in SQL.DOMAINS:
+            counts[SQL.PROFILE['domains'][domain]['table']]=2
+            mid='core.'+domain+'.capture_count'
+            value['rows'][mid]=[cell('count-'+domain,{'record_count':'2'},
+                dict(concept_tag={'kind':'all'},period_kind='full_scope'),kind='counts')]
+            value['datasets'][mid]['rows']='1'
+        # Keep the metadata ledger consistent with the filled capture datasets.
+        for row in value['rows']['core.execution.output_status']:
+            row['values']['coverage']=value['datasets'][row['dimensions']['metric_id']]['completeness']
+        with tempfile.TemporaryDirectory() as directory:
+            root=Path(directory)
+            for name,doc in [('model.json',model),('expectations.json',dict(kind='source_inventory',table_rows=counts)),
+                ('candidates.json',dict(paths={p:dict(snapshot=value) for p in ('optimized','reference')},model='model.json',expectations='expectations.json'))]:
+                (root/name).write_text(json.dumps(doc))
+            checked=COMPARE.check_candidates(root/'candidates.json')
+            self.assertEqual(checked['expectations']['optimized']['metrics'],10)
+            self.assertIn('physical source counts only',checked['expectations']['reference']['scope'])
+            result=subprocess.run([sys.executable,str(ROOT/'tools/matched_reference_compare.py'),str(root/'candidates.json')],capture_output=True,text=True,check=True)
+            self.assertIn('paired comparison of 142 outputs',result.stdout)
+            self.assertIn('physical source counts only',result.stdout)
+            self.assertNotIn('all142 outputs and independent fixture expectations',result.stdout)
 
     def test_unknown_outputs_and_unsafe_source_identifiers_are_refused(self):
         for schema in ['public; DROP SCHEMA x','a"b','../source','x'*64]:
