@@ -18,6 +18,7 @@ saved=sys.path[:]
 try:
     sys.path.insert(0,str(ROOT/'tools'))
     import partition_stream as T
+    import source_analysis_handoff as H
 finally:sys.path[:]=saved
 
 
@@ -201,10 +202,13 @@ class StreamPostgresTests(unittest.TestCase):
             if value['status']=='complete':return value
         self.fail('admitted compact stream did not complete')
 
-    def compact_source(self):
+    def compact_source(self,short_history=False):
         init=T.S.Source.__init__
         def compact(source,*args,**kwargs):
             init(source,*args,**kwargs);source.counts={t:min(n,2) for t,n in source.counts.items()}
+            if short_history:
+                source.start=T.S.date(2020,1,1);source.end=T.S.date(2020,2,29)
+                source.recipe=dict(source.recipe,history_start=str(source.start),history_end=str(source.end))
         return patch.object(T.S.Source,'__init__',compact)
 
     def test_whole_source_contract_audits_every_partition_and_table(self):
@@ -246,6 +250,63 @@ class StreamPostgresTests(unittest.TestCase):
             self.vacuum_catalogs()
             self.assertGreaterEqual(T.Z.target_identity(self.pg)['initial_database_bytes'],req['postgres_initial_bytes'])
             self.assertTrue(self.complete_admitted(out,resources)['whole_source_loaded'])
+
+    def test_completed_source_handoff_and_live_drift_refusals(self):
+        with self.compact_source():
+            out,req,_,resources=self.admitted();self.complete_admitted(out,resources)
+            for bad in (out/'handoff',Path(req['schedule_dir'])/'handoff',resources/'handoff',self.state/'handoff'):
+                with patch.object(T.L,'Client',side_effect=AssertionError('no connection before isolation')):
+                    with self.assertRaises(ValueError):H.prepare(out,self.state,bad)
+                self.assertFalse(bad.exists())
+            handoff=self.home/'handoff';saved=H.prepare(out,self.state,handoff)
+            self.assertEqual(H.inspect(handoff),saved);self.assertEqual(H.verify(handoff,self.state),saved)
+            self.assertFalse(saved['analysis_execution_authorized']);self.assertFalse(saved['qualifying'])
+            self.assertEqual(saved['table_rows']['person'],2)
+            self.assertEqual(len(H.M.read_json(handoff/'handoff.json')['columns']),len(saved['table_rows']))
+            self.pg.run('UPDATE '+T.table(req,'person')+" SET person_source_value='drift' WHERE person_id=1")
+            with self.assertRaisesRegex(ValueError,'row/null counts differ'):H.verify(handoff,self.state)
+            self.pg.run('UPDATE '+T.table(req,'person')+' SET person_source_value=NULL WHERE person_id=1')
+            self.pg.run('ALTER TABLE '+T.table(req,'person')+' ADD COLUMN unexpected bigint')
+            with self.assertRaisesRegex(ValueError,'columns/types differ'):H.verify(handoff,self.state)
+            self.pg.run('ALTER TABLE '+T.table(req,'person')+' DROP COLUMN unexpected')
+            # attnum is intentionally part of the descriptor; a removed final
+            # column leaves existing original column ordinals unchanged.
+            self.assertEqual(H.verify(handoff,self.state),saved)
+            self.pg.run('REVOKE USAGE ON SCHEMA '+T.F.identifier(req['schema'])+' FROM '+T.F.identifier(T.F.RUNNER))
+            with self.assertRaisesRegex(ValueError,'reader grants differ'):H.verify(handoff,self.state)
+            self.pg.run('GRANT USAGE ON SCHEMA '+T.F.identifier(req['schema'])+' TO '+T.F.identifier(T.F.RUNNER))
+            state=self.state_value(req)
+            self.pg.run('UPDATE '+T.table(req,T.HEADER)+" SET document=jsonb_set(document,'{phase}','\"loading\"')")
+            with self.assertRaisesRegex(ValueError,'journal/header differs'):H.verify(handoff,self.state)
+            self.pg.run('UPDATE '+T.table(req,T.HEADER)+' SET document='+T.literal(state))
+            receipt=T.M.read_json(out/'complete.json');T.M.atomic_json(out,'complete.json',dict(receipt,audit_sha256='0'*64))
+            with patch.object(T.L,'Client',side_effect=AssertionError('no connection before receipt check')):
+                with self.assertRaisesRegex(ValueError,'completion receipt differs'):H.verify(handoff,self.state)
+            T.M.atomic_json(out,'complete.json',receipt)
+            self.assertEqual(H.verify(handoff,self.state),saved)
+            (out/'STOP').touch()
+            with self.assertRaises(T.M.Stopped):H.verify(handoff,self.state)
+            (out/'STOP').unlink()
+
+    @unittest.skipUnless(os.environ.get('ACHILLES_NEXT_HANDOFF_R_PROOF')=='1','Opt-in compact native R handoff proof')
+    def test_completed_source_handoff_matched_R_candidates(self):
+        import subprocess
+        with self.compact_source(short_history=True):
+            out,req,_,resources=self.admitted();self.complete_admitted(out,resources)
+            handoff=self.home/'handoff';saved=H.prepare(out,self.state,handoff)
+            env=dict(os.environ,ACHILLES_NEXT_FIXTURE_STATE=str(self.state),ACHILLES_NEXT_REFERENCE_PYTHON=sys.executable)
+            subprocess.run(['Rscript','--vanilla',str(ROOT/'tests/tracer/stream-analysis.R'),str(ROOT/'tools/tracer_fixture_config.R'),str(handoff)],cwd=ROOT,env=env,check=True,timeout=600)
+            H.M.regular(handoff/'analysis-results.json',1024**2)
+            result=H.json.loads((handoff/'analysis-results.json').read_text())
+            self.assertEqual(result['status'],'passed');self.assertEqual(result['metric_count'],'142')
+            self.assertTrue(result['candidates_natively_validated']);self.assertFalse(result['published']);self.assertFalse(result['qualifying'])
+            self.assertEqual(H.verify(handoff,self.state),saved)
+            evidence=os.environ.get('ACHILLES_NEXT_HANDOFF_EVIDENCE')
+            if evidence:
+                import shutil
+                target=T.S.outside(Path(evidence)).resolve();target.mkdir(mode=0o700)
+                for name in ('handoff.json','reference.json','analysis-results.json','analysis-candidates.json','source-model.json','source-expectations.json','analysis-fixture-state.json'):
+                    H.M.regular(handoff/name,128*1024**2);shutil.copy2(handoff/name,target/name)
 
     def test_inflated_database_baseline_refuses_before_child_work_or_ddl(self):
         with self.compact_source():

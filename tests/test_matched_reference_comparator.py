@@ -73,6 +73,24 @@ class MatchedReferenceTest(unittest.TestCase):
             self.assertEqual(result['profile_sha256'],json.loads((ROOT/'inst/contracts/v2/rows.json').read_bytes())['profile_sha256'])
             for spec in result['queries'].values():self.assertTrue(spec['sql'])
 
+    def test_physical_metadata_can_use_bounded_count_inventory(self):
+        value,model=metadata_snapshot();counted=dict(columns=model['columns'],table_rows={'person':1},denied_tables=[])
+        self.assertEqual(COMPARE.expected_capabilities(model),COMPARE.expected_capabilities(counted))
+        COMPARE.check_metadata(value,counted)
+        for n in (True,-1,'1'):
+            with self.subTest(n=n),self.assertRaises(ValueError):COMPARE.expected_capabilities(dict(counted,table_rows={'person':n}))
+
+    def test_source_inventory_expectations_are_counts_not_a_numerical_oracle_claim(self):
+        value=snapshot();counts={'person':9007199254740993}
+        for domain in SQL.DOMAINS:
+            counts[SQL.PROFILE['domains'][domain]['table']]=2
+            value['rows']['core.'+domain+'.capture_count']=[cell('count-'+domain,{'record_count':'2'},
+                dict(concept_tag={'kind':'all'},period_kind='full_scope'),kind='counts')]
+        want=dict(kind='source_inventory',table_rows=counts)
+        self.assertEqual(COMPARE.check_expectations(value,want)['metrics'],10)
+        value['rows']['core.measurement.capture_count'][0]['values']['record_count']='3'
+        with self.assertRaisesRegex(ValueError,'domain count differs'):COMPARE.check_expectations(value,want)
+
     def test_unknown_outputs_and_unsafe_source_identifiers_are_refused(self):
         for schema in ['public; DROP SCHEMA x','a"b','../source','x'*64]:
             with self.assertRaises(ValueError):SQL.Reference(schema,{})

@@ -61,6 +61,13 @@ def compare_pair(left,right):
     return dict(metric_count=142,numerical_metrics=138,metadata_metrics=4,normalized_facts=['passport generation timestamps','validated execution timing topology, durations and row count'],rows=sum(len(rs) for rs in left['rows'].values()))
 
 
+def table_populated(model,table):
+    if 'table_rows' not in model:return bool(model['tables'][table])
+    counts=model['table_rows']
+    need(set(counts)==set(model['columns']) and all(type(n) is int and n>=0 for n in counts.values()),'Invalid source inventory counts')
+    return counts[table]>0
+
+
 def expected_capabilities(model):
     probes=set()
     for m in PROFILE['metrics']:
@@ -74,7 +81,7 @@ def expected_capabilities(model):
         elif '.' not in p:
             if p not in model['columns']:state='absent';reason='capability.table_absent'
             elif p in model.get('denied_tables',[]):state='inaccessible';reason='capability.select_denied';typ='relation'
-            else:state='available' if model['tables'][p] else 'available_empty';typ='relation'
+            else:state='available' if table_populated(model,p) else 'available_empty';typ='relation'
         else:
             table,column=p.split('.');typ=model['columns'].get(table,{}).get(column)
             if typ is None:state='absent';reason='capability.column_absent'
@@ -83,7 +90,7 @@ def expected_capabilities(model):
                 typ={'timestamp':'timestamp without time zone','int':'integer'}.get(typ,typ)
                 typ=re.sub(r'^varchar', 'character varying',typ)
                 if table in model.get('denied_tables',[]):state='inaccessible';reason='capability.select_denied'
-                else:state='available' if model['tables'][table] else 'available_empty'
+                else:state='available' if table_populated(model,table) else 'available_empty'
         result[p]=dict(state=state,reason_code=reason,observed_type=typ)
     return result
 
@@ -163,6 +170,15 @@ def artifact(directory,publication,snapshot):
 
 
 def check_expectations(snapshot,expectations):
+    if expectations['kind']=='source_inventory':
+        from matched_reference_sql import DOMAINS
+        counts=expectations['table_rows']
+        need(all(type(n) is int and n>=0 for n in counts.values()),'Invalid source inventory counts')
+        need(snapshot['rows']['core.person.count'][0]['values']['person_count']==str(counts['person']),'Source inventory person count differs')
+        for domain in DOMAINS:
+            rows=[r for r in snapshot['rows']['core.'+domain+'.capture_count'] if r['dimensions']['concept_tag']=={'kind':'all'} and r['dimensions']['period_kind']=='full_scope']
+            need(len(rows)==1 and rows[0]['values']['record_count']==str(counts[PROFILE['domains'][domain]['table']]),'Source inventory domain count differs: '+domain)
+        return dict(metrics=10,scope='physical source counts only; paired SQL covers all138 numerical outputs')
     if expectations['kind']=='generated':
         from synthetic_cdm_oracle import check_snapshot
         return check_snapshot(snapshot,expectations['oracle'])
