@@ -1,0 +1,19 @@
+tests/test_resource_admission_trial.py
+  s_895f6ebe145fd3::t_66f516052d8114 3-4,20-22,41-44,62,70-97,205-206,210,212-215
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fb44940d1d5b6811b822a8e4bc8d70f78cd3bfe7",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
