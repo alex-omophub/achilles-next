@@ -11,6 +11,10 @@ change database settings or start generation. Incomplete allocations produce
 **blocked** records with explicit observed/unavailable states. Registration and
 leases are never benchmark qualification receipts.
 
+The [bounded metadata/STOP worker](resource-admission-trial.md) exercises an
+existing live admission with operator-controlled revocation and separate resource
+observation. It supplies no allocation or reference-qualification bypass.
+
 ## Prerequisites
 
 - A dedicated Linux allocation with at least eight visible CPUs and 32 GiB RAM.

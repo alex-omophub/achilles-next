@@ -145,6 +145,7 @@ jobs:
         run: |
           python3 -m unittest discover -s tests -p test_incremental_source_load_postgresql.py
           python3 -m unittest discover -s tests -p test_partition_stream_postgresql.py
+          python3 -m unittest discover -s tests -p test_resource_admission_trial.py
       - name: Rebuild and verify the shipped viewer before R installation
         if: matrix.suite == 'compatibility'
         run: |
