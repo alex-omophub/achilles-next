@@ -1,5 +1,7 @@
 """STOP trial contracts; reference capacities/identities are explicit stand-ins."""
 from copy import deepcopy
+import hashlib
+import json
 import os
 from pathlib import Path
 import sys
@@ -14,6 +16,9 @@ try:
     import resource_admission_trial as V
 finally:sys.path[:]=saved
 from test_source_execution_resources import reference_fixture
+
+# Approved metadata-only SQL, deliberately independent of the worker constant.
+APPROVED_PROBE="SELECT current_database() AS database,current_user AS owner,pg_postmaster_start_time()::text AS postmaster_started_at,current_setting('transaction_read_only') AS read_only,1 AS ping"
 
 
 class TrialTests(unittest.TestCase):
@@ -33,7 +38,10 @@ class TrialTests(unittest.TestCase):
         outer=self
         class Fake:
             env={'PGOPTIONS':'-c statement_timeout=30000'}
-            def rows(self,sql):outer.probes.append(sql);return [deepcopy(outer.answer)]
+            def rows(self,sql):
+                outer.probes.append(sql)
+                outer.assertEqual(sql,APPROVED_PROBE,'Query outside approved metadata-only scope')
+                return [deepcopy(outer.answer)]
         value=Fake();self.env=value.env;return value
 
     def run_trial(self,action=None,stop=None):
@@ -51,13 +59,41 @@ class TrialTests(unittest.TestCase):
         before={n:(self.resources/n).read_bytes() for n in ('registration.json','lease.json')}
         result=self.run_trial(self.operator_stop)
         self.assertEqual(result['status'],'passed');self.assertEqual(result['samples'],1)
-        self.assertEqual(self.probes,[V.PROBE]);self.assertIn('default_transaction_read_only=on',self.env['PGOPTIONS'])
+        self.assertEqual(self.probes,[APPROVED_PROBE]);self.assertIn('default_transaction_read_only=on',self.env['PGOPTIONS'])
         self.assertFalse(result['qualifying']);self.assertFalse(result['allocation_qualified']);self.assertFalse(result['source_scanned']);self.assertFalse(result['lease_renewed'])
         self.assertEqual(result['journal_bytes'],(self.output/'samples.jsonl').stat().st_size)
         self.assertEqual(result['journal_sha256'],V.S.BASE.sha((self.output/'samples.jsonl').read_bytes()))
         self.assertEqual(before,{n:(self.resources/n).read_bytes() for n in before})
         self.assertTrue((self.resources/'STOP').exists());self.assertFalse(Path(self.config['job_dir']).exists())
         receipt=V.M.read_json(self.output/'trial.json');self.assertEqual(receipt['result_sha256'],V.Z.digest(result))
+
+    def test_multiple_probes_have_independently_parseable_JSON_lines(self):
+        pauses=[0]
+        def stop_after_three():
+            pauses[0]+=1
+            if pauses[0]==3:self.operator_stop()
+        result=self.run_trial(stop_after_three)
+        self.assertEqual(result['status'],'passed');self.assertEqual(result['samples'],3)
+        raw=(self.output/'samples.jsonl').read_bytes();lines=raw.splitlines(keepends=True)
+        self.assertEqual(len(lines),3);self.assertTrue(all(line.endswith(b'\n') for line in lines))
+        self.assertEqual([json.loads(line)['probe'] for line in lines],[self.answer]*3)
+        self.assertEqual(result['journal_bytes'],len(raw));self.assertEqual(result['journal_sha256'],hashlib.sha256(raw).hexdigest())
+
+    def test_newline_counts_toward_the_journal_byte_ceiling(self):
+        sample=dict(elapsed_seconds=0.,probe=self.answer)
+        bare=json.dumps(sample,sort_keys=True,separators=(',',':'),ensure_ascii=False).encode('utf-8')
+        with patch.object(V.time,'monotonic',return_value=100.),patch.object(V,'MAX_JOURNAL',len(bare)):
+            result=self.run_trial()
+        self.assertEqual(result['status'],'failed');self.assertIn('journal budget exceeded',result['error'])
+        self.assertEqual(result['samples'],0);self.assertEqual(result['journal_bytes'],0)
+        self.assertEqual((self.output/'samples.jsonl').read_bytes(),b'')
+        self.assertEqual(result['journal_sha256'],hashlib.sha256(b'').hexdigest())
+
+    def test_changed_probe_cannot_expand_the_approved_SQL_scope(self):
+        with patch.object(V,'PROBE','SELECT * FROM person'):
+            result=self.run_trial(self.operator_stop)
+        self.assertEqual(result['status'],'failed');self.assertIn('Query outside approved metadata-only scope',result['error'])
+        self.assertEqual(result['samples'],0);self.assertFalse((self.output/'ready.json').exists())
 
     def test_admission_revocation_after_probe_passes(self):
         result=self.run_trial(lambda:V.M.atomic_json(self.resources,'revoked.json',dict(registration_sha256=self.record['registration_sha256'],status='revoked',qualifying=False)))
@@ -166,13 +202,17 @@ class NativeTrialTests(unittest.TestCase):
             config,observed,worker=reference_fixture(root,'a'*64,target=target);file=root/'allocation.json';file.write_bytes(V.S.BASE.canonical(config));resources=root/'resources';output=root/'work/trial'
             with patch.object(V.Z,'host_observation',return_value=observed):V.Z.register(file,resources)
             def stop_when_ready():
-                if (output/'ready.json').exists() and not (resources/'STOP').exists():
+                journal=output/'samples.jsonl'
+                if journal.is_file() and len(journal.read_bytes().splitlines())>=3 and not (resources/'STOP').exists():
                     with V.M.open_file(resources/'STOP',True):pass
             with patch.object(V.Z,'worker_identity',return_value=worker),patch.object(V.Z.tempfile,'tempdir',config['storage']['temporary']['worker_path']):
                 result=V.run(resources,state,output,seconds=10,stop=stop_when_ready)
-            self.assertEqual(result['status'],'passed');self.assertEqual(result['samples'],1)
+            self.assertEqual(result['status'],'passed');self.assertEqual(result['samples'],3)
             self.assertFalse(result['qualifying']);self.assertFalse(result['source_scanned'])
-            row=V.Z.json.loads((output/'samples.jsonl').read_text());self.assertEqual(row['probe']['read_only'],'on')
+            raw=(output/'samples.jsonl').read_bytes();lines=raw.splitlines(keepends=True)
+            self.assertEqual(len(lines),3);self.assertTrue(all(line.endswith(b'\n') for line in lines))
+            self.assertEqual([json.loads(line)['probe']['read_only'] for line in lines],['on']*3)
+            self.assertEqual(result['journal_bytes'],len(raw));self.assertEqual(result['journal_sha256'],hashlib.sha256(raw).hexdigest())
             self.assertFalse(Path(config['job_dir']).exists());self.assertTrue((resources/'STOP').exists())
             evidence=os.environ.get('ACHILLES_NEXT_TRIAL_EVIDENCE')
             if evidence:
