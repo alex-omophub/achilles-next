@@ -16,6 +16,16 @@ import sys
 from resource_telemetry import directory_bytes, observe
 
 
+def verify_harness(root, expected):
+    for path, digest in expected.items():
+        try:
+            actual = hashlib.sha256((root/path).read_bytes()).hexdigest()
+        except OSError as error:
+            raise RuntimeError(f'Harness changed or unreadable: {path}') from error
+        if actual != digest:
+            raise RuntimeError(f'Harness changed: {path}')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', required=True, type=Path)
@@ -34,8 +44,10 @@ def main():
     context = args.context.resolve(strict=True) if args.context else None
     if artifact and (not artifact.is_dir() or not context.is_file() or context.stat().st_size > 65536):
         parser.error('Artifact directory and context file (at most 64 KiB) required')
-    # Never overwrite measurements or put outputs beneath an input artifact.
+    # Keep generated evidence outside the checkout and input artifact.
     output = args.output.resolve()
+    if output == root or root in output.parents:
+        parser.error('Output must be outside the checkout')
     if artifact and (output == artifact or artifact in output.parents):
         parser.error('Output must be outside the artifact')
     output.mkdir(parents=True, exist_ok=False, mode=0o700)
@@ -54,14 +66,16 @@ def main():
         for mode in ['plan','primitives'] + (['saved'] if artifact else []):
             name = f'{repeat+1}-{mode}'
             run = output/name
-            run.mkdir(); (run/'tmp').mkdir()
-            env = dict(os.environ, TMPDIR=str(run/'tmp'))
             try:
+                run.mkdir(); (run/'tmp').mkdir()
+                env = dict(os.environ, TMPDIR=str(run/'tmp'))
+                verify_harness(root,manifest['harness_sha256'])
                 result = observe([command,'--vanilla',str(root/'tools/benchmark/client_footprint.R'),
                     mode,str(root),str(run),str(artifact or ''),str(context or '')],
                     run,env=env,interval=.1,wall_seconds=120,rss_limit=2*1024**3,
                     output_limit=64*1024**2,min_free=64*1024**2)
                 manifest['runs'].append(dict(name=name,final_output_bytes=directory_bytes(run),**result))
+                verify_harness(root,manifest['harness_sha256'])
                 if result['status'] != 'completed':
                     raise RuntimeError(f'{name} failed; inspect retained worker.log and telemetry')
             except BaseException as error:

@@ -48,8 +48,14 @@ when comparing these phases.
 failure state. Each run retains `worker.json` (phase wall/CPU time, R heap,
 software/implementation identities, connector attempts and reader counters),
 `process-telemetry.json`, RSS/output samples and `worker.log`. Planner/primitive
-products are retained for inspection. Errors preserve the evidence and return a
-nonzero exit. Existing output paths are refused. Three repeats are the default;
+products are retained for inspection. Harness hashes are checked before and after
+each worker; a detected edit or missing file fails the manifest and stops later
+workers, retaining completed worker evidence. These drift checks are not an
+immutable snapshot or protection against a file being changed and restored
+between checks. Keep the checkout unchanged while benchmarking.
+Errors preserve the evidence and return a nonzero exit. Output must resolve
+outside the package checkout, including through symbolic links; existing output
+paths are refused. Three repeats are the default;
 `--repeats 1` is useful for a smoke test.
 
 The lifetime RSS/CPU comes from the owned R process via `wait4`, including any
@@ -64,9 +70,11 @@ scopes explicitly rather than subtracting one metric from another.
 
 The worker's `TMPDIR` is under its run directory. Logical output/scratch bytes are
 sampled there, excluding input artifacts, libraries and external databases.
-Short-lived temporary peaks between samples can be missed; final output bytes
-are recorded separately. Saved-provider fetched bytes count verified page file
-bytes, not network or physical disk I/O; cache hits are separate. No external
+Short-lived temporary peaks between samples can be missed. The separately
+recorded `final_output_bytes` is the final run-directory logical byte total,
+including telemetry, logs, retained products and any remaining scratch files;
+it is not a product-only output measurement. Saved-provider fetched bytes count
+verified page file bytes, not network or physical disk I/O; cache hits are separate. No external
 traffic or browser heap is measured in these offline modes.
 
 A rejecting/counting `DatabaseConnector::connect` sentinel covers operations

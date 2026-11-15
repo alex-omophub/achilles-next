@@ -1,17 +1,82 @@
 """Offline client-path coverage and failed-baseline evidence retention."""
 import json
+import contextlib
+import io
 import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 COMMAND = [sys.executable, str(ROOT/'tools/benchmark/client_footprint.py')]
+_saved_path = sys.path[:]
+try:
+    sys.path.insert(0,str(ROOT/'tools/benchmark'))
+    import client_footprint as CLIENT
+finally:
+    sys.path[:] = _saved_path
 
 
 class ClientFootprintCLI(unittest.TestCase):
+    def checkout(self,base):
+        root=base/'checkout';tools=root/'tools/benchmark';tools.mkdir(parents=True)
+        for name in ['client_footprint.py','client_footprint.R','resource_telemetry.py','implementation_identity.R']:
+            (tools/name).write_bytes((ROOT/'tools/benchmark'/name).read_bytes())
+        return root
+
+    def test_checkout_output_and_resolved_symlink_alias_are_refused(self):
+        with tempfile.TemporaryDirectory() as folder:
+            base=Path(folder).resolve();root=self.checkout(base);alias=base/'alias';alias.symlink_to(root,target_is_directory=True)
+            for output in [root,root/'evidence/run',alias/'evidence/run']:
+                with self.subTest(output=output),patch.object(CLIENT,'__file__',str(root/'tools/benchmark/client_footprint.py')), \
+                     patch.object(sys,'argv',['baseline','--output',str(output),'--rscript',sys.executable]), \
+                     patch.object(CLIENT,'observe') as launch,contextlib.redirect_stderr(io.StringIO()) as errors:
+                    with self.assertRaises(SystemExit) as stopped:CLIENT.main()
+                    self.assertEqual(stopped.exception.code,2)
+                    self.assertIn('outside the checkout',errors.getvalue());launch.assert_not_called()
+                    self.assertFalse((root/'evidence').exists())
+
+    def test_harness_edits_or_removal_during_worker_preserve_failed_evidence(self):
+        for name in ['client_footprint.py','client_footprint.R','resource_telemetry.py','implementation_identity.R']:
+            for remove in [False,True]:
+                with self.subTest(name=name,remove=remove),tempfile.TemporaryDirectory() as folder:
+                    base=Path(folder).resolve();root=self.checkout(base);output=base/'output'
+                    def observe(command,run,**kwargs):
+                        (run/'worker.log').write_text('retained worker evidence')
+                        target=root/'tools/benchmark'/name
+                        if remove:target.unlink()
+                        else:target.write_bytes(target.read_bytes()+b'\n# changed\n')
+                        return dict(status='completed')
+                    with patch.object(CLIENT,'__file__',str(root/'tools/benchmark/client_footprint.py')), \
+                         patch.object(sys,'argv',['baseline','--output',str(output),'--rscript',sys.executable]), \
+                         patch.object(CLIENT,'observe',side_effect=observe) as launch:
+                        with self.assertRaisesRegex(RuntimeError,'Harness changed'):CLIENT.main()
+                        self.assertEqual(launch.call_count,1)
+                    manifest=json.loads((output/'manifest.json').read_text())
+                    self.assertEqual(manifest['status'],'failed');self.assertIn(name,manifest['error'])
+                    self.assertEqual(len(manifest['runs']),1)
+                    self.assertEqual((output/'1-plan/worker.log').read_text(),'retained worker evidence')
+                    self.assertFalse((output/'1-primitives').exists())
+
+    def test_harness_change_before_launch_stops_without_worker(self):
+        with tempfile.TemporaryDirectory() as folder:
+            base=Path(folder).resolve();root=self.checkout(base);output=base/'output';mkdir=Path.mkdir
+            def create(path,*args,**kwargs):
+                value=mkdir(path,*args,**kwargs)
+                if path==output/'1-plan/tmp':
+                    target=root/'tools/benchmark/client_footprint.R';target.write_bytes(target.read_bytes()+b'\n# changed\n')
+                return value
+            with patch.object(CLIENT,'__file__',str(root/'tools/benchmark/client_footprint.py')), \
+                 patch.object(sys,'argv',['baseline','--output',str(output),'--rscript',sys.executable]), \
+                 patch.object(Path,'mkdir',create),patch.object(CLIENT,'observe') as launch:
+                with self.assertRaisesRegex(RuntimeError,'Harness changed'):CLIENT.main()
+                launch.assert_not_called()
+            manifest=json.loads((output/'manifest.json').read_text())
+            self.assertEqual(manifest['status'],'failed');self.assertEqual(manifest['runs'],[])
+
     def test_invalid_inputs_do_not_create_output(self):
         with tempfile.TemporaryDirectory() as folder:
             output = Path(folder)/'output'
