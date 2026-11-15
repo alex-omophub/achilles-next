@@ -130,6 +130,10 @@ all 142 report/filter grains and rejects requests that would require unsaved
 combinations. Approved native lazy transports and optional saved-name discovery
 are available; the model reads no source data and submits no generation jobs.
 Million-entry qualification and production UI integration remain under development.
+The [client-path inventory](docs/development/client-paths.md) distinguishes offline
+planning, external PostgreSQL execution and saved-result access. The optional
+[client footprint runner](docs/benchmark/client-footprint.md) measures current
+offline paths without a database or Docker.
 The runnable [synthetic saved-result walkthrough](docs/development/saved-walkthrough.md)
 demonstrates discovery, exact saved filters and result-state interpretation, and
 exports the complete 142-report filter matrix without a database connection.
