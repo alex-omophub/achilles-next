@@ -45,6 +45,8 @@ def main():
     if artifact and (not artifact.is_dir() or not context.is_file() or context.stat().st_size > 65536):
         parser.error('Artifact directory and context file (at most 64 KiB) required')
     # Keep generated evidence outside the checkout and input artifact.
+    if args.output.is_symlink():
+        parser.error('Output must not be a symbolic link')
     output = args.output.resolve()
     if output == root or root in output.parents:
         parser.error('Output must be outside the checkout')

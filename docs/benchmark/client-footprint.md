@@ -53,9 +53,11 @@ each worker; a detected edit or missing file fails the manifest and stops later
 workers, retaining completed worker evidence. These drift checks are not an
 immutable snapshot or protection against a file being changed and restored
 between checks. Keep the checkout unchanged while benchmarking.
-Errors preserve the evidence and return a nonzero exit. Output must resolve
-outside the package checkout, including through symbolic links; existing output
-paths are refused. Three repeats are the default;
+Errors preserve the evidence and return a nonzero exit. The output argument
+itself must not be a symbolic link, including a dangling link. Its resolved path
+must be outside the package checkout; aliases through parent-directory symbolic
+links are checked too. Existing output paths are refused. Three repeats are the
+default;
 `--repeats 1` is useful for a smoke test.
 
 The lifetime RSS/CPU comes from the owned R process via `wait4`, including any

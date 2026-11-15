@@ -27,6 +27,29 @@ class ClientFootprintCLI(unittest.TestCase):
             (tools/name).write_bytes((ROOT/'tools/benchmark'/name).read_bytes())
         return root
 
+    def test_output_symlinks_are_refused_without_creating_or_modifying_targets(self):
+        for kind in ['dangling','relative_dangling','directory','file']:
+            with self.subTest(kind=kind),tempfile.TemporaryDirectory() as folder:
+                base=Path(folder).resolve();root=self.checkout(base);target=base/'target';output=base/'output-link'
+                if kind=='directory':
+                    target.mkdir();(target/'marker').write_bytes(b'unchanged')
+                elif kind=='file':target.write_bytes(b'unchanged')
+                output.symlink_to(target.name if kind=='relative_dangling' else target,target_is_directory=kind!='file')
+                link=os.readlink(output)
+                with patch.object(CLIENT,'__file__',str(root/'tools/benchmark/client_footprint.py')), \
+                     patch.object(sys,'argv',['baseline','--output',str(output),'--rscript',sys.executable]), \
+                     patch.object(CLIENT,'observe',return_value=dict(status='completed')) as launch, \
+                     contextlib.redirect_stderr(io.StringIO()) as errors:
+                    with self.assertRaises(SystemExit) as stopped:CLIENT.main()
+                    self.assertEqual(stopped.exception.code,2)
+                    self.assertIn('Output must not be a symbolic link',errors.getvalue());launch.assert_not_called()
+                self.assertTrue(output.is_symlink());self.assertEqual(os.readlink(output),link)
+                if kind in ['dangling','relative_dangling']:self.assertFalse(target.exists())
+                elif kind=='file':self.assertEqual(target.read_bytes(),b'unchanged')
+                else:
+                    self.assertEqual(sorted(p.name for p in target.iterdir()),['marker'])
+                    self.assertEqual((target/'marker').read_bytes(),b'unchanged')
+
     def test_checkout_output_and_resolved_symlink_alias_are_refused(self):
         with tempfile.TemporaryDirectory() as folder:
             base=Path(folder).resolve();root=self.checkout(base);alias=base/'alias';alias.symlink_to(root,target_is_directory=True)
@@ -100,6 +123,7 @@ class ClientFootprintCLI(unittest.TestCase):
                     '--artifact',str(fixture),'--context',str(context)],cwd=ROOT,capture_output=True,text=True)
             result = run(output)
             logs = '\n'.join(p.read_text() for p in output.glob('*/worker.log')) if output.exists() else ''
+            logs += '\n'.join(p.read_text() for p in output.glob('*/process-telemetry.json')) if output.exists() else ''
             self.assertEqual(result.returncode,0,result.stderr+'\n'+logs)
             manifest = json.loads((output/'manifest.json').read_text())
             self.assertEqual(manifest['status'],'completed');self.assertFalse(manifest['qualifying'])
