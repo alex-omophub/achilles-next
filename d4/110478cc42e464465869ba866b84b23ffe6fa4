@@ -1,0 +1,25 @@
+docs/benchmark/client-footprint.md
+  s_895f6ebe145fd3::t_aac19d0fe77447 51-58,73-75
+  s_895f6ebe145fd3::t_3b6e11fb9c76d1 76-77
+tests/test_client_footprint.py
+  s_895f6ebe145fd3::t_6da10ca7a1f9b8 32,46,66
+  s_895f6ebe145fd3::t_23c74f7be251f3 3-4,11,15-20,24-31,33-45,47-65,67-79
+tools/benchmark/client_footprint.py
+  s_895f6ebe145fd3::t_aac19d0fe77447 19-28,47,49-50,70-72,78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d4110478cc42e464465869ba866b84b23ffe6fa4",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
