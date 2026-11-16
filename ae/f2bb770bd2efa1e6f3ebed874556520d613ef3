@@ -1,0 +1,22 @@
+tests/tracer/characterization-render-native.R
+  s_895f6ebe145fd3::t_700b95e24bce12 1-5,7-19,21-22,55
+  s_895f6ebe145fd3::t_2809fe35928060 6,20
+R/characterization-render-metadata.R
+  s_895f6ebe145fd3::t_6007b32b5b5eb6 40-41,43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "aef2bb770bd2efa1e6f3ebed874556520d613ef3",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
