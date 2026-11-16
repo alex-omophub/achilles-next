@@ -1,0 +1,82 @@
+R/characterization-execute.R
+  s_3e206b4a2cf4c3::t_411ff64d659ea6 203
+  s_895f6ebe145fd3::t_8a60c75b50fdab 1-12,14-59,61-78,80-128,130-146,149-158,160-180,182-188,190-191,202,204-208
+  s_3e206b4a2cf4c3::t_3923ed97c893e8 13
+  s_3e206b4a2cf4c3::t_d0448e14cd9db5 147-148,192-201
+  s_895f6ebe145fd3::t_d9edb34c81e623 60,79,159,181
+  s_895f6ebe145fd3::t_defb22421090e7 129,189
+tests/tracer/core-characterization.R
+  s_895f6ebe145fd3::t_eb6ee9befa784f 11,82-84
+docs/development/offline-renderer.md
+  s_895f6ebe145fd3::t_0da5eeda37508a 46,60-62,66,76-77,111
+man/renderCharacterizationSql.Rd
+  s_895f6ebe145fd3::t_0ee2ce0cb38981 49
+  s_895f6ebe145fd3::t_0da5eeda37508a 32,46-47,52-53
+tools/test_core_characterization.py
+  s_895f6ebe145fd3::t_eb6ee9befa784f 220
+tests/tracer/characterization-execute-offline.R
+  s_3e206b4a2cf4c3::t_98e645008c0910 1-17,19-49,53-55,65,67
+  s_895f6ebe145fd3::t_b403f3fb6ea49b 50-52
+  s_895f6ebe145fd3::t_afb463d36dbff6 56-64,66
+  s_3e206b4a2cf4c3::t_23d035782282a7 18
+R/characterization-transport.R
+  s_895f6ebe145fd3::t_8a60c75b50fdab 1-10,12-30,44-49,51-54,62-82,84-85
+  s_895f6ebe145fd3::t_defb22421090e7 11,35-37,39-41,43,50,55-61,83
+  s_895f6ebe145fd3::t_13cd01890ae22c 38,42
+  s_895f6ebe145fd3::t_7d14e5993923de 31-34
+man/executeCharacterizationSql.Rd
+  s_895f6ebe145fd3::t_d9edb34c81e623 1-100
+docs/development/client-paths.md
+  s_895f6ebe145fd3::t_5ad9ac9b6ec707 63-66
+  s_895f6ebe145fd3::t_0ee2ce0cb38981 17
+  s_895f6ebe145fd3::t_0da5eeda37508a 61-62
+tests/tracer/characterization-execute-native.R
+  s_895f6ebe145fd3::t_9e64b67487cae3 150,153,180
+  s_895f6ebe145fd3::t_0365fbf0039dfc 59,145
+  s_895f6ebe145fd3::t_c51ba561f1ee9c 27-58,60-84,94
+  s_3e206b4a2cf4c3::t_2931d300e7a098 1-11,15-17,20-26,85-91,95-143,147-149,151-152,154-164,167-179,181-184,193-197,199-202,204-210
+  s_895f6ebe145fd3::t_eb6ee9befa784f 12-14,18-19,92-93,144,146,165-166,185-192,198,203
+DESCRIPTION
+  s_895f6ebe145fd3::t_d9edb34c81e623 17-18
+R/characterization-render.R
+  s_895f6ebe145fd3::t_d9edb34c81e623 144-145
+NAMESPACE
+  s_895f6ebe145fd3::t_d9edb34c81e623 44
+tests/tracer/characterization-render-native.R
+  s_3e206b4a2cf4c3::t_c955835cccbedb 24,109-110,112-113
+  s_895f6ebe145fd3::t_806ec4281fd99e 59,61-89,91-93,95-103,105-108,111,115-116
+docs/development/checked-executor.md
+  s_895f6ebe145fd3::t_5ad9ac9b6ec707 65
+  s_895f6ebe145fd3::t_0da5eeda37508a 1-25,27-28,30-31,33-64,66-120
+  s_895f6ebe145fd3::t_0ee2ce0cb38981 26,29,32
+README.md
+  s_895f6ebe145fd3::t_0da5eeda37508a 145-150
+AGENTS.md
+  s_3e206b4a2cf4c3::t_51e22270df598c 14,16-17,19,23
+CONTRIBUTING.md
+  s_3e206b4a2cf4c3::t_f2ba46fae71d3a 18-20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "802283ba650b4b5b4d6d08e90e90cb283306ed7a",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
