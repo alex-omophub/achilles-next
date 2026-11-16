@@ -15,7 +15,9 @@ Use the existing ticket identifier and a descriptive lowercase, hyphen-separated
 
 All commits must use the user's Git account identity. Automated assistance must not substitute an agent/bot author or committer, override authorship, or add AI co-author trailers.
 
-Prepare changes for review first. Committing, amending, pushing or merging requires explicit user approval after review. **Only the user initiates pull requests**; automated assistance must not create PRs through a CLI, API, tool or browser. A PR description may be drafted locally when requested.
+Prepare reviewable changes and run the relevant checks before committing. Follow the user's current authorization, including any per-task instruction to leave changes uncommitted. Under standing authorization, automated assistance may commit/push, open PRs, address review and CI findings, and merge through the user's authenticated account.
+
+Before merging, verify that Cubic completed on the exact current head, all required CI passed, active review findings are addressed and the latest remote state is integrated. Never bypass checks or force-push. Pause for necessary clarification, while continuing independent work where possible. Keep each PR focused and omit private delivery/planning material from commits and hosted discussions.
 
 ## Validation and documentation
 

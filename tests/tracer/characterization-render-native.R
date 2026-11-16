@@ -21,7 +21,7 @@ testCharacterizationRenderMetadata <- function(query) {
 }
 
 # Small aggregate-only differential proof, called before source access is denied.
-# The test driver owns its JDBC transaction; it is not a production execution API.
+# Fixture metadata probes own this small transaction; full programs use the public executor.
 testCharacterizationRender <- function(details,schema,sourceId,version,snap) {
   f<-function(n)get(n,asNamespace('AchillesNext'));wire<-f('.json');o<-f('.object')
   connection<-DatabaseConnector::connect(details);jdbc<-connection@jConnection
@@ -55,48 +55,63 @@ testCharacterizationRender <- function(details,schema,sourceId,version,snap) {
   testCharacterizationRenderMetadata(query)
   columns<-query(paste0("SELECT jsonb_build_object('table',c.relname,'column',a.attname,'type',t.typname,'readable',has_schema_privilege(n.oid,'USAGE') AND has_column_privilege(c.oid,a.attname,'SELECT'))::text FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_attribute a ON a.attrelid=c.oid JOIN pg_type t ON t.oid=a.atttypid WHERE n.nspname=",f('.store_literal')(schema)," AND c.relkind IN ('r','p','v','m','f') AND a.attnum>0 AND NOT a.attisdropped"))
   columns<-do.call(rbind,lapply(columns,function(x)as.data.frame(f('.store_decode')(x),stringsAsFactors=FALSE)))
-  passport<-snap$rows[['core.source.passport']][[1]]$values
-  caps<-snap$rows[['core.source.capabilities']]
-  # Identical actual reference-run inputs prove metadata formatting/value parity.
-  # They are not a measurement of this test driver's subsequent execution time.
-  facts<-o(observed_schema_sha256=snap$schema_sha256,
-    capabilities=stats::setNames(lapply(caps,function(r)r$values),vapply(caps,function(r)r$dimensions$probe_id,'')),
-    started_at=passport$generation$started_at,ended_at=passport$generation$ended_at,
-    timings=lapply(snap$rows[['core.execution.timing']],function(r)c(r$dimensions,o(duration_ms=r$values$duration_ms))))
   canonical<-function(rows)sort(vapply(rows,wire,''),method='radix')
+  metadataIds<-f('.core_metadata_ids')();ids<-names(f('.v2_assets')()$metrics)
   for(strategy in c('weighted','reference')) {
-    program<-renderCharacterizationSql(schema,sourceId,version,columns,numericStrategy=strategy,stagePrefix=paste0('achillesnext_render_',strategy))
-    for(step in program$steps) {
-      if(step$kind=='assert_scalar')stopifnot(identical(one(step$sql),step$expected)) else execute(step$sql)
-    }
-    inventory<-lapply(query(paste0("SELECT row_to_json(i)::text FROM (",program$inventory_sql,") i"),facts),f('.store_decode'))
-    stopifnot(length(inventory)==142L)
-    for(d in inventory) {
-      expected<-snap$datasets[[d$metric_id]][names(d)]
-      if(!identical(wire(d),wire(expected)))stop(paste('Rendered inventory differs:',d$metric_id,strategy),call.=FALSE)
-    }
-    for(mid in names(program$outputs)) {
-      spec<-program$outputs[[mid]];metadata<-spec$kind=='runtime_metadata'
-      sql<-paste0("SELECT jsonb_build_object('row_kind',row_kind,'dimensions',dimensions,'values',values,'state',",
-        if(metadata)"'computed'::text" else 'state',",'reason_code',",if(metadata)'NULL::text' else 'reason_code',")::text FROM (",spec$sql,") report")
-      got<-lapply(query(sql,if(metadata)facts else NULL),function(text) {
-        row<-f('.store_decode')(text)
-        if(!metadata&&!is.null(row$values))row$values<-lapply(row$values,f('.baseline_normalize'))
-        row
-      })
+    program<-renderCharacterizationSql(schema,sourceId,version,columns,numericStrategy=strategy,
+      stagePrefix=paste0('achillesnext_render_',strategy))
+    captured<-stats::setNames(lapply(ids,function(mid)list()),ids);seen<-0L;capturedBytes<-0
+    before<-f('.stamp')()
+    receipt<-executeCharacterizationSql(details,program,function(mid,row) {
+      stopifnot(mid%in%ids,identical(row$metric_id,mid),
+        setequal(names(row),c('metric_id','row_kind','dimensions','values','state','reason_code')))
+      seen<<-seen+1L;capturedBytes<<-capturedBytes+nchar(wire(row),type='bytes')
+      stopifnot(seen<=100000L,capturedBytes<=64*1024^2)
+      captured[[mid]][[length(captured[[mid]])+1L]]<<-row[c('row_kind','dimensions','values','state','reason_code')]
+    },maxAggregateRows=100000L,maxAggregateBytes=64*1024^2,fetchSize=if(strategy=='weighted')1L else 128L)
+    after<-f('.stamp')();runtime<-receipt$runtime_facts
+    stopifnot(receipt$kind=='characterization_execution_receipt',receipt$state=='succeeded',
+      receipt$program_sha256==program$program_sha256,!receipt$canonical_wire,!receipt$publication_changed,
+      identical(receipt$cleanup$transaction,'rolled_back'),identical(receipt$cleanup$connection,'disconnected'),
+      setequal(names(receipt$inventory),ids),setequal(names(receipt$metric_rows),ids),
+      length(receipt$inventory)==142L,receipt$rows==as.character(seen),
+      runtime$observed_schema_sha256==snap$schema_sha256,receipt$observed_schema_sha256==snap$schema_sha256,
+      identical(wire(runtime$capabilities),wire(receipt$capabilities)),
+      runtime$started_at>=before,runtime$started_at<=runtime$ended_at,runtime$ended_at<=after,
+      identical(receipt$generation$started_at,runtime$started_at),identical(receipt$generation$ended_at,runtime$ended_at))
+    for(mid in ids) {
+      inventory<-receipt$inventory[[mid]]
+      stopifnot(identical(inventory$rows,as.character(length(captured[[mid]]))),
+        identical(receipt$metric_rows[[mid]],inventory$rows))
+      if(!mid%in%metadataIds) {
+        expected<-snap$datasets[[mid]][names(inventory)]
+        if(!identical(wire(inventory),wire(expected)))stop(paste('Executed inventory differs:',mid,strategy),call.=FALSE)
+      }
       expected<-lapply(snap$rows[[mid]],function(r)r[c('row_kind','dimensions','values','state','reason_code')])
-      if(!identical(canonical(got),canonical(expected)))stop(paste('Rendered output differs:',mid,strategy),call.=FALSE)
+      if(mid=='core.source.passport')expected[[1]]$values$generation<-o(started_at=runtime$started_at,ended_at=runtime$ended_at)
+      if(mid!='core.execution.timing'&&!identical(canonical(captured[[mid]]),canonical(expected)))
+        stop(paste('Executed output differs:',mid,strategy),call.=FALSE)
     }
-    # A changed declaration fails before materialization in a future executor.
-    declaration<-program$steps[[which(vapply(program$steps,function(s)s$id=='source.declaration',TRUE))]]
-    stopifnot(identical(one(declaration$sql),'true'))
-    if(any(columns$table=='care_site'&columns$column=='place_of_service_concept_id')) {
-      stale<-columns[!(columns$table=='care_site'&columns$column=='place_of_service_concept_id'),,drop=FALSE]
-      staleProgram<-renderCharacterizationSql(schema,sourceId,version,stale)
-      staleGuard<-Filter(function(s)s$id=='source.declaration',staleProgram$steps)[[1]]
-      stopifnot(identical(one(staleGuard$sql),'false'))
+    timing<-captured[['core.execution.timing']]
+    stopifnot(length(timing)==length(runtime$timings),!anyDuplicated(vapply(timing,function(r)wire(r$dimensions),'')))
+    for(row in timing) {
+      matches<-Filter(function(t)identical(t$operation_id,row$dimensions$operation_id)&&identical(t$phase,row$dimensions$phase),runtime$timings)
+      stopifnot(length(matches)==1L,identical(row$values$duration_ms,matches[[1]]$duration_ms),
+        all(vapply(row$values$telemetry,is.null,TRUE)),row$state=='computed',is.null(row$reason_code))
+      if(is.null(row$values$duration_ms))stopifnot(row$values$availability=='unavailable',
+        row$values$reason_code=='execution.not_started_at_metadata_capture') else
+        stopifnot(grepl('^(0|[1-9][0-9]*)$',row$values$duration_ms),row$values$availability=='measured',is.null(row$values$reason_code))
     }
+    telemetry<-receipt$telemetry
+    stopifnot(is.null(telemetry$engine$cpu_ms),is.null(telemetry$engine$peak_memory_bytes),
+      is.null(telemetry$engine$query_id),telemetry$engine$reason_code=='postgresql.jdbc_not_attributed')
+    for(name in c('client_process_cpu_ms','client_decode_visit_wall_ms','jdbc_submit_wait_ms','jdbc_fetch_wait_ms'))
+      stopifnot(is.character(telemetry[[name]]),length(telemetry[[name]])==1L,!is.na(telemetry[[name]]),
+        grepl('^(0|[1-9][0-9]*)$',telemetry[[name]]),as.numeric(telemetry[[name]])>=0)
+    stopifnot(as.numeric(telemetry$statement_count)>=length(program$steps),
+      grepl('^(0|[1-9][0-9]*)$',telemetry$stage_peak_bytes),as.numeric(telemetry$stage_peak_bytes)>0,
+      grepl('^(0|[1-9][0-9]*)$',receipt$bytes),as.numeric(receipt$bytes)>0)
   }
-  cat('RENDERED_142_PARITY ',version,' BOTH_EXACT_STRATEGIES\n',sep='')
-  invisible(TRUE)
+  cat('EXECUTED_142_PARITY ',version,' BOTH_EXACT_STRATEGIES_ACTUAL_RUNTIME_FACTS\n',sep='')
+  invisible(list(columns=columns))
 }
