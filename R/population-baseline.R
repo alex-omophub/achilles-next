@@ -100,10 +100,10 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
       stageTimings[[suffix]]<<-list(duration_ms=.run_ms(begin),sql_sha256=.hash(sql));tick();relation
     }
     source<-paste0('"',cdmSchema,'"')
-    person<-stage("person",paste0("SELECT person_id,year_of_birth,gender_concept_id,race_concept_id,ethnicity_concept_id FROM ",source,".person"),"person_id")
+    person<-stage("person",.population_source_sql("person",source),"person_id")
     integrity<-.store_decode(tx$one(paste0("SELECT jsonb_build_object('person_count',count(*)::text,'nonnull',count(person_id)::text,'distinct',count(DISTINCT person_id)::text)::text FROM ",person)))
     .population_need(integrity$person_count==integrity$nonnull&&integrity$person_count==integrity$distinct,"Null/duplicate PERSON identity; generation rolled back")
-    raw<-stage("raw",paste0("SELECT o.person_id,o.observation_period_start_date AS start_date,o.observation_period_end_date AS end_date,o.period_type_concept_id,CASE WHEN o.person_id IS NULL THEN 'null_person' WHEN NOT EXISTS(SELECT 1 FROM ",person," p WHERE p.person_id=o.person_id) THEN 'orphan_person' WHEN o.observation_period_start_date IS NULL OR o.observation_period_end_date IS NULL THEN 'null_endpoints' WHEN o.observation_period_start_date>o.observation_period_end_date THEN 'reversed_interval' ELSE 'valid' END AS reason FROM ",source,".observation_period o"))
+    raw<-stage("raw",.population_source_sql("raw",source,person))
     .population_need(tx$one(paste0("SELECT count(*)::text FROM ",raw," WHERE (start_date IS NOT NULL AND NOT(start_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31')) OR (end_date IS NOT NULL AND NOT(end_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'))"))=="0","Observation endpoints outside finite Gregorian contract; generation rolled back")
     intervals<-stage("union",.population_sql("union",list(raw=raw)),"person_id,start_date,end_date")
     people<-stage("people",.population_sql("people",list(person=person,intervals=intervals)))

@@ -13,6 +13,22 @@
 .domain_preflight <- function(tx,schema,measurement=FALSE) {
   assets<-.v2_assets();metadata<-list();tables<-c(vapply(assets$profile$domains[.domain_names(measurement)],function(d)d$table,""),"concept","measurement","care_site")
   tx$stream(paste0("SELECT jsonb_build_object('table',c.relname,'column',a.attname,'type',t.typname,'readable',has_schema_privilege(n.oid,'USAGE') AND has_column_privilege(c.oid,a.attname,'SELECT'))::text FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_attribute a ON a.attrelid=c.oid JOIN pg_type t ON t.oid=a.atttypid WHERE n.nspname=",.store_literal(schema)," AND c.relkind IN ('r','p','v','m','f') AND a.attnum>0 AND NOT a.attisdropped AND c.relname IN (",paste(vapply(tables,.store_literal,""),collapse=","),")"),function(text){m<-.store_decode(text);metadata[[paste(m$table,m$column,sep=".")]]<<-m})
+  column<-.domain_column_resolver(metadata)
+  needed<-unique(unlist(lapply(assets$metrics[.domain_ids(measurement)],function(m)setdiff(unlist(m$inputs),unlist(m$conditional_inputs)))))
+  needed<-setdiff(needed,c("care_site.care_site_id","care_site.place_of_service_concept_id"))
+  needed<-needed[!grepl("^(person|observation_period)[.]",needed)]
+  for(p in unique(c(needed,"concept.concept_id","concept.domain_id","measurement.person_id")))column(p)
+  for(table in setdiff(tables,"care_site")) {
+    target<-paste0('"',schema,'"."',table,'"')
+    .population_need(tx$one(paste0("SELECT (has_table_privilege(current_user,",.store_literal(target),",'INSERT,UPDATE,DELETE,TRUNCATE') OR has_any_column_privilege(current_user,",.store_literal(target),",'INSERT,UPDATE'))::text"))=="false","Use SELECT-only source privileges for domain generation")
+  }
+  conditional<-unique(unlist(lapply(assets$metrics[.domain_ids(measurement)],function(m)unlist(m$conditional_inputs))))
+  for(p in setdiff(conditional,c("care_site.care_site_id","care_site.place_of_service_concept_id")))column(p,FALSE)
+  list(metadata=metadata,column=column,hash=.hash(.json(metadata)))
+}
+
+# Pure declared/observed column validation; never connects.
+.domain_column_resolver <- function(metadata) {
   aliases<-list('visit_occurrence.admitted_from_concept_id'=c('visit_occurrence.admitted_from_concept_id','visit_occurrence.admitting_source_concept_id'),
     'visit_occurrence.discharged_to_concept_id'=c('visit_occurrence.discharged_to_concept_id','visit_occurrence.discharge_to_concept_id'))
   column<-function(probe,required=TRUE) {
@@ -26,15 +42,5 @@
     }
     sub(".*[.]","",present)
   }
-  needed<-unique(unlist(lapply(assets$metrics[.domain_ids(measurement)],function(m)setdiff(unlist(m$inputs),unlist(m$conditional_inputs)))))
-  needed<-setdiff(needed,c("care_site.care_site_id","care_site.place_of_service_concept_id"))
-  needed<-needed[!grepl("^(person|observation_period)[.]",needed)]
-  for(p in unique(c(needed,"concept.concept_id","concept.domain_id","measurement.person_id")))column(p)
-  for(table in setdiff(tables,"care_site")) {
-    target<-paste0('"',schema,'"."',table,'"')
-    .population_need(tx$one(paste0("SELECT (has_table_privilege(current_user,",.store_literal(target),",'INSERT,UPDATE,DELETE,TRUNCATE') OR has_any_column_privilege(current_user,",.store_literal(target),",'INSERT,UPDATE'))::text"))=="false","Use SELECT-only source privileges for domain generation")
-  }
-  conditional<-unique(unlist(lapply(assets$metrics[.domain_ids(measurement)],function(m)unlist(m$conditional_inputs))))
-  for(p in setdiff(conditional,c("care_site.care_site_id","care_site.place_of_service_concept_id")))column(p,FALSE)
-  list(metadata=metadata,column=column,hash=.hash(.json(metadata)))
+  column
 }

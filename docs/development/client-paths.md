@@ -13,6 +13,7 @@ not establish a laptop hardware minimum or qualify large-source performance.
 |---|---|---|
 | `planCharacterizationBatch`, `planCharacterizationRefresh` | Load pinned definitions; validate declared CDM 5.3/5.4/5.5, order modules and hash plans | No connection. PostgreSQL is fixed in the plan. These return requests and identities, **not executable full-profile SQL**. Source-derived bounds and schema capabilities are resolved during generation. |
 | `planAnalysisProfile` | Plan a separately installed registered profile | No connection; PostgreSQL only. The packaged `reference-person-v1` extension is separate from the 142-output core profile. |
+| `renderCharacterizationSql` | Compile a complete 142-output SQL program from declared columns, profile/CDM and exact operator; runtime metadata parameters remain explicit | No connection or JVM. Ordered PostgreSQL assertions/materializations and aggregate/metadata queries; requires a checked executor, real runtime facts and subsequent validation/approval. |
 | `generateCharacterizationCandidate`, `executeCharacterizationRefresh` | Validate requests, issue SQL, track states and stream exact aggregate strings into the result store | Core generation in `R/population-baseline.R` uses one owned JDBC transaction, metadata preflight and engine-local temporary PERSON/event/interval/report stages. Patient rows in those stages stay in the engine. Candidate creation does not itself approve a publication. |
 | `generatePopulationObservationBaseline`, `generateDomainBaseline`, `generateMeasurementBaseline`, `generateAnalysisProfile` | Generate reduced or registered-profile candidates; stream aggregate output | PostgreSQL source/results connection. Separate source/results schemas; not restricted to loopback or the tiny-fixture database. Core/reduced paths must not be confused with the old tracer. |
 | `initializeResultStore`, `registerAnalysisProfile`, `sealResultRelease`, `validateResultRelease` | Install/verify store definitions, run exact native validation and reconciliation | PostgreSQL result-store operations; no local database requirement. Core installation uses the `achillesnext` table prefix. |
@@ -55,9 +56,10 @@ cancellation, failure and publication behavior remain package responsibilities.
 
 ## Known gaps
 
-There is no public offline executable full-profile renderer or selectable dialect
-adapter yet. The internal physical primitives are an incomplete subset, despite
-being renderable offline. Execution currently builds SQL inside orchestration,
+The [offline renderer](offline-renderer.md) now emits the full core SQL program;
+there is no public executor for that artifact or selectable dialect adapter yet.
+Internal physical primitives remain an incomplete subset. Current candidate
+execution still builds SQL inside orchestration, sharing pure builders with the renderer,
 and client/driver/network/engine timings need clearer attribution. Streaming and
 page bounds need growing-inventory validation/export measurements; fixed caps
 alone are insufficient evidence. The full saved-result UI and browser-memory

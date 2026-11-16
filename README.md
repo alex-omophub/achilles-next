@@ -134,6 +134,10 @@ The [client-path inventory](docs/development/client-paths.md) distinguishes offl
 planning, external PostgreSQL execution and saved-result access. The optional
 [client footprint runner](docs/benchmark/client-footprint.md) measures current
 offline paths without a database or Docker.
+The [offline full-profile renderer](docs/development/offline-renderer.md),
+`renderCharacterizationSql()`, compiles all 142 core output queries from a declared
+column manifest without a connection or JVM. Runtime source/timing facts remain
+explicit parameters; execution, validation and approval are separate operations.
 The runnable [synthetic saved-result walkthrough](docs/development/saved-walkthrough.md)
 demonstrates discovery, exact saved filters and result-state interpretation, and
 exports the complete 142-report filter matrix without a database connection.

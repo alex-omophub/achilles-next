@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Independent metadata expectations and exact numeric parity for complete candidates."""
 import argparse
+from copy import deepcopy
 import hashlib
 from decimal import getcontext
 import json
@@ -121,6 +122,16 @@ def physical(case, version):
     return model
 
 
+def observation_tail_fixture(case):
+    """Observation extends beyond every recorded event, retaining zero calendar cells."""
+    extended=deepcopy(case);extended['id']='observation_tail'
+    for interval in extended['observation_period']:
+        start=interval.get('observation_period_start_date');end=interval.get('observation_period_end_date')
+        if start is not None and end is not None and start<=end:
+            interval['observation_period_end_date']='2020-05-31'
+    return extended
+
+
 def verify(snapshot, case):
     base = measurement.base
     rows = snapshot['rows']
@@ -201,9 +212,11 @@ def main():
     out = measurement.base.create_evidence_dir(a.output_dir)
     getcontext().prec = 256
     case = measurement.fixture();empty = dict(case,id='empty_source',person=[],events=[],observation_period=[])
-    cases = {case['id']:case,empty['id']:empty}
-    matrix = [(case,v) for v in (['5.3','5.4','5.5'] if a.full_matrix else ['5.3'])]+[(empty,'5.5')]
+    extended=observation_tail_fixture(case)
+    cases = {case['id']:case,empty['id']:empty,extended['id']:extended}
+    matrix = [(case,v) for v in (['5.3','5.4','5.5'] if a.full_matrix else ['5.3'])]+[(empty,'5.5'),(extended,'5.5')]
     (out/'input.json').write_text(json.dumps([dict(case=c['id'],version=v,**physical(c,v)) for c,v in matrix]))
+    subprocess.run(['Rscript','--vanilla','tests/tracer/characterization-render-offline.R',str(out/'input.json')],cwd=ROOT,check=True)
     if a.with_publication:
         cmd=[sys.executable,'tools/test_result_serving.py','--test-script','core-characterization','--state',str(a.state.resolve()),
              '--config',str(a.config.resolve()),'--output-dir',str(out),'--admin-host',a.admin_host,'--port',str(a.port)]

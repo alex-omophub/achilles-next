@@ -70,5 +70,8 @@
 }
 .domain_periods <- function(bounds) {
   start<-if(is.null(bounds$start))'NULL' else paste0('DATE ',.store_literal(bounds$start));end<-if(is.null(bounds$end))'NULL' else paste0('DATE ',.store_literal(bounds$end))
+  .domain_periods_sql(start,end)
+}
+.domain_periods_sql <- function(start,end) {
   paste0("WITH bounds AS (SELECT ",start,"::date AS lo,",end,"::date AS hi) SELECT 'full_scope'::text AS period_kind,NULL::date AS period_start,NULL::date AS period_end,FALSE AS full_calendar_period UNION ALL SELECT 'calendar_month',d::date,(d+INTERVAL '1 month - 1 day')::date,TRUE FROM bounds CROSS JOIN LATERAL generate_series(date_trunc('month',lo),date_trunc('month',hi),INTERVAL '1 month') d UNION ALL SELECT 'calendar_year',d::date,(d+INTERVAL '1 year - 1 day')::date,TRUE FROM bounds CROSS JOIN LATERAL generate_series(date_trunc('year',lo),date_trunc('year',hi),INTERVAL '1 year') d")
 }
