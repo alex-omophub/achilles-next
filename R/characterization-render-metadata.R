@@ -37,8 +37,10 @@
     "'vocabulary_release',",unknown,",'profile',",profile,",'coverage',",coverage,",'generation',jsonb_build_object('started_at',v->'started_at','ended_at',v->'ended_at'),",
     "'consistency',jsonb_build_object('within_run','single_repeatable_read','reusable',false,'reason_code','source.no_verified_release'))")
   numericInventory<-paste0("inventory AS (",inventory,")")
+  # Each metadata definition contributes one inventory row, even with no data.
+  ledgerCount<-paste0("(SELECT (COUNT(*)+",length(ids),")::text FROM inventory)")
   metadataInventory<-vapply(ids,function(mid)paste0("SELECT ",lit(mid),"::text AS metric_id,'computed'::text AS state,NULL::text AS reason_code,",
-    if(mid==ids[1])"'1'::text" else if(mid==ids[2])"(SELECT COUNT(*)::text FROM jsonb_object_keys(v->'capabilities'))" else if(mid==ids[3])"'142'::text" else "jsonb_array_length(v->'timings')::text",
+    if(mid==ids[1])"'1'::text" else if(mid==ids[2])"(SELECT COUNT(*)::text FROM jsonb_object_keys(v->'capabilities'))" else if(mid==ids[3])ledgerCount else "jsonb_array_length(v->'timings')::text",
     " AS rows,jsonb_build_object('state','supported','reason_code',NULL) AS conditional_support,",coverage," AS completeness FROM facts"),"")
   fullInventory<-paste0("WITH facts AS (SELECT ?::jsonb AS v),",numericInventory,",complete_inventory AS (SELECT * FROM inventory UNION ALL ",paste(metadataInventory,collapse=" UNION ALL "),") ")
   if(withInventory)return(paste0(fullInventory,"SELECT * FROM complete_inventory"))

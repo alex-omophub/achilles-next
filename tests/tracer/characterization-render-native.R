@@ -1,3 +1,25 @@
+# Metadata cardinalities must follow the inventory, including metadata-only input.
+testCharacterizationRenderMetadata <- function(query) {
+  f<-function(n)get(n,asNamespace('AchillesNext'));o<-f('.object')
+  batch<-planCharacterizationBatch('cdm','fixture:metadata-inventory','5.5')
+  ids<-f('.core_metadata_ids')();facts<-o(capabilities=o(),timings=list())
+  for(n in c(0L,1L,3L,138L,139L)) {
+    inventory<-paste0("SELECT 'fixture.metric.'||i::text AS metric_id,'computed'::text AS state,",
+      "NULL::text AS reason_code,'0'::text AS rows,'{}'::jsonb AS conditional_support,",
+      "'{}'::jsonb AS completeness FROM generate_series(1,",n,") i")
+    inventorySql<-f('.render_metadata_queries')(batch,inventory,TRUE)
+    ledgerSql<-f('.render_metadata_queries')(batch,inventory)[[ids[3]]]
+    counts<-query(paste0("SELECT jsonb_build_object('actual',COUNT(*)::text,'declared',",
+      "MAX(rows) FILTER(WHERE metric_id=",f('.store_literal')(ids[3]),"))::text FROM (",inventorySql,") inventory"),facts)
+    ledgerRows<-query(paste0("SELECT COUNT(*)::text FROM (",ledgerSql,") ledger"),facts)
+    stopifnot(length(counts)==1L,length(ledgerRows)==1L)
+    counts<-f('.store_decode')(counts[[1]])
+    stopifnot(identical(counts$declared,counts$actual),identical(counts$actual,ledgerRows[[1]]),
+      identical(counts$actual,as.character(n+length(ids))))
+  }
+  cat('RENDERED_METADATA_LEDGER_COUNTS_FOLLOW_INVENTORY_0_1_3_138_139_OK\n')
+}
+
 # Small aggregate-only differential proof, called before source access is denied.
 # The test driver owns its JDBC transaction; it is not a production execution API.
 testCharacterizationRender <- function(details,schema,sourceId,version,snap) {
@@ -30,6 +52,7 @@ testCharacterizationRender <- function(details,schema,sourceId,version,snap) {
     rows
   }
   one<-function(sql){v<-query(sql);stopifnot(length(v)==1L);v[[1]]}
+  testCharacterizationRenderMetadata(query)
   columns<-query(paste0("SELECT jsonb_build_object('table',c.relname,'column',a.attname,'type',t.typname,'readable',has_schema_privilege(n.oid,'USAGE') AND has_column_privilege(c.oid,a.attname,'SELECT'))::text FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace JOIN pg_attribute a ON a.attrelid=c.oid JOIN pg_type t ON t.oid=a.atttypid WHERE n.nspname=",f('.store_literal')(schema)," AND c.relkind IN ('r','p','v','m','f') AND a.attnum>0 AND NOT a.attisdropped"))
   columns<-do.call(rbind,lapply(columns,function(x)as.data.frame(f('.store_decode')(x),stringsAsFactors=FALSE)))
   passport<-snap$rows[['core.source.passport']][[1]]$values
