@@ -1,0 +1,37 @@
+docs/development/compiled-candidate.md
+  s_895f6ebe145fd3::t_40dd37bb79611d 51-87
+tests/test_characterization_candidate_matrix.py
+  s_3e206b4a2cf4c3::t_1aa8810ccf6fd0 51-60
+tests/tracer/characterization-candidate-sql-native.R
+  s_3e206b4a2cf4c3::t_5897b9660a94aa 6,13-15,18,45-50,192-193,206-209,211
+tests/tracer/characterization-candidate-sql-publication.R
+  s_895f6ebe145fd3::t_e610e8390b12a8 1-136
+tools/test_characterization_candidate_sql.py
+  s_3e206b4a2cf4c3::t_f5f8b9cdae7fbd 129,143-145,148,165-175
+tools/test_core_characterization.py
+  s_3e206b4a2cf4c3::t_2fe2f2f1aa0733 173,177-178
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d41ef6a4322eaf7e79ca15b16f6afce4d107ef57",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
