@@ -24,6 +24,9 @@ and bounded prefix search; names remain unavailable in original 2.0.0 exports.
 An opt-in [saved-inventory experiment](docs/development/inventory-proof.md) exercises
 million-entry admission and bounded artifact/PostgreSQL reads, cancellation and
 instance isolation. Routine CI runs only its small smoke fixture.
+[Bounded validation scratch](docs/development/bounded-validation.md) describes the
+shared logical byte/file limits for complete artifact admission and publication,
+cooperative cancellation and storage-failure handling.
 
 ## Development status
 

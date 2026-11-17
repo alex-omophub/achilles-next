@@ -129,6 +129,46 @@ local({
   fail(function()publishResultRelease(details,schema,release,file.path(root,'denied'),'fixture-restricted','denied',allow,function(candidate)FALSE,'1'))
   fail(function()publishResultRelease(details,schema,release,file.path(root,'stale'),'fixture-restricted','stale',allow,function(candidate)TRUE,'0'))
   stopifnot(!dir.exists(file.path(root,'denied')),!dir.exists(file.path(root,'stale')),q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID==before)
+  # Both native artifact admission passes share the caller's scratch control.
+  # Fail before approval and after tentative publication insertion, respectively;
+  # no export, page/publication row or current-pointer change may survive.
+  originalDirectory<-f('.v2_directory');originalIO<-f('.v2_scratch_io')
+  on.exit({assignInNamespace('.v2_directory',originalDirectory,ns='AchillesNext');assignInNamespace('.v2_scratch_io',originalIO,ns='AchillesNext')},add=TRUE)
+  publicationCount<-q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_publication'))$N
+  pageCount<-q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_page_object'))$N
+  leftovers<-function()sort(Sys.glob(file.path(root,'.achilles-export-*')))
+  priorFiles<-leftovers()
+  for(pass in 1:2)for(kind in c('byte','io')) {
+    admissions<-0L;approvalCalls<-0L;fired<-FALSE
+    requested<-if(pass==1L&&kind=='byte')0 else 1024^2
+    assignInNamespace('.v2_directory',function(directory,visit=function(descriptor,bytes)NULL,check=function()NULL,maxScratchBytes=1024^3) {
+      admissions<<-admissions+1L;stopifnot(identical(maxScratchBytes,requested))
+      if(admissions==pass) {
+        if(kind=='byte')maxScratchBytes<-0 else {
+          assignInNamespace('.v2_scratch_io',function(work) {
+            symbols<-all.names(body(work))
+            if(!fired&&all(c('writeBin','data')%in%symbols)) {
+              fired<<-TRUE;return(originalIO(function(){work();warning('PRIVATE_DISK_PATH_SENTINEL')}))
+            }
+            originalIO(work)
+          },ns='AchillesNext')
+          on.exit(assignInNamespace('.v2_scratch_io',originalIO,ns='AchillesNext'))
+        }
+      }
+      originalDirectory(directory,visit,check,maxScratchBytes)
+    },ns='AchillesNext')
+    destination<-file.path(root,paste0('scratch-',pass,'-',kind))
+    error<-tryCatch({publishResultRelease(details,schema,release,destination,'fixture-restricted','scratch-fault',allow,
+      function(candidate){approvalCalls<<-approvalCalls+1L;TRUE},'1',maxScratchBytes=requested);NULL},error=identity)
+    assignInNamespace('.v2_directory',originalDirectory,ns='AchillesNext')
+    stopifnot(inherits(error,'achillesnext_scratch_error'),error$code==if(kind=='byte')'byte_limit' else 'io_failure',
+      admissions==pass,approvalCalls==pass-1L,!dir.exists(destination),identical(priorFiles,leftovers()),
+      q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID==before,
+      q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_publication'))$N==publicationCount,
+      q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_page_object'))$N==pageCount)
+    if(kind=='io')stopifnot(fired)
+  }
+  cat('BOTH_ADMISSION_SCRATCH_LIMIT_AND_IO_FAILURE_PRESERVE_CURRENT_AND_EXPORT_OK\n')
   # Fail immediately before COMMIT, after pages, export and tentative CAS.
   # Error and cancellation must roll back the pointer and remove our export.
   originalCommit <- f('.store_commit')

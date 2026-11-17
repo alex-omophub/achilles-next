@@ -151,7 +151,8 @@
 #' @param institutionalPolicy Function approving the exact candidate descriptor and policy.
 #' @param expectedRevision Exact current revision string, or NULL to prepare without promotion.
 #' @export
-publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,exportDir,accessScopeId,approvalId,policy,institutionalPolicy,expectedRevision=NULL,savedTerminology=NULL,cancel=function()FALSE) {
+publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,exportDir,accessScopeId,approvalId,policy,institutionalPolicy,expectedRevision=NULL,savedTerminology=NULL,cancel=function()FALSE,maxScratchBytes=1024^3) {
+  .v2_scratch_limit(maxScratchBytes)
   .nv_need(.string(exportDir) && !file.exists(exportDir),"Export directory must be new")
   .nv_need(.string(accessScopeId) && grepl("^[a-z0-9_.:-]{1,128}$",accessScopeId),"Invalid audience identifier")
   .nv_need(.string(approvalId) && grepl("^[A-Za-z0-9_.:-]{1,128}$",approvalId),"Invalid approval identifier")
@@ -176,7 +177,7 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
     validated <- .store_validate(tx,releaseId);.nv_need(validated$context$state=="validated","Validate the release before publication")
     .term_check(cancel)
     pub <- .store_new_uuid();root <- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel)
-    admittedRoot<-.v2_directory(stage,check=function().term_check(cancel))
+    admittedRoot<-.v2_directory(stage,check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)
     candidate <- .object(publication_id=pub,release_id=releaseId,source_id=validated$context$source_id,access_scope_id=accessScopeId,
       approval_id=approvalId,policy=policy,root=root)
     if(!is.null(savedTerminology))candidate<-c(candidate,.object(contract_version="2.1.0",saved_terminology=admittedRoot$saved_terminology))
@@ -190,7 +191,7 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
       .term_check(cancel)
       hex <- paste(sprintf("%02x",as.integer(bytes)),collapse="")
       tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_page_object VALUES (",.store_uuid(pub),",",.store_literal(desc$sha256),",",.store_literal(desc$kind),",decode('",hex,"','hex'))"))
-    },check=function().term_check(cancel))
+    },check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)
     tx$execute(paste0("UPDATE ",tx$schema,".achillesnext_publication SET state='ready',approved_at=now() WHERE publication_id=",.store_uuid(pub)))
     .nv_need(!file.exists(destination) && suppressWarnings(file.rename(stage,destination)),"Cannot finalize approved export")
     ownsDestination <<- TRUE
@@ -200,6 +201,7 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
     list(publication_id=pub,root=root,revision=revision,export_dir=destination)
   },isolation=2L),error=function(e) {
     if(ownsDestination && dir.exists(destination)) unlink(destination,recursive=TRUE)
+    if(inherits(e,"achillesnext_scratch_error"))stop(e)
     if(grepl("Current publication conflict",conditionMessage(e),fixed=TRUE)) stop("Current publication conflict",call.=FALSE)
     stop("Result publication failed; prior current preserved",call.=FALSE)
   })
