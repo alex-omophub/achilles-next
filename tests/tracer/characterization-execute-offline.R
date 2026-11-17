@@ -30,7 +30,10 @@ local({
     function(p){p$steps[[1]]$sql<-'SELECT pg_sleep(100)';p},
     function(p){p$steps[[1]]$expected<-'false';p},
     function(p){p$outputs[['core.source.passport']]$parameters<-list();p},
-    function(p){p$declarations$columns_sha256<-strrep('0',64);p})
+    function(p){p$declarations$columns_sha256<-strrep('0',64);p},
+    function(p){p$source_audit$sql<-'SELECT pg_sleep(100)';p},
+    function(p){p$source_audit$kind<-'derived_report_totals';p},
+    function(p){p$source_audit<-NULL;p})
   for(change in changes) {
     bad<-rehash(change(program))
     expect(function()executeCharacterizationSql(NULL,bad,function(...)NULL),'execution.invalid_program')
@@ -64,6 +67,30 @@ local({
   expect(function()execute(details,program,function(...)NULL,maxElapsedSeconds=1),'execution.elapsed_limit')
   stopifnot(attempts==0L)
   cat('EXECUTOR_REHASHED_TAMPERING_LIMITS_PRECONNECT_CANCELLATION_AND_DEADLINE_OK\n')
+
+  # Fixed-shape conservation metadata preserves exact count strings above 2^53.
+  o<-f('.object');audit<-o(population=o(person_count='9007199254740993',nonnull='9007199254740993',
+    distinct='9007199254740993',raw_observation_count='7',merged_interval_count='3'),
+    domains=stats::setNames(lapply(f('.domain_names')(TRUE),function(domain)
+      o(raw='8',linked='6',observed='4',start='0001-01-01',end='9999-12-31')),f('.domain_names')(TRUE)))
+  checked<-f('.sql_execution_audit_totals')
+  stopifnot(identical(wire(checked(wire(audit))),wire(audit)))
+  zero<-audit;zero$population<-o(person_count='0',nonnull='0',distinct='0',raw_observation_count='0',merged_interval_count='0')
+  zero$domains<-lapply(zero$domains,function(d)o(raw='0',linked='0',observed='0',start=NULL,end=NULL))
+  stopifnot(identical(wire(checked(wire(zero))),wire(zero)))
+  mutations<-list(
+    function(a){a$extra<-'x';a},function(a){a$population$person_count<-'01';a},
+    function(a){a$population$nonnull<-'0';a},function(a){a$population$distinct<-NULL;a},
+    function(a){a$population$merged_interval_count<-'8';a},function(a){a$domains<-a$domains[-1];a},
+    function(a){a$domains$other<-a$domains[[1]];a},function(a){a$domains[[1]]$raw<-8;a},
+    function(a){a$domains[[1]]$linked<-'9';a},function(a){a$domains[[1]]$observed<-'7';a},
+    function(a){a$domains[[1]]$raw<-'0';a},function(a){a$domains[[1]]$start<-NULL;a},
+    function(a){a$domains[[1]]$end<-'0000-01-01';a},
+    function(a){a$domains[[1]]$start<-'2025-02-01';a$domains[[1]]$end<-'2025-01-31';a},
+    function(a){a$population$person_count<-'0';a$population$nonnull<-'0';a$population$distinct<-'0';a})
+  for(change in mutations)expect(function()checked(wire(change(audit))),'execution.invalid_metadata')
+  for(text in c('not JSON','null','[]'))expect(function()checked(text),'execution.invalid_metadata')
+  cat('EXECUTOR_INDEPENDENT_SOURCE_AUDIT_FIXED_SHAPE_EXACT_COUNTS_AND_REJECTIONS_OK\n')
 
   # Faults at the public executor's cleanup seam need no server or JVM. The
   # actual failure path submits its first SQL through the real transport, while
@@ -112,7 +139,7 @@ local({
       scope$.core_capabilities<-function(...)list(schema_sha256=strrep('0',64),values=list())
       scope$.sql_execution_transport<-function(...)list(
         execute=function(...){workCalls<<-workCalls+1L;invisible(NULL)},
-        stream=function(...)invisible(NULL),telemetry=function()f('.object')())
+        one=function(...)wire(zero),stream=function(...)invisible(NULL),telemetry=function()f('.object')())
       environment(execute)<-scope
     }
     result<-tryCatch(execute(details,program,function(...){visits<<-visits+1L}),error=identity,interrupt=identity)

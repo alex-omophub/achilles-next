@@ -57,6 +57,7 @@ testCharacterizationRender <- function(details,schema,sourceId,version,snap) {
   columns<-do.call(rbind,lapply(columns,function(x)as.data.frame(f('.store_decode')(x),stringsAsFactors=FALSE)))
   canonical<-function(rows)sort(vapply(rows,wire,''),method='radix')
   metadataIds<-f('.core_metadata_ids')();ids<-names(f('.v2_assets')()$metrics)
+  source_audits<-list()
   for(strategy in c('weighted','reference')) {
     program<-renderCharacterizationSql(schema,sourceId,version,columns,numericStrategy=strategy,
       stagePrefix=paste0('achillesnext_render_',strategy))
@@ -69,6 +70,8 @@ testCharacterizationRender <- function(details,schema,sourceId,version,snap) {
       stopifnot(seen<=100000L,capturedBytes<=64*1024^2)
       captured[[mid]][[length(captured[[mid]])+1L]]<<-row[c('row_kind','dimensions','values','state','reason_code')]
     },maxAggregateRows=100000L,maxAggregateBytes=64*1024^2,fetchSize=if(strategy=='weighted')1L else 128L)
+    testCharacterizationExecuteAudit(receipt)
+    source_audits[[strategy]]<-receipt$audit_totals
     after<-f('.stamp')();runtime<-receipt$runtime_facts
     stopifnot(receipt$kind=='characterization_execution_receipt',receipt$state=='succeeded',
       receipt$program_sha256==program$program_sha256,!receipt$canonical_wire,!receipt$publication_changed,
@@ -113,5 +116,5 @@ testCharacterizationRender <- function(details,schema,sourceId,version,snap) {
       grepl('^(0|[1-9][0-9]*)$',receipt$bytes),as.numeric(receipt$bytes)>0)
   }
   cat('EXECUTED_142_PARITY ',version,' BOTH_EXACT_STRATEGIES_ACTUAL_RUNTIME_FACTS\n',sep='')
-  invisible(list(columns=columns))
+  invisible(list(columns=columns,source_audits=source_audits))
 }

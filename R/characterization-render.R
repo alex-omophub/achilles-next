@@ -42,7 +42,8 @@
 #' @param numericStrategy Exact weighted or reference measurement summaries.
 #' @param dialect Currently only postgresql is implemented.
 #' @param stagePrefix Session-private table prefix, starting with achillesnext_.
-#' @return Ordered SQL steps, assertions, 142 restricted output queries and
+#' @return Ordered SQL steps, assertions, a fixed physical-input audit query,
+#'   142 restricted output queries and
 #'   explicit runtime metadata parameter requirements. Does not execute or publish.
 #' @export
 renderCharacterizationSql <- function(cdmSchema,sourceId,declaredCdmVersion,sourceColumns,
@@ -143,7 +144,7 @@ renderCharacterizationSql <- function(cdmSchema,sourceId,declaredCdmVersion,sour
     transaction=.object(isolation="repeatable_read",read_only=FALSE,minimum_server_version_num=120000L,temporary_tables="on_commit_drop",source_privileges="select_only",publication_changed=FALSE),
     execution=.object(state="not_executed",adapter_implemented=TRUE,source_accessed=FALSE,requires_assertions=TRUE,
       limits="executeCharacterizationSql enforces configured query, stage and aggregate transport limits; rendering itself enforces no execution budgets"),
-    steps=steps,inventory_sql=.render_metadata_queries(batch,inventory,TRUE),inventory_parameters=list("runtime_facts"),outputs=queries,
+    steps=steps,source_audit=.render_source_audit(person,raw,intervals,domainTables),inventory_sql=.render_metadata_queries(batch,inventory,TRUE),inventory_parameters=list("runtime_facts"),outputs=queries,
     runtime_parameters=.object(runtime_facts=.object(sql_type="jsonb",fields=as.list(c("observed_schema_sha256","capabilities","started_at","ended_at","timings")),
       provenance="Actual execution observations, never filled by compilation; validate before binding metadata queries")),
     care_reason_sql=paste0("SELECT ",careReasonSql," AS reason_code"))

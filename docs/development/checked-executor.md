@@ -65,6 +65,28 @@ floating-point conversion. Metadata uses actual observed schema/capabilities,
 generation timestamps and captured timings. These facts are driver-bound JSONB
 parameters; no offline declaration is reported as an observed source identity.
 
+The receipt also contains `audit_totals`, collected before callback delivery from
+independently staged physical inputs. `population` contains `person_count`,
+`nonnull`, `distinct`, `raw_observation_count` and `merged_interval_count`.
+`domains` contains all nine domain names, each with `raw`, `linked`, `observed`,
+`start` and `end`, matching the existing producer's conservation inputs. Counts
+are canonical integer strings. Domain bounds cover finite valid event dates,
+including unlinked rows; both bounds are NULL when none exist. Raw counts include
+unlinked and invalid-date records. These totals are not inferred from report
+aggregates and are not additional report outputs or approved export content.
+
+The compiler's fixed `source_audit` query and descriptor participate in exact
+program reconstruction. The executor reads its single JSON row through the same
+pretransmission payload guards and the separate bounded metadata budget. Required
+source tables/columns must still be readable; missing required inputs fail rather
+than being reported as zero. Optional unsupported field analyses retain their
+explicit capability/inventory states while physical input totals remain available.
+No conservation check against a persisted candidate is performed by this
+source-only API; that requires a later consumer of the completed receipt.
+A fixed metadata payload bounds client transfer; computing counts, distinct
+identities and date bounds scans the staged inputs in the SQL engine. Tiny-fixture
+parity does not establish large-source engine performance.
+
 The callback return value is ignored; use `check` or raise an error or interrupt
 to cancel. Signaling a warning or an unrelated condition does not cancel.
 Callbacks should stage data until success. A callback can receive some rows before

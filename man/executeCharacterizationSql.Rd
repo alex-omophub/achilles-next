@@ -53,6 +53,22 @@ success receipt. The executor does not read or modify a result-store
 publication, write a candidate, create canonical row keys or denominator edges,
 validate a complete wire artifact, approve output or promote a publication.
 
+Before callback delivery, a fixed source-audit query collects conservation inputs
+from the independently staged PERSON, raw observation-period, merged valid interval
+and nine classified domain relations. \code{audit_totals$population} contains
+\code{person_count}, \code{nonnull}, \code{distinct},
+\code{raw_observation_count} and \code{merged_interval_count}.
+\code{audit_totals$domains} maps each domain to \code{raw}, \code{linked},
+\code{observed}, \code{start} and \code{end}. Counts are canonical integer
+strings; finite valid event-date bounds are NULL together when absent. Raw rows
+include unlinked and invalid-date records; finite bounds include unlinked rows.
+These are the existing producer's source conservation inputs, not sums of report
+aggregates. The single JSON audit row uses the same pretransmission guards,
+per-row cap, timeout and separate metadata transfer budget. Required missing
+inputs fail instead of becoming zero; optional unsupported report capabilities
+retain their explicit states. The source-only executor does not reconcile a
+persisted candidate or approve these restricted audit totals for export.
+
 Callbacks receive staging intermediates, with exact numeric strings normalized
 without floating-point conversion. Callback code can retain rows or perform
 external writes; that memory and those side effects are under the caller's control.
@@ -95,7 +111,8 @@ actual pipeline observations, not isolated engine execution time.
 }
 \value{A \code{characterization_execution_receipt} with state succeeded,
 program/profile/source identities, actual observed schema and capabilities,
-generation timestamps, complete inventory, the \code{runtime_facts} bound to
+generation timestamps, independent \code{audit_totals}, complete inventory,
+the \code{runtime_facts} bound to
 metadata SQL, canonical output row/byte counts, per-metric counts and bounded
 telemetry. Its cleanup records rollback/disconnect; \code{canonical_wire} and
 \code{publication_changed} are FALSE. No aggregate row collection is retained.}
