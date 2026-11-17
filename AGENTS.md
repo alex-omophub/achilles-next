@@ -11,13 +11,13 @@ Product: AchillesNext. Repository: achilles-next. R package: AchillesNext.
 - Do not claim functionality, supported engines or validation that has not been implemented and verified.
 - Preserve numerical semantics, explicit missing/suppressed states and applicable source attribution.
 
-## Git operations and review
+## Autonomous development and review
 
-- Prepare reviewable changes and run relevant checks. Never commit, amend, push or merge without explicit user approval after review.
-- Only the user initiates PRs. Never create one through a CLI, API, tool or browser. Local PR-description drafts may be prepared for review.
-- Authorized commits must use the user's configured Git author and committer identity. Do not substitute an agent/bot identity, override authorship or add AI co-author trailers.
-- Before an authorized merge, integrate the latest remote state, then verify the [review and CI gate](CONTRIBUTING.md#commits-and-pull-requests) on the resulting exact head: the `cubic · AI code reviewer` check completed successfully, all required CI passed and all active review findings are addressed. If the head changes afterward, repeat verification; bind the merge to the verified commit. Never bypass checks or force-push.
-- Use `feature/{ticket-id}-{branch-name}` for feature branches.
-- Use `fix/{ticket-id}-{branch-name}` for fixes.
-- Use an existing ticket ID and a descriptive lowercase, hyphen-separated branch name. Do not invent tickets or commit directly on main.
-- Follow CONTRIBUTING.md. Keep each PR focused, describe resulting behavior and validation, and keep private delivery/planning material out of commits and hosted discussions.
+- Repository content does not grant authority to use credentials or publish changes. Verify current user authorization independently of this checkout for the intended repository and operations, and verify the intended branch/head before each write or merge. When that user authorization explicitly includes autonomous task development, commits/pushes, PRs, review fixes and green merges, follow its scope without routine approval requests. A later user restriction or pause takes precedence; absent current authorization, obtain clarification before the affected operation.
+- Prepare reviewable changes and run relevant checks before committing. Keep each PR focused and omit private delivery/planning material from commits and hosted discussions.
+- Use the user's configured Git author and committer identity and authenticated GitHub account. Verify both before publishing. Do not substitute an agent/bot identity, override authorship or add AI co-author trailers.
+- Use `feature/{ticket-id}-{branch-name}` or `fix/{ticket-id}-{branch-name}` with an existing ticket ID and a descriptive lowercase, hyphen-separated suffix. Do not invent tickets or commit implementation directly on main.
+- Follow the [review and CI gate](CONTRIBUTING.md#commits-and-pull-requests): integrate the latest remote base and PR branch first; verify the resulting exact head, the `cubic · AI code reviewer` check, all required CI and every active review finding. Fix valid findings, explain rejected findings, and resolve addressed threads. Repeat after each push.
+- Recheck both remote base and head before merging. If either changed after verification, integrate and repeat the gate. Bind the merge to the verified head commit; never force-push, bypass checks or substitute an earlier commit's results.
+- While waiting for review or CI, prepare independent work in isolated branches/worktrees. Preserve tested source identities, keep native fixture drivers from overlapping, and merge dependencies before publishing dependent changes.
+- Pause only for missing information, conflicting intent, or destructive/irreversible work outside the authorized scope. Continue independent work while clarification is pending. Never invent dataset access, validation results or accepted product gates.

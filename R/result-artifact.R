@@ -11,21 +11,37 @@
   }
   invisible(NULL)
 }
-.v2_directory <- function(directory, visit=function(descriptor,bytes)NULL,check=function()NULL) {
+.v2_directory <- function(directory, visit=function(descriptor,bytes)NULL,check=function()NULL,maxScratchBytes=1024^3) {
+  budget<-.v2_scratch_budget(maxScratchBytes)
   .nv_need(is.function(check));check()
   rootDir <- normalizePath(directory,mustWork=TRUE)
   .nv_need(dir.exists(rootDir) && !nzchar(Sys.readlink(directory)),"Artifact must be a directory")
-  scratch <- tempfile("achilles-validate-");.nv_need(dir.create(scratch,mode="0700"));on.exit(unlink(scratch,recursive=TRUE))
-  dir.create(file.path(scratch,"seen"),mode="0700")
-  dir.create(file.path(scratch,"groups"),mode="0700")
-  rows<-.v2_spool(file.path(scratch,"rows"),check);on.exit(rows$close(),add=TRUE,after=FALSE)
-  concepts<-.v2_spool(file.path(scratch,"concepts"),check);on.exit(concepts$close(),add=TRUE,after=FALSE)
+  scratch <- tempfile("achilles-validate-")
+  ownsScratch<-FALSE;rows<-NULL;concepts<-NULL
+  on.exit(.v2_scratch_cleanup(list(function()if(!is.null(rows))rows$close(),
+    function()if(!is.null(concepts))concepts$close(),
+    function()if(ownsScratch){
+      .v2_scratch_io(function().nv_need(unlink(scratch,recursive=TRUE)==0L&&!dir.exists(scratch)))
+      live<-budget$inspect();budget$release(live$bytes,live$files)
+    })))
+  # Register cleanup before mkdir; claim only a successfully created directory
+  # before allowing pending asynchronous interrupts to be delivered.
+  suspendInterrupts({
+    .v2_scratch_io(function().nv_need(dir.create(scratch,mode="0700")))
+    ownsScratch<-TRUE;allowInterrupts(Sys.sleep(0))
+  })
+  .v2_scratch_io(function(){.nv_need(dir.create(file.path(scratch,"seen"),mode="0700"));.nv_need(dir.create(file.path(scratch,"groups"),mode="0700"))})
+  # Keep constructor return and ownership assignment atomic to asynchronous
+  # interrupts; admission cleanup can then close every allocated spool.
+  suspendInterrupts({rows<-.v2_spool(file.path(scratch,"rows"),check,budget);allowInterrupts(Sys.sleep(0))})
+  suspendInterrupts({concepts<-.v2_spool(file.path(scratch,"concepts"),check,budget);allowInterrupts(Sys.sleep(0))})
   termKey<-function(key).v2_hash(charToRaw(key))
   suppressed <- list();captureTotals <- list()
   groupPath <- function(mid,key)file.path(scratch,"groups",mid,.v2_hash(.v2_bytes(key)))
+  groupRead<-function(path).v2_scratch_io(function()readLines(path,warn=FALSE))
   accumulate <- function(mid,key,value) {
-    path <- groupPath(mid,key);old <- if(file.exists(path))readLines(path,warn=FALSE) else "0"
-    writeLines(.nv_add(old,value),path)
+    path <- groupPath(mid,key);old <- if(file.exists(path))groupRead(path) else "0"
+    .v2_scratch_file(path,charToRaw(paste0(.nv_add(old,value),"\n")),budget)
   }
   safe <- function(path,limit) {
     check();bytes<-.v2_safe_file(rootDir,path,limit);check();bytes
@@ -41,7 +57,7 @@
     check()
     .v2_descriptor_check(d)
     mark <- file.path(scratch,"seen",d$sha256);.nv_need(!file.exists(mark),"Repeated page or cycle")
-    .nv_need(file.create(mark));raw <- safe(paste0("objects/",d$sha256,".json"),.v2_limit(d$kind))
+    .v2_scratch_file(mark,raw(),budget);raw <- safe(paste0("objects/",d$sha256,".json"),.v2_limit(d$kind))
     doc <- .v2_verified_bytes(raw,d)
     common <- c("contract_version","publication_id","release_id","source_id","profile_id","profile_revision","profile_sha256","access_scope_id")
     if(is.null(context)) {
@@ -51,7 +67,7 @@
       .store_uuid(doc$publication_id);.store_uuid(doc$release_id)
       assets <<- .profile_context(doc)
       counts <<- stats::setNames(rep(list("0"),length(assets$metrics)),names(assets$metrics));sums <<- counts
-      for(mid in names(assets$metrics)) dir.create(file.path(scratch,"groups",mid),mode="0700")
+      for(mid in names(assets$metrics)) .v2_scratch_io(function().nv_need(dir.create(file.path(scratch,"groups",mid),mode="0700")))
     }
     .nv_need(identical(.json(doc[common]),.json(context)) && doc$kind==d$kind,"Page context mismatch")
     visit(d,raw)
@@ -236,7 +252,7 @@
       for(pair in list(c(mid,cap),c(cap,mid))) .v2_directory_entries(file.path(scratch,"groups",pair[[1]]),function(key) {
         check()
         a <- file.path(scratch,"groups",pair[[1]],key);b <- file.path(scratch,"groups",pair[[2]],key)
-        .nv_need(file.exists(b)&&identical(readLines(a,warn=FALSE),readLines(b,warn=FALSE)),"Projected record partition does not reconcile")
+        .nv_need(file.exists(b)&&identical(groupRead(a),groupRead(b)),"Projected record partition does not reconcile")
       })
     }
   }
@@ -250,7 +266,13 @@
 }
 #' Validate an exact-byte approved artifact without Node
 #' @param bundleDir Directory containing publication.json and objects.
+#' @param maxScratchBytes Maximum total logical bytes of validation scratch files.
+#' @param cancel Boolean cooperative cancellation predicate.
 #' @export
-validateResultArtifact <- function(bundleDir) {
-  tryCatch({.v2_directory(bundleDir);invisible(TRUE)},error=function(e) stop("Result artifact validation failed",call.=FALSE))
+validateResultArtifact <- function(bundleDir,maxScratchBytes=1024^3,cancel=function()FALSE) {
+  .v2_scratch_limit(maxScratchBytes);.term_check(cancel)
+  tryCatch({.v2_directory(bundleDir,check=function().term_check(cancel),maxScratchBytes=maxScratchBytes);invisible(TRUE)},error=function(e) {
+    if(inherits(e,"achillesnext_scratch_error")||inherits(e,"achillesnext_read_error"))stop(e)
+    stop("Result artifact validation failed",call.=FALSE)
+  })
 }

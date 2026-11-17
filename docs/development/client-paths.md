@@ -19,8 +19,8 @@ not establish a laptop hardware minimum or qualify large-source performance.
 | `generatePopulationObservationBaseline`, `generateDomainBaseline`, `generateMeasurementBaseline`, `generateAnalysisProfile` | Generate reduced or registered-profile candidates; stream aggregate output | PostgreSQL source/results connection. Separate source/results schemas; not restricted to loopback or the tiny-fixture database. Core/reduced paths must not be confused with the old tracer. |
 | `initializeResultStore`, `registerAnalysisProfile`, `sealResultRelease`, `validateResultRelease` | Install/verify store definitions, run exact native validation and reconciliation | PostgreSQL result-store operations; no local database requirement. Core installation uses the `achillesnext` table prefix. |
 | `captureConceptSnapshot` | Stream terminology records to a private file with bounded line parsing | Explicit vocabulary query; not patient data. Disk grows with captured terminology; projection later limits approved saved labels. Snapshot capture does not assert consistency with a separate aggregate run. |
-| `publishResultRelease`, `promoteResultPublication` | Validate/project approved rows, write immutable pages, verify them and promote complete output explicitly | Result-store/serving writes plus optional file export. Publication approval and failure preservation remain required. No claim that all client validation/export growth is qualified yet. |
-| `validateResultArtifact` | Complete native admission of an artifact, including references and approved terminology; disk-spooled indexes | No SQL. Admission visits the inventory before subsequent semantic reads; opening a provider alone is not full admission. Admission time and scratch storage can grow with saved output size. |
+| `publishResultRelease`, `promoteResultPublication` | Validate/project approved rows, write immutable pages, verify them and promote complete output explicitly | Result-store/serving writes plus optional file export. `publishResultRelease` applies `maxScratchBytes` to each of its two sequential artifact admission passes; export-page staging is outside that limit. Approval and prior-publication preservation remain required; growing export/storage performance is not qualified by this cap. |
+| `validateResultArtifact` | Complete native admission, including references and approved terminology; shared logical scratch-byte and file-count limits, disk-spooled indexes and cooperative cancellation | No SQL. `maxScratchBytes` defaults to 1 GiB, with a separate fixed 1,000,000-file cap. Opening a provider alone is not full admission. Admission time and required scratch still grow with saved output size. |
 | `openArtifactResultProvider` | Verify and traverse pinned saved pages; bounded catalogue, row, concept-ID/name operations | No SQL. Trusted exact context and authorization callback required. R/JVM required by the current reader. |
 | `openDatabaseResultProvider`, `readResultObject` | Same approved bytes and semantic operations | SELECT through approved PostgreSQL serving views, with grant checks. No CDM join or generation on a read. Driver/network latency is additional to local artifact cost. |
 | `readPopulationObservationBaseline`, `readDomainBaseline`, `readMeasurementBaseline`, `listDomainConcepts` | Restricted saved-candidate validation/readback and bounded spool/paging | Read result-store tables, not a replacement for approved UI provider access. |
@@ -36,8 +36,14 @@ not establish a laptop hardware minimum or qualify large-source performance.
 - `R/result-writer.R`: default queue 128 rows / 1 MiB of SQL, with configured
   upper bounds. These cover queued SQL, not total R/JVM memory.
 - `R/result-export.R`: data pages up to 2,048 rows / 4 MiB, individual serialized
-  rows up to 64 KiB, bounded index frontiers. Export and validation scratch are
-  local disk costs and must be measured separately from database temporary tables.
+  rows up to 64 KiB, bounded index frontiers. Export-page staging is separate from
+  the validation scratch limit and from database temporary tables.
+- `R/result-artifact.R` / `R/validation-spool.R`: one shared validation budget
+  covers both row/concept spools and reconciliation files, including simultaneous
+  old/replacement indexes during rehash. Zero-byte page marks count toward a
+  separate finite file cap. These bound logical file lengths/counts, not physical
+  disk allocation or R/JVM memory; see [bounded validation](bounded-validation.md)
+  for controls, cancellation, error handling and exclusions.
 - `R/saved-reader.R`: default raw cache 4 MiB, at most 8 MiB configurable; default
   operation budget 64 objects / 8 MiB / 8,192 physical rows. Decoded pages,
   dependency rows, responses, R objects and JVM memory are additional. Database

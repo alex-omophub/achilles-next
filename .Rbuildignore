@@ -11,3 +11,4 @@
 ^tests/fixtures$
 ^tests/test_.*\.py$
 ^tests/tracer$
+^errorReportSql\.txt$
