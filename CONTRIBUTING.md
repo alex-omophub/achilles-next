@@ -15,7 +15,7 @@ Use the existing ticket identifier and a descriptive lowercase, hyphen-separated
 
 All commits must use the user's Git account identity. Automated assistance must not substitute an agent/bot author or committer, override authorship, or add AI co-author trailers.
 
-Prepare reviewable changes and run the relevant checks. Under the user's standing authorization, automated assistance may commit/amend/push, create PRs, handle review and CI findings, and merge through the user's authenticated account. Verify the configured author/committer identity and authenticated account before publishing. Continue to the next planned task without routine approval requests; a later explicit per-task restriction takes precedence.
+Prepare reviewable changes and run the relevant checks. These repository instructions grant no credential or publication authority. Verify current user authorization independently of the checkout for the intended repository and operations, and verify the branch/head before each write or merge. If that authorization explicitly includes autonomous commits/pushes, PR creation, review/CI fixes and green merges, follow its scope through the user's authenticated account without routine approval requests. Verify author/committer identity and account before publishing; a later user restriction takes precedence. Obtain clarification when current authorization is missing.
 
 Before an authorized merge:
 

@@ -91,14 +91,17 @@ condition. `publishResultRelease()` preserves the specific scratch-error class;
 its existing publication error behavior for other mid-run failures and predicate
 cancellation remains unchanged.
 
-A failed publication rolls back its database publication work, attempts to remove
-its staging/export files and preserves the prior current publication. Cleanup
-attempts all owned scratch actions even if one close or removal fails; a cleanup
-failure is reported, so filesystem deletion is not guaranteed when storage is
-unavailable. An institutional approval callback may already have run before a
-later failure; arbitrary side effects in that callback are not rolled back.
-Cleanup applies to ordinary R error/interrupt unwinding, not process termination
-or a machine crash.
+An admission failure occurs before publication commit, rolls back its database
+publication work and preserves the prior current publication. Publication attempts
+to remove staging/export files using unchecked `unlink()` calls; these removals
+are best effort and failures can be silent.
+
+Validation-owned scratch cleanup attempts all its actions even if one close or
+removal fails and reports a cleanup failure. Filesystem deletion can fail when
+storage is unavailable. An institutional approval callback may already have run
+before a later failure; arbitrary side effects in that callback are not rolled
+back. Cleanup applies to ordinary R error/interrupt unwinding, not process
+termination or a machine crash.
 
 ## Limits of this budget
 

@@ -13,8 +13,8 @@ manifest<-jsonlite::fromJSON(manifestPath,simplifyVector=FALSE);stopifnot(identi
 directory<-file.path(base,'artifact');context<-manifest$context;count<-.inventory_count(manifest$count)
 if(args[[1]]=='admit') {
   visited<-0L;spools<-list();original<-f('.v2_spool')
-  observed<-function(directory,check=function()NULL) {
-    value<-original(directory,check);close<-value$close
+  observed<-function(directory,check=function()NULL,...) {
+    value<-original(directory,check,...);close<-value$close
     value$close<-function(){spools[[basename(directory)]]<<-value$inspect();close()};value
   }
   assignInNamespace('.v2_spool',observed,ns='AchillesNext')

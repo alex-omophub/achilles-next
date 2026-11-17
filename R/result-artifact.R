@@ -17,14 +17,19 @@
   rootDir <- normalizePath(directory,mustWork=TRUE)
   .nv_need(dir.exists(rootDir) && !nzchar(Sys.readlink(directory)),"Artifact must be a directory")
   scratch <- tempfile("achilles-validate-")
-  .v2_scratch_io(function().nv_need(dir.create(scratch,mode="0700")))
-  rows<-NULL;concepts<-NULL
+  ownsScratch<-FALSE;rows<-NULL;concepts<-NULL
   on.exit(.v2_scratch_cleanup(list(function()if(!is.null(rows))rows$close(),
     function()if(!is.null(concepts))concepts$close(),
-    function(){
+    function()if(ownsScratch){
       .v2_scratch_io(function().nv_need(unlink(scratch,recursive=TRUE)==0L&&!dir.exists(scratch)))
       live<-budget$inspect();budget$release(live$bytes,live$files)
     })))
+  # Register cleanup before mkdir; claim only a successfully created directory
+  # before allowing pending asynchronous interrupts to be delivered.
+  suspendInterrupts({
+    .v2_scratch_io(function().nv_need(dir.create(scratch,mode="0700")))
+    ownsScratch<-TRUE;allowInterrupts(Sys.sleep(0))
+  })
   .v2_scratch_io(function(){.nv_need(dir.create(file.path(scratch,"seen"),mode="0700"));.nv_need(dir.create(file.path(scratch,"groups"),mode="0700"))})
   # Keep constructor return and ownership assignment atomic to asynchronous
   # interrupts; admission cleanup can then close every allocated spool.

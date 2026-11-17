@@ -414,3 +414,72 @@ if(.Platform$OS.type=='unix')local({
   stopifnot(!file.exists(path),b$inspect()$bytes==0,b$inspect()$files==0)
   cat('VALIDATION_SCRATCH_GROUP_ASYNC_SIGINT_OPEN_OWNERSHIP_CLEANUP_OK\n')
 })
+
+# Directory creation is itself an ownership boundary, before any spool handle
+# exists. Real pending SIGINT must wait until cleanup owns a successful mkdir.
+if(.Platform$OS.type=='unix')local({
+  ns<-asNamespace('AchillesNext');f<-function(n)get(n,ns)
+  originalIO<-f('.v2_scratch_io');originalBudget<-f('.v2_scratch_budget')
+  root<-tempfile('scratch-directory-ownership-');dir.create(root)
+  created<-NULL;b<-NULL
+  on.exit({
+    assignInNamespace('.v2_scratch_io',originalIO,ns='AchillesNext')
+    assignInNamespace('.v2_scratch_budget',originalBudget,ns='AchillesNext')
+    if(!is.null(created))unlink(created,recursive=TRUE)
+    unlink(root,recursive=TRUE)
+  })
+  artifact<-makeSavedResultFixture(file.path(root,'artifact'))
+  connections<-nrow(showConnections());clean<-logical()
+  for(kind in c('artifact','spool')) {
+    created<-NULL;fired<-FALSE;b<-NULL
+    assignInNamespace('.v2_scratch_budget',function(maxBytes=1024^3,maxFiles=1000000L) {
+      b<<-originalBudget(maxBytes,maxFiles);b
+    },ns='AchillesNext')
+    assignInNamespace('.v2_scratch_io',function(work) {
+      result<-originalIO(work);symbols<-all.names(body(work))
+      if(!fired&&'dir.create'%in%symbols) {
+        created<<-get(if(kind=='artifact')'scratch' else 'directory',environment(work))
+        stopifnot(dir.exists(created));fired<<-TRUE
+        stopifnot(tools::pskill(Sys.getpid(),tools::SIGINT));Sys.sleep(0)
+      }
+      result
+    },ns='AchillesNext')
+    if(kind=='spool')b<-originalBudget()
+    out<-tryCatch({
+      if(kind=='artifact')validateResultArtifact(artifact$directory) else f('.v2_spool')(file.path(root,'new-spool'),budget=b)
+      Sys.sleep(0);list(ok=TRUE)
+    },interrupt=function(e)list(ok=FALSE,failure=e),error=function(e)list(ok=FALSE,failure=e))
+    assignInNamespace('.v2_scratch_io',originalIO,ns='AchillesNext')
+    assignInNamespace('.v2_scratch_budget',originalBudget,ns='AchillesNext')
+    stopifnot(fired,!out$ok,inherits(out$failure,'interrupt'),nrow(showConnections())==connections,
+      !is.null(b),b$inspect()$bytes==0,b$inspect()$files==0)
+    clean[[kind]]<-!dir.exists(created)
+    cat('DIRECTORY_CREATION_SIGINT_CLEANUP',kind,clean[[kind]],'\n')
+    # Keep a RED run from leaving the very orphan it is detecting.
+    unlink(created,recursive=TRUE);created<-NULL
+  }
+  # Refusal of an existing path confers no ownership. Its sentinel and directory
+  # must survive both the private constructor and the public scratch collision.
+  existing<-file.path(root,'existing');dir.create(existing)
+  sentinel<-charToRaw('unowned directory sentinel');writeBin(sentinel,file.path(existing,'keep'))
+  b<-originalBudget()
+  e<-tryCatch(f('.v2_spool')(existing,budget=b),error=identity)
+  stopifnot(inherits(e,'achillesnext_scratch_error'),e$code=='io_failure',dir.exists(existing),
+    identical(readBin(file.path(existing,'keep'),'raw',n=1024),sentinel),
+    b$inspect()$bytes==0,b$inspect()$files==0,nrow(showConnections())==connections)
+  created<-NULL;fired<-FALSE
+  assignInNamespace('.v2_scratch_io',function(work) {
+    symbols<-all.names(body(work))
+    if(!fired&&'dir.create'%in%symbols&&'scratch'%in%symbols) {
+      created<<-get('scratch',environment(work));dir.create(created)
+      writeBin(sentinel,file.path(created,'keep'));fired<<-TRUE
+    }
+    originalIO(work)
+  },ns='AchillesNext')
+  e<-tryCatch(validateResultArtifact(artifact$directory),error=identity)
+  assignInNamespace('.v2_scratch_io',originalIO,ns='AchillesNext')
+  stopifnot(fired,inherits(e,'achillesnext_scratch_error'),e$code=='io_failure',dir.exists(created),
+    identical(readBin(file.path(created,'keep'),'raw',n=1024),sentinel),nrow(showConnections())==connections)
+  stopifnot(all(clean))
+  cat('VALIDATION_ARTIFACT_AND_SPOOL_ASYNC_SIGINT_DIRECTORY_OWNERSHIP_UNOWNED_PRESERVATION_OK\n')
+})

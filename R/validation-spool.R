@@ -91,8 +91,7 @@
 # Values stay on disk; rehashing reads one slot at a time, never the whole index.
 .v2_spool <- function(directory,check=function()NULL,budget=.v2_scratch_budget()) {
   .nv_need(is.function(check));check()
-  .v2_scratch_io(function().nv_need(dir.create(directory,mode="0700"),"Cannot create validation spool"))
-  data<-NULL;index<-NULL;closed<-FALSE;poisoned<-FALSE;ready<-FALSE
+  ownsDirectory<-FALSE;data<-NULL;index<-NULL;closed<-FALSE;poisoned<-FALSE;ready<-FALSE
   capacity<-1024;count<-0;end<-0;indexPath<-file.path(directory,"index-1024");width<-89L
   owned<-list()
   io<-function(work) {
@@ -120,10 +119,16 @@
     if(n>0)io(function(){seek(connection,n-1,origin="start",rw="write");writeBin(as.raw(0),connection);flush(connection);.nv_need(file.info(path)$size==n)})
     ok<-TRUE;connection
   }
-  on.exit(if(!ready).v2_scratch_cleanup(list(function()closeConnection(data),function()closeConnection(index),function(){
+  on.exit(if(!ready).v2_scratch_cleanup(list(function()closeConnection(data),function()closeConnection(index),function()if(ownsDirectory){
     io(function().nv_need(unlink(directory,recursive=TRUE)==0L&&!dir.exists(directory)))
     for(n in owned)budget$release(n,1)
   })))
+  # A refused existing path is never ours to remove. Protect successful mkdir
+  # and its ownership assignment with the same handoff used for open handles.
+  suspendInterrupts({
+    .v2_scratch_io(function().nv_need(dir.create(directory,mode="0700"),"Cannot create validation spool"))
+    ownsDirectory<-TRUE;allowInterrupts(Sys.sleep(0))
+  })
   suspendInterrupts({data<-fresh(file.path(directory,"values"),0);allowInterrupts(Sys.sleep(0))})
   suspendInterrupts({index<-fresh(indexPath,capacity*width);allowInterrupts(Sys.sleep(0))})
   guard<-function(){.nv_need(!closed,"Validation spool is closed");if(poisoned).v2_scratch_error("io_failure")}

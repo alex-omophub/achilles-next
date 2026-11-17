@@ -162,6 +162,7 @@ local({
       function(candidate){approvalCalls<<-approvalCalls+1L;TRUE},'1',maxScratchBytes=requested);NULL},error=identity)
     assignInNamespace('.v2_directory',originalDirectory,ns='AchillesNext')
     stopifnot(inherits(error,'achillesnext_scratch_error'),error$code==if(kind=='byte')'byte_limit' else 'io_failure',
+      !grepl('PRIVATE_DISK_PATH_SENTINEL',conditionMessage(error),fixed=TRUE),
       admissions==pass,approvalCalls==pass-1L,!dir.exists(destination),identical(priorFiles,leftovers()),
       q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID==before,
       q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_publication'))$N==publicationCount,
