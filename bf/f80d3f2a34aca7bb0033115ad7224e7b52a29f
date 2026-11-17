@@ -1,0 +1,19 @@
+tests/tracer/characterization-execute-offline.R
+  s_b5a17847e911be::t_fd48e3f8537626 71
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bff80d3f2a34aca7bb0033115ad7224e7b52a29f",
+  "prompts": {},
+  "sessions": {
+    "s_b5a17847e911be": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1e87a-66d9-75d1-a533-e31e3c1a2d4f",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
