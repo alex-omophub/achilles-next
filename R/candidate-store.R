@@ -132,6 +132,10 @@
   operation("compiled.candidate_persistence","compiled.source_capture",.object(persistence=persistence,
     client_import_wall_ms=.sql_execution_ms(proc.time()[["elapsed"]]-began),
     source_capture_transaction="separate_completed_repeatable_read",publication_changed=FALSE,reusable=FALSE))
-  tx$execute(paste0("UPDATE ",s,".achillesnext_analysis_run SET state='succeeded',finished_at=now() WHERE run_id=",run))
+  # Source generation uses the client clock; store transaction-start time is
+  # neither that clock nor the completion of this separate import.
+  finished<-.stamp()
+  .nv_need(.nv_date(finished,TRUE)&&finished>=receipt$generation$ended_at,"Invalid candidate completion timestamp")
+  tx$execute(paste0("UPDATE ",s,".achillesnext_analysis_run SET state='succeeded',finished_at=",lit(finished),"::timestamptz WHERE run_id=",run))
   tick();persistence
 }
