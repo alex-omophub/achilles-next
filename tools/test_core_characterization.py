@@ -170,11 +170,12 @@ def check_source_audit_oracle():
                 'nonempty_unobserved', 'empty', 'separate_identity_counts'])
 
 
-def verify_publication(out, report):
+def verify_publication(out, report, *, require_refresh=True):
     """Compare exported rows with independently checked generated rows, not report flags alone."""
     proof = report['publication']
     snapshot = next(s for s in report['snapshots'] if s['source_id'] == proof['snapshot_source_id'])
-    assert all(s['refresh_executed'] is True for s in report['snapshots'])
+    if require_refresh:
+        assert all(s.get('refresh_executed') is True for s in report['snapshots']), 'Expected executed refresh snapshots'
     for flag in ['source_and_aggregate_denied', 'exact_serving_bytes', 'context_mismatch_rejected',
                  'scope_revocation_isolated', 'offline_copy_retained']:
         assert proof[flag] is True, flag

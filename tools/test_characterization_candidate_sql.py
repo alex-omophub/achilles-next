@@ -126,6 +126,7 @@ def main():
     suffix = secrets.token_hex(6)
     roles = {kind: dict(user='achilles_test_bridge_' + kind + '_' + suffix,
                         password=secrets.token_urlsafe(32), port=args.port) for kind in ('source', 'store')}
+    roles['reader'] = dict(user='achilles_test_reader_' + suffix, password=secrets.token_urlsafe(32), port=args.port)
     created = []
     try:
         for kind, value in roles.items():
@@ -139,8 +140,12 @@ def main():
             path = Path(folder) / 'roles.json'
             path.touch(mode=0o600)
             path.write_text(json.dumps(roles))
+            reader_path = Path(folder) / 'reader.json'
+            reader_path.touch(mode=0o600)
+            reader_path.write_text(json.dumps(roles['reader']))
             env = os.environ.copy()
             env['ACHILLES_NEXT_BRIDGE_FIXTURE'] = str(path)
+            env['ACHILLES_NEXT_SERVING_FIXTURE'] = str(reader_path)
             env['ACHILLES_NEXT_FIXTURE_STATE'] = str(args.state.resolve())
             subprocess.run(['Rscript', '--vanilla', 'tests/tracer/characterization-candidate-sql-native.R',
                             str(args.config.resolve()), str(out)], cwd=ROOT, env=env, check=True)
@@ -157,6 +162,17 @@ def main():
             summary = dict(status='passed', fixtures=len(matrix), programs=len(report['snapshots']), metrics=142)
         else:
             summary = verify(report, cases)
+        publication = report['compiled_publication']
+        selected = next(s for s in report['snapshots'] if s['candidate']['release_id'] == publication['release_id'])
+        assert selected['source_id'] == publication['snapshot_source_id']
+        assert selected['source_receipt']['kind'] == 'characterization_execution_receipt'
+        assert selected['source_receipt']['program_sha256'] == publication['program_sha256']
+        assert selected['candidate']['source_receipt'] == selected['source_receipt']
+        summary['publication'] = core.verify_publication(out, dict(report, publication=publication), require_refresh=False)
+        for key in ('source_denied_operator', 'serving_only_reader', 'semantic_file_database_parity',
+                    'only_approved_view_queries', 'cancelled_newer_attempt_preserved', 'pinned_providers_preserved'):
+            assert publication[key] is True, key
+        assert publication['cancelled_capture_rows'] == 3
         (out / 'oracle.json').write_text(json.dumps(summary, indent=2) + '\n')
         print(summary)
     finally:

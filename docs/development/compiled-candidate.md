@@ -48,3 +48,40 @@ remains a separate explicit step.
 The source-only executor's timeout, cancellation and concurrent-DDL limitations
 continue to apply. This path does not establish large-source performance results
 or support for a second SQL engine.
+
+## Publish and open saved results
+
+Use the existing result-store lifecycle with the returned release ID. These
+steps read saved aggregates; they do not reconnect to the CDM. Store-operator
+credentials and institutional approval are separate from source credentials.
+
+```r
+sealResultRelease(storeOperatorDetails, resultsSchema, candidate$release_id)
+validateResultRelease(storeOperatorDetails, resultsSchema, candidate$release_id)
+
+# policy and institutionalPolicy come from institution-controlled approval rules.
+# NULL prepares approved bytes without changing the database current pointer.
+approved <- publishResultRelease(
+  storeOperatorDetails, resultsSchema, candidate$release_id,
+  newExportDirectory, audienceId, approvalId, policy, institutionalPolicy,
+  expectedRevision = NULL
+)
+```
+
+A full allowlist retains all registered outputs. A projection physically omits
+other rows and omits outputs whose required denominators were not retained; its
+catalogue records those omissions explicitly. Neither choice grants approval
+automatically. See [the publication lifecycle](result-store.md#validate--project--export--select)
+for policy, validation and compare-and-swap selection.
+
+The host can open the approved directory with `openArtifactResultProvider()` or
+the same approved bytes through `openDatabaseResultProvider()` using separate
+serving credentials. Both require a trusted publication context and authorization
+callback. Saved reads never trigger generation and remain pinned to their chosen
+publication, even if a later candidate is cancelled or a new current publication
+is selected. See [semantic saved results](semantic-results.md) for bounded metric
+and concept discovery, row selection and denominator access.
+
+The capture scratch budget does not cover export-page staging or the optional
+terminology snapshot copy. This lifecycle example is not a full-source performance
+or end-to-end temporary-storage qualification.
