@@ -8,7 +8,7 @@
   invisible(NULL)
 }
 # Own the commit boundary: a lost acknowledgement cannot prove rollback.
-.candidate_store_transaction <- function(details,schema,work,limits,tick,ids,readOnly=FALSE,state=NULL) {
+.candidate_store_transaction <- function(details,schema,work,limits,tick,ids,readOnly=FALSE,state=NULL,startedClock=NULL) {
   if(is.null(state))state<-new.env(parent=emptyenv())
   state$outcome<-"not_committed"
   connection<-NULL;jdbc<-NULL;rollbackConfirmed<-FALSE;disconnectConfirmed<-FALSE
@@ -20,13 +20,16 @@
   }
   on.exit(if(!disconnectConfirmed||!rollbackConfirmed)suspendInterrupts(cleanup()))
   wall<-function()proc.time()[["elapsed"]];started<-wall();writes<-0;sqlBytes<-0;writeWait<-0;reads<-0L;transport<-NULL
+  if(is.null(startedClock))startedClock<-started
+  timeout<-function()as.integer(max(1,min(ceiling(limits$statement_timeout_ms/1000),
+    ceiling(limits$max_elapsed_seconds-(wall()-startedClock)))))
   outcome<-function()if(commitConfirmed)"committed" else if(commitStarted)"unknown" else "not_committed"
   captured<-.v2_scratch_capture(function() {
     tick()
     suspendInterrupts({connection<<-DatabaseConnector::connect(details);jdbc<<-connection@jConnection;allowInterrupts(Sys.sleep(0))})
     rJava::.jcall(jdbc,"V","setAutoCommit",FALSE);rJava::.jcall(jdbc,"V","setReadOnly",readOnly)
     rJava::.jcall(jdbc,"V","setTransactionIsolation",4L)
-    transport<<-.sql_execution_transport(jdbc,limits,tick,wall())
+    transport<<-.sql_execution_transport(jdbc,limits,tick,startedClock)
     execute<-function(sql) {
       tick();.candidate_need(is.character(sql)&&length(sql)==1L&&nchar(enc2utf8(sql),type="bytes")<=4*1024^2,"candidate.store_sql_limit")
       statement<-NULL;done<-FALSE
@@ -35,7 +38,7 @@
         try(rJava::.jcall(statement,"V","close"),silent=TRUE)
       })
       suspendInterrupts({statement<-rJava::.jcall(jdbc,"Ljava/sql/Statement;","createStatement");allowInterrupts(Sys.sleep(0))})
-      rJava::.jcall(statement,"V","setQueryTimeout",as.integer(max(1,ceiling(limits$statement_timeout_ms/1000))))
+      tick();rJava::.jcall(statement,"V","setQueryTimeout",timeout())
       begin<-wall();rJava::.jcall(statement,"Z","execute",sql);writeWait<<-writeWait+wall()-begin;done<-TRUE
       writes<<-writes+1;sqlBytes<<-sqlBytes+nchar(enc2utf8(sql),type="bytes");tick();invisible(NULL)
     }

@@ -42,7 +42,9 @@ Failures return sanitized reason codes and, once allocated, attempt/run/source/
 release IDs. A lost COMMIT acknowledgement reports `candidate.commit_unknown` with
 `outcome="unknown"`; a complete unpublished candidate may already exist. Inspect
 that attempt in the restricted store before manual recovery. Cleanup uncertainty
-is not a rollback guarantee, and no automatic retry or publication occurs.
+is not a rollback guarantee. Generation and import are not automatically retried;
+cleanup may retry unconfirmed rollback and disconnect operations. Publication
+remains a separate explicit step.
 The source-only executor's timeout, cancellation and concurrent-DDL limitations
 continue to apply. This path does not establish large-source performance results
 or support for a second SQL engine.

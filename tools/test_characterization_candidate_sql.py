@@ -15,6 +15,25 @@ from postgresql_fixtures import Postgres, DB, MARKER, identifier, literal
 ROOT = Path(__file__).resolve().parents[1]
 
 
+
+def verify_matrix_coverage(report, matrix):
+    """Reject absent or duplicate attempts before grouping a declared matrix."""
+    expected = {(case['id'], version, strategy) for case, version in matrix
+                for strategy in ('weighted', 'reference')}
+    assert expected and len(expected) == len(matrix) * 2, 'Duplicate or empty declared fixture matrix'
+    snapshots = report['snapshots']
+    assert isinstance(snapshots, list), 'Expected snapshot list'
+    actual = []
+    for snapshot in snapshots:
+        assert isinstance(snapshot, dict), 'Expected snapshot object'
+        identity = tuple(snapshot.get(key) for key in ('case', 'version', 'strategy'))
+        assert all(isinstance(value, str) for value in identity), 'Missing snapshot identity'
+        actual.append(identity)
+    assert len(actual) == len(set(actual)), 'Duplicate fixture/operator snapshot'
+    assert set(actual) == expected, 'Fixture/operator matrix incomplete or unexpected'
+    return expected
+
+
 def verify(report, cases):
     """Use physical inputs and existing independent report oracles, never flags alone."""
     assert len(report['snapshots']) == len(cases) * 2
@@ -126,6 +145,7 @@ def main():
             subprocess.run(['Rscript', '--vanilla', 'tests/tracer/characterization-candidate-sql-native.R',
                             str(args.config.resolve()), str(out)], cwd=ROOT, env=env, check=True)
         report = json.loads((out / 'report.json').read_text())
+        verify_matrix_coverage(report, matrix)
         # Full-matrix runs contain repeated case IDs at different versions.
         if args.full_matrix:
             by_version = {}

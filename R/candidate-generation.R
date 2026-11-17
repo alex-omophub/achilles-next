@@ -19,6 +19,7 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
   })
   if(!validation$ok) {
     cause<-validation$failure
+    if(inherits(cause,"interrupt")).candidate_error("candidate.cancelled")
     .candidate_error(if(inherits(cause,"AchillesSqlExecutionFailure")&&cause$reason_code=="execution.invalid_program")
       "candidate.invalid_program" else "candidate.invalid_limits")
   }
@@ -30,6 +31,7 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
     if(!is.null(check)) {
       out<-.v2_scratch_capture(check)
       .candidate_need(out$ok&&!identical(out$value,FALSE),"candidate.cancelled")
+      .candidate_need(wall()-started<=maxElapsedSeconds,"candidate.elapsed_limit")
     }
     invisible(TRUE)
   }
@@ -40,7 +42,7 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
   on.exit(suspendInterrupts(cleanup()))
   result<-.v2_scratch_capture(function() {
     tick();assets<-.v2_assets()
-    preflight<-.candidate_store_transaction(storeConnectionDetails,resultsSchema,function(tx).candidate_readiness(tx,assets),limits,tick,ids,TRUE)
+    preflight<-.candidate_store_transaction(storeConnectionDetails,resultsSchema,function(tx).candidate_readiness(tx,assets),limits,tick,ids,TRUE,startedClock=started)
     budget<-.v2_scratch_budget(maxScratchBytes,maxFiles=512L)
     directory<-tempfile("achillesnext-candidate-",tmpdir=validation$value$parent)
     suspendInterrupts({capture<<-.candidate_capture(directory,assets,budget,tick);allowInterrupts(Sys.sleep(0))})
@@ -55,7 +57,8 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
       persistence<-.candidate_import(tx,capture,receipt,program,ids,tick)
       stats<-capture$stats();.candidate_need(cleanup(),"candidate.cleanup_failed");tick()
       list(persistence=persistence,scratch=stats)
-    },limits,tick,ids,state=storeOutcome)
+    },limits,tick,ids,state=storeOutcome,startedClock=started)
+    tick()
     c(ids,.object(profile_id=assets$profile$profile_id,profile_sha256=assets$hash,state="building",
       generated_metrics=as.list(names(assets$metrics)),expected_metric_count="142",generated_metric_count="142",
       publishable=FALSE,profile_complete=TRUE,publication_changed=FALSE,source_store_separate=TRUE,
@@ -77,7 +80,8 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
       .candidate_error(result$failure$reason_code,ids,result$failure$outcome,result$failure$cause_code)
     code<-if(!cleaned)"candidate.cleanup_failed" else if(inherits(failure,"AchillesCandidateFailure"))failure$reason_code else
       if(inherits(failure,"achillesnext_scratch_error"))paste0("candidate.scratch_",failure$code) else
-      if(inherits(failure,"interrupt"))"candidate.cancelled" else if(inherits(failure,"AchillesSqlExecutionFailure"))"candidate.source_failed" else "candidate.invalid_capture"
+      if(inherits(failure,"interrupt"))"candidate.cancelled" else if(inherits(failure,"AchillesSqlExecutionFailure"))
+        switch(failure$reason_code,execution.cancelled="candidate.cancelled",execution.elapsed_limit="candidate.elapsed_limit","candidate.source_failed") else "candidate.invalid_capture"
     cause<-if(inherits(failure,"AchillesSqlExecutionFailure"))failure$reason_code else NULL
     .candidate_error(code,ids,cause=cause)
   }
