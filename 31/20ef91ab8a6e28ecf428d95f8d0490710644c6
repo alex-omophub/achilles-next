@@ -1,0 +1,69 @@
+R/result-artifact.R
+  s_3e206b4a2cf4c3::t_2d5db23f3a2161 14-15,19-23,28,36,38-39,55,65,250,264-265,267-272
+  s_3e206b4a2cf4c3::t_c9669e067f8fdb 29-32
+  s_3e206b4a2cf4c3::t_3b9f3d301ad3ed 24-27
+tests/tracer/validation-spool.R
+  s_895f6ebe145fd3::t_66dc21b5dbe488 324,341
+  s_895f6ebe145fd3::t_09003f82d6724b 192
+  s_895f6ebe145fd3::t_df63e48b46977c 301-323,325-340,342-359
+  s_895f6ebe145fd3::t_a45d639447e5b5 360-387
+  s_3e206b4a2cf4c3::t_3a242c4472e9b1 152-183,185-188,191,193-203
+  s_895f6ebe145fd3::t_d2d68744831a63 204-265
+  s_3e206b4a2cf4c3::t_3b9f3d301ad3ed 84-94,108,112,143-148,189-190
+  s_3e206b4a2cf4c3::t_7730075c16b8e6 268-269,280,284,286-287,289-299
+  s_895f6ebe145fd3::t_47be059106caf6 388-416
+  s_3e206b4a2cf4c3::t_a43d09aa5caff2 266-267,270-279,281-283,285,288,300
+  s_895f6ebe145fd3::t_af25a6e9941d5f 36-83,95-107,109-111,113-142,149-151
+  s_3e206b4a2cf4c3::t_63302bb1d345cb 184
+docs/development/client-paths.md
+  s_895f6ebe145fd3::t_1ef89f2e3521ae 21-22,38-45
+README.md
+  s_895f6ebe145fd3::t_1ef89f2e3521ae 27-29
+docs/development/bounded-validation.md
+  s_895f6ebe145fd3::t_1ef89f2e3521ae 1-69,73-117
+  s_895f6ebe145fd3::t_cdc3bcbdaa6fe0 70-72
+tests/tracer/saved-label-integration.R
+  s_895f6ebe145fd3::t_d2d68744831a63 134-135
+R/validation-spool.R
+  s_3e206b4a2cf4c3::t_00a6ee7e4c25a8 1-8,15,22-47,61,71-72,90,92,94-97,104-108,123-126,129,132,138,175,183-186,197,206,209,213,215-216
+  s_895f6ebe145fd3::t_88cc39a7eca5cc 110-117,119,151-153
+  s_895f6ebe145fd3::t_1f53711931d680 118,127-128,154
+  s_895f6ebe145fd3::t_af25a6e9941d5f 48-51,57-58,81,103
+  s_895f6ebe145fd3::t_d2d68744831a63 9-14,16-21,52-56,59-60,62-70,98-102,187,191-192
+  s_3e206b4a2cf4c3::t_2d5db23f3a2161 73-80,87-89
+  s_3e206b4a2cf4c3::t_3b9f3d301ad3ed 86,120,188-190
+  s_3e206b4a2cf4c3::t_a43d09aa5caff2 160-167
+  s_3e206b4a2cf4c3::t_2361c2af6f558f 82-85
+man/resultPublication.Rd
+  s_895f6ebe145fd3::t_d2d68744831a63 32
+  s_895f6ebe145fd3::t_af25a6e9941d5f 8-9,12-13,27
+R/result-export.R
+  s_3e206b4a2cf4c3::t_2d5db23f3a2161 154-155,180,194
+  s_895f6ebe145fd3::t_d2d68744831a63 204
+tests/tracer/result-export.R
+  s_3e206b4a2cf4c3::t_85fec0e0d94f4c 132-171
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3120ef91ab8a6e28ecf428d95f8d0490710644c6",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
