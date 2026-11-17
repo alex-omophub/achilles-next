@@ -44,6 +44,7 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
     stopifnot(c$contract_version=='2.1.0',c$saved_terminology$snapshot_sha256==snapshot$sha256);TRUE
   },savedTerminology=snapshot)
   validateResultArtifact(approved$export_dir)
+  testTerminologyBoundsIntegration(details,schema,release,root,policy,q,ex,vocab,snapshot)
   testExportBudgetIntegration(details,schema,release,root,policy,q,savedTerminology=snapshot,label='labels21')
   rootDoc<-f('.nv_json')(readBin(file.path(approved$export_dir,'objects',paste0(approved$root$sha256,'.json')),'raw',n=262145L))
   context<-c(rootDoc[f('.saved_common')()],o(root=approved$root,authorization_epoch='1',instance_id='labelled-fixture'))
@@ -102,7 +103,7 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
   fail(function()publishResultRelease(details,schema,release,file.path(root,'labels-cancelled'),'fixture-restricted','review-cancel',policy,
     function(c){cancelled<<-TRUE;TRUE},expectedRevision='1',savedTerminology=snapshot,cancel=function()cancelled),publicationError,causeCode='aborted')
   bad<-snapshot;bad$sha256<-strrep('0',64)
-  fail(function()publishResultRelease(details,schema,release,file.path(root,'labels-bad-hash'),'fixture-restricted','review-bad',policy,function(c)TRUE,expectedRevision='1',savedTerminology=bad),publicationError,causeMessage='Snapshot hash mismatch')
+  fail(function()publishResultRelease(details,schema,release,file.path(root,'labels-bad-hash'),'fixture-restricted','review-bad',policy,function(c)TRUE,expectedRevision='1',savedTerminology=bad),'Snapshot hash mismatch',causeMessage='Snapshot hash mismatch')
   fail(function()publishResultRelease(details,schema,release,file.path(root,'labels-denied'),'fixture-restricted','review-denied',policy,function(c)FALSE,expectedRevision='1',savedTerminology=snapshot),publicationError,causeMessage='Institutional policy did not approve the candidate')
   stopifnot(!dir.exists(file.path(root,'labels-cancelled')),!dir.exists(file.path(root,'labels-bad-hash')),!dir.exists(file.path(root,'labels-denied')),
     identical(q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID,before))

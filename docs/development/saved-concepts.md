@@ -209,3 +209,15 @@ million-entry saved catalogue, scoped search, process telemetry and isolation.
 Its synthetic workload does not qualify arbitrary label distributions,
 representative generation, whole-process memory, browser/ATLAS lifecycle or
 production UI. Process telemetry describes the measured workers only.
+
+## Finite snapshot input and capture output
+
+`captureConceptSnapshot(..., maxOutputBytes = 1024^3)` caps all canonical JSONL header and row bytes, including linefeeds, before each write. `publishResultRelease(..., maxSnapshotBytes = 1024^3)` independently caps the restricted input copy. Both accept finite nonnegative whole numbers up to `2^53 - 1`; zero rejects nonempty data. The 1 GiB defaults are defensive logical limits, not RAM requirements or measured vocabulary capacity. A legacy or full vocabulary snapshot larger than 1 GiB requires explicitly larger finite limits for capture and publication. Export and validation scratch budgets remain separate.
+
+Publication opens the external snapshot once, copies in at most 64 KiB chunks with a remaining-budget sentinel, closes the private copy, and hashes that copy before parsing or visiting rows. Replacing the external path cannot redirect the opened descriptor. Growth cannot exceed the copy cap, and any copied-byte hash mismatch is rejected before visitors. Header/source/release checks and strict canonical JSONL row limits remain unchanged.
+
+Capture guards source JSON at 8,192 UTF-8 bytes in SQL before JDBC retrieval, then checks each retrieved row again. It writes a restricted private file and installs the closed file with an exclusive hard link in the destination filesystem. Existing files, symlinks and foreign lock directories are preserved. Filesystems without hard-link support fail safely. The returned descriptor remains exactly `path`, `sha256`, `rows`.
+
+Terminology-specific safe conditions use class `achillesnext_terminology_error` and fixed `code` values: `invalid_limit`, `input_byte_limit`, `output_byte_limit`, `io_failure`, `cleanup_failed`, `hash_mismatch`, `row_limit`, `invalid_row`, `duplicate_id`, or `capture_failed`. They omit labels, SQL, credentials and paths. Invalid limits fail during pre-work validation, before capture or publication starts. Publication propagates runtime terminology conditions only after confirmed pre-COMMIT rollback and cleanup; uncertain or committed publication outcomes retain priority.
+
+Other failure classes remain distinct: validation scratch uses `achillesnext_scratch_error`, and export uses `achillesnext_export_error` with `byte_limit` or `io_failure`. Predicate cancellation in snapshot capture and standalone artifact admission uses `achillesnext_read_error` with `code="aborted"`. Publication can propagate that condition before work starts; once publication has started, cancellation follows its [publication failure and outcome handling](bounded-validation.md#errors-cancellation-and-publication). Cancellation is cooperative, and cleanup covers ordinary R error/interrupt unwinding, not process termination.
