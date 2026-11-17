@@ -8,9 +8,12 @@ client does not retrieve clinical source rows.
 
 The worker requires SELECT-only source access and permission to create temporary
 tables. It has no result-store schema argument and performs no publication. On
-success or failure it rolls back its source transaction and disconnects; temporary
-tables belong only to that connection. A success receipt is returned only after
-cleanup succeeds.
+success it confirms rollback and disconnection before returning a receipt;
+temporary tables belong only to that connection. On failure it attempts both
+cleanup operations and retries unconfirmed cleanup while unwinding. Driver or
+network failures can prevent confirmation; cleanup is not guaranteed on those
+failure paths, and no success receipt is returned. Unconfirmed cleanup is reported
+as `execution.cleanup_failed`, including when source work had already failed.
 
 ## Stream to a restricted staging consumer
 
@@ -62,7 +65,8 @@ floating-point conversion. Metadata uses actual observed schema/capabilities,
 generation timestamps and captured timings. These facts are driver-bound JSONB
 parameters; no offline declaration is reported as an observed source identity.
 
-The callback return value is ignored; use `check` or raise a condition to cancel.
+The callback return value is ignored; use `check` or raise an error or interrupt
+to cancel. Signaling a warning or an unrelated condition does not cancel.
 Callbacks should stage data until success. A callback can receive some rows before
 a later callback, timeout, cancellation or resource check fails. Source rollback
 cannot undo files, database writes or messages performed by arbitrary callbacks.
@@ -74,7 +78,7 @@ and refresh APIs keep their own orchestration and do not yet consume this stream
 
 | Control | Enforcement and scope |
 |---|---|
-| Program | Current closed compiler artifact, reconstructed before connection. All scalar assertions must match before execution proceeds. |
+| Program | Current closed compiler artifact, reconstructed before connection. Each ordered assertion must match before the next step proceeds; some assertions require temporary stages created by earlier steps. |
 | Output rows and UTF-8 bytes | Global aggregate/metadata-output limits, fixed cursor fetch count, per-row and cumulative query guards on PostgreSQL before JDBC receives rejected payloads. A tiny overflow status may be received. |
 | Metadata and receipt | Separate finite catalog, metadata-row/byte and statement-record caps. The receipt retains compact inventory and telemetry, not the aggregate stream. |
 | Temporary stage bytes | Own-prefix relations and indexes measured after CREATE, INDEX and DROP. This is post-allocation detection, not a disk reservation; PostgreSQL sort/spill files and engine-process memory are outside this measurement. |

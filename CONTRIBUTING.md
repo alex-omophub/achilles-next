@@ -15,9 +15,9 @@ Use the existing ticket identifier and a descriptive lowercase, hyphen-separated
 
 All commits must use the user's Git account identity. Automated assistance must not substitute an agent/bot author or committer, override authorship, or add AI co-author trailers.
 
-Prepare reviewable changes and run the relevant checks before committing. Follow the user's current authorization, including any per-task instruction to leave changes uncommitted. Under standing authorization, automated assistance may commit/push, open PRs, address review and CI findings, and merge through the user's authenticated account.
+Prepare reviewable changes and run the relevant checks. Committing, amending, pushing or merging requires explicit user approval after review. Only the user initiates pull requests; automated assistance must not create PRs through a CLI, API, tool or browser. Local PR-description drafts may be prepared for review.
 
-Before merging, verify that Cubic completed on the exact current head, all required CI passed, active review findings are addressed and the latest remote state is integrated. Never bypass checks or force-push. Pause for necessary clarification, while continuing independent work where possible. Keep each PR focused and omit private delivery/planning material from commits and hosted discussions.
+Before merging, verify the review and CI gate on the exact current head. [Cubic](https://www.cubic.dev/) is the installed AI code-review app; its GitHub check is named `cubic · AI code reviewer`. It is separate from this repository's Actions workflow. Confirm that check completed successfully and address every active review thread. The `Synthetic PostgreSQL count tracer` workflow must also succeed, including `integration (compatibility)`, `integration (domain)`, `integration (measurement)` and the final `tracer` job. Verify the current commit and results in the PR Checks tab or with `gh pr view <number> --json headRefOid,statusCheckRollup` and `gh pr checks <number>`. A result on an earlier commit does not qualify a newer head. Integrate the latest remote state before merging. Never bypass checks or force-push. Pause for necessary clarification, while continuing independent work where possible. Keep each PR focused and omit private delivery/planning material from commits and hosted discussions.
 
 ## Validation and documentation
 

@@ -64,4 +64,78 @@ local({
   expect(function()execute(details,program,function(...)NULL,maxElapsedSeconds=1),'execution.elapsed_limit')
   stopifnot(attempts==0L)
   cat('EXECUTOR_REHASHED_TAMPERING_LIMITS_PRECONNECT_CANCELLATION_AND_DEADLINE_OK\n')
+
+  # Faults at the public executor's cleanup seam need no server or JVM. The
+  # actual failure path submits its first SQL through the real transport, while
+  # a lexical dependency stub reaches successful work without a fabricated142-row
+  # database. The executor body and its cleanup/on.exit lifecycle stay unchanged.
+  if(!methods::isClass('AchillesCleanupTestConnection'))
+    methods::setClass('AchillesCleanupTestConnection',slots=c(jConnection='environment'))
+  cleanupTrial<-function(workSucceeds,rollbackFailures,disconnectFailures,code,sequence) {
+    previous<-list(connect=get('connect',asNamespace('DatabaseConnector')),
+      disconnect=get('disconnect',asNamespace('DatabaseConnector')),jcall=get('.jcall',asNamespace('rJava')))
+    on.exit({assignInNamespace('connect',previous$connect,ns='DatabaseConnector')
+      assignInNamespace('disconnect',previous$disconnect,ns='DatabaseConnector')
+      assignInNamespace('.jcall',previous$jcall,ns='rJava')},add=TRUE)
+    jdbc<-new.env(parent=emptyenv());statement<-new.env(parent=emptyenv())
+    connection<-methods::new('AchillesCleanupTestConnection',jConnection=jdbc)
+    events<-character();rollbacks<-0L;disconnects<-0L;connections<-0L;workCalls<-0L;visits<-0L
+    assignInNamespace('connect',function(...) {connections<<-connections+1L;connection},ns='DatabaseConnector')
+    assignInNamespace('disconnect',function(con,...) {
+      stopifnot(identical(con,connection));disconnects<<-disconnects+1L
+      events<<-c(events,paste0('disconnect',disconnects))
+      if(disconnects<=disconnectFailures)stop('private disconnect credential sentinel')
+      invisible(NULL)
+    },ns='DatabaseConnector')
+    assignInNamespace('.jcall',function(obj,returnSig='V',method,...) {
+      if(identical(method,'rollback')) {
+        stopifnot(identical(obj,jdbc));rollbacks<<-rollbacks+1L
+        events<<-c(events,paste0('rollback',rollbacks))
+        if(rollbacks<=rollbackFailures)stop('private rollback credential sentinel')
+        return(invisible(NULL))
+      }
+      if(method%in%c('setAutoCommit','setReadOnly','setTransactionIsolation'))return(invisible(NULL))
+      if(identical(method,'createStatement'))return(statement)
+      if(method%in%c('setQueryTimeout','cancel','close'))return(invisible(NULL))
+      if(identical(method,'execute')) {
+        workCalls<<-workCalls+1L
+        stop('private SQL credential sentinel')
+      }
+      stop('private unexpected JDBC sentinel')
+    },ns='rJava')
+    execute<-executeCharacterizationSql
+    if(workSucceeds) {
+      scope<-new.env(parent=environment(execute));tiny<-program;tiny$steps<-list();tiny$outputs<-list()
+      scope$.sql_execution_program<-function(...)tiny
+      scope$.core_metadata_ids<-function()character()
+      scope$.core_probes<-function()character()
+      scope$.core_capabilities<-function(...)list(schema_sha256=strrep('0',64),values=list())
+      scope$.sql_execution_transport<-function(...)list(
+        execute=function(...){workCalls<<-workCalls+1L;invisible(NULL)},
+        stream=function(...)invisible(NULL),telemetry=function()f('.object')())
+      environment(execute)<-scope
+    }
+    result<-tryCatch(execute(details,program,function(...){visits<<-visits+1L}),error=identity,interrupt=identity)
+    stopifnot(connections==1L,workCalls>=1L,visits==0L,identical(events,sequence))
+    if(is.null(code))stopifnot(is.list(result),!inherits(result,'condition'),result$state=='succeeded',
+      result$cleanup$transaction=='rolled_back',result$cleanup$connection=='disconnected') else {
+      stopifnot(inherits(result,'AchillesSqlExecutionFailure'),identical(result$reason_code,code),
+        is.null(result$call),is.null(result$parent))
+      diagnostic<-as.character(jsonlite::toJSON(unclass(result),auto_unbox=TRUE,null='null'))
+      for(sentinel in c('private disconnect credential sentinel','private rollback credential sentinel',
+        'private SQL credential sentinel','private unexpected JDBC sentinel'))
+        stopifnot(!grepl(sentinel,diagnostic,fixed=TRUE))
+    }
+    invisible(TRUE)
+  }
+  cleanupTrial(FALSE,0,0,'execution.query_failed',c('rollback1','disconnect1'))
+  cleanupTrial(FALSE,0,1,'execution.cleanup_failed',c('rollback1','disconnect1','disconnect2'))
+  cleanupTrial(FALSE,1,1,'execution.cleanup_failed',c('rollback1','disconnect1','rollback2','disconnect2'))
+  cleanupTrial(FALSE,Inf,0,'execution.cleanup_failed',c('rollback1','disconnect1','rollback2'))
+  cleanupTrial(FALSE,Inf,Inf,'execution.cleanup_failed',c('rollback1','disconnect1','rollback2','disconnect2'))
+  cleanupTrial(TRUE,0,0,NULL,c('rollback1','disconnect1'))
+  cleanupTrial(TRUE,0,1,'execution.cleanup_failed',c('rollback1','disconnect1','disconnect2'))
+  cleanupTrial(TRUE,0,Inf,'execution.cleanup_failed',c('rollback1','disconnect1','disconnect2'))
+  stopifnot(attempts==0L)
+  cat('EXECUTOR_PUBLIC_CLEANUP_TRANSIENT_PERMANENT_RETRY_BOTH_ACTIONS_AND_SANITIZATION_OK\n')
 })

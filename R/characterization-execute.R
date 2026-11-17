@@ -67,12 +67,18 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
     }
     invisible(TRUE)
   }
-  connection<-NULL;jdbc<-NULL;cleaned<-FALSE
+  connection<-NULL;jdbc<-NULL;cleaned<-FALSE;rollbackConfirmed<-FALSE;disconnectConfirmed<-FALSE
   cleanup<-function() {
     if(cleaned)return(TRUE)
-    rolled<-is.null(jdbc)||isTRUE(tryCatch({rJava::.jcall(jdbc,"V","rollback");TRUE},error=function(e)FALSE,interrupt=function(e)FALSE))
-    disconnected<-is.null(connection)||isTRUE(tryCatch({DatabaseConnector::disconnect(connection);TRUE},error=function(e)FALSE,interrupt=function(e)FALSE))
-    cleaned<<-TRUE;rolled&&disconnected
+    if(!rollbackConfirmed)rollbackConfirmed<<-is.null(jdbc)||isTRUE(tryCatch({
+      rJava::.jcall(jdbc,"V","rollback");TRUE
+    },error=function(e)FALSE,interrupt=function(e)FALSE))
+    # Attempt disconnect even when rollback failed. Retain each unconfirmed
+    # action for on.exit retry; network failure is never a rollback guarantee.
+    if(!disconnectConfirmed)disconnectConfirmed<<-is.null(connection)||isTRUE(tryCatch({
+      DatabaseConnector::disconnect(connection);TRUE
+    },error=function(e)FALSE,interrupt=function(e)FALSE))
+    cleaned<<-rollbackConfirmed&&disconnectConfirmed;cleaned
   }
   on.exit(if(!cleaned)cleanup(),add=TRUE)
   work<-function() {
@@ -194,7 +200,7 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
   outcome<-tryCatch(list(value=work(),failure=NULL),error=function(e)list(value=NULL,failure=e),
     interrupt=function(e)list(value=NULL,failure=e))
   if(!is.null(outcome$failure)) {
-    cleanup()
+    .sql_execution_need(cleanup(),"execution.cleanup_failed")
     if(inherits(outcome$failure,"AchillesSqlExecutionFailure"))stop(outcome$failure)
     .sql_execution_error(if(inherits(outcome$failure,"interrupt"))"execution.cancelled" else "execution.query_failed")
   }

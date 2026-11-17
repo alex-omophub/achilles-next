@@ -13,10 +13,10 @@ Product: AchillesNext. Repository: achilles-next. R package: AchillesNext.
 
 ## Git operations and review
 
-- Prepare reviewable changes and run relevant checks before committing. Follow the user's current authorization and any per-task request to leave changes uncommitted.
-- Under the user's standing authorization, develop tasks, commit/push, create PRs, address review/CI findings and merge through the user account. Pause for necessary clarification; continue independent work where possible.
+- Prepare reviewable changes and run relevant checks. Never commit, amend, push or merge without explicit user approval after review.
+- Only the user initiates PRs. Never create one through a CLI, API, tool or browser. Local PR-description drafts may be prepared for review.
 - Authorized commits must use the user's configured Git author and committer identity. Do not substitute an agent/bot identity, override authorship or add AI co-author trailers.
-- PRs must use the user's authenticated account. Before merging, verify that Cubic completed on the current head, all required CI passed, all active review findings are addressed and the latest remote state is integrated. Never bypass checks or force-push.
+- Before an authorized merge, verify the [review and CI gate](CONTRIBUTING.md#commits-and-pull-requests) on the current head: the `cubic · AI code reviewer` check completed successfully, all required CI passed, all active review findings are addressed and the latest remote state is integrated. Never bypass checks or force-push.
 - Use `feature/{ticket-id}-{branch-name}` for feature branches.
 - Use `fix/{ticket-id}-{branch-name}` for fixes.
 - Use an existing ticket ID and a descriptive lowercase, hyphen-separated branch name. Do not invent tickets or commit directly on main.

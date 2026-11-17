@@ -45,9 +45,11 @@ capability, timestamp and timing observations are captured in the same snapshot
 and bound through prepared JSONB parameters.}
 \details{
 The source role must have SELECT-only privileges; the owned transaction is writable
-only because it creates backend-private temporary stages. It is rolled back and
-disconnected on success as well as on error. A success receipt is returned only
-after successful cleanup. The executor does not read or modify a result-store
+only because it creates backend-private temporary stages. Before returning a
+success receipt, it confirms rollback and disconnection. On error it attempts both
+cleanup operations and retries unconfirmed cleanup while unwinding. Driver or
+network failures can prevent cleanup confirmation; failed cleanup produces no
+success receipt. The executor does not read or modify a result-store
 publication, write a candidate, create canonical row keys or denominator edges,
 validate a complete wire artifact, approve output or promote a publication.
 
