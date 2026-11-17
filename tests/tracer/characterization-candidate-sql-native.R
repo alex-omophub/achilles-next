@@ -4,6 +4,7 @@ source('tools/benchmark/implementation_identity.R')
 source('tests/tracer/characterization-execute-native.R')
 source('tests/tracer/characterization-candidate-sql-failures.R')
 source('tests/tracer/characterization-candidate-sql-publication.R')
+source('tests/tracer/characterization-candidate-sql-clock.R')
 main<-function() {
   args<-commandArgs(TRUE);stopifnot(length(args)==2L)
   implementation<-implementationIdentity(getwd())
@@ -79,7 +80,7 @@ main<-function() {
   oldPointer<-function()q(paste0('SELECT source_id,profile_id,scope_id,publication_id::text,revision::text FROM "',results,'".achillesnext_current_publication ORDER BY source_id,profile_id,scope_id'))
   oldPages<-function()q(paste0('SELECT publication_id::text,sha256,encode(payload,\'hex\') AS bytes FROM "',results,'".achillesnext_page_object ORDER BY publication_id,sha256'))
   baselineTemp<-q("SELECT count(*)::text AS n FROM pg_class WHERE relpersistence='t' AND relname~'^achillesnext_[0-9a-f]{32}_'")$N
-  snapshots<-list();failures<-NULL;allBatches<-TRUE;readCategories<-list()
+  snapshots<-list();failures<-NULL;clockProof<-NULL;allBatches<-TRUE;readCategories<-list()
   for(index in seq_along(input)) {
     case<-input[[index]];schema<-makeSource(case,index);sourceId<-paste0('fixture:bridge:',case$case,':',case$version)
     stopifnot(q(paste0('SELECT has_schema_privilege(',lit(roles$source$user),',',lit(results),",'USAGE')::text AS allowed"))$ALLOWED=='false',
@@ -200,6 +201,7 @@ main<-function() {
       ex(paste0('GRANT USAGE ON SCHEMA "',schema,'" TO ',roles$source$user))
       cat('CANDIDATE_SQL_142_CANONICAL_PARITY_AND_SOURCE_DENIED_REPLAY ',case$case,' ',case$version,' ',strategy,'\n',sep='')
     }
+    if(index==1L)clockProof<-testCharacterizationCandidateSqlClock(sourceDetails,storeDetails,results,schema,sourceId,case$version,columns,out,q,f,qualified)
     if(index==1L)failures<-testCharacterizationCandidateSqlFailures(sourceDetails,program,storeDetails,results,out,
       f,patch,ex,q,qualified,tableCounts,prior,roles$source$user,schema)
   }
@@ -208,7 +210,7 @@ main<-function() {
     first$source_receipt$source$cdm_schema,first$source_id,first$candidate,first,out,
     sourceDetails,storeDetails,readerDetails,roles, input[[1L]])
   stopifnot(identical(implementation,implementationIdentity(getwd())),allBatches)
-  report<-list(snapshots=snapshots,failures=failures,compiled_publication=compiledPublication,implementation=implementation,
+  report<-list(snapshots=snapshots,failures=failures,client_clock=clockProof,compiled_publication=compiledPublication,implementation=implementation,
     isolation=list(different_principals=TRUE,source_store_access=FALSE,store_source_access=FALSE,source_write_access=FALSE,
       replay_source_access_revoked=TRUE,bounded_writer_batches=allBatches,import_read_queries=readCategories))
   writeLines(wire(report),file.path(out,'report.json'),useBytes=TRUE)
