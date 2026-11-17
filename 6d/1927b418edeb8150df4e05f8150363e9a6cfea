@@ -1,0 +1,24 @@
+tests/tracer/characterization-candidate-sql-clock.R
+  s_895f6ebe145fd3::t_6814c533fb3bc9 3-38
+  s_895f6ebe145fd3::t_deaae238a8cb54 1-2,39-57
+R/candidate-store.R
+  s_895f6ebe145fd3::t_6814c533fb3bc9 135-139
+tests/tracer/characterization-candidate-sql-native.R
+  s_895f6ebe145fd3::t_ddf384516e925b 7,83,204,213
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6d1927b418edeb8150df4e05f8150363e9a6cfea",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
