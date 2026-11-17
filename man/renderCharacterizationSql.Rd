@@ -46,8 +46,8 @@ validation remain explicit; no static input is labelled as a measured result.
 The program is a compile artifact, not a self-contained SQL publication script. Its separate executor emits restricted
 intermediates and does not persist, validate or publish them. Other engines and large-source qualification remain open.}
 \value{A deterministic program with a version/hash, declared source/profile,
-ordered steps, assertions, complete inventory SQL, 142 output query descriptors
-and runtime metadata parameter requirements. Its execution state is not_executed
+ordered steps, assertions, fixed \code{source_audit} query, complete inventory
+SQL, 142 output query descriptors and runtime metadata parameter requirements. Its execution state is not_executed
 and publication is unchanged.}
 \seealso{\code{planCharacterizationBatch}, \code{executeCharacterizationSql},
 \code{generateCharacterizationCandidate}}

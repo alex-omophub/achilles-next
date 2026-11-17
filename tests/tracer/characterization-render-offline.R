@@ -31,6 +31,14 @@ local({
       all(vapply(p$steps,function(s)s$kind%in%c('execute','assert_scalar'),TRUE)),
       any(vapply(p$steps,function(s)s$id=='source.declaration'&&s$expected=='true',TRUE)))
     stopifnot(p$batch$scope$history=='source_derived_full_history',is.null(p$batch$scope$observed_window))
+    audit<-p$source_audit
+    stopifnot(setequal(names(audit),c('format_version','kind','sql')),audit$format_version=='1.0.0',
+      audit$kind=='staged_source_audit_totals',nchar(audit$sql,type='bytes')<16384L,
+      !grepl('{{',audit$sql,fixed=TRUE),!grepl('_reports|_population"|_inventory"|_density"',audit$sql))
+    for(table in c('person','raw','union',paste0(f('.domain_names')(TRUE),'class')))
+      stopifnot(grepl(paste0('pg_temp."',p$declarations$stage_prefix,'_',table,'"'),audit$sql,fixed=TRUE))
+    reference<-renderCharacterizationSql('cdm',"fixture:apostrophe'backslash\\question?",case$version,declaration,numericStrategy='reference')
+    stopifnot(identical(audit,reference$source_audit))
     fail(function()renderCharacterizationSql('cdm','source',case$version,declaration,dialect='snowflake'),'Only the PostgreSQL')
     fail(function()renderCharacterizationSql('cdm','source','5.2',declaration),'Invalid batch source')
     fail(function()renderCharacterizationSql('cdm;DROP','source',case$version,declaration),'Invalid batch source')

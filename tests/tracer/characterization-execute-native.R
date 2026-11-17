@@ -82,6 +82,42 @@ testCharacterizationExecuteUtf8Transport <- function(details) {
   invisible(TRUE)
 }
 
+# This receipt is separate from the142report/wire outputs. Python compares its
+# actual values with raw physical fixture rows; these checks also bound its shape.
+testCharacterizationExecuteAudit <- function(receipt) {
+  f<-function(n)get(n,asNamespace('AchillesNext'));audit<-receipt$audit_totals
+  stopifnot(is.list(audit),setequal(names(audit),c('population','domains')),
+    nchar(f('.json')(audit),type='bytes')<=16384L,length(receipt$inventory)==142L,
+    !'audit_totals'%in%names(receipt$runtime_facts))
+  population<-audit$population
+  stopifnot(setequal(names(population),c('person_count','nonnull','distinct','raw_observation_count','merged_interval_count')))
+  count<-function(x)is.character(x)&&length(x)==1L&&!is.na(x)&&grepl('^(0|[1-9][0-9]*)$',x)
+  stopifnot(all(vapply(population,count,TRUE)),
+    identical(population$person_count,population$nonnull),identical(population$person_count,population$distinct),
+    f('.nv_unsigned_cmp')(population$merged_interval_count,population$raw_observation_count)<=0L)
+  domains<-c('condition','drug','procedure','visit','device','observation','death','specimen','measurement')
+  stopifnot(setequal(names(audit$domains),domains),length(audit$domains)==9L)
+  for(domain in domains) {
+    totals<-audit$domains[[domain]]
+    stopifnot(setequal(names(totals),c('raw','linked','observed','start','end')),
+      all(vapply(totals[c('raw','linked','observed')],count,TRUE)),
+      f('.nv_unsigned_cmp')(totals$observed,totals$linked)<=0L,
+      f('.nv_unsigned_cmp')(totals$linked,totals$raw)<=0L,
+      identical(is.null(totals$start),is.null(totals$end)))
+    if(is.null(totals$start))stopifnot(totals$observed=='0') else
+      stopifnot(f('.nv_date')(totals$start,FALSE),f('.nv_date')(totals$end,FALSE),totals$start<=totals$end)
+    if(totals$raw=='0')stopifnot(totals$linked=='0',totals$observed=='0',is.null(totals$start),is.null(totals$end))
+    if(population$person_count=='0')stopifnot(totals$linked=='0',totals$observed=='0')
+  }
+  statements<-receipt$telemetry$statements
+  auditAt<-which(vapply(statements,function(x)identical(x$id,'source.audit_totals'),TRUE))
+  outputAt<-which(vapply(statements,function(x)startsWith(x$id,'output.'),TRUE))
+  stopifnot(length(auditAt)==1L,length(outputAt)==142L,all(auditAt<outputAt),
+    statements[[auditAt]]$phase=='metadata',statements[[auditAt]]$kind=='query',
+    identical(statements[[auditAt]]$rows,'1'))
+  invisible(TRUE)
+}
+
 # Called once by the core driver while its marked source fixture is readable.
 testCharacterizationExecuteFailures <- function(details,owner,schema,sourceId,version,columns,fixtureConfig,out) {
   f<-function(n)get(n,asNamespace('AchillesNext'));wire<-f('.json');lit<-f('.store_literal')

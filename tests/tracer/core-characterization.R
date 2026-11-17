@@ -80,6 +80,7 @@ main<-function() {
       list(datasets=datasets,rows=rows,schema_sha256=context$observed_schema_sha256)
     })
     renderProof<-testCharacterizationRender(env$fixtureConnection(),schema,sourceId,case$version,snap)
+    snap$source_audits<-renderProof$source_audits
     if(index==1L)testCharacterizationExecuteFailures(env$fixtureConnection(),owner,schema,sourceId,case$version,
       renderProof$columns,args[1],out)
     # All validation uses only saved results; source denial must not alter it.

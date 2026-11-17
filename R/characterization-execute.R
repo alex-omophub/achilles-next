@@ -112,6 +112,9 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
       if(grepl("[.](create|index|drop)$",step$id))stageBudget()
       if(grepl("[.](create|index|analyze)$",step$id))stageTimings[[sid]]<-list(duration_ms=.sql_execution_ms(wall()-stageStarts[[sid]]))
     }
+    # Physical input conservation totals remain independent of report aggregates.
+    # This one fixed-size control row uses the separate metadata transfer budget.
+    auditTotals<-.sql_execution_audit_totals(transport$one(program$source_audit$sql,"source.audit_totals","metadata"))
     # No schema declaration substitutes for actual observations in this snapshot.
     capabilities<-.core_capabilities(list(one=function(sql)transport$one(sql,"capabilities.scalar","metadata"),
       stream=function(sql,visitor)transport$stream(sql,visitor,"capabilities.catalog","metadata",maxRows=4096L,maxBytes=8*1024^2)),program$batch$source$cdm_schema)
@@ -191,7 +194,7 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
     telemetry$enforcement<-"Stage bytes are sampled after CREATE/INDEX/DROP, not hard disk reservation; cancellation/deadline checks occur between JDBC calls and rows, with per-statement server/JDBC timeout"
     .object(format_version="1.0.0",kind="characterization_execution_receipt",state="succeeded",program_sha256=program$program_sha256,
       profile=program$batch$profile,source=program$batch$source,observed_schema_sha256=capabilities$schema_sha256,capabilities=capabilities$values,
-      generation=.object(started_at=started,ended_at=ended),inventory=inventory[ids],runtime_facts=facts,
+      generation=.object(started_at=started,ended_at=ended),audit_totals=auditTotals,inventory=inventory[ids],runtime_facts=facts,
       rows=format(rows,scientific=FALSE,trim=TRUE),bytes=format(bytes,scientific=FALSE,trim=TRUE),metric_rows=metricRows,telemetry=telemetry,
       cleanup=.object(transaction="rolled_back",connection="disconnected"),canonical_wire=FALSE,publication_changed=FALSE)
   }
