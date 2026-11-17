@@ -1,0 +1,14 @@
+docs/development/client-paths.md
+  h_4046c129935915 23
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ad77f19240dac8bdb95cdf6aebe5b2c8c72a9ad6",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
