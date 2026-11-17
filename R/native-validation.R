@@ -11,11 +11,14 @@
 }
 .nv_json <- function(raw) {
   text <- rawToChar(raw)
-  .nv_need(!anyNA(iconv(text, from = "UTF-8", to = "UTF-8", sub = NA)), "Invalid UTF-8")
-  tokens <- gregexpr('"([^"\\\\]|\\\\.)*"|[{}\\[\\]]', text, perl = TRUE)[[1]]
+  .nv_need(isTRUE(validUTF8(text)) && !anyNA(iconv(text, from = "UTF-8", to = "UTF-8", sub = NA)), "Invalid UTF-8")
+  tokens <- gregexpr('"([^"\\\\]|\\\\.)*"|[{}\\[\\]]', text, perl = TRUE, useBytes = TRUE)[[1]]
   if (tokens[[1]] > 0L) {
-    first <- substring(text, tokens, tokens)
-    depth <- cumsum(ifelse(first %in% c("{", "["), 1L, ifelse(first %in% c("}", "]"), -1L, 0L)))
+    # UTF-8 is checked above. JSON punctuation is ASCII, so no continuation
+    # byte can be mistaken for syntax. Byte offsets avoid rescanning multibyte
+    # prefixes for each token, in both the regexp and first-byte extraction.
+    first <- as.integer(raw[tokens])
+    depth <- cumsum(ifelse(first %in% c(123L, 91L), 1L, ifelse(first %in% c(125L, 93L), -1L, 0L)))
     .nv_need(max(depth) <= 32L && min(depth) >= 0L, "JSON nesting limit exceeded")
   }
   result <- jsonlite::fromJSON(text, simplifyVector = FALSE)
