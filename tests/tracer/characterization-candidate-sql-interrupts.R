@@ -274,7 +274,9 @@ testCharacterizationCandidateSourceWrappedCheck<-function(program,details) {
       stores==1L,sources==1L,captures==1L,checks==2L,cleaned,connections==0L,
       is.null(error$call),is.null(error$parent),identical(error$publication_changed,FALSE),
       length(list.files(root,all.files=TRUE,no..=TRUE))==0L)
-    for(key in c('attempt_id','run_id','source_release_id','release_id'))stopifnot(grepl('^[0-9a-f-]{36}$',error[[key]]))
+    for(key in c('attempt_id','run_id','source_release_id','release_id'))
+      stopifnot(is.character(error[[key]]),length(error[[key]])==1L,
+        isTRUE(grepl('^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',error[[key]])))
   }
   cat('CANDIDATE_REAL_SOURCE_WRAPPED_CHECK_DEADLINE_AND_TRUE_CANCEL_REASON_PRESERVED_OK\n')
 }
