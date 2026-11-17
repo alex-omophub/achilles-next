@@ -163,3 +163,5 @@ inventory, so time and scratch requirements grow with output cardinality. Growin
 inventory measurements and a declared client/engine workload are needed before
 making performance or hardware claims; a finite scratch cap alone supplies no
 such qualification.
+
+Terminology has independent finite limits: `maxSnapshotBytes` bounds the actual restricted input copy during publication, and `captureConceptSnapshot(maxOutputBytes=...)` bounds canonical header/row output including linefeeds. Both default to 1 GiB; explicitly increase the finite cap for a larger vocabulary. The input copy is closed and SHA-256 verified before parsing or row visitors. These limits do not consume the validation scratch or export counters.

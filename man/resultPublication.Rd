@@ -10,7 +10,8 @@ validateResultArtifact(bundleDir, maxScratchBytes = 1024^3,
 publishResultRelease(connectionDetails, resultsSchema, releaseId,
   exportDir, accessScopeId, approvalId, policy, institutionalPolicy,
   expectedRevision = NULL, savedTerminology = NULL, cancel = function() FALSE,
-  maxScratchBytes = 1024^3, maxExportBytes = 1024^3)
+  maxScratchBytes = 1024^3, maxExportBytes = 1024^3,
+  maxSnapshotBytes = 1024^3)
 }
 \arguments{
 \item{connectionDetails}{PostgreSQL DatabaseConnector connection details for a trusted validator/publisher.}
@@ -26,6 +27,7 @@ publishResultRelease(connectionDetails, resultsSchema, releaseId,
 \item{savedTerminology}{Optional restricted snapshot list containing path, sha256 and optional exact rows, as returned by captureConceptSnapshot. Requires explicit enableSavedTerminology; opts into artifact format 2.1.0. NULL preserves format 2.0.0.}
 \item{maxScratchBytes}{Finite nonnegative integer limit for total logical file bytes in each validation admission, default 1 GiB. Shared by row/concept indexes and values and reconciliation group files; simultaneous old and replacement indexes count during rehash. Validation also permits at most 1,000,000 scratch files, including zero-byte page marks. These configured limits do not reserve physical disk blocks, directory metadata or inodes. Export page staging and the terminology snapshot copy are outside this validation-only limit.}
 \item{maxExportBytes}{Finite nonnegative whole-number limit, up to \code{2^53 - 1}, for total serialized bytes written to the new export, default 1 GiB. Counts all immutable object kinds and \code{publication.json}, including final newline bytes, once before each file is opened. Rename, database copies and artifact admissions do not charge again. Excludes the terminology INPUT snapshot copy, validation scratch, database storage, filesystem metadata and R/JVM memory; it does not reserve physical disk space. Zero is valid and rejects nonempty output.}
+\item{maxSnapshotBytes}{Finite nonnegative whole-number limit up to \code{2^53 - 1} for the restricted terminology input copy, default 1 GiB. Counts actual bytes read and charged before copying, independently of export and validation limits. The closed private copy must match the supplied SHA-256 before any row is visited. Larger snapshots require an explicit larger finite cap.}
 \item{cancel}{Boolean cancellation predicate checked before validation, between publication SQL operations and streamed rows, during page emission, snapshot loading, admission and publication. Cancellation is cooperative. Pre-COMMIT failure uses rollback/cleanup; an unknown or confirmed COMMIT is reported explicitly and retains the approved export.}
 }
 \description{Native validation of immutable aggregate releases and bounded content-addressed exports. Publication builds an explicit approved projection, validates all exported objects and writes identical database page bytes. It never queries the CDM.}

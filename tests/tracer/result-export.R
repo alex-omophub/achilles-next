@@ -6,6 +6,8 @@ local({
   config <- new.env();sys.source(args[[1]],config);details <- config$fixtureConnection('owner')
   helperDir <- file.path(dirname(normalizePath(args[[1]])),'../tests/tracer')
   source(file.path(helperDir,'publication-outcomes-offline.R'))
+  source(file.path(helperDir,'terminology-bounds-offline.R'))
+  source(file.path(helperDir,'terminology-bounds-native.R'),local=TRUE)
   source(file.path(helperDir,'result-artifact-regressions.R'),local=TRUE)
   source(file.path(helperDir,'result-store-regressions.R'),local=TRUE)
   source(file.path(helperDir,'artifact-inventory.R'),local=TRUE)

@@ -5,7 +5,8 @@
 \usage{
 captureConceptSnapshot(connectionDetails, vocabularySchema, outputFile,
   sourceId, releaseId, labelSource, vocabularyRelease,
-  cancel = function() FALSE, queryTimeoutSeconds = 900L)
+  cancel = function() FALSE, queryTimeoutSeconds = 900L,
+  maxOutputBytes = 1024^3)
 enableSavedTerminology(connectionDetails, resultsSchema)
 }
 \arguments{
@@ -17,6 +18,7 @@ enableSavedTerminology(connectionDetails, resultsSchema)
 \item{labelSource, vocabularyRelease}{Explicit identity lists: state, value, basis, assertion_id and reason_code. Known requires value/basis/assertion_id and NULL reason; unknown requires NULL values/basis/assertion_id and an explicit reason. Known identities are operator assertions, not inferred evidence.}
 \item{cancel}{Boolean cancellation predicate, checked throughout capture. Cooperative under synchronous JDBC.}
 \item{queryTimeoutSeconds}{Positive JDBC statement timeout for the batch vocabulary capture; default 900 seconds.}
+\item{maxOutputBytes}{Finite nonnegative whole-number limit up to \code{2^53 - 1} for canonical header and row bytes, including newlines, default 1 GiB. Zero rejects nonempty output before source SQL. This is a configurable logical output limit, not a RAM requirement or a guarantee of vocabulary capacity.}
 \item{resultsSchema}{Existing initialized base 2.0.0 aggregate store, owned by the caller.}
 }
 \description{Captures local reference terminology once during explicit batch work, then allows opt-in physical 2.1.0 publication using the saved snapshot. Providers read only approved saved pages.}
@@ -24,6 +26,7 @@ enableSavedTerminology(connectionDetails, resultsSchema)
 \details{
 Capture reads only the local concept table in one read-only repeatable-read transaction.
 It preserves exact IDs/display names and streams bounded rows to a private new file.
+The engine replaces JSON rows over 8,192 UTF-8 bytes with a failure sentinel before JDBC retrieval. The closed private file is installed with an exclusive same-filesystem hard link; filesystems without hard-link support fail safely without replacing an existing destination.
 Duplicate IDs, malformed metadata, labels over 1,024 UTF-8 bytes, control characters
 or failed/cancelled capture fail without a finalized output. NULL/ASCII-space-only
 names become explicit unavailable labels. No patient/event text is read.

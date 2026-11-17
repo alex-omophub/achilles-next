@@ -10,14 +10,14 @@
   }
   list(add=add,finish=flush)
 }
-.term_load <- function(tx,snapshot,context,cancel) {
+.term_load <- function(tx,snapshot,context,cancel,maxSnapshotBytes=1024^3) {
   .term_require_extension(tx)
   tx$execute("CREATE TEMP TABLE achillesnext_term_input (id_key text COLLATE \"C\" PRIMARY KEY,entry jsonb NOT NULL,name_key text COLLATE \"C\") ON COMMIT DROP")
   writer<-.term_temp_writer(tx,"achillesnext_term_input")
   header<-.term_snapshot(snapshot,function(entry,key,header) {
     .nv_need(identical(header$source_id,context$source_id)&&identical(header$release_id,context$release_id),"Snapshot release/source mismatch")
     writer$add(key,entry,if(entry$label_state=="available").term_name_key(entry) else NULL)
-  },cancel)
+  },cancel,maxSnapshotBytes=maxSnapshotBytes)
   .nv_need(identical(header$source_id,context$source_id)&&identical(header$release_id,context$release_id),"Snapshot release/source mismatch")
   writer$finish()
   metadata<-.object(extension_version="1.0.0",matching="ascii-fold-prefix-v1",label_source=header$label_source,

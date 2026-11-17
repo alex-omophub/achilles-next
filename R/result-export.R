@@ -78,11 +78,11 @@
   tx$stream<-function(sql,visit){check();value<-stream(sql,function(text){check();visit(text);check()});check();value}
   tx
 }
-.store_build_pages <- function(tx, validated, publicationId, scopeId, approvalId, policy, directory,savedTerminology=NULL,cancel=function()FALSE,maxExportBytes=1024^3) {
+.store_build_pages <- function(tx, validated, publicationId, scopeId, approvalId, policy, directory,savedTerminology=NULL,cancel=function()FALSE,maxExportBytes=1024^3,maxSnapshotBytes=1024^3) {
   .term_check(cancel)
   writer<-.export_writer(maxExportBytes,function().term_check(cancel))
   assets <- validated$assets %||% .v2_assets();allow <- .v2_policy(policy,assets);c <- validated$context;datasets <- validated$datasets
-  metadata<-if(is.null(savedTerminology))NULL else .term_load(tx,savedTerminology,c,cancel)
+  metadata<-if(is.null(savedTerminology))NULL else .term_load(tx,savedTerminology,c,cancel,maxSnapshotBytes=maxSnapshotBytes)
   version<-if(is.null(metadata))"2.0.0" else "2.1.0"
   context <- .object(contract_version=version,publication_id=publicationId,release_id=c$release_id,source_id=c$source_id,
     profile_id=c$profile_id,profile_revision=c$profile_revision,profile_sha256=c$profile_sha256,access_scope_id=scopeId)
@@ -161,8 +161,8 @@
 #' @param expectedRevision Exact current revision string, or NULL to prepare without promotion.
 #' @param maxExportBytes Maximum total serialized bytes of staged objects and publication.json.
 #' @export
-publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,exportDir,accessScopeId,approvalId,policy,institutionalPolicy,expectedRevision=NULL,savedTerminology=NULL,cancel=function()FALSE,maxScratchBytes=1024^3,maxExportBytes=1024^3) {
-  .v2_scratch_limit(maxScratchBytes);.export_limit(maxExportBytes)
+publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,exportDir,accessScopeId,approvalId,policy,institutionalPolicy,expectedRevision=NULL,savedTerminology=NULL,cancel=function()FALSE,maxScratchBytes=1024^3,maxExportBytes=1024^3,maxSnapshotBytes=1024^3) {
+  .v2_scratch_limit(maxScratchBytes);.export_limit(maxExportBytes);.term_bound_limit(maxSnapshotBytes)
   .nv_need(.string(exportDir) && !file.exists(exportDir),"Export directory must be new")
   .nv_need(.string(accessScopeId) && grepl("^[a-z0-9_.:-]{1,128}$",accessScopeId),"Invalid audience identifier")
   .nv_need(.string(approvalId) && grepl("^[A-Za-z0-9_.:-]{1,128}$",approvalId),"Invalid approval identifier")
@@ -199,7 +199,7 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
     .term_check(cancel);tx<-.publication_tx(tx,cancel)
     validated <- .store_validate(tx,releaseId);.nv_need(validated$context$state=="validated","Validate the release before publication")
     .term_check(cancel)
-    root <<- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel,maxExportBytes=maxExportBytes)
+    root <<- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel,maxExportBytes=maxExportBytes,maxSnapshotBytes=maxSnapshotBytes)
     admittedRoot<-.v2_directory(stage,check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)
     candidate <- .object(publication_id=pub,release_id=releaseId,source_id=validated$context$source_id,access_scope_id=accessScopeId,
       approval_id=approvalId,policy=policy,root=root)
@@ -255,7 +255,7 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
     if(!clean$ok||!state$rollback_state%in%c("confirmed","not_required")||!state$disconnect_state%in%c("confirmed","not_required"))
       .publication_failure("publication.cleanup_failed",state,pub,releaseId,root,!is.null(expectedRevision))
     failure<-captured$failure
-    if(inherits(failure,"achillesnext_scratch_error")||inherits(failure,"achillesnext_export_error"))stop(failure)
+    if(inherits(failure,"achillesnext_scratch_error")||inherits(failure,"achillesnext_export_error")||inherits(failure,"achillesnext_terminology_error"))stop(failure)
     if(inherits(failure,"interrupt")).publication_failure("publication.cancelled",state,pub,releaseId,root,!is.null(expectedRevision))
     if(grepl("Current publication conflict",conditionMessage(failure),fixed=TRUE))stop("Current publication conflict",call.=FALSE)
     stop("Result publication failed; prior current preserved",call.=FALSE)
