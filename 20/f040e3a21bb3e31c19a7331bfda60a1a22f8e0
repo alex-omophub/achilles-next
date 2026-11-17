@@ -1,0 +1,22 @@
+tests/tracer/denominator-endpoints-native.R
+  s_3e206b4a2cf4c3::t_85fc41a24fd1c9 1-68,72-93,105,110-111,113,116,119,121
+  s_3e206b4a2cf4c3::t_5fdd95b3483142 69-71,94-104,106-109,112,114-115,117-118,120
+tests/tracer/result-export.R
+  s_3e206b4a2cf4c3::t_85fc41a24fd1c9 11,24
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "20f040e3a21bb3e31c19a7331bfda60a1a22f8e0",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
