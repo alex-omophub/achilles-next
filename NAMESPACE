@@ -42,3 +42,5 @@ export(generateCharacterizationCandidate)
 export(executeCharacterizationRefresh)
 export(renderCharacterizationSql)
 export(executeCharacterizationSql)
+
+export(generateCharacterizationCandidateFromSql)

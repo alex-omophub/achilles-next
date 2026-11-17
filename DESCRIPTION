@@ -16,6 +16,8 @@ Description: Precomputes exact population, observation opportunity and eight-dom
     columns, with runtime assertions and explicit metadata parameter requirements.
     Executes checked programs through bounded aggregate callbacks with owned
     transaction cleanup and separate client and unavailable engine telemetry.
+    Optionally stages checked outputs on bounded local disk before importing a
+    complete building candidate through a separate result-store connection.
 License: Apache License (>= 2)
 Encoding: UTF-8
 Depends: R (>= 4.2)
