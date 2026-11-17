@@ -233,3 +233,48 @@ testCharacterizationCandidateSourceConditions<-function(program,details) {
   }
   cat('CANDIDATE_SOURCE_CANCEL_AND_DEADLINE_CAUSES_PRESERVED_WITHOUT_IMPORT_OR_RETRY_OK\n')
 }
+
+# The real source executor deliberately classifies a thrown check as cancelled.
+# Preserve the bridge's elapsed reason without invoking the user check again.
+testCharacterizationCandidateSourceWrappedCheck<-function(program,details) {
+  f<-function(n)get(n,asNamespace('AchillesNext'));o<-f('.object')
+  sourceExecute<-executeCharacterizationSql
+  previous<-get('connect',asNamespace('DatabaseConnector'));connections<-0L
+  on.exit(assignInNamespace('connect',previous,ns='DatabaseConnector'),add=TRUE)
+  assignInNamespace('connect',function(...){connections<<-connections+1L;stop('private unexpected source connection')},ns='DatabaseConnector')
+  root<-tempfile('candidate-wrapped-check-');stopifnot(dir.create(root,mode='0700'))
+  on.exit(unlink(root,recursive=TRUE),add=TRUE)
+  for(seam in c('deadline','cancel')) {
+    now<-0;inSource<-FALSE;stores<-0L;sources<-0L;checks<-0L;captures<-0L;cleaned<-FALSE
+    clock<-function(value)structure(c(user.self=0,sys.self=0,elapsed=value,user.child=0,sys.child=0),class='proc_time')
+    generate<-generateCharacterizationCandidateFromSql;scope<-new.env(parent=environment(generate))
+    scope$proc.time<-function()clock(now)
+    scope$.candidate_store_transaction<-function(...,readOnly=FALSE) {
+      stores<<-stores+1L;stopifnot(stores==1L);list(value=NULL,telemetry=o())
+    }
+    scope$.candidate_capture<-function(...) {
+      captures<<-captures+1L;list(visit=function(...)stop('private unexpected visit'),cleanup=function()cleaned<<-TRUE)
+    }
+    scope$executeCharacterizationSql<-function(...) {
+      sources<<-sources+1L;inSource<<-TRUE;on.exit(inSource<<-FALSE)
+      actual<-sourceExecute;sourceScope<-new.env(parent=environment(actual))
+      # Keep the executor's own clock within its budget; only the bridge check
+      # observes the outer deadline. The installed source function body is real.
+      sourceScope$proc.time<-function()clock(0);environment(actual)<-sourceScope
+      stopifnot(identical(body(actual),body(sourceExecute)))
+      actual(...)
+    }
+    environment(generate)<-scope
+    error<-tryCatch({generate(details,program,details,'results',scratchParent=root,maxElapsedSeconds=1,
+      check=function(){checks<<-checks+1L;if(inSource&&seam=='deadline')now<<-2;!(inSource&&seam=='cancel')});NULL},error=identity)
+    expected<-if(seam=='deadline')'candidate.elapsed_limit' else 'candidate.cancelled'
+    if(!identical(error$reason_code,expected))stop(paste('Expected wrapped source reason',expected,'received',error$reason_code),call.=FALSE)
+    stopifnot(inherits(error,'AchillesCandidateFailure'),identical(error$reason_code,expected),
+      identical(error$cause_code,'execution.cancelled'),error$outcome=='not_committed',
+      stores==1L,sources==1L,captures==1L,checks==2L,cleaned,connections==0L,
+      is.null(error$call),is.null(error$parent),identical(error$publication_changed,FALSE),
+      length(list.files(root,all.files=TRUE,no..=TRUE))==0L)
+    for(key in c('attempt_id','run_id','source_release_id','release_id'))stopifnot(grepl('^[0-9a-f-]{36}$',error[[key]]))
+  }
+  cat('CANDIDATE_REAL_SOURCE_WRAPPED_CHECK_DEADLINE_AND_TRUE_CANCEL_REASON_PRESERVED_OK\n')
+}

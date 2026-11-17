@@ -52,6 +52,7 @@ local({
   testCharacterizationCandidateValidationInterrupt(program,details)
   testCharacterizationCandidateGlobalClock(program,details)
   testCharacterizationCandidateSourceConditions(program,details)
+  testCharacterizationCandidateSourceWrappedCheck(program,details)
   testCharacterizationCandidateStoreTimeouts(details)
   cat('CANDIDATE_SQL_INVALID_PROGRAM_TARGET_LIMITS_AND_CANCEL_ZERO_CONNECTIONS_OK\n')
 })

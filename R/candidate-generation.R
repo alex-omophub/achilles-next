@@ -4,7 +4,7 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
   maxScratchBytes=1024^3,scratchParent=tempdir(),maxStageBytes=64*1024^2,maxAggregateRows=1000000L,
   maxAggregateBytes=256*1024^2,maxRowBytes=131072L,fetchSize=128L,statementTimeoutMs=30000L,
   maxElapsedSeconds=3600,check=NULL) {
-  clock<-proc.time();wall<-function()proc.time()[["elapsed"]];started<-wall();ids<-NULL;capture<-NULL;captureFailure<-NULL
+  clock<-proc.time();wall<-function()proc.time()[["elapsed"]];started<-wall();ids<-NULL;capture<-NULL;captureFailure<-NULL;sourceControlReason<-NULL
   validation<-.v2_scratch_capture(function() {
     program<-.sql_execution_program(program)
     limits<-.sql_execution_limits(maxStageBytes,maxAggregateRows,maxAggregateBytes,maxRowBytes,fetchSize,
@@ -35,6 +35,16 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
     }
     invisible(TRUE)
   }
+  sourceCheck<-function() {
+    checked<-.v2_scratch_capture(tick)
+    if(!checked$ok) {
+      failure<-checked$failure
+      if(inherits(failure,"AchillesCandidateFailure")&&failure$reason_code%in%c("candidate.elapsed_limit","candidate.cancelled"))
+        sourceControlReason<<-failure$reason_code
+      stop(failure)
+    }
+    checked$value
+  }
   cleanup<-function() {
     if(is.null(capture))return(TRUE)
     out<-.v2_scratch_capture(capture$cleanup);out$ok
@@ -51,7 +61,7 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
       if(!out$ok){captureFailure<<-out$failure;stop(out$failure)}
     },maxStageBytes=maxStageBytes,maxAggregateRows=maxAggregateRows,maxAggregateBytes=maxAggregateBytes,
       maxRowBytes=maxRowBytes,fetchSize=fetchSize,statementTimeoutMs=statementTimeoutMs,
-      maxElapsedSeconds=max(0.001,maxElapsedSeconds-(wall()-started)),check=tick)
+      maxElapsedSeconds=max(0.001,maxElapsedSeconds-(wall()-started)),check=sourceCheck)
     tick();capture$complete(receipt,program)
     store<-.candidate_store_transaction(storeConnectionDetails,resultsSchema,function(tx) {
       persistence<-.candidate_import(tx,capture,receipt,program,ids,tick)
@@ -81,7 +91,8 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
     code<-if(!cleaned)"candidate.cleanup_failed" else if(inherits(failure,"AchillesCandidateFailure"))failure$reason_code else
       if(inherits(failure,"achillesnext_scratch_error"))paste0("candidate.scratch_",failure$code) else
       if(inherits(failure,"interrupt"))"candidate.cancelled" else if(inherits(failure,"AchillesSqlExecutionFailure"))
-        switch(failure$reason_code,execution.cancelled="candidate.cancelled",execution.elapsed_limit="candidate.elapsed_limit","candidate.source_failed") else "candidate.invalid_capture"
+        if(identical(failure$reason_code,"execution.cancelled")&&!is.null(sourceControlReason))sourceControlReason else
+          switch(failure$reason_code,execution.cancelled="candidate.cancelled",execution.elapsed_limit="candidate.elapsed_limit","candidate.source_failed") else "candidate.invalid_capture"
     cause<-if(inherits(failure,"AchillesSqlExecutionFailure"))failure$reason_code else NULL
     .candidate_error(code,ids,cause=cause)
   }
