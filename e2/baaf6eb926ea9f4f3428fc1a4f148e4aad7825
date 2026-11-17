@@ -1,0 +1,39 @@
+R/characterization-execute.R
+  s_3e206b4a2cf4c3::t_508afb0f8798b9 70,73-81,203
+docs/development/checked-executor.md
+  s_895f6ebe145fd3::t_dfdca86135264d 11-14,68-69,81
+  s_3e206b4a2cf4c3::t_bf004b7e2113dd 15-16
+tests/tracer/characterization-execute-offline.R
+  s_895f6ebe145fd3::t_ad4be29a111b1e 67-140
+CONTRIBUTING.md
+  s_895f6ebe145fd3::t_dfdca86135264d 20
+  s_3e206b4a2cf4c3::t_67ddb856786fe8 18
+man/executeCharacterizationSql.Rd
+  s_895f6ebe145fd3::t_dfdca86135264d 48-52
+AGENTS.md
+  s_3e206b4a2cf4c3::t_b80b1c66ed77a5 16-17,19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e2baaf6eb926ea9f4f3428fc1a4f148e4aad7825",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
