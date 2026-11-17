@@ -3,17 +3,19 @@ library(AchillesNext)
 source('tools/benchmark/implementation_identity.R')
 source('tests/tracer/characterization-execute-native.R')
 source('tests/tracer/characterization-candidate-sql-failures.R')
+source('tests/tracer/characterization-candidate-sql-publication.R')
 main<-function() {
   args<-commandArgs(TRUE);stopifnot(length(args)==2L)
   implementation<-implementationIdentity(getwd())
   env<-new.env(parent=globalenv());sys.source(args[1],env);out<-normalizePath(args[2],mustWork=TRUE)
   input<-jsonlite::fromJSON(file.path(out,'input.json'),simplifyVector=FALSE)
   roles<-jsonlite::fromJSON(Sys.getenv('ACHILLES_NEXT_BRIDGE_FIXTURE'),simplifyVector=FALSE)
-  stopifnot(setequal(names(roles),c('source','store')),roles$source$user!=roles$store$user,
-    all(vapply(roles,function(x)grepl('^achilles_test_bridge_(source|store)_[0-9a-f]{12}$',x$user),TRUE)))
+  stopifnot(setequal(names(roles),c('source','store','reader')),roles$source$user!=roles$store$user,
+    all(vapply(roles[c('source','store')],function(x)grepl('^achilles_test_bridge_(source|store)_[0-9a-f]{12}$',x$user),TRUE)),
+    grepl('^achilles_test_reader_[0-9a-f]{12}$',roles$reader$user))
   details<-function(kind)DatabaseConnector::createConnectionDetails(dbms='postgresql',server='127.0.0.1/achilles_next_fixtures',
     port=as.integer(roles[[kind]]$port),user=roles[[kind]]$user,password=roles[[kind]]$password)
-  sourceDetails<-details('source');storeDetails<-details('store');legacyDetails<-env$fixtureConnection()
+  sourceDetails<-details('source');storeDetails<-details('store');readerDetails<-details('reader');legacyDetails<-env$fixtureConnection()
   owner<-DatabaseConnector::connect(env$fixtureConnection('owner'))
   on.exit(DatabaseConnector::disconnect(owner),add=TRUE)
   ex<-function(sql)DatabaseConnector::executeSql(owner,sql,progressBar=FALSE,reportOverallTime=FALSE,errorReportFile=file.path(out,'error.txt'))
@@ -40,6 +42,12 @@ main<-function() {
     '; GRANT SELECT ON ',paste(qualified(c('storage_version','profile_registry','validation_receipt',producer)),collapse=','),' TO ',role,
     '; GRANT INSERT ON ',paste(qualified(producer),collapse=','),' TO ',role,
     '; GRANT UPDATE ON ',paste(qualified(c('analysis_run','result_release')),collapse=','),' TO ',role))
+  # Institutional operator rights are restricted to the result store. This
+  # principal cannot read the CDM, even when sealing/validating/publishing.
+  operatorTables<-c('validation_receipt','publication','page_object','audience_grant','current_publication')
+  ex(paste0('GRANT SELECT,INSERT ON ',paste(qualified(operatorTables),collapse=','),' TO ',roles$store$user,
+    '; GRANT UPDATE ON ',paste(qualified(c('publication','audience_grant','current_publication')),collapse=','),' TO ',roles$store$user,
+    '; GRANT EXECUTE ON FUNCTION "',results,'".seal_release(uuid),"',results,'".promote_publication(uuid,bigint) TO ',roles$store$user))
   makeSource<-function(case,index) {
     schema<-paste0('cdm_tiny_domain_',Sys.getpid(),'_',index);sources<<-c(sources,schema)
     ex(paste0('CREATE SCHEMA "',schema,'"; COMMENT ON SCHEMA "',schema,'" IS \'AchillesNext synthetic fixture sandbox v1: bridge\''))
@@ -181,8 +189,8 @@ main<-function() {
         !any(grepl("row_key[[:space:]]*=[[:space:]]*'[0-9a-f]{64}'",storeReads)))
       readCategories[[paste(case$case,case$version,strategy,sep=':')]]<-length(storeReads)
       allBatches<-allBatches&&stats$rows>=stats$cell_statements
-      sealResultRelease(env$fixtureConnection('owner'),results,candidate$release_id)
-      validateResultRelease(env$fixtureConnection('owner'),results,candidate$release_id)
+      sealResultRelease(storeDetails,results,candidate$release_id)
+      validateResultRelease(storeDetails,results,candidate$release_id)
       stopifnot(q("SELECT count(*)::text AS n FROM pg_class WHERE relpersistence='t' AND relname~'^achillesnext_[0-9a-f]{32}_'")$N==baselineTemp)
       prior()
       snapshots[[length(snapshots)+1L]]<-c(list(case=case$case,version=case$version,strategy=strategy,source_id=sourceId,
@@ -195,8 +203,12 @@ main<-function() {
     if(index==1L)failures<-testCharacterizationCandidateSqlFailures(sourceDetails,program,storeDetails,results,out,
       f,patch,ex,q,qualified,tableCounts,prior,roles$source$user,schema)
   }
+  first<-snapshots[[1L]]
+  compiledPublication<-testCharacterizationCandidateSqlPublication(env,owner,results,serving,
+    first$source_receipt$source$cdm_schema,first$source_id,first$candidate,first,out,
+    sourceDetails,storeDetails,readerDetails,roles, input[[1L]])
   stopifnot(identical(implementation,implementationIdentity(getwd())),allBatches)
-  report<-list(snapshots=snapshots,failures=failures,implementation=implementation,
+  report<-list(snapshots=snapshots,failures=failures,compiled_publication=compiledPublication,implementation=implementation,
     isolation=list(different_principals=TRUE,source_store_access=FALSE,store_source_access=FALSE,source_write_access=FALSE,
       replay_source_access_revoked=TRUE,bounded_writer_batches=allBatches,import_read_queries=readCategories))
   writeLines(wire(report),file.path(out,'report.json'),useBytes=TRUE)

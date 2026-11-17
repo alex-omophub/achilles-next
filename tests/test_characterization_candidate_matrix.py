@@ -48,6 +48,16 @@ class CandidateMatrixTests(unittest.TestCase):
             with self.subTest(key=key):
                 self.rejects(snapshots)
 
+    def test_existing_publication_oracle_still_requires_refresh_by_default(self):
+        import test_core_characterization as core
+        for marker in (None, False):
+            snapshot = dict(source_id='fixture:test')
+            if marker is not None:
+                snapshot['refresh_executed'] = marker
+            report = dict(publication=dict(snapshot_source_id='fixture:test'), snapshots=[snapshot])
+            with self.subTest(marker=marker), self.assertRaisesRegex(AssertionError, 'Expected executed refresh'):
+                core.verify_publication(None, report)
+
     def test_missing_identity_and_duplicate_declaration_are_rejected(self):
         snapshots = deepcopy(self.report['snapshots'])
         del snapshots[-1]['version']
