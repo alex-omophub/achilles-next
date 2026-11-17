@@ -1,0 +1,21 @@
+AGENTS.md
+  s_895f6ebe145fd3::t_a51d6e888bc4c2 19
+CONTRIBUTING.md
+  s_895f6ebe145fd3::t_a51d6e888bc4c2 20-26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b00cdb9c787335e03c226efc9f85c30c74375e49",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
