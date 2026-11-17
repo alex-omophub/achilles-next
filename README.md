@@ -150,6 +150,10 @@ The [checked executor](docs/development/checked-executor.md),
 restricted-aggregate callbacks, verifies assertions, captures actual metadata
 and returns client/JDBC telemetry after rollback and disconnect. Result-store
 persistence, validation and approval remain separate steps.
+The optional [compiled-candidate bridge](docs/development/compiled-candidate.md),
+`generateCharacterizationCandidateFromSql()`, captures that stream on bounded
+private disk and imports a complete building candidate through a separate store
+connection. Sealing, validation, institutional approval and promotion are explicit.
 
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 

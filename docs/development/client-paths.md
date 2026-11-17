@@ -15,6 +15,7 @@ not establish a laptop hardware minimum or qualify large-source performance.
 | `planAnalysisProfile` | Plan a separately installed registered profile | No connection; PostgreSQL only. The packaged `reference-person-v1` extension is separate from the 142-output core profile. |
 | `renderCharacterizationSql` | Compile a complete 142-output SQL program from declared columns, profile/CDM and exact operator; runtime metadata parameters remain explicit | No connection or JVM. Ordered PostgreSQL assertions/materializations and aggregate/metadata queries; requires a checked executor, real runtime facts and subsequent validation/approval. |
 | `executeCharacterizationSql` | Reconstruct current compiled program, enforce assertions/bounded output callbacks, observe metadata and client/JDBC timings | One source-only PostgreSQL transaction, temporary stages, rollback/disconnect even on success. No result-store persistence or publication. |
+| `generateCharacterizationCandidateFromSql` | Execute a checked program into bounded private capture, then replay canonical rows and disk-backed denominator targets into a complete building candidate | Separate source and store connections/transactions. Source cleanup completes before import; no distributed snapshot, automatic reuse, approval or publication. Commit acknowledgement loss retains diagnostic IDs and an unknown outcome. |
 | `generateCharacterizationCandidate`, `executeCharacterizationRefresh` | Validate requests, issue SQL, track states and stream exact aggregate strings into the result store | Core generation in `R/population-baseline.R` uses one owned JDBC transaction, metadata preflight and engine-local temporary PERSON/event/interval/report stages. Patient rows in those stages stay in the engine. Candidate creation does not itself approve a publication. |
 | `generatePopulationObservationBaseline`, `generateDomainBaseline`, `generateMeasurementBaseline`, `generateAnalysisProfile` | Generate reduced or registered-profile candidates; stream aggregate output | PostgreSQL source/results connection. Separate source/results schemas; not restricted to loopback or the tiny-fixture database. Core/reduced paths must not be confused with the old tracer. |
 | `initializeResultStore`, `registerAnalysisProfile`, `sealResultRelease`, `validateResultRelease` | Install/verify store definitions, run exact native validation and reconciliation | PostgreSQL result-store operations; no local database requirement. Core installation uses the `achillesnext` table prefix. |
@@ -66,11 +67,12 @@ cancellation, failure and publication behavior remain package responsibilities.
 The [offline renderer](offline-renderer.md) now emits the full core SQL program;
 the [checked executor](checked-executor.md) now executes that artifact through
 bounded restricted-aggregate callbacks. Other dialects still require adapters.
-Internal physical primitives remain an incomplete subset. Existing candidate/refresh
+Internal physical primitives remain an incomplete subset. Default candidate/refresh
 execution still builds SQL inside orchestration, sharing pure builders with the
-renderer; it has not yet adopted the checked executor's separated client/JDBC
-telemetry. Streaming and
-page bounds need growing-inventory validation/export measurements; fixed caps
+renderer. The optional [compiled-candidate bridge](compiled-candidate.md) provides
+checked source capture and separate bounded persistence without replacing those
+defaults. Streaming and page bounds need growing-inventory validation/export
+measurements; fixed caps
 alone are insufficient evidence. The full saved-result UI and browser-memory
 evaluation are separate work from the earlier tracer viewer.
 
