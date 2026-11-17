@@ -81,8 +81,9 @@ opened. A limit that fits the objects but falls one byte short of the pointer
 fails before opening the pointer. Page limits, validation, policy approval and
 compare-and-swap rules remain in force; the quota does not change wire bytes.
 
-The same bytes are charged once. Renaming the completed directory, copying approved
-pages into PostgreSQL and the two artifact admission passes do not add charges.
+The same bytes are charged once. Moving written objects into the reserved
+destination, copying approved pages into PostgreSQL and the two artifact admission
+passes do not add charges.
 The terminology **INPUT snapshot copy** is explicitly outside this export quota;
 its input-copy budget is separate work. Validation scratch remains governed by
 `maxScratchBytes`. Database storage, filesystem metadata and client memory are
@@ -101,8 +102,10 @@ partial artifact or publish a partial database record.
 
 ## Errors, cancellation and publication
 
-Invalid control values fail argument validation before work starts. Budget and
-scratch I/O failures use the condition class `achillesnext_scratch_error`. Callers
+Invalid control values fail argument validation before work starts. Validation
+scratch-budget and scratch-I/O failures use `achillesnext_scratch_error`. Export
+failures use the separate `achillesnext_export_error` class with `byte_limit` or
+`io_failure`, subject to the publication-outcome precedence above. Callers
 can handle its `code` without parsing operating-system messages or local paths:
 
 | Code | Meaning |

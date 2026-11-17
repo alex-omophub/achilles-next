@@ -76,10 +76,14 @@ publication <- publishResultRelease(
   }, expectedRevision = "0")
 ```
 
-`maxExportBytes` optionally limits the total serialized new export, defaulting to
+`maxExportBytes` limits the total serialized new export, defaulting to
 `1024^3` (1 GiB). It accepts finite whole bytes from zero through `2^53 - 1`.
-Every immutable object and `publication.json` is charged once before writing;
-renames, database copies and artifact admissions do not charge again. This logical
+As objects are emitted, the writer incrementally charges each immutable object
+and `publication.json` once, before opening that individual file. Earlier staged
+files may already exist when a later object or pointer exceeds the remaining
+budget; confirmed pre-COMMIT cleanup removes this attempt's files. Moving written
+objects into the reserved destination, database copies and artifact admissions
+do not charge again. This logical
 output cap is separate from validation's `maxScratchBytes` and excludes the
 terminology INPUT snapshot copy, database storage, filesystem metadata and memory.
 It does not reserve disk space or establish a hardware minimum. See
