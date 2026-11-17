@@ -1,0 +1,21 @@
+tests/tracer/native-validation.R
+  s_3e206b4a2cf4c3::t_98239c6c88d68d 67
+  s_3e206b4a2cf4c3::t_8d768eea97dda9 64-66
+  s_3e206b4a2cf4c3::t_e8b61ff5a3dc7e 68-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "279fe4e3c1549430233f416c4c1a523d718d9694",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
