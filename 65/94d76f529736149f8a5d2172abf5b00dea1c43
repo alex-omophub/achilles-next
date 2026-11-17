@@ -1,0 +1,51 @@
+R/candidate-generation.R
+  s_895f6ebe145fd3::t_972202d1c3a4b7 61
+  s_895f6ebe145fd3::t_3692190967c558 22,45,60
+  s_3e206b4a2cf4c3::t_e2b66c77451fd5 34,83-84
+tests/test_characterization_candidate_matrix.py
+  s_895f6ebe145fd3::t_f76fd69173193d 1-60
+tests/test_ci_runtime.py
+  s_895f6ebe145fd3::t_f76fd69173193d 55
+tools/test_characterization_candidate_sql.py
+  s_895f6ebe145fd3::t_f76fd69173193d 18-36,148
+tests/tracer/characterization-candidate-sql-offline.R
+  s_3e206b4a2cf4c3::t_2fc7ca29ae4a5c 54
+  s_895f6ebe145fd3::t_e497b4d888af7a 52-53,55
+  s_3e206b4a2cf4c3::t_4bb5e9fdbf35d5 51
+R/candidate-store.R
+  s_895f6ebe145fd3::t_3692190967c558 11,23-25,32,41
+tests/tracer/characterization-candidate-sql-interrupts.R
+  s_3e206b4a2cf4c3::t_4bb5e9fdbf35d5 52-59,61,63,66-77,80-86,97-98
+  s_895f6ebe145fd3::t_f76fd69173193d 14,48,65
+  s_895f6ebe145fd3::t_36204c0f8718ed 60,62,64,78-79,87-96
+  s_895f6ebe145fd3::t_e497b4d888af7a 99-203
+  s_3e206b4a2cf4c3::t_2fc7ca29ae4a5c 204-235
+docs/development/compiled-candidate.md
+  s_895f6ebe145fd3::t_3692190967c558 45-47
+README.md
+  s_3e206b4a2cf4c3::t_bacd276b71ac1f 154-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6594d76f529736149f8a5d2172abf5b00dea1c43",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
