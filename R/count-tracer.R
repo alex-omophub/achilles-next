@@ -2,6 +2,12 @@
 # stay scalars. In particular, an empty dimensions object is never an array.
 .object <- function(...) structure(list(...), names = names(list(...)) %||% character())
 `%||%` <- function(x, y) if (is.null(x)) y else x
+.json_ascii_safe <- local({
+  safe <- rep(FALSE, 256L)
+  safe[33:127] <- TRUE # Bytes 0x20 through 0x7e, indexed from one.
+  safe[c(35L, 48L, 93L)] <- FALSE # Double quote, slash and backslash.
+  safe
+})
 .json <- function(x) {
   if (is.null(x)) return("null")
   if (is.list(x)) {
@@ -15,9 +21,13 @@
   if (length(x) != 1L || anyNA(x)) stop("JSON values must be explicit scalars or lists", call. = FALSE)
   # Plain ASCII without double quotes, slashes, backslashes or control bytes needs no escaping.
   # Keep jsonlite authoritative for every other scalar, encoding and R class.
-  if (is.character(x) && is.null(attributes(x)) &&
-      grepl("\\A[\\x20-\\x21\\x23-\\x2e\\x30-\\x5b\\x5d-\\x7e]*\\z",x,perl=TRUE,useBytes=TRUE))
-    return(paste0('"',x,'"'))
+  if (is.character(x) && is.null(attributes(x))) {
+    # Bound temporary byte/index vectors; long strings retain the direct scan.
+    plain <- if (nchar(x, type = "bytes") <= 1024L)
+      all(.json_ascii_safe[as.integer(charToRaw(x)) + 1L]) else
+      grepl("\\A[\\x20-\\x21\\x23-\\x2e\\x30-\\x5b\\x5d-\\x7e]*\\z",x,perl=TRUE,useBytes=TRUE)
+    if (plain) return(paste0('"',x,'"'))
+  }
   as.character(jsonlite::toJSON(x, auto_unbox = TRUE, digits = NA))
 }
 .hash <- function(x) digest::digest(charToRaw(enc2utf8(x)), algo = "sha256", serialize = FALSE)
