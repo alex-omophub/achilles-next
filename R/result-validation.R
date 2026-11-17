@@ -155,16 +155,29 @@
     visit(row,sort)
   })
 }
+.store_denominator_endpoint_sql <- function(schema, releaseId) {
+  # Stale statistics can underestimate a newly appended release and flatten an
+  # ordinary join into repeated release-wide scans. OFFSET 0 keeps each endpoint
+  # lookup correlated on its complete key; both endpoints must still exist.
+  # Only the zero/nonzero verdict is used, so stop at the first forbidden edge.
+  id <- .store_uuid(releaseId)
+  paste0("SELECT CASE WHEN EXISTS (SELECT 1 FROM ",schema,".achillesnext_denominator_edge e ",
+    "JOIN LATERAL (SELECT state FROM ",schema,".achillesnext_aggregate_cell c ",
+    "WHERE (c.release_id,c.metric_id,c.row_key)=(e.release_id,e.metric_id,e.row_key) OFFSET 0) c ON TRUE ",
+    "JOIN LATERAL (SELECT state FROM ",schema,".achillesnext_aggregate_cell t ",
+    "WHERE (t.release_id,t.metric_id,t.row_key)=(e.release_id,e.target_metric_id,e.target_row_key) OFFSET 0) t ON TRUE ",
+    "WHERE e.release_id=",id," AND (c.state='suppressed' OR t.state='suppressed')) THEN '1' ELSE '0' END")
+}
 .store_validate <- function(tx, releaseId, exclusive = FALSE) {
   context <- .store_context(tx,releaseId,exclusive); assets <- .profile_context(context)
   .nv_need(context$state %in% c("sealed","validated") && context$run_state=="succeeded", "A sealed successful release is required")
   .nv_need(context$profile_id==assets$profile$profile_id && context$profile_revision==assets$profile$revision && context$profile_sha256==assets$hash, "Unregistered runtime profile")
-  s <- tx$schema; id <- .store_uuid(releaseId)
+  s <- tx$schema
   .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_operation WHERE run_id=",.store_uuid(context$run_id)," AND state NOT IN ('succeeded','skipped')"))=="0","Incomplete operations")
   datasets <- .store_datasets(tx,releaseId,assets)
   # Every edge must resolve to an unsuppressed exact measure. Source/target
   # dimensions and declared population are checked below, independently of FK.
-  .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_denominator_edge e JOIN ",s,".achillesnext_aggregate_cell c ON (c.release_id,c.metric_id,c.row_key)=(e.release_id,e.metric_id,e.row_key) JOIN ",s,".achillesnext_aggregate_cell t ON (t.release_id,t.metric_id,t.row_key)=(e.release_id,e.target_metric_id,e.target_row_key) WHERE e.release_id=",id," AND (c.state='suppressed' OR t.state='suppressed')"))=="0","Suppressed denominator endpoint")
+  .nv_need(tx$one(.store_denominator_endpoint_sql(s,releaseId))=="0","Suppressed denominator endpoint")
   capabilities <- list();ledger <- list()
   for(mid in names(datasets)) {
     count <- "0"; last <- NULL; d <- datasets[[mid]]
