@@ -18,6 +18,9 @@ import time
 MAX_SAMPLES=20000
 MAX_RECORD_BYTES=64*1024
 MAX_OUTPUT_ENTRIES=100000
+MAX_OUTPUT_DEPTH=32
+FD_INVENTORY_SUPPORTED=(os.name=='posix' and hasattr(os,'O_NOFOLLOW') and hasattr(os,'O_DIRECTORY')
+    and os.open in os.supports_dir_fd and os.scandir in os.supports_fd)
 
 
 def metric(value=None,reason=None,scope=None):
@@ -67,25 +70,46 @@ def rss_bytes(pid):
 
 
 def directory_bytes(directory):
-    # Count logical file bytes only; do not follow symlinks or cross into DB data.
-    total=0;entries=0;stack=[Path(directory)]
-    while stack:
-        with os.scandir(stack.pop()) as items:
+    """Bounded descriptor-relative walk; refuse symlink roots and descendants.
+
+    Never reopen a descendant through an ancestor pathname. Each child must still
+    match its single non-following stat when opened relative to its parent FD.
+    Depth bounds both owned directory FDs and open scandir iterators to 32 each.
+    Unsupported platforms fail closed; a moving tree is not an atomic snapshot.
+    """
+    if not FD_INVENTORY_SUPPORTED:raise ValueError('Descriptor-relative inventory unavailable')
+    flags=os.O_RDONLY|os.O_DIRECTORY|os.O_NOFOLLOW
+    entries=0
+    def walk(descriptor,depth):
+        nonlocal entries
+        total=0
+        with os.scandir(descriptor) as items:
             for p in items:
                 entries+=1
                 if entries>MAX_OUTPUT_ENTRIES:raise ValueError('Output inventory budget exceeded')
                 observed=p.stat(follow_symlinks=False)
                 if stat.S_ISLNK(observed.st_mode):raise ValueError('Symlink in telemetry output')
-                if stat.S_ISDIR(observed.st_mode):stack.append(Path(p.path))
+                if stat.S_ISDIR(observed.st_mode):
+                    if depth>=MAX_OUTPUT_DEPTH:raise ValueError('Output inventory depth budget exceeded')
+                    child=os.open(p.name,flags,dir_fd=descriptor)
+                    try:
+                        opened=os.fstat(child)
+                        if (opened.st_dev,opened.st_ino)!=(observed.st_dev,observed.st_ino):
+                            raise ValueError('Changed directory in telemetry output')
+                        total+=walk(child,depth+1)
+                    finally:os.close(child)
                 elif stat.S_ISREG(observed.st_mode):total+=observed.st_size
-    return total
+        return total
+    root=os.open(Path(directory),flags)
+    try:return walk(root,1)
+    finally:os.close(root)
 
 
 def output_inventory(directory):
     """Try at most three fresh bounded walks; never reuse partial/cached bytes.
 
     A moving output tree is not an atomic filesystem snapshot. Retry only missing
-    or replaced-directory races, requesting10/20ms backoff; hard refusals remain
+    or replaced-directory races, requesting 10/20ms backoff; hard refusals remain
     unavailable. Diagnostics contain closed exception classes/errno, never paths
     or exception text. Wall duration includes actual walks and scheduling waits.
     """
@@ -194,7 +218,8 @@ def observe(command,out,env=None,interval=.5,wall_seconds=600,rss_limit=4*1024**
             worker_cpu_seconds=metric(usage.ru_utime+usage.ru_stime,scope='wait4 OS-reported child usage; excludes PostgreSQL') if usage else metric(reason='worker_not_reaped'),
             worker_peak_rss_bytes=metric(usage.ru_maxrss*(1 if sys.platform=='darwin' else 1024),scope='wait4 worker lifetime RSS peak; R includes JVM; not total job/database memory') if usage else metric(reason='worker_not_reaped'),
             sampled_worker_peak_rss_bytes=metric(sampled_peak,scope='sampled worker RSS') if sampled_peak is not None else metric(reason='no_successful_RSS_samples'),
-            output_inventory_coverage=dict(successful_samples=output_success,unavailable_samples=output_missing,
+            output_inventory_coverage=dict(scope='Persisted output-inventory samples and fresh walk attempts for this owned worker; not an atomic filesystem snapshot',
+                successful_samples=output_success,unavailable_samples=output_missing,
                 retried_samples=output_retried,walk_attempts=output_attempts,first_failure=output_first_failure,last_failure=output_last_failure),
             database_process_CPU_memory=metric(reason='not_attributed_on_shared_development_host'),
             job_database_cache_peak=metric(reason='no_verified_dedicated_cgroup'),qualifying=False,
