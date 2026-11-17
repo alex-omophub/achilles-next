@@ -1,0 +1,19 @@
+tests/tracer/publication-outcomes-offline.R
+  s_3e206b4a2cf4c3::t_0ff40a449b8345 37,44-45,64-65,68-74,76,107-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5b70a782e63cee7cc9b8453bdcbd09d5effb5590",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
