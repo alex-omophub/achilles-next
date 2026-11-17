@@ -43,7 +43,7 @@ coalescing rule as the current producer. Other SQL dialects fail explicitly.
 | `inventory_sql`, `inventory_parameters` | Complete 142-output dataset states, reasons, row counts, conditional support and coverage. One runtime JSONB parameter supplies metadata row-count inputs. |
 | `outputs` | One query descriptor per metric. Numerical queries return metric ID, row kind, dimensions, exact values, state and reason. Metadata descriptors explicitly require runtime facts. |
 | `runtime_parameters` | Required actual observed schema hash, capability observations, generation timestamps and timing observations. These have no offline defaults. |
-| `transaction`, `execution` | Repeatable-read, SELECT-only source and temporary-table requirements; not-executed state, unchanged publication and explicit missing execution-adapter/limit enforcement. |
+| `transaction`, `execution` | Repeatable-read, SELECT-only source and temporary-table requirements; not-executed state and unchanged publication. The separate executor enforces execution bounds; compilation does not. |
 
 The full-profile renderer derives population bounds from valid observation intervals
 and domain calendar bounds from intervals plus valid event dates, entirely in SQL.
@@ -57,11 +57,13 @@ enumerated in the R compiler.
 
 ## Execution boundary
 
-This API is a compiler, with no public executor for its program yet. Existing
+This API remains a compiler. The [checked executor](checked-executor.md),
+`executeCharacterizationSql()`, executes its current programs through bounded
+staging callbacks and supplies actual runtime metadata. Existing
 `generateCharacterizationCandidate()` and refresh APIs keep their current
 orchestration; they share pure SQL builders but do not accept a compiled program.
 Do not flatten the step list into an unchecked script or call it an approved
-bundle. A future executor must:
+bundle. Execution and downstream consumption require:
 
 1. Use one owned repeatable-read transaction and a fresh session/prefix. Execute
    every assertion, compare its scalar with `expected`, and roll back on failure.
@@ -71,7 +73,8 @@ bundle. A future executor must:
    conflicting visit aliases. CARE_SITE ambiguity remains an unavailable state.
 2. Enforce query/time, temporary-stage and aggregate row/byte limits, cancellation
    and bounded transfer. Rendering enforces none of those execution budgets.
-3. Capture and validate actual runtime facts before binding metadata queries.
+3. Capture and validate actual runtime facts before binding metadata queries. The
+   checked executor performs this binding from observations in its own snapshot.
    Each metadata query has one positional JDBC `?::jsonb` parameter named
    `runtime_facts`; the complete inventory uses the same parameter. Bind values
    through the driver, not textual SQL substitution.
@@ -105,7 +108,7 @@ source access. Native proofs use prepared metadata parameters, both exact
 operators and all 142 outputs; the existing independent numerical oracles and
 native saved-result validation still run afterwards. Invalid/stale declarations
 fail before materialization in the test driver. This does not certify large-source
-performance, a new production executor, other engines, or browser/embedding memory.
+performance, other engines, or browser/embedding memory.
 Metadata comparisons reuse reference-run observations as identical parameter
 inputs; they do not qualify the compiled test run's elapsed timings.
 Native validation targets PostgreSQL 17.11; other server versions are not

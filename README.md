@@ -142,6 +142,12 @@ The runnable [synthetic saved-result walkthrough](docs/development/saved-walkthr
 demonstrates discovery, exact saved filters and result-state interpretation, and
 exports the complete 142-report filter matrix without a database connection.
 
+The [checked executor](docs/development/checked-executor.md),
+`executeCharacterizationSql()`, executes current programs through bounded
+restricted-aggregate callbacks, verifies assertions, captures actual metadata
+and returns client/JDBC telemetry after rollback and disconnect. Result-store
+persistence, validation and approval remain separate steps.
+
 The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
 
 ## Relationship to OHDSI

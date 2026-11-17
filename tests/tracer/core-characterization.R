@@ -8,6 +8,7 @@ main<-function() {
   publicationMode<-nzchar(Sys.getenv('ACHILLES_NEXT_SERVING_FIXTURE'))
   if(publicationMode)source('tests/tracer/core-publication.R',local=TRUE)
   source('tests/tracer/characterization-render-native.R',local=TRUE)
+  source('tests/tracer/characterization-execute-native.R',local=TRUE)
   input<-jsonlite::fromJSON(file.path(out,'input.json'),simplifyVector=FALSE)
   owner<-DatabaseConnector::connect(env$fixtureConnection('owner'))
   on.exit(DatabaseConnector::disconnect(owner),add=TRUE)
@@ -78,7 +79,9 @@ main<-function() {
       context<-f('.store_context')(tx,generated$release_id)
       list(datasets=datasets,rows=rows,schema_sha256=context$observed_schema_sha256)
     })
-    testCharacterizationRender(env$fixtureConnection(),schema,sourceId,case$version,snap)
+    renderProof<-testCharacterizationRender(env$fixtureConnection(),schema,sourceId,case$version,snap)
+    if(index==1L)testCharacterizationExecuteFailures(env$fixtureConnection(),owner,schema,sourceId,case$version,
+      renderProof$columns,args[1],out)
     # All validation uses only saved results; source denial must not alter it.
     ex(paste0('REVOKE ALL ON SCHEMA "',schema,'" FROM achilles_next_runner'))
     sealResultRelease(env$fixtureConnection('owner'),results,generated$release_id)

@@ -29,7 +29,7 @@ Use one repeatable-read transaction and SELECT-only source privileges. The emitt
 materialized-CTE syntax requires PostgreSQL 12 or newer; native fixtures target17.11.
 Compilation
 does not enforce execution time, engine temporary bytes or aggregate-transfer
-budgets; the future executor must supply these and support cancellation.
+budgets; the separate \code{executeCharacterizationSql()} executor supplies these controls.
 
 Numerical output queries return restricted intermediate metric ID, row kind,
 dimensions, exact values, state and reason. Dataset state/coverage comes from
@@ -43,10 +43,11 @@ and timing observations. Compilation leaves these unfilled. The source declarati
 assertion must be checked before source work, and runtime observations must be
 validated and bound by the caller. Unknown release identities and pending output
 validation remain explicit; no static input is labelled as a measured result.
-The program is a compile artifact, not an execution adapter or self-contained
-SQL publication script. Other engines and large-source qualification remain open.}
+The program is a compile artifact, not a self-contained SQL publication script. Its separate executor emits restricted
+intermediates and does not persist, validate or publish them. Other engines and large-source qualification remain open.}
 \value{A deterministic program with a version/hash, declared source/profile,
-ordered steps, assertions, numeric inventory SQL, 142 output query descriptors
+ordered steps, assertions, complete inventory SQL, 142 output query descriptors
 and runtime metadata parameter requirements. Its execution state is not_executed
 and publication is unchanged.}
-\seealso{\code{planCharacterizationBatch}, \code{generateCharacterizationCandidate}}
+\seealso{\code{planCharacterizationBatch}, \code{executeCharacterizationSql},
+\code{generateCharacterizationCandidate}}

@@ -11,12 +11,13 @@ Product: AchillesNext. Repository: achilles-next. R package: AchillesNext.
 - Do not claim functionality, supported engines or validation that has not been implemented and verified.
 - Preserve numerical semantics, explicit missing/suppressed states and applicable source attribution.
 
-## User-controlled Git operations
+## Git operations and review
 
-- Prepare changes for user review. Do not commit, amend, push or merge without explicit user approval after review.
+- Prepare reviewable changes and run relevant checks. Never commit, amend, push or merge without explicit user approval after review.
+- Only the user initiates PRs. Never create one through a CLI, API, tool or browser. Local PR-description drafts may be prepared for review.
 - Authorized commits must use the user's configured Git author and committer identity. Do not substitute an agent/bot identity, override authorship or add AI co-author trailers.
-- Only the user may initiate pull requests. Never create a PR through a CLI, API, tool or browser. Local draft text is permitted when requested.
+- Before an authorized merge, integrate the latest remote state, then verify the [review and CI gate](CONTRIBUTING.md#commits-and-pull-requests) on the resulting exact head: the `cubic · AI code reviewer` check completed successfully, all required CI passed and all active review findings are addressed. If the head changes afterward, repeat verification; bind the merge to the verified commit. Never bypass checks or force-push.
 - Use `feature/{ticket-id}-{branch-name}` for feature branches.
 - Use `fix/{ticket-id}-{branch-name}` for fixes.
 - Use an existing ticket ID and a descriptive lowercase, hyphen-separated branch name. Do not invent tickets or commit directly on main.
-- Follow CONTRIBUTING.md and leave prepared work uncommitted until the user approves it.
+- Follow CONTRIBUTING.md. Keep each PR focused, describe resulting behavior and validation, and keep private delivery/planning material out of commits and hosted discussions.

@@ -217,6 +217,7 @@ def main():
     matrix = [(case,v) for v in (['5.3','5.4','5.5'] if a.full_matrix else ['5.3'])]+[(empty,'5.5'),(extended,'5.5')]
     (out/'input.json').write_text(json.dumps([dict(case=c['id'],version=v,**physical(c,v)) for c,v in matrix]))
     subprocess.run(['Rscript','--vanilla','tests/tracer/characterization-render-offline.R',str(out/'input.json')],cwd=ROOT,check=True)
+    subprocess.run(['Rscript','--vanilla','tests/tracer/characterization-execute-offline.R',str(out/'input.json')],cwd=ROOT,check=True)
     if a.with_publication:
         cmd=[sys.executable,'tools/test_result_serving.py','--test-script','core-characterization','--state',str(a.state.resolve()),
              '--config',str(a.config.resolve()),'--output-dir',str(out),'--admin-host',a.admin_host,'--port',str(a.port)]
