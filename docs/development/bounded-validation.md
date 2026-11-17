@@ -88,13 +88,19 @@ a failed admission.
 `validateResultArtifact()` propagates predicate cancellation as
 `achillesnext_read_error` with code `aborted`. R interrupts retain their interrupt
 condition. `publishResultRelease()` preserves the specific scratch-error class;
-its existing publication error behavior for other mid-run failures and predicate
-cancellation remains unchanged.
+pre-COMMIT predicate cancellation attempts rollback and cleanup. Uncertainty is
+reported explicitly through the publication outcome diagnostics below.
 
-An admission failure occurs before publication commit, rolls back its database
-publication work and preserves the prior current publication. Publication attempts
-to remove staging/export files using unchecked `unlink()` calls; these removals
-are best effort and failures can be silent.
+An admission failure occurs before COMMIT is invoked. Confirmed rollback and
+cleanup preserve prior current and remove only this attempt's files. Publication
+file cleanup now checks removal; uncertainty produces `publication.cleanup_failed`.
+Once COMMIT has been invoked, a missing acknowledgement does not prove rollback:
+`publication.commit_unknown` retains the approved export. A confirmed commit
+followed by a disconnect/return failure also retains it. Use the safe IDs and
+outcome described in the [result-store guide](result-store.md) for manual
+inspection. When promotion was requested, these cases do not claim that prior
+current is unchanged. With `expectedRevision=NULL`, no promotion was requested and
+`current_changed` is FALSE even if the publication commit is unknown or committed.
 
 Validation-owned scratch cleanup attempts all its actions even if one close or
 removal fails and reports a cleanup failure. Filesystem deletion can fail when

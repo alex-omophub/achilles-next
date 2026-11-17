@@ -44,6 +44,10 @@ its content revision. Sealing makes facts immutable. No per-concept or chart-tim
 CDM query is exposed. Run-owned source materialization belongs in a separately
 owned staging schema; the publisher reads only saved aggregates.
 
+Publishers also need SELECT on their results schema's
+`achillesnext_page_object` table, in addition to their publication write privileges.
+Finalization streams this publication's stored object hashes to install its files.
+
 ## Validate → project → export → select
 
 1. `sealResultRelease(details, "achillesnext_results", releaseId)` checks registered
@@ -71,6 +75,32 @@ publication <- publishResultRelease(
     stop("Configure institutional approval")
   }, expectedRevision = "0")
 ```
+
+A successful return confirms the database commit and publisher disconnection.
+On failure before COMMIT is invoked, the publisher attempts rollback and cleanup.
+Confirmed rollback and cleanup preserve prior current and remove only this
+attempt's files. Cleanup uncertainty is reported explicitly; owned files may
+already have been removed while rollback remains unconfirmed.
+Once COMMIT is invoked, a lost acknowledgement is an
+unknown outcome: `AchillesPublicationFailure` reports `publication.commit_unknown`
+and retains the approved export. The server may already have advanced current.
+A confirmed commit followed by disconnect or return interruption also retains the
+export, reporting `outcome="committed"` instead of claiming rollback. Inspect the
+restricted store using the diagnostic `publication_id`, `release_id` and
+`root_sha256`, and inspect the originally requested export directory before manual
+recovery. Errors contain no artifact path, SQL or credentials, and trigger no
+retry, deletion of retained approved output or automatic pointer repair.
+
+`publication_changed` is TRUE for a confirmed committed publication, FALSE before
+COMMIT and NULL when commit is unknown. `current_changed` is FALSE if no promotion
+was requested; otherwise it follows that known/unknown transaction outcome.
+`rollback_state` and `disconnect_state` distinguish acknowledged cleanup from an
+unconfirmed attempt. A rollback acknowledgement after uncertain COMMIT does not
+prove that the earlier commit was undone. File/connection cleanup uncertainty is
+reported as `publication.cleanup_failed` unless COMMIT is unknown: then
+`publication.commit_unknown` takes precedence and the cleanup states still report
+unconfirmed actions. Cleanup on process termination or power loss is not guaranteed. These outcomes do not change approved bytes, policies or
+compare-and-swap behavior.
 
 There is no default institutional policy. The explicit allowlist retains whole
 registered outputs, physically omitting other data and terminology. Omitted
@@ -154,5 +184,8 @@ performance, additional-engine compatibility or general-purpose clinical validat
 is claimed. Trusted operators control base writes and receipts; manually inserting
 approval/validation rows bypasses the R pipeline. A crash before database commit
 can leave an approved but unreferenced export, which is never selected automatically.
-Trusted local same-filesystem renames are assumed; no power-loss or network-filesystem
-atomicity guarantee is made. Stale destination locks need operator inspection.
+Finalization atomically reserves a new destination directory, moves its admitted
+objects with bounded traversal, then installs `publication.json` last. A destination
+created by another writer is refused and kept intact. The destination is not an
+admittable artifact during installation. Trusted local same-filesystem file moves
+are assumed; no power-loss or network-filesystem atomicity guarantee is made. Stale destination locks need operator inspection.

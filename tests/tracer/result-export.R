@@ -5,6 +5,7 @@ local({
   args <- commandArgs(TRUE);stopifnot(length(args)==2L)
   config <- new.env();sys.source(args[[1]],config);details <- config$fixtureConnection('owner')
   helperDir <- file.path(dirname(normalizePath(args[[1]])),'../tests/tracer')
+  source(file.path(helperDir,'publication-outcomes-offline.R'))
   source(file.path(helperDir,'result-artifact-regressions.R'),local=TRUE)
   source(file.path(helperDir,'result-store-regressions.R'),local=TRUE)
   source(file.path(helperDir,'artifact-inventory.R'),local=TRUE)
@@ -170,19 +171,22 @@ local({
     if(kind=='io')stopifnot(fired)
   }
   cat('BOTH_ADMISSION_SCRATCH_LIMIT_AND_IO_FAILURE_PRESERVE_CURRENT_AND_EXPORT_OK\n')
-  # Fail immediately before COMMIT, after pages, export and tentative CAS.
-  # Error and cancellation must roll back the pointer and remove our export.
+  # Once COMMIT is invoked, even a fake that fails before sending it has an
+  # unknown client outcome. Retain its export until trusted store inspection.
   originalCommit <- f('.store_commit')
   for(mode in c('error','interrupt')) {
     assignInNamespace('.store_commit',function(jdbc) {
       if(mode=='interrupt')stop(structure(list(message='fixture cancellation',call=NULL),class=c('interrupt','condition')))
       stop('fixture commit failure')
     },ns='AchillesNext')
-    rejected <- tryCatch({publishResultRelease(details,schema,release,file.path(root,paste0('commit-',mode)),'fixture-restricted','commit-fault',allow,function(candidate)TRUE,'1');FALSE},error=function(e)TRUE,interrupt=function(e)TRUE)
+    rejected <- tryCatch({publishResultRelease(details,schema,release,file.path(root,paste0('commit-',mode)),'fixture-restricted','commit-fault',allow,function(candidate)TRUE,'1');NULL},error=identity,interrupt=identity)
     assignInNamespace('.store_commit',originalCommit,ns='AchillesNext')
-    stopifnot(rejected,!dir.exists(file.path(root,paste0('commit-',mode))),q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID==before)
+    stopifnot(inherits(rejected,'AchillesPublicationFailure'),rejected$reason_code=='publication.commit_unknown',rejected$outcome=='unknown',
+      dir.exists(file.path(root,paste0('commit-',mode))),q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID==before,
+      q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_publication WHERE publication_id=',lit(rejected$publication_id)))$N=='0')
+    unlink(file.path(root,paste0('commit-',mode)),recursive=TRUE)
   }
-  cat('PRECOMMIT_FAILURE_AND_CANCELLATION_PRESERVE_CURRENT_OK\n')
+  cat('COMMIT_INVOKED_UNCERTAINTY_RETAINS_EXPORT_WITHOUT_FALSE_ROLLBACK_CLAIM_OK\n')
   # Independent runs/releases can hold identical row identities without
   # overwriting one another. Race their complete publishers at one revision.
   secondRun <- ids[[4]];secondRelease <- ids[[5]]
@@ -235,5 +239,7 @@ local({
   writeLines('undeclared',file.path(shared$export_dir,'objects','extra.json'))
   fail(function()validateResultArtifact(shared$export_dir));unlink(file.path(shared$export_dir,'objects','extra.json'))
   validateResultArtifact(shared$export_dir)
+  source(file.path(helperDir,'publication-outcomes-native.R'),local=TRUE)
+  testPublicationOutcomeNative(details,schema,release,root,q)
   cat('STORE_NATIVE_VALIDATE_PROJECT_EXPORT_READBACK_OK\n')
 })

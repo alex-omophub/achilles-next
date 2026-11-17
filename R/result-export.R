@@ -137,6 +137,15 @@
   Sys.chmod(file.path(directory,"publication.json"),"0600")
   descriptor
 }
+.publication_failure <- function(code,state,publicationId,releaseId,root=NULL,promotionRequested=FALSE) {
+  stop(structure(list(message=paste0("Result publication failed [",code,"]"),call=NULL,reason_code=code,
+    outcome=state$outcome,publication_id=publicationId,release_id=releaseId,
+    root_sha256=if(is.null(root))NULL else root$sha256,
+    publication_changed=if(state$outcome=="unknown")NULL else state$outcome=="committed",
+    current_changed=if(!promotionRequested)FALSE else if(state$outcome=="unknown")NULL else state$outcome=="committed",
+    rollback_state=state$rollback_state,disconnect_state=state$disconnect_state),
+    class=c("AchillesPublicationFailure","error","condition")))
+}
 #' Publish an approved projection and exact-byte export
 #'
 #' Validates the sealed registered-profile release, builds bounded immutable pages,
@@ -159,24 +168,37 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
   .nv_need(is.function(institutionalPolicy),"An explicit institutional policy callback is required")
   if(!is.null(expectedRevision)) .nv_need(.v2_count(expectedRevision) && nchar(expectedRevision)<=18L,"Invalid expected revision")
   .term_check(cancel)
+  .store_uuid(releaseId)
+  state<-new.env(parent=emptyenv());state$outcome<-"not_committed";state$rollback_state<-"not_required";state$disconnect_state<-"not_required"
+  pub<-.store_new_uuid();root<-NULL
   parent <- tryCatch(normalizePath(dirname(exportDir),mustWork=TRUE),error=function(e)stop("Export parent directory is unavailable",call.=FALSE))
   destination <- file.path(parent,basename(exportDir))
   lock <- file.path(parent,paste0(".achilles-export-lock-",.hash(destination)))
-  .nv_need(dir.create(lock,mode="0700",showWarnings=FALSE),"Export destination is locked")
-  on.exit(unlink(lock,recursive=TRUE),add=TRUE)
-  .nv_need(!file.exists(destination),"Export directory must be new")
-  stage <- tempfile(".achilles-export-",tmpdir=parent);.nv_need(dir.create(stage,mode="0700",showWarnings=FALSE))
-  finished <- FALSE;ownsDestination <- FALSE
-  on.exit(if(!finished) {
-    unlink(stage,recursive=TRUE)
-    if(ownsDestination) unlink(destination,recursive=TRUE)
-  },add=TRUE)
-  .nv_need(dir.create(file.path(stage,"objects"),mode="0700",showWarnings=FALSE),"Cannot prepare export objects")
-  result <- tryCatch(.store_transaction(connectionDetails,resultsSchema,function(tx) {
+  stage<-NULL;ownsLock<-FALSE;ownsStage<-FALSE;ownsDestination<-FALSE
+  cleanup<-function() {
+    remove<-function(path).v2_scratch_io(function().nv_need(unlink(path,recursive=TRUE)==0L&&!file.exists(path)&&!dir.exists(path)))
+    .v2_scratch_cleanup(list(function()if(state$outcome=="not_committed"&&ownsStage){remove(stage);ownsStage<<-FALSE},
+      function()if(state$outcome=="not_committed"&&ownsDestination){remove(destination);ownsDestination<<-FALSE},
+      function()if(ownsLock){remove(lock);ownsLock<<-FALSE}))
+  }
+  on.exit(suspendInterrupts(.v2_scratch_capture(cleanup)),add=TRUE)
+  captured<-.v2_scratch_capture(function() {
+    suspendInterrupts({
+      .nv_need(dir.create(lock,mode="0700",showWarnings=FALSE),"Export destination is locked");ownsLock<<-TRUE
+      allowInterrupts(Sys.sleep(0))
+    })
+    .nv_need(!file.exists(destination),"Export directory must be new")
+    stage<<-tempfile(".achilles-export-",tmpdir=parent)
+    suspendInterrupts({
+      .nv_need(dir.create(stage,mode="0700",showWarnings=FALSE));ownsStage<<-TRUE
+      allowInterrupts(Sys.sleep(0))
+    })
+    .nv_need(dir.create(file.path(stage,"objects"),mode="0700",showWarnings=FALSE),"Cannot prepare export objects")
+    .store_transaction(connectionDetails,resultsSchema,function(tx) {
     .term_check(cancel);tx<-.publication_tx(tx,cancel)
     validated <- .store_validate(tx,releaseId);.nv_need(validated$context$state=="validated","Validate the release before publication")
     .term_check(cancel)
-    pub <- .store_new_uuid();root <- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel)
+    root <<- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel)
     admittedRoot<-.v2_directory(stage,check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)
     candidate <- .object(publication_id=pub,release_id=releaseId,source_id=validated$context$source_id,access_scope_id=accessScopeId,
       approval_id=approvalId,policy=policy,root=root)
@@ -193,17 +215,49 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
       tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_page_object VALUES (",.store_uuid(pub),",",.store_literal(desc$sha256),",",.store_literal(desc$kind),",decode('",hex,"','hex'))"))
     },check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)
     tx$execute(paste0("UPDATE ",tx$schema,".achillesnext_publication SET state='ready',approved_at=now() WHERE publication_id=",.store_uuid(pub)))
-    .nv_need(!file.exists(destination) && suppressWarnings(file.rename(stage,destination)),"Cannot finalize approved export")
-    ownsDestination <<- TRUE
+    # Reserve a NEW directory atomically. A directory rename could replace a
+    # foreign empty destination created after an earlier existence check.
+    suspendInterrupts({
+      .nv_need(dir.create(destination,mode="0700",showWarnings=FALSE),"Cannot reserve export destination")
+      ownsDestination<<-TRUE
+      allowInterrupts(Sys.sleep(0))
+    })
+    .nv_need(dir.create(file.path(destination,"objects"),mode="0700",showWarnings=FALSE),"Cannot prepare export objects")
+    # All pages were already admitted and inserted in this transaction. Stream
+    # only their fixed-size IDs; move bytes locally without a whole-file list.
+    tx$stream(paste0("SELECT sha256::text FROM ",tx$schema,".achillesnext_page_object WHERE publication_id=",.store_uuid(pub)," ORDER BY sha256"),function(sha) {
+      .nv_need(.string(sha)&&grepl("^[a-f0-9]{64}$",sha),"Invalid export object identity")
+      name<-paste0(sha,".json")
+      .nv_need(suppressWarnings(file.rename(file.path(stage,"objects",name),file.path(destination,"objects",name))),"Cannot install export object")
+    })
+    # No provider can admit a partially installed destination: pointer is last.
+    .nv_need(suppressWarnings(file.rename(file.path(stage,"publication.json"),file.path(destination,"publication.json"))),"Cannot install export pointer")
+    suspendInterrupts({
+      .v2_scratch_io(function().nv_need(unlink(stage,recursive=TRUE)==0L&&!dir.exists(stage)))
+      ownsStage<<-FALSE
+      allowInterrupts(Sys.sleep(0))
+    })
     # The pointer lock covers only the final CAS, after all validation/file I/O.
     revision <- if(is.null(expectedRevision)) NULL else tx$one(paste0("SELECT ",tx$schema,".promote_publication(",.store_uuid(pub),",",expectedRevision,"::bigint)::text"))
     .term_check(cancel)
     list(publication_id=pub,root=root,revision=revision,export_dir=destination)
-  },isolation=2L),error=function(e) {
-    if(ownsDestination && dir.exists(destination)) unlink(destination,recursive=TRUE)
-    if(inherits(e,"achillesnext_scratch_error"))stop(e)
-    if(grepl("Current publication conflict",conditionMessage(e),fixed=TRUE)) stop("Current publication conflict",call.=FALSE)
-    stop("Result publication failed; prior current preserved",call.=FALSE)
+    },isolation=2L,state=state)
   })
-  finished <- TRUE;result
+  clean<-.v2_scratch_capture(function()suspendInterrupts(cleanup()))
+  if(!captured$ok||!clean$ok) {
+    if(state$outcome=="unknown").publication_failure("publication.commit_unknown",state,pub,releaseId,root,!is.null(expectedRevision))
+    if(state$outcome=="committed") {
+      code<-if(!clean$ok||state$disconnect_state!="confirmed")"publication.cleanup_failed" else
+        if(inherits(captured$failure,"interrupt"))"publication.cancelled" else "publication.post_commit_failed"
+      .publication_failure(code,state,pub,releaseId,root,!is.null(expectedRevision))
+    }
+    if(!clean$ok||!state$rollback_state%in%c("confirmed","not_required")||!state$disconnect_state%in%c("confirmed","not_required"))
+      .publication_failure("publication.cleanup_failed",state,pub,releaseId,root,!is.null(expectedRevision))
+    failure<-captured$failure
+    if(inherits(failure,"achillesnext_scratch_error"))stop(failure)
+    if(inherits(failure,"interrupt")).publication_failure("publication.cancelled",state,pub,releaseId,root,!is.null(expectedRevision))
+    if(grepl("Current publication conflict",conditionMessage(failure),fixed=TRUE))stop("Current publication conflict",call.=FALSE)
+    stop("Result publication failed; prior current preserved",call.=FALSE)
+  }
+  captured$value
 }
