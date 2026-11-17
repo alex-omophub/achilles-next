@@ -68,8 +68,7 @@ local({
   stopifnot(attempts==0L)
   cat('EXECUTOR_REHASHED_TAMPERING_LIMITS_PRECONNECT_CANCELLATION_AND_DEADLINE_OK\n')
 
-  # Independent conservation metadata is fixed in size and keeps exact count
-  # strings above 2^53; unsupported optional reports do not remove source rows.
+  # Fixed-shape conservation metadata preserves exact count strings above 2^53.
   o<-f('.object');audit<-o(population=o(person_count='9007199254740993',nonnull='9007199254740993',
     distinct='9007199254740993',raw_observation_count='7',merged_interval_count='3'),
     domains=stats::setNames(lapply(f('.domain_names')(TRUE),function(domain)
