@@ -76,7 +76,20 @@ class CiRuntimeTests(unittest.TestCase):
         conformance=[args for path,args,suite in assignments if path=='tools/test_core_characterization.py']
         self.assertEqual(len(conformance),1)
         self.assertIn('--with-publication',conformance[0])
+        fixture_steps=[step for step in self.integration_steps(workflow)
+                       if step.startswith('name: Verify incremental and streaming fixture transactions\n')]
+        self.assertEqual(len(fixture_steps),1)
+        fixture=fixture_steps[0]
+        self.assertIn("if: matrix.suite == 'measurement'",fixture)
+        self.assertEqual(re.findall(r'(?m)^          (python3 .+)$',fixture),[
+            'python3 -m unittest discover -s tests -p test_incremental_source_load_postgresql.py',
+            'python3 -m unittest discover -s tests -p test_partition_stream_postgresql.py',
+            'python3 -m unittest discover -s tests -p test_resource_admission_trial.py'])
+        self.assertIn('ACHILLES_NEXT_TEST_STATE: ${{ env.ACHILLES_NEXT_FIXTURE_STATE }}',fixture)
+        self.assertIn('TMPDIR: ${{ runner.temp }}',fixture)
+        self.assertIn('timeout-minutes: ${{ inputs.full_calendar && 60 || 30 }}',workflow)
         for step in self.integration_steps(workflow):
+            if step==fixture:continue
             if any(command in step for command in ['actions/setup-node@','npm ci ','npm run package-viewer',
                                                    'npm run check','npm test','python3 -m unittest','node packages/contracts/']):
                 self.assertIn("if: matrix.suite == 'compatibility'",step)

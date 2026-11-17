@@ -9,6 +9,7 @@ local({
   source(file.path(helperDir,'result-artifact-regressions.R'),local=TRUE)
   source(file.path(helperDir,'result-store-regressions.R'),local=TRUE)
   source(file.path(helperDir,'artifact-inventory.R'),local=TRUE)
+  source(file.path(helperDir,'export-budget-native.R'),local=TRUE)
   ns <- asNamespace('AchillesNext');f <- function(name)get(name,ns)
   obj <- f('.object');json <- f('.json');wire <- f('.v2_bytes');hash <- f('.v2_hash')
   schema <- paste0('export_test_',Sys.getpid());serve <- paste0('export_serve_',Sys.getpid())
@@ -125,6 +126,8 @@ local({
     if(d$kind=='data'&&doc$metric_id=='core.execution.output_status')stopifnot(length(doc$rows)==142L,all(vapply(doc$rows,function(r)r$state=='suppressed'&&is.null(r$values)&&!length(r$denominator_refs),TRUE)))
   })
   cat('SUPPRESSED_LEDGER_PUBLICATION_AND_ARTIFACT_ROUNDTRIP_OK\n')
+  testExportBudgetIntegration(details,schema,release,root,allow,q,label='base20')
+  testExportBudgetGrowing(details,schema,release,root,allow,q)
   before <- q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID
   fail <- function(work)stopifnot(tryCatch({work();FALSE},error=function(e)TRUE))
   fail(function()publishResultRelease(details,schema,release,file.path(root,'denied'),'fixture-restricted','denied',allow,function(candidate)FALSE,'1'))
