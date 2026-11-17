@@ -33,3 +33,39 @@ for(version in c('1.0.0','1.1.0')) {
  }
 }
 cat('LEGACY_CONTEXT_AND_TIMESTAMP_COMPATIBILITY_OK\n')
+
+# Structural JSON guards must preserve UTF-8 values/keys while ignoring braces
+# and brackets inside strings. Exercise real page-sized multibyte input without
+# machine-dependent timing assertions.
+local({
+ parse<-get('.nv_json',ns)
+ encode<-function(value)as.character(jsonlite::toJSON(value,auto_unbox=TRUE))
+ rejected<-function(bytes,message=NULL) {
+  error<-tryCatch({parse(bytes);NULL},error=function(e)e)
+  stopifnot(inherits(error,'error'))
+  if(!is.null(message))stopifnot(grepl(message,conditionMessage(error),fixed=TRUE))
+ }
+ values<-c('é','β','漢','💡',paste0('e',intToUtf8(0x0301)),intToUtf8(0x2028))
+ for(value in values) {
+  content<-paste0(value,' [ { } ] " \\ ',strrep('{}[]',40L),value)
+  text<-paste0(strrep('[',32L),encode(content),strrep(']',32L))
+  decoded<-parse(charToRaw(enc2utf8(text)))
+  for(i in seq_len(32L)){stopifnot(length(decoded)==1L);decoded<-decoded[[1L]]}
+  stopifnot(identical(decoded,content))
+  rejected(charToRaw(enc2utf8(paste0('[',text,']'))),'JSON nesting limit exceeded')
+  key<-encode(value)
+  duplicate<-paste0('[{',key,':1,',key,':2}]')
+  rejected(charToRaw(enc2utf8(duplicate)),'Duplicate JSON keys')
+  rejected(charToRaw(enc2utf8(paste0('{',key,':[}'))))
+ }
+ # Escaped Unicode is also decoded exactly; the depth guard counts JSON syntax,
+ # not the number of bytes or code points in a quoted string.
+ escaped<-'"\\u00e9\\u03b2\\u6f22\\ud83d\\udca1"'
+ stopifnot(identical(parse(charToRaw(escaped)),'éβ漢💡'))
+ for(bytes in list(as.raw(c(0xc0,0xaf)),as.raw(c(0xe2,0x82)),as.raw(c(0xe2,0x28,0xa1)),as.raw(c(0xf4,0x90,0x80,0x80))))
+  rejected(c(charToRaw('{"x":"'),bytes,charToRaw('"}')),'Invalid UTF-8')
+ expected<-lapply(seq_len(2048L),function(i)list(label=paste0('Café β 漢 💡 label ID',i),id=as.character(i)))
+ page<-charToRaw(enc2utf8(encode(expected)))
+ stopifnot(length(page)>100000L,identical(parse(page),expected))
+ cat('NATIVE_JSON_UTF8_STRUCTURAL_DEPTH_DUPLICATE_MALFORMED_PAGE_VALUES_OK\n')
+})
