@@ -10,8 +10,8 @@ local({
     assignInNamespace('.jcall',prior$jcall,ns='rJava');assignInNamespace('.store_commit',prior$commit,ns='AchillesNext')},add=TRUE)
   root<-tempfile('publication-outcomes-');stopifnot(dir.create(root));on.exit(unlink(root,recursive=TRUE),add=TRUE)
   details<-structure(list(dbms='postgresql'),class='ConnectionDetails');release<-'10000000-0000-4000-8000-000000000001'
-  modes<-c('ack_lost','before_commit','disconnect','precommit','rollback_fail','precommit_disconnect','rollback_warn','disconnect_warn','success')
-  if(.Platform$OS.type=='unix')modes<-c(modes,'lock_sigint','stage_sigint','rename_sigint','commit_sigint','return_sigint','connect_sigint')
+  modes<-c('ack_lost','before_commit','disconnect','precommit','rollback_fail','precommit_disconnect','rollback_warn','disconnect_warn','success','empty_destination_race','object_move_fail','pointer_move_fail')
+  if(.Platform$OS.type=='unix')modes<-c(modes,'lock_sigint','stage_sigint','rename_sigint','commit_sigint','return_sigint','connect_sigint','destination_sigint')
   stopifnot(!anyDuplicated(modes))
   signal<-function(){stopifnot(tools::pskill(Sys.getpid(),tools::SIGINT));Sys.sleep(0)}
   for(mode in modes) {
@@ -23,7 +23,7 @@ local({
       args<-list(...)
       if(method%in%c('createStatement','executeQuery')){if(method=='executeQuery')lastSql<<-args[[1]];v<-new.env(parent=emptyenv());v$nextRow<-TRUE;return(v)}
       if(method=='next'){v<-obj$nextRow;obj$nextRow<-FALSE;return(v)}
-      if(method=='getString')return(if(grepl('promote_publication',lastSql,fixed=TRUE))'1' else '10000000-0000-4000-8000-000000000002')
+      if(method=='getString')return(if(grepl('SELECT sha256::text FROM',lastSql,fixed=TRUE))strrep('a',64) else if(grepl('promote_publication',lastSql,fixed=TRUE))'1' else '10000000-0000-4000-8000-000000000002')
       if(method=='rollback'){rollbacks<<-rollbacks+1L;if(mode=='rollback_fail')stop('PRIVATE_ROLLBACK_SQL');if(mode=='rollback_warn')warning('PRIVATE_ROLLBACK_WARNING')}
       if(method=='commit'){committed<<-TRUE;return(invisible(NULL))}
       if(method%in%c('setAutoCommit','setReadOnly','setTransactionIsolation','setQueryTimeout','setFetchSize','execute','close','rollback'))return(invisible(NULL))
@@ -39,22 +39,48 @@ local({
     }
     scope$.v2_directory<-function(directory,visit=function(...)NULL,...) {visit(descriptor,charToRaw('approved'));o()}
     environment(publish)<-scope
+    foreignCreated<-FALSE
+    reserveForeign<-function() {
+      stopifnot(base::dir.create(destination,mode='0711'),isTRUE(Sys.chmod(destination,'0711')))
+      foreignCreated<<-TRUE
+    }
     scope$dir.create<-function(path,...) {
+      if(mode=='empty_destination_race'&&identical(path,destination)&&!foreignCreated)reserveForeign()
       made<-base::dir.create(path,...)
+      if(made&&mode=='destination_sigint'&&identical(path,destination))signal()
       if(made&&((mode=='lock_sigint'&&startsWith(basename(path),'.achilles-export-lock-'))||
         (mode=='stage_sigint'&&startsWith(basename(path),'.achilles-export-')&&!startsWith(basename(path),'.achilles-export-lock-'))))signal()
       made
     }
-    scope$file.rename<-function(from,to){moved<-base::file.rename(from,to);if(moved&&mode=='rename_sigint')signal();moved}
+    scope$file.rename<-function(from,to) {
+      # Old code checked absence before entering this rename. Insert an EMPTY
+      # foreign directory at that exact seam; POSIX rename would replace it.
+      if(mode=='empty_destination_race'&&identical(to,destination)&&!foreignCreated)reserveForeign()
+      objectMove<-identical(dirname(to),file.path(destination,'objects'))
+      pointerMove<-identical(to,file.path(destination,'publication.json'))
+      if(objectMove)stopifnot(!file.exists(file.path(destination,'publication.json')))
+      if(pointerMove)stopifnot(file.exists(file.path(destination,'objects',paste0(descriptor$sha256,'.json'))),!file.exists(to))
+      if((mode=='object_move_fail'&&objectMove)||(mode=='pointer_move_fail'&&pointerMove))return(FALSE)
+      moved<-base::file.rename(from,to);if(moved&&mode=='rename_sigint')signal();moved
+    }
     scope$.store_transaction<-function(...) {value<-f('.store_transaction')(...);if(mode=='return_sigint')signal();value}
-    destination<-file.path(root,mode)
+    destination<-file.path(normalizePath(root,mustWork=TRUE),mode)
     error<-tryCatch({publish(details,'results',release,destination,'scope','approval',
       list(),function(...)!mode%in%c('precommit','rollback_fail','precommit_disconnect','rollback_warn'),'0')},error=identity,interrupt=identity)
+    if(mode=='empty_destination_race') {
+      stopifnot(foreignCreated)
+      if(!inherits(error,'error')||committed||!dir.exists(destination)||length(list.files(destination,all.files=TRUE,no..=TRUE)))
+        stop('Foreign empty destination was clobbered',call.=FALSE)
+      stopifnot(foreignCreated,identical(as.character(file.info(destination)$mode),'711'),disconnects==1L,rollbacks==1L)
+      unlink(destination,recursive=TRUE)
+      stopifnot(!length(Sys.glob(file.path(root,'.achilles-export*'))))
+      next
+    }
     retained<-mode%in%c('ack_lost','before_commit','disconnect','disconnect_warn','commit_sigint','return_sigint','success')
     if(mode=='success')stopifnot(!inherits(error,'condition'),committed,dir.exists(destination)) else {
       stopifnot(inherits(error,'condition'),!grepl('PRIVATE_',conditionMessage(error),fixed=TRUE),is.null(error$call),is.null(error$parent))
       if(mode%in%c('ack_lost','before_commit','disconnect','commit_sigint','return_sigint','rollback_fail','rollback_warn','precommit_disconnect','disconnect_warn',
-        'lock_sigint','stage_sigint','rename_sigint','connect_sigint')) {
+        'lock_sigint','stage_sigint','rename_sigint','connect_sigint','destination_sigint')) {
         stopifnot(inherits(error,'AchillesPublicationFailure'),
           error$outcome==if(mode%in%c('ack_lost','before_commit'))'unknown' else if(committed)'committed' else 'not_committed',
           error$reason_code==if(mode%in%c('ack_lost','before_commit'))'publication.commit_unknown' else
@@ -68,6 +94,7 @@ local({
     }
     stopifnot(identical(dir.exists(destination),retained),disconnects==if(mode%in%c('lock_sigint','stage_sigint'))0L else 1L)
     if(retained)stopifnot(identical(readBin(file.path(destination,'publication.json'),'raw',n=100L),charToRaw('pointer')))
+    if(mode%in%c('object_move_fail','pointer_move_fail'))stopifnot(!committed,rollbacks==1L)
     if(mode%in%c('rollback_fail','rollback_warn'))stopifnot(error$rollback_state=='unconfirmed')
     if(mode%in%c('precommit_disconnect','disconnect_warn'))stopifnot(error$disconnect_state=='unconfirmed')
     stopifnot(!length(Sys.glob(file.path(root,'.achilles-export*'))))

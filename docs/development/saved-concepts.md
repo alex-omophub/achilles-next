@@ -58,11 +58,13 @@ Names never rewrite concept IDs or numerical definitions.
 The approval candidate includes the new contract version and saved-terminology
 metadata; the exact root hash covers the index, labels, provenance and policy.
 Native admission validates complete ID/name equivalence and retained scope before
-institutional approval. Existing atomic publication/failure-preservation rules
-apply. A failed capture, bad hash/context, denied policy or pre-COMMIT cancellation
+institutional approval. Database current selection remains atomic. Filesystem
+installation reserves a new destination and installs `publication.json` last;
+the [result-store outcome rules](result-store.md) govern failures. A failed capture, bad hash/context, denied policy or pre-COMMIT cancellation
 cannot replace the previous publication. Lost COMMIT acknowledgement is explicitly
-unknown and keeps the approved export; inspect the result-store outcome diagnostics
-before recovery. Refresh orchestration does
+unknown and keeps the approved export. A confirmed commit followed by disconnect
+or return failure also retains it; current may already have advanced when promotion
+was requested. Inspect the result-store outcome diagnostics before recovery. Refresh orchestration does
 not automatically capture/attach labels; configure this explicit publication path.
 
 ## Enablement and compatibility

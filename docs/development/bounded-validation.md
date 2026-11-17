@@ -98,7 +98,9 @@ Once COMMIT has been invoked, a missing acknowledgement does not prove rollback:
 `publication.commit_unknown` retains the approved export. A confirmed commit
 followed by a disconnect/return failure also retains it. Use the safe IDs and
 outcome described in the [result-store guide](result-store.md) for manual
-inspection; these cases never claim that prior current is unchanged.
+inspection. When promotion was requested, these cases do not claim that prior
+current is unchanged. With `expectedRevision=NULL`, no promotion was requested and
+`current_changed` is FALSE even if the publication commit is unknown or committed.
 
 Validation-owned scratch cleanup attempts all its actions even if one close or
 removal fails and reports a cleanup failure. Filesystem deletion can fail when

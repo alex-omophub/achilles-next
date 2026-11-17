@@ -215,9 +215,26 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
       tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_page_object VALUES (",.store_uuid(pub),",",.store_literal(desc$sha256),",",.store_literal(desc$kind),",decode('",hex,"','hex'))"))
     },check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)
     tx$execute(paste0("UPDATE ",tx$schema,".achillesnext_publication SET state='ready',approved_at=now() WHERE publication_id=",.store_uuid(pub)))
+    # Reserve a NEW directory atomically. A directory rename could replace a
+    # foreign empty destination created after an earlier existence check.
     suspendInterrupts({
-      .nv_need(!file.exists(destination) && suppressWarnings(file.rename(stage,destination)),"Cannot finalize approved export")
-      ownsDestination<<-TRUE;ownsStage<<-FALSE
+      .nv_need(dir.create(destination,mode="0700",showWarnings=FALSE),"Cannot reserve export destination")
+      ownsDestination<<-TRUE
+      allowInterrupts(Sys.sleep(0))
+    })
+    .nv_need(dir.create(file.path(destination,"objects"),mode="0700",showWarnings=FALSE),"Cannot prepare export objects")
+    # All pages were already admitted and inserted in this transaction. Stream
+    # only their fixed-size IDs; move bytes locally without a whole-file list.
+    tx$stream(paste0("SELECT sha256::text FROM ",tx$schema,".achillesnext_page_object WHERE publication_id=",.store_uuid(pub)," ORDER BY sha256"),function(sha) {
+      .nv_need(.string(sha)&&grepl("^[a-f0-9]{64}$",sha),"Invalid export object identity")
+      name<-paste0(sha,".json")
+      .nv_need(suppressWarnings(file.rename(file.path(stage,"objects",name),file.path(destination,"objects",name))),"Cannot install export object")
+    })
+    # No provider can admit a partially installed destination: pointer is last.
+    .nv_need(suppressWarnings(file.rename(file.path(stage,"publication.json"),file.path(destination,"publication.json"))),"Cannot install export pointer")
+    suspendInterrupts({
+      .v2_scratch_io(function().nv_need(unlink(stage,recursive=TRUE)==0L&&!dir.exists(stage)))
+      ownsStage<<-FALSE
       allowInterrupts(Sys.sleep(0))
     })
     # The pointer lock covers only the final CAS, after all validation/file I/O.
