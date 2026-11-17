@@ -85,7 +85,7 @@ The same bytes are charged once. Moving written objects into the reserved
 destination, copying approved pages into PostgreSQL and the two artifact admission
 passes do not add charges.
 The terminology **INPUT snapshot copy** is explicitly outside this export quota;
-its input-copy budget is separate work. Validation scratch remains governed by
+it has the separate `maxSnapshotBytes` limit described below. Validation scratch remains governed by
 `maxScratchBytes`. Database storage, filesystem metadata and client memory are
 also excluded. Total required physical space can exceed either configured limit.
 
