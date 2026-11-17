@@ -108,9 +108,10 @@ def directory_bytes(directory):
 def output_inventory(directory):
     """Try at most three fresh bounded walks; never reuse partial/cached bytes.
 
-    A moving output tree is not an atomic filesystem snapshot. Retry only missing
-    or replaced-directory races, requesting 10/20ms backoff; hard refusals remain
-    unavailable. Diagnostics contain closed exception classes/errno, never paths
+    A moving output tree is not an atomic filesystem snapshot. Retry only ENOENT
+    or ENOTDIR, requesting 10/20ms backoff. Directory identity mismatches and all
+    other hard refusals stay unavailable without retry. Diagnostics contain
+    closed exception classes/errno, never paths
     or exception text. Wall duration includes actual walks and scheduling waits.
     """
     started=time.monotonic();first=None;last=None
