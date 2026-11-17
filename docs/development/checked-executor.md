@@ -142,5 +142,7 @@ reason. A PostgreSQL backend identifier would not be a warehouse query ID.
 
 These bounds are implemented controls, not qualification of a particular laptop,
 large dataset or second engine. Complete wire normalization, bounded persistence,
-validation/export and institutional approval remain separate stages. Saved-result
+validation/export and institutional approval remain separate stages. The optional
+[compiled-candidate bridge](compiled-candidate.md) supplies bounded capture and
+separate store persistence for this stream. Saved-result
 viewing continues to use precomputed approved data with zero CDM access.

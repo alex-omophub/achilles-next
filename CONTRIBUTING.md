@@ -27,6 +27,8 @@ Fix valid findings and explain rejected findings in their threads; resolve addre
 
 ## Validation and documentation
 
+When changing workflow commands, keep the exact integration inventory in [the CI runtime tests](tests/test_ci_runtime.py) synchronized and run `python3 -m unittest discover -s tests -p test_ci_runtime.py`.
+
 Test observable numerical and interface behavior against independent fixtures where relevant. Preserve populations, denominators, units, precision, provenance and distinct unavailable/suppressed states. Document intentional semantic corrections and applicable compatibility limits.
 
 Use synthetic or approved public fixtures. Keep credentials, patient data and restricted outputs out of Git. Keep private planning, delivery records, decision logs, research and confidential integration material outside the checkout; package builds and tests must not depend on them.

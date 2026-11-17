@@ -52,6 +52,7 @@ class CiRuntimeTests(unittest.TestCase):
                          ('tests/tracer/domain-review-offline.R','domain'):1,
                          ('tools/test_population_baseline.py','domain'):1,
                          ('tools/test_domain_baseline.py','domain'):1,
+                         ('tools/test_characterization_candidate_sql.py','domain'):1,
                          ('tools/test_measurement_baseline.py','measurement'):1,
                          ('tools/test_core_characterization.py','measurement'):1,
                          ('tools/test_characterization_refresh.py','measurement'):1,

@@ -216,6 +216,9 @@ jobs:
           PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_result_serving.py --test-script registered-profile --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/registered-profile" --admin-host 127.0.0.1 --admin-user postgres
           PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_result_serving.py --test-script refresh-contract --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/refresh-contract" --admin-host 127.0.0.1 --admin-user postgres
           python3 tools/benchmark/batch_primitives.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/batch-primitives" --trials 1
+      - name: Verify the separate-source SQL candidate bridge
+        if: matrix.suite == 'domain'
+        run: PGPASSFILE="$GITHUB_WORKSPACE/.local/admin.pgpass" python3 tools/test_characterization_candidate_sql.py --state .local/postgresql --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/sql-candidate-bridge" --admin-host 127.0.0.1 --admin-user postgres
       - name: Verify persisted population and observation baseline
         if: matrix.suite == 'domain'
         run: python3 tools/test_population_baseline.py --config tools/tracer_fixture_config.R --output-dir "$RUNNER_TEMP/population-baseline"
