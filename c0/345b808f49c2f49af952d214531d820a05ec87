@@ -1,0 +1,16 @@
+R/count-tracer.R
+  h_4046c129935915 5-10,24-30
+tests/tracer/canonical-json.R
+  h_4046c129935915 32-48
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c0345b808f49c2f49af952d214531d820a05ec87",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
