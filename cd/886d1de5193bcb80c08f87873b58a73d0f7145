@@ -1,0 +1,19 @@
+tests/tracer/characterization-candidate-sql-interrupts.R
+  s_895f6ebe145fd3::t_50f5ad63fe45f5 277-279
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "cd886d1de5193bcb80c08f87873b58a73d0f7145",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
