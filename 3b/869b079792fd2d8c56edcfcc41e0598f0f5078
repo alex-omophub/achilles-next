@@ -1,0 +1,18 @@
+README.md
+  h_4046c129935915 153-156
+docs/development/checked-executor.md
+  h_4046c129935915 145-147
+docs/development/client-paths.md
+  h_4046c129935915 18,70,72-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3b869b079792fd2d8c56edcfcc41e0598f0f5078",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
