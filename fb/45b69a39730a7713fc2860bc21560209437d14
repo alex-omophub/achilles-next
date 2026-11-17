@@ -1,0 +1,35 @@
+docs/development/result-store.md
+  s_895f6ebe145fd3::t_ded2317a5beae7 75-99
+docs/development/bounded-validation.md
+  s_895f6ebe145fd3::t_ded2317a5beae7 91-101
+R/result-export.R
+  s_895f6ebe145fd3::t_c02371e0465f69 140-148,171-173,177-197,201,218-222,227,229-245
+R/result-validation.R
+  s_895f6ebe145fd3::t_055198a2e07005 4,11-34,38,60-65
+docs/development/saved-concepts.md
+  s_895f6ebe145fd3::t_fc448a20023a04 62-65
+man/resultPublication.Rd
+  s_895f6ebe145fd3::t_67b3287b7b3579 28,32
+tests/tracer/publication-outcomes-native.R
+  s_895f6ebe145fd3::t_c0f05477aed8d9 1-57
+tests/tracer/publication-outcomes-offline.R
+  s_895f6ebe145fd3::t_fd265f441c3180 1-112
+tests/tracer/result-export.R
+  s_895f6ebe145fd3::t_3d97c2a6ade795 8,174-175,182,184-187,189,242-243
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fb45b69a39730a7713fc2860bc21560209437d14",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
