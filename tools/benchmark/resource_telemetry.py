@@ -3,18 +3,21 @@
 Counters always carry scope. Missing telemetry is never synthesized as zero.
 No cgroup creation, membership changes, PostgreSQL settings or stats resets.
 """
+import errno
 import json
 import math
 import os
 from pathlib import Path
 import shutil
 import signal
+import stat
 import subprocess
 import sys
 import time
 
 MAX_SAMPLES=20000
 MAX_RECORD_BYTES=64*1024
+MAX_OUTPUT_ENTRIES=100000
 
 
 def metric(value=None,reason=None,scope=None):
@@ -70,11 +73,40 @@ def directory_bytes(directory):
         with os.scandir(stack.pop()) as items:
             for p in items:
                 entries+=1
-                if entries>100000:raise ValueError('Output inventory budget exceeded')
-                if p.is_symlink():raise ValueError('Symlink in telemetry output')
-                if p.is_dir(follow_symlinks=False):stack.append(Path(p.path))
-                elif p.is_file(follow_symlinks=False):total+=p.stat(follow_symlinks=False).st_size
+                if entries>MAX_OUTPUT_ENTRIES:raise ValueError('Output inventory budget exceeded')
+                observed=p.stat(follow_symlinks=False)
+                if stat.S_ISLNK(observed.st_mode):raise ValueError('Symlink in telemetry output')
+                if stat.S_ISDIR(observed.st_mode):stack.append(Path(p.path))
+                elif stat.S_ISREG(observed.st_mode):total+=observed.st_size
     return total
+
+
+def output_inventory(directory):
+    """Try at most three fresh bounded walks; never reuse partial/cached bytes.
+
+    A moving output tree is not an atomic filesystem snapshot. Retry only missing
+    or replaced-directory races, requesting10/20ms backoff; hard refusals remain
+    unavailable. Diagnostics contain closed exception classes/errno, never paths
+    or exception text. Wall duration includes actual walks and scheduling waits.
+    """
+    started=time.monotonic();first=None;last=None
+    for attempt in range(1,4):
+        try:
+            value=metric(directory_bytes(directory),scope='logical files under this output directory')
+            break
+        except (OSError,ValueError) as error:
+            name=type(error).__name__
+            if name not in ('OSError','FileNotFoundError','NotADirectoryError','PermissionError','ValueError'):
+                name='OSError' if isinstance(error,OSError) else 'ValueError'
+            number=getattr(error,'errno',None)
+            if type(number) is not int or not 0<number<=65535:number=None
+            last=dict(exception_class=name,errno=number)
+            if first is None:first=last
+            if isinstance(error,OSError) and number in (errno.ENOENT,errno.ENOTDIR) and attempt<3:
+                time.sleep((.01,.02)[attempt-1]);continue
+            value=metric(reason='output_inventory_unavailable',scope='output directory');break
+    return value,dict(attempts=attempt,elapsed_seconds=max(0,time.monotonic()-started),
+                      first_failure=first,last_failure=last)
 
 
 def limits(interval,wall_seconds,rss_limit,output_limit,min_free):
@@ -97,6 +129,7 @@ def observe(command,out,env=None,interval=.5,wall_seconds=600,rss_limit=4*1024**
     if any(p.exists() for p in [record,stop,out/'samples.jsonl',out/'worker.log']):raise FileExistsError('Telemetry output must be new')
     started=time.monotonic();reason=None;requested=None;interrupted=False;samples=0;sampled_peak=None;output_peak=None;rss_missing=0;usage=None;code=None
     process=None
+    output_success=0;output_missing=0;output_retried=0;output_attempts=0;output_first_failure=None;output_last_failure=None
     def request(why):
         nonlocal reason,requested
         if reason is None:
@@ -116,18 +149,22 @@ def observe(command,out,env=None,interval=.5,wall_seconds=600,rss_limit=4*1024**
                     now=time.monotonic();rss=rss_bytes(process.pid)
                     if rss['state']=='available':sampled_peak=max(sampled_peak or 0,rss['value'])
                     else:rss_missing+=1
-                    try:
-                        for retry in range(3):
-                            try:
-                                output=metric(directory_bytes(out),scope='logical files under this output directory');break
-                            except FileNotFoundError:
-                                if retry==2:raise
-                        output_peak=max(output_peak or 0,output['value'])
-                    except (OSError,ValueError):output=metric(reason='output_inventory_unavailable',scope='output directory')
+                    output,inventory=output_inventory(out)
+                    if output['state']=='available':output_peak=max(output_peak or 0,output['value'])
                     free=shutil.disk_usage(out).free
-                    sample=dict(elapsed_seconds=now-started,rss=rss,output_bytes=output,output_volume_free_bytes=free,cgroup=cgroup_snapshot(cgroup,process.pid))
+                    sample=dict(elapsed_seconds=now-started,rss=rss,output_bytes=output,output_inventory=inventory,output_volume_free_bytes=free,cgroup=cgroup_snapshot(cgroup,process.pid))
                     samples+=1
                     journal.write(json.dumps(sample,separators=(',',':'))+'\n');journal.flush()
+                    output_attempts+=inventory['attempts']
+                    output_retried+=int(inventory['attempts']>1)
+                    if output['state']=='available':output_success+=1
+                    else:output_missing+=1
+                    if inventory['first_failure'] is not None:
+                        if output_first_failure is None:
+                            output_first_failure=dict(sample=samples,**inventory['first_failure'],
+                                attempts=inventory['attempts'],elapsed_seconds=inventory['elapsed_seconds'])
+                        output_last_failure=dict(sample=samples,**inventory['last_failure'],
+                            attempts=inventory['attempts'],elapsed_seconds=inventory['elapsed_seconds'])
                     if now-started>=wall_seconds:request('wall_deadline')
                     if rss['state']=='available' and rss['value']>rss_limit:request('sampled_worker_rss_limit')
                     if output['state']!='available':request('output_measurement_failed')
@@ -157,6 +194,8 @@ def observe(command,out,env=None,interval=.5,wall_seconds=600,rss_limit=4*1024**
             worker_cpu_seconds=metric(usage.ru_utime+usage.ru_stime,scope='wait4 OS-reported child usage; excludes PostgreSQL') if usage else metric(reason='worker_not_reaped'),
             worker_peak_rss_bytes=metric(usage.ru_maxrss*(1 if sys.platform=='darwin' else 1024),scope='wait4 worker lifetime RSS peak; R includes JVM; not total job/database memory') if usage else metric(reason='worker_not_reaped'),
             sampled_worker_peak_rss_bytes=metric(sampled_peak,scope='sampled worker RSS') if sampled_peak is not None else metric(reason='no_successful_RSS_samples'),
+            output_inventory_coverage=dict(successful_samples=output_success,unavailable_samples=output_missing,
+                retried_samples=output_retried,walk_attempts=output_attempts,first_failure=output_first_failure,last_failure=output_last_failure),
             database_process_CPU_memory=metric(reason='not_attributed_on_shared_development_host'),
             job_database_cache_peak=metric(reason='no_verified_dedicated_cgroup'),qualifying=False,
             limits=dict(interval_seconds=interval,wall_seconds=wall_seconds,rss_bytes=rss_limit,output_bytes=output_limit,min_output_volume_free_bytes=min_free),
