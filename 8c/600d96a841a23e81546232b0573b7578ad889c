@@ -1,0 +1,14 @@
+tools/benchmark/resource_telemetry.py
+  h_4046c129935915 111-114
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8c600d96a841a23e81546232b0573b7578ad889c",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
