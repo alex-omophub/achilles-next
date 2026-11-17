@@ -34,12 +34,15 @@ local({
     scope$.store_validate<-function(...)list(context=list(state='validated',source_id='fixture:outcome',content_revision='1',profile_sha256=strrep('a',64)))
     descriptor<-o(sha256=strrep('a',64),bytes='8',kind='root',rows='0')
     scope$.store_build_pages<-function(tx,validated,publicationId,scopeId,approvalId,policy,directory,...) {
+      buildCalls<<-buildCalls+1L
       writeBin(charToRaw('approved'),file.path(directory,'objects',paste0(descriptor$sha256,'.json')))
       writeBin(charToRaw('pointer'),file.path(directory,'publication.json'));descriptor
     }
     scope$.v2_directory<-function(directory,visit=function(...)NULL,...) {visit(descriptor,charToRaw('approved'));o()}
     environment(publish)<-scope
     foreignCreated<-FALSE
+    moveAttempts<-c(object=0L,pointer=0L);moveSuccesses<-moveAttempts;moveFailures<-moveAttempts
+    transactionCalls<-0L;buildCalls<-0L
     reserveForeign<-function() {
       stopifnot(base::dir.create(destination,mode='0711'),isTRUE(Sys.chmod(destination,'0711')))
       foreignCreated<<-TRUE
@@ -58,12 +61,19 @@ local({
       if(mode=='empty_destination_race'&&identical(to,destination)&&!foreignCreated)reserveForeign()
       objectMove<-identical(dirname(to),file.path(destination,'objects'))
       pointerMove<-identical(to,file.path(destination,'publication.json'))
+      kind<-if(objectMove)'object' else if(pointerMove)'pointer' else NULL
+      if(!is.null(kind))moveAttempts[[kind]]<<-moveAttempts[[kind]]+1L
       if(objectMove)stopifnot(!file.exists(file.path(destination,'publication.json')))
       if(pointerMove)stopifnot(file.exists(file.path(destination,'objects',paste0(descriptor$sha256,'.json'))),!file.exists(to))
-      if((mode=='object_move_fail'&&objectMove)||(mode=='pointer_move_fail'&&pointerMove))return(FALSE)
-      moved<-base::file.rename(from,to);if(moved&&mode=='rename_sigint')signal();moved
+      if((mode=='object_move_fail'&&objectMove)||(mode=='pointer_move_fail'&&pointerMove)) {
+        moveFailures[[kind]]<<-moveFailures[[kind]]+1L
+        return(FALSE)
+      }
+      moved<-base::file.rename(from,to)
+      if(moved&&!is.null(kind))moveSuccesses[[kind]]<<-moveSuccesses[[kind]]+1L
+      if(moved&&mode=='rename_sigint')signal();moved
     }
-    scope$.store_transaction<-function(...) {value<-f('.store_transaction')(...);if(mode=='return_sigint')signal();value}
+    scope$.store_transaction<-function(...) {transactionCalls<<-transactionCalls+1L;value<-f('.store_transaction')(...);if(mode=='return_sigint')signal();value}
     destination<-file.path(normalizePath(root,mustWork=TRUE),mode)
     error<-tryCatch({publish(details,'results',release,destination,'scope','approval',
       list(),function(...)!mode%in%c('precommit','rollback_fail','precommit_disconnect','rollback_warn'),'0')},error=identity,interrupt=identity)
@@ -94,7 +104,14 @@ local({
     }
     stopifnot(identical(dir.exists(destination),retained),disconnects==if(mode%in%c('lock_sigint','stage_sigint'))0L else 1L)
     if(retained)stopifnot(identical(readBin(file.path(destination,'publication.json'),'raw',n=100L),charToRaw('pointer')))
-    if(mode%in%c('object_move_fail','pointer_move_fail'))stopifnot(!committed,rollbacks==1L)
+    if(mode%in%c('object_move_fail','pointer_move_fail')) {
+      stopifnot(transactionCalls==1L,buildCalls==1L,!committed,rollbacks==1L,
+        identical(conditionMessage(error),'Result publication failed; prior current preserved'))
+      if(mode=='object_move_fail')stopifnot(identical(moveAttempts,c(object=1L,pointer=0L)),
+        identical(moveSuccesses,c(object=0L,pointer=0L)),identical(moveFailures,c(object=1L,pointer=0L))) else
+        stopifnot(identical(moveAttempts,c(object=1L,pointer=1L)),
+          identical(moveSuccesses,c(object=1L,pointer=0L)),identical(moveFailures,c(object=0L,pointer=1L)))
+    }
     if(mode%in%c('rollback_fail','rollback_warn'))stopifnot(error$rollback_state=='unconfirmed')
     if(mode%in%c('precommit_disconnect','disconnect_warn'))stopifnot(error$disconnect_state=='unconfirmed')
     stopifnot(!length(Sys.glob(file.path(root,'.achilles-export*'))))
