@@ -1,0 +1,53 @@
+R/characterization-execute.R
+  s_895f6ebe145fd3::t_c1c1cc9f7e86a0 115-117,197
+tools/test_core_characterization.py
+  s_895f6ebe145fd3::t_1482602bd4253c 5-6,18-131,152-171,370,386-388,390-391
+  s_3e206b4a2cf4c3::t_3a41e7c5fc9e68 132-151
+R/characterization-render.R
+  s_3e206b4a2cf4c3::t_a825a8c333e48a 45-46
+  s_895f6ebe145fd3::t_c1c1cc9f7e86a0 147
+tests/tracer/characterization-execute-offline.R
+  s_895f6ebe145fd3::t_77eeadf49d1b61 33-36,71-95,143
+docs/development/checked-executor.md
+  s_3e206b4a2cf4c3::t_b6852c96e57c3c 86-88
+  s_895f6ebe145fd3::t_8d785698da3574 68-85,89
+tests/tracer/characterization-render-offline.R
+  s_895f6ebe145fd3::t_77eeadf49d1b61 34-41
+tests/tracer/core-characterization.R
+  s_895f6ebe145fd3::t_f6fa7db067c3e3 83
+R/characterization-audit.R
+  s_895f6ebe145fd3::t_c1c1cc9f7e86a0 1-14,16-35
+  s_895f6ebe145fd3::t_77eeadf49d1b61 15
+tests/tracer/characterization-render-native.R
+  s_895f6ebe145fd3::t_77eeadf49d1b61 60,73-74,119
+man/executeCharacterizationSql.Rd
+  s_895f6ebe145fd3::t_8d785698da3574 56-71,114-115
+man/renderCharacterizationSql.Rd
+  s_3e206b4a2cf4c3::t_a825a8c333e48a 49-50
+tests/tracer/characterization-execute-native.R
+  s_3e206b4a2cf4c3::t_424e9b07acacc1 85-120
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2cd0f0af447b4156f4cd57c0282b6eb7d0a0dbc0",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
