@@ -17,7 +17,13 @@ All commits must use the user's Git account identity. Automated assistance must 
 
 Prepare reviewable changes and run the relevant checks. Committing, amending, pushing or merging requires explicit user approval after review. Only the user initiates pull requests; automated assistance must not create PRs through a CLI, API, tool or browser. Local PR-description drafts may be prepared for review.
 
-Before merging, verify the review and CI gate on the exact current head. [Cubic](https://www.cubic.dev/) is the installed AI code-review app; its GitHub check is named `cubic · AI code reviewer`. It is separate from this repository's Actions workflow. Confirm that check completed successfully and address every active review thread. The `Synthetic PostgreSQL count tracer` workflow must also succeed, including `integration (compatibility)`, `integration (domain)`, `integration (measurement)` and the final `tracer` job. Verify the current commit and results in the PR Checks tab or with `gh pr view <number> --json headRefOid,statusCheckRollup` and `gh pr checks <number>`. A result on an earlier commit does not qualify a newer head. Integrate the latest remote state before merging. Never bypass checks or force-push. Pause for necessary clarification, while continuing independent work where possible. Keep each PR focused and omit private delivery/planning material from commits and hosted discussions.
+Before an authorized merge:
+
+1. Fetch and integrate the latest base and PR-branch state, then record the resulting exact PR head commit. Never force-push.
+2. Verify the review and CI gate on that commit. [Cubic](https://www.cubic.dev/) is the installed AI code-review app; its GitHub check is named `cubic · AI code reviewer`. It is separate from this repository's Actions workflow. Confirm that check completed successfully and address every active review thread. The `Synthetic PostgreSQL count tracer` workflow must also succeed, including `integration (compatibility)`, `integration (domain)`, `integration (measurement)` and the final `tracer` job. Verify the commit and results in the PR Checks tab or with `gh pr view <number> --json headRefOid,statusCheckRollup` and `gh pr checks <number>`. A result on an earlier commit does not qualify a newer head.
+3. Recheck the remote PR head immediately before merging. If integration, a push or another writer changes it after verification, repeat the integration and review/CI verification for the new commit. Bind the authorized merge to the verified commit, for example with `gh pr merge <number> --match-head-commit <verified-sha>`. A head-mismatch refusal requires fresh verification; never bypass checks.
+
+Pause for necessary clarification, while continuing independent work where possible. Keep each PR focused and omit private delivery/planning material from commits and hosted discussions.
 
 ## Validation and documentation
 
