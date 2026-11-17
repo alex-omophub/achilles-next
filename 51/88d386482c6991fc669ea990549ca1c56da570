@@ -1,0 +1,18 @@
+docs/development/bounded-validation.md
+  h_4046c129935915 84-86,105-108
+docs/development/client-paths.md
+  h_4046c129935915 23
+docs/development/result-store.md
+  h_4046c129935915 79,81-86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5188d386482c6991fc669ea990549ca1c56da570",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
