@@ -1,21 +1,41 @@
 # JDBC strings preserve NUMERIC exactly. Each cursor fetch is bounded; it never
 # uses DatabaseConnector's data-frame conversion for aggregate values.
 .store_commit <- function(jdbc) rJava::.jcall(jdbc, "V", "commit")
-.store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L, queryTimeoutSeconds = 60L,sourceRead=FALSE) {
+.store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L, queryTimeoutSeconds = 60L,sourceRead=FALSE,state=NULL) {
   .nv_need(identical(details$dbms, "postgresql"), "PostgreSQL is required")
   .nv_need(identical(sourceRead,TRUE)||identical(sourceRead,FALSE))
   .nv_need(!sourceRead||identical(readOnly,TRUE),"Source capture must be read-only")
   .nv_need(.string(schema) && grepl("^[a-z][a-z0-9_]{0,62}$", schema) && !grepl("^pg_|^information_schema$", schema) && (schema!="public"||sourceRead), "Invalid database schema")
   .nv_need(is.numeric(queryTimeoutSeconds)&&length(queryTimeoutSeconds)==1L&&!is.na(queryTimeoutSeconds)&&is.finite(queryTimeoutSeconds)&&
     queryTimeoutSeconds>=1&&queryTimeoutSeconds<=2147483647&&queryTimeoutSeconds==floor(queryTimeoutSeconds),"Invalid store query timeout")
-  connection <- DatabaseConnector::connect(details)
-  on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
-  jdbc <- connection@jConnection
+  committed <- FALSE
+  if(is.null(state)) {
+    connection <- DatabaseConnector::connect(details)
+    on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
+    jdbc <- connection@jConnection
+  } else {
+    .nv_need(is.environment(state),"Invalid transaction outcome observer")
+    state$outcome<-"not_committed";state$rollback_state<-"not_required";state$disconnect_state<-"not_required"
+    connection<-NULL;jdbc<-NULL
+    on.exit(if(!committed&&!is.null(jdbc)) {
+      rolled<-.v2_scratch_capture(function()withCallingHandlers(rJava::.jcall(jdbc,"V","rollback"),warning=function(w)stop("Transaction rollback cleanup failed",call.=FALSE)))
+      state$rollback_state<-if(!rolled$ok)"unconfirmed" else if(state$outcome=="unknown")"acknowledged_after_unknown_commit" else "confirmed"
+    },add=TRUE,after=FALSE)
+    on.exit(if(!is.null(connection)) {
+      closed<-.v2_scratch_capture(function()withCallingHandlers(DatabaseConnector::disconnect(connection),warning=function(w)stop("Transaction disconnect cleanup failed",call.=FALSE)))
+      state$disconnect_state<-if(closed$ok)"confirmed" else "unconfirmed"
+      if(!closed$ok)stop(closed$failure)
+    },add=TRUE)
+    suspendInterrupts({
+      connection<-DatabaseConnector::connect(details);state$disconnect_state<-"unconfirmed"
+      jdbc<-connection@jConnection;state$rollback_state<-"unconfirmed"
+      allowInterrupts(Sys.sleep(0))
+    })
+  }
   rJava::.jcall(jdbc, "V", "setAutoCommit", FALSE)
   rJava::.jcall(jdbc, "V", "setReadOnly", readOnly)
   rJava::.jcall(jdbc, "V", "setTransactionIsolation", isolation)
-  committed <- FALSE
-  on.exit(if (!committed) try(rJava::.jcall(jdbc, "V", "rollback"), silent = TRUE), add = TRUE, after = FALSE)
+  if(is.null(state))on.exit(if (!committed) try(rJava::.jcall(jdbc,"V","rollback"),silent=TRUE),add=TRUE,after=FALSE)
   execute <- function(sql) {
     statement <- rJava::.jcall(jdbc, "Ljava/sql/Statement;", "createStatement")
     on.exit(rJava::.jcall(statement, "V", "close"))
@@ -37,7 +57,12 @@
     .nv_need(length(rows) == 1L, "Missing store row"); rows[[1]]
   }
   result <- work(list(schema = paste0('"', schema, '"'), execute = execute, stream = stream, one = one))
-  .store_commit(jdbc); committed <- TRUE; result
+  if(is.null(state)){.store_commit(jdbc);committed<-TRUE} else suspendInterrupts({
+    state$outcome<-"unknown"
+    .store_commit(jdbc);committed<-TRUE;state$outcome<-"committed";state$rollback_state<-"not_required"
+    allowInterrupts(Sys.sleep(0))
+  })
+  result
 }
 .store_literal <- function(x) paste0("'", gsub("'", "''", x, fixed = TRUE), "'")
 .store_uuid <- function(x) {

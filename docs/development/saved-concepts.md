@@ -59,8 +59,10 @@ The approval candidate includes the new contract version and saved-terminology
 metadata; the exact root hash covers the index, labels, provenance and policy.
 Native admission validates complete ID/name equivalence and retained scope before
 institutional approval. Existing atomic publication/failure-preservation rules
-apply. A failed capture, bad hash/context, denied policy, cancellation or failed
-publication cannot replace the previous publication. Refresh orchestration does
+apply. A failed capture, bad hash/context, denied policy or pre-COMMIT cancellation
+cannot replace the previous publication. Lost COMMIT acknowledgement is explicitly
+unknown and keeps the approved export; inspect the result-store outcome diagnostics
+before recovery. Refresh orchestration does
 not automatically capture/attach labels; configure this explicit publication path.
 
 ## Enablement and compatibility

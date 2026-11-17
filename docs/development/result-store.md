@@ -72,6 +72,31 @@ publication <- publishResultRelease(
   }, expectedRevision = "0")
 ```
 
+A successful return confirms the database commit and publisher disconnection.
+On failure before COMMIT is invoked, the publisher attempts rollback and cleanup.
+Confirmed rollback and cleanup preserve prior current and remove only this
+attempt's files. Cleanup uncertainty is reported explicitly; owned files may
+already have been removed while rollback remains unconfirmed.
+Once COMMIT is invoked, a lost acknowledgement is an
+unknown outcome: `AchillesPublicationFailure` reports `publication.commit_unknown`
+and retains the approved export. The server may already have advanced current.
+A confirmed commit followed by disconnect or return interruption also retains the
+export, reporting `outcome="committed"` instead of claiming rollback. Inspect the
+restricted store using the diagnostic `publication_id`, `release_id` and
+`root_sha256`, and inspect the originally requested export directory before manual
+recovery. Errors contain no artifact path, SQL or credentials, and trigger no
+retry, deletion of retained approved output or automatic pointer repair.
+
+`publication_changed` is TRUE for a confirmed committed publication, FALSE before
+COMMIT and NULL when commit is unknown. `current_changed` is FALSE if no promotion
+was requested; otherwise it follows that known/unknown transaction outcome.
+`rollback_state` and `disconnect_state` distinguish acknowledged cleanup from an
+unconfirmed attempt. A rollback acknowledgement after uncertain COMMIT does not
+prove that the earlier commit was undone. File/connection cleanup uncertainty is
+reported as `publication.cleanup_failed`; cleanup on process termination or power
+loss is not guaranteed. These outcomes do not change approved bytes, policies or
+compare-and-swap behavior.
+
 There is no default institutional policy. The explicit allowlist retains whole
 registered outputs, physically omitting other data and terminology. Omitted
 outputs remain explicit suppressed catalogue entries; outputs depending on an
