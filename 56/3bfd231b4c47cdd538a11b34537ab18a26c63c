@@ -1,0 +1,32 @@
+tests/tracer/characterization-candidate-sql-interrupts.R
+  s_895f6ebe145fd3::t_131d7fc6d80fe6 236-270,272-280
+  s_3e206b4a2cf4c3::t_434a73ed61249f 271
+tests/tracer/characterization-candidate-sql-offline.R
+  s_895f6ebe145fd3::t_131d7fc6d80fe6 55
+R/candidate-generation.R
+  s_3e206b4a2cf4c3::t_434a73ed61249f 7,38-47,64,94-95
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "563bfd231b4c47cdd538a11b34537ab18a26c63c",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
