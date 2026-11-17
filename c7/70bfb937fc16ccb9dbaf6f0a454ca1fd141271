@@ -1,0 +1,59 @@
+docs/development/bounded-validation.md
+  s_895f6ebe145fd3::t_4ec01d72f10045 161-162
+man/resultPublication.Rd
+  s_895f6ebe145fd3::t_4ec01d72f10045 13-14,30
+R/terminology-bounds.R
+  s_895f6ebe145fd3::t_8cac94833f8986 61
+  s_895f6ebe145fd3::t_31b2fd569cfe06 1-60,62-93
+man/savedTerminology.Rd
+  s_895f6ebe145fd3::t_4ec01d72f10045 8-9,21,29
+R/terminology-projection.R
+  s_895f6ebe145fd3::t_49e49e6115503f 13,20
+docs/development/saved-concepts.md
+  s_895f6ebe145fd3::t_4ec01d72f10045 210-219
+R/concept-snapshot.R
+  s_3e206b4a2cf4c3::t_ba54d89406457e 83,93
+  s_895f6ebe145fd3::t_49e49e6115503f 13,16-17,23-43,45-66,68-82,84-92,95-97,101-116,118-126,128-135
+  s_895f6ebe145fd3::t_8cac94833f8986 67
+R/result-export.R
+  s_895f6ebe145fd3::t_49e49e6115503f 81,85,164-165,202,241
+tests/tracer/terminology-bounds-offline.R
+  s_895f6ebe145fd3::t_4ec01d72f10045 82-93,156-157,159-165,167-175,177
+  s_895f6ebe145fd3::t_813cdf98e8656a 94-113,178-184
+  s_895f6ebe145fd3::t_8cac94833f8986 158
+  s_895f6ebe145fd3::t_8261d57fa16120 189-190,199-200
+  s_3e206b4a2cf4c3::t_06ae46c8c99ab3 1-81,114-155,176,204-207
+  s_3e206b4a2cf4c3::t_bfccf0aafcaa07 166
+  s_3e206b4a2cf4c3::t_ba54d89406457e 185-188,191-198,201-203
+tests/tracer/result-export.R
+  s_3e206b4a2cf4c3::t_bfccf0aafcaa07 9-10
+tests/tracer/terminology-bounds-native.R
+  s_895f6ebe145fd3::t_a0c055e7e4ced8 1-39,41-51
+  s_895f6ebe145fd3::t_8cac94833f8986 40
+tests/tracer/saved-label-integration.R
+  s_3e206b4a2cf4c3::t_bfccf0aafcaa07 47,106
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c770bfb937fc16ccb9dbaf6f0a454ca1fd141271",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.1-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
