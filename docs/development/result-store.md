@@ -76,6 +76,15 @@ publication <- publishResultRelease(
   }, expectedRevision = "0")
 ```
 
+`maxExportBytes` optionally limits the total serialized new export, defaulting to
+`1024^3` (1 GiB). It accepts finite whole bytes from zero through `2^53 - 1`.
+Every immutable object and `publication.json` is charged once before writing;
+renames, database copies and artifact admissions do not charge again. This logical
+output cap is separate from validation's `maxScratchBytes` and excludes the
+terminology INPUT snapshot copy, database storage, filesystem metadata and memory.
+It does not reserve disk space or establish a hardware minimum. See
+[bounded validation and export](bounded-validation.md) for scopes and errors.
+
 A successful return confirms the database commit and publisher disconnection.
 On failure before COMMIT is invoked, the publisher attempts rollback and cleanup.
 Confirmed rollback and cleanup preserve prior current and remove only this

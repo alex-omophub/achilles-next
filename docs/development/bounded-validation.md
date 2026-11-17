@@ -1,4 +1,4 @@
-# Bounded validation scratch
+# Bounded validation scratch and export
 
 AchillesNext separates SQL computation from handling saved aggregates. CDM scans,
 joins, sorting and aggregation run in the configured PostgreSQL engine. The R
@@ -33,8 +33,8 @@ every artifact fits within 1 GiB.
 applies separately to each of its two sequential artifact admission passes: the
 first before institutional approval, and the second while inserting the exact
 approved pages into the database publication. Each pass has one shared budget;
-the limit is not multiplied by the number of spools within a pass. Existing
-arguments and defaults remain available. See the [result-store guide](result-store.md)
+the limit is not multiplied by the number of spools within a pass. `maxExportBytes` separately limits the complete staged export, as described below.
+Existing arguments and defaults remain available. See the [result-store guide](result-store.md)
 for sealing, release validation, institutional approval and current-pointer
 promotion.
 
@@ -65,6 +65,40 @@ load the complete row or concept map into memory. None of these controls removes
 reference, denominator, partition, terminology or artifact-closure validation.
 Approved page bytes and analytical availability/suppression states are unchanged.
 
+## Export bytes
+
+`publishResultRelease()` appends an optional `maxExportBytes` argument after
+`maxScratchBytes`. Its default is `1024^3` (1 GiB), with the same finite,
+nonnegative whole-number range through `2^53 - 1`. Zero is valid and rejects the
+first nonempty object. This is a configurable logical byte limit, not a hardware
+minimum or a guarantee that any particular result fits.
+
+One counter covers the actual serialized raw bytes of every new immutable
+object: data, metric and concept catalogues, terminology pages (including approved
+labels and search entries), indexes and the root. It also counts
+`publication.json`, including its final newline. Each file is charged before it is
+opened. A limit that fits the objects but falls one byte short of the pointer
+fails before opening the pointer. Page limits, validation, policy approval and
+compare-and-swap rules remain in force; the quota does not change wire bytes.
+
+The same bytes are charged once. Renaming the completed directory, copying approved
+pages into PostgreSQL and the two artifact admission passes do not add charges.
+The terminology **INPUT snapshot copy** is explicitly outside this export quota;
+its input-copy budget is separate work. Validation scratch remains governed by
+`maxScratchBytes`. Database storage, filesystem metadata and client memory are
+also excluded. Total required physical space can exceed either configured limit.
+
+Export exhaustion uses `achillesnext_export_error` with `code="byte_limit"`;
+allocation/write/flush/close failures and uncertain filesystem warnings use
+`code="io_failure"`. Messages contain no paths or payloads. A failed writer cannot
+continue after uncertain I/O. Opened handles are closed during ordinary
+error/interrupt unwinding, including an interrupt while opening a file.
+
+The publisher preserves these specific export conditions only after confirmed
+pre-COMMIT rollback and cleanup. Cleanup uncertainty and unknown/confirmed commit
+outcomes take priority, as described below. A quota rejection does not approve a
+partial artifact or publish a partial database record.
+
 ## Errors, cancellation and publication
 
 Invalid control values fail argument validation before work starts. Budget and
@@ -87,7 +121,8 @@ a failed admission.
 
 `validateResultArtifact()` propagates predicate cancellation as
 `achillesnext_read_error` with code `aborted`. R interrupts retain their interrupt
-condition. `publishResultRelease()` preserves the specific scratch-error class;
+condition. `publishResultRelease()` preserves the specific scratch-error class after
+confirmed rollback and cleanup;
 pre-COMMIT predicate cancellation attempts rollback and cleanup. Uncertainty is
 reported explicitly through the publication outcome diagnostics below.
 
@@ -116,9 +151,10 @@ inodes. Sparse index files may occupy fewer physical blocks than their logical
 lengths. Shared free space, quotas and filesystem failures can still stop a run
 within the configured limit.
 
-The budget excludes the input artifact, immutable export-page staging, the private
-terminology snapshot copy, result-store storage, database temporary relations and
-R/JVM/driver/decoded-page memory. The fixed page, row, reader/cache and engine-stage
+The validation budget excludes the input artifact and immutable export-page
+staging; staging has the separate `maxExportBytes` limit above. Both budgets
+exclude the private terminology INPUT snapshot copy, result-store storage,
+database temporary relations and R/JVM/driver/decoded-page memory. The fixed page, row, reader/cache and engine-stage
 controls have their own scopes. Complete admission still visits the saved
 inventory, so time and scratch requirements grow with output cardinality. Growing
 inventory measurements and a declared client/engine workload are needed before

@@ -44,6 +44,7 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
     stopifnot(c$contract_version=='2.1.0',c$saved_terminology$snapshot_sha256==snapshot$sha256);TRUE
   },savedTerminology=snapshot)
   validateResultArtifact(approved$export_dir)
+  testExportBudgetIntegration(details,schema,release,root,policy,q,savedTerminology=snapshot,label='labels21')
   rootDoc<-f('.nv_json')(readBin(file.path(approved$export_dir,'objects',paste0(approved$root$sha256,'.json')),'raw',n=262145L))
   context<-c(rootDoc[f('.saved_common')()],o(root=approved$root,authorization_epoch='1',instance_id='labelled-fixture'))
   ex(paste0('INSERT INTO ',schema,".achillesnext_audience_grant VALUES ('fixture-labelled',",lit(role),",true)"))
