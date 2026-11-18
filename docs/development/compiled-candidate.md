@@ -41,8 +41,9 @@ format is introduced, and no per-row remote denominator query is used.
 Set `maxAggregateRows` to the total allowed across the run, including
 metadata. It defaults to 1,000,000 and accepts up to 2,147,483,647. Larger
 totals use the same JDBC fetch size. Capture writes length-prefixed rows in
-batches of up to 128 frames and 1 MiB. Budget aggregate bytes and scratch
-space separately, including explicit zero-count rows in dense report grids.
+batches of up to 128 frames and 1 MiB. Every emitted row, including an
+explicit zero-count cell, counts toward the row budget. Aggregate payload
+bytes and scratch storage have separate budgets.
 
 Failures return sanitized reason codes and, once allocated, attempt/run/source/
 release IDs. A lost COMMIT acknowledgement reports `candidate.commit_unknown` with
