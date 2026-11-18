@@ -1,0 +1,21 @@
+R/domain-reports.R
+  s_3e206b4a2cf4c3::t_8ad91ffe226f62 17-24
+inst/sql/postgresql/domain-counts.sql
+  s_3e206b4a2cf4c3::t_6bfe95667f717f 7-10,12-15,17,30,32-40
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2a81739bc46326271d8234d51e3884bff069b7a8",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
