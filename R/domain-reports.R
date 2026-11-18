@@ -36,12 +36,16 @@
   # date group for people whose records are all undated/invalid.
   first<-paste0('(SELECT concept_tag,person_id,gender_concept_id,year_of_birth,MIN(event_date) FILTER(WHERE valid_date) AS first_date FROM ',table,' WHERE linked GROUP BY concept_tag,person_id,gender_concept_id,year_of_birth) f')
   age<-"EXTRACT(YEAR FROM first_date)::numeric-year_of_birth::numeric"
-  samples<-list(paste0("SELECT '",core,".first_age_summary'::text AS metric_id,",dims(concept,"'gender_concept_id',COALESCE(gender_concept_id::text,'null')")," AS dimensions,CASE WHEN first_date IS NOT NULL AND year_of_birth BETWEEN 1 AND 9999 AND ",age," BETWEEN 0 AND 130 THEN ",age," END AS value,CASE WHEN first_date IS NULL THEN 'event_date_missing_or_invalid' WHEN year_of_birth IS NULL OR year_of_birth NOT BETWEEN 1 AND 9999 THEN 'birth_year_missing_or_invalid' WHEN ",age," NOT BETWEEN 0 AND 130 THEN 'year_age_outside_0_130' ELSE 'eligible' END AS reason FROM ",first))
+  samples<-list(first_age_summary=paste0("SELECT '",core,".first_age_summary'::text AS metric_id,",dims(concept,"'gender_concept_id',COALESCE(gender_concept_id::text,'null')")," AS dimensions,CASE WHEN first_date IS NOT NULL AND year_of_birth BETWEEN 1 AND 9999 AND ",age," BETWEEN 0 AND 130 THEN ",age," END AS value,CASE WHEN first_date IS NULL THEN 'event_date_missing_or_invalid' WHEN year_of_birth IS NULL OR year_of_birth NOT BETWEEN 1 AND 9999 THEN 'birth_year_missing_or_invalid' WHEN ",age," NOT BETWEEN 0 AND 130 THEN 'year_age_outside_0_130' ELSE 'eligible' END AS reason FROM ",first))
   categories<-list();reasons<-.v2_assets()$profile$contracts$`eligibility-reasons`
-  category<-function(suffix,order,measure='record_count')for(reason in unlist(order))categories[[length(categories)+1L]]<<-paste0('(', .store_literal(paste0(core,'.',suffix)),',',.store_literal(reason),',',.store_literal(measure),')')
+  category<-function(suffix,order,measure='record_count') {
+    categories[[suffix]]<<-vapply(unlist(order),function(reason)
+      paste0('(',.store_literal(paste0(core,'.',suffix)),',',.store_literal(reason),',',.store_literal(measure),')'),'')
+  }
   category('first_age_summary',reasons$age_order,'person_count')
   sample<-function(suffix,dimensions,value,reason,from=table,order=reasons$nonnegative_scalar_order) {
-    samples[[length(samples)+1L]]<<-paste0('SELECT ',.store_literal(paste0(core,'.',suffix)),',',dimensions,',',value,',',reason,' FROM ',from)
+    samples[[suffix]]<<-paste0('SELECT ',.store_literal(paste0(core,'.',suffix)),'::text AS metric_id,',
+      dimensions,' AS dimensions,(',value,')::numeric AS value,',reason,' AS reason FROM ',from)
     category(suffix,order)
   }
   scalar<-function(name,dimensions=dims(concept))sample(paste0(name,'_summary'),dimensions,name,paste0("CASE WHEN ",name," IS NULL THEN 'value_missing' WHEN ",name,"::text IN ('NaN','Infinity','-Infinity') THEN 'value_non_finite' WHEN ",name,"<0 THEN 'value_negative' ELSE 'eligible' END"))
@@ -76,7 +80,13 @@
     supported<-lapply(c('value_source_value','value_as_date'),function(k)if(is.null(cap$column(paste0('observation.',k),FALSE)))"(VALUES('X'))" else "(VALUES('0'),('1'))")
     add(paste0("SELECT '",core,".representation_count','counts',jsonb_build_object('concept_tag',g.concept_tag,'representation_flags',flags),jsonb_build_object('record_count',COUNT(c.representation_flags)::text,'person_count',COUNT(DISTINCT c.person_id) FILTER(WHERE c.linked)::text) FROM (SELECT DISTINCT concept_tag FROM ",table,") g CROSS JOIN (SELECT a.v||b.v||c.v||d.v||e.v AS flags FROM (VALUES('0'),('1')) a(v) CROSS JOIN (VALUES('0'),('1')) b(v) CROSS JOIN ",supported[[1]]," c(v) CROSS JOIN (VALUES('0'),('1')) d(v) CROSS JOIN ",supported[[2]]," e(v)) f LEFT JOIN ",table," c ON c.concept_tag=g.concept_tag AND c.representation_flags=f.flags GROUP BY g.concept_tag,flags"))
   }
-  add(.domain_sql('summary',list(samples=paste(samples,collapse=' UNION ALL '),categories=paste0('SELECT * FROM (VALUES ',paste(categories,collapse=','),') v(metric_id,reason,measure)'))))
+  # Each drug distribution has its own statement-level sort and spill budget.
+  groups<-if(domain=='drug')as.list(names(samples)) else list(names(samples))
+  for(summaries in groups) {
+    reasonRows<-unlist(categories[summaries],use.names=FALSE)
+    add(.domain_sql('summary',list(samples=paste(samples[summaries],collapse=' UNION ALL '),
+      categories=paste0('SELECT * FROM (VALUES ',paste(reasonRows,collapse=','),') v(metric_id,reason,measure)'))))
+  }
   unlist(parts,use.names=FALSE)
 }
 .domain_density <- function(person,domains,measurement) {

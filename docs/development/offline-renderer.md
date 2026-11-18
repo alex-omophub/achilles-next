@@ -61,7 +61,9 @@ all other numeric results and all output metadata rows. Each zero cell consumes
 one output row and its serialized UTF-8 payload counts toward `maxAggregateBytes`.
 `maxStageBytes` separately covers the temporary PostgreSQL tables and indexes.
 The statement timeout applies to each group and the elapsed deadline covers
-the whole execution.
+the whole execution. The drug report uses one statement per distribution
+for age at first exposure, days supplied, refills and quantity. Each statement
+produces the summary and its eligibility counts in the same source snapshot.
 
 Fixed-size inventory totals are materialized once; no patient/concept list is
 enumerated in the R compiler.

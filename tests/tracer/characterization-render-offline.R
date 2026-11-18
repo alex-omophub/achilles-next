@@ -31,6 +31,11 @@ local({
       all(vapply(p$steps,function(s)s$kind%in%c('execute','assert_scalar'),TRUE)),
       any(vapply(p$steps,function(s)s$id=='source.declaration'&&s$expected=='true',TRUE)))
     stopifnot(p$batch$scope$history=='source_derived_full_history',is.null(p$batch$scope$observed_window))
+    drugSteps<-Filter(function(step)startsWith(step$id,'drugreports.'),p$steps)
+    drugMetrics<-paste0('core.drug.',c('first_age','days_supply','refills','quantity'),'_summary')
+    matches<-vapply(drugMetrics,function(metric)
+      vapply(drugSteps,function(step)grepl(metric,step$sql,fixed=TRUE),TRUE),logical(length(drugSteps)))
+    stopifnot(all(colSums(matches)==1L),all(rowSums(matches)<=1L))
     audit<-p$source_audit
     stopifnot(setequal(names(audit),c('format_version','kind','sql')),audit$format_version=='1.0.0',
       audit$kind=='staged_source_audit_totals',nchar(audit$sql,type='bytes')<16384L,
