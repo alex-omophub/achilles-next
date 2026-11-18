@@ -4,7 +4,7 @@
   ids[vapply(strsplit(ids,".",fixed=TRUE),function(p)p[2]%in%c(.domain_names(measurement),"density"),TRUE)]
 }
 .domain_sql <- function(name,tokens) {
-  stopifnot(name%in%c("counts","summary"))
+  stopifnot(name%in%c("capture","counts","summary"))
   sql<-paste(readLines(system.file(paste0("sql/postgresql/domain-",name,".sql"),package="AchillesNext",mustWork=TRUE),warn=FALSE),collapse="\n")
   for(k in names(tokens))sql<-gsub(paste0("{{",k,"}}"),tokens[[k]],sql,fixed=TRUE)
   .population_need(!grepl("{{",sql,fixed=TRUE),"Unbound domain SQL token");sql

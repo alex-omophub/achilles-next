@@ -109,7 +109,7 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
         value<-transport$one(step$sql,step$id,"assertion")
         .sql_execution_need(identical(value,step$expected),"execution.assertion_failed")
       } else transport$execute(step$sql,step$id,"materialization")
-      if(grepl("[.](create|index|drop)$",step$id))stageBudget()
+      if(grepl("[.](create|index|drop|append[.][0-9]+)$",step$id))stageBudget()
       if(grepl("[.](create|index|analyze)$",step$id))stageTimings[[sid]]<-list(duration_ms=.sql_execution_ms(wall()-stageStarts[[sid]]))
     }
     # Physical input conservation totals remain independent of report aggregates.

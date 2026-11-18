@@ -21,7 +21,7 @@ restricted aggregate intermediate. Rows have \code{metric_id}, \code{row_kind},
 \code{dimensions}, \code{values}, \code{state} and \code{reason_code} fields.
 Stage all callback output privately until this function returns successfully.}
 \item{maxStageBytes}{Nonnegative integer budget for this execution's temporary
-table and index bytes, at most \code{2^53}. Checked after CREATE, INDEX and DROP.}
+table and index bytes, at most \code{2^53}. Checked after table creation, report inserts, index creation and drops.}
 \item{maxAggregateRows}{Total output row budget, including metadata; integer
 from zero to 2147483647. The default is one million. JDBC fetch size and the
 output byte budget are independent of this total.}

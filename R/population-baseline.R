@@ -90,14 +90,22 @@ generatePopulationObservationBaseline <- function(connectionDetails,cdmSchema,so
     if(coreMode)schemaHash<-capabilities$schema_sha256
     release<-.store_new_uuid();run<-.store_new_uuid();sourceRelease<-.store_new_uuid()
     prefix<-paste0("achillesnext_",gsub("-","",run,fixed=TRUE));stages<-character();stageTimings<-list();peak<-0
-    stage<-function(suffix,sql,index=NULL) {
-      tick();name<-paste0(prefix,"_",suffix);relation<-paste0('pg_temp."',name,'"');begin<-proc.time()[["elapsed"]]
-      tx$execute(paste0('CREATE TEMP TABLE "',name,'" ON COMMIT DROP AS ',sql))
-      if(!is.null(index))tx$execute(paste0("CREATE INDEX ON ",relation," (",index,")"))
-      tx$execute(paste("ANALYZE",relation));stages<<-c(stages,relation)
+    stageBudget<-function() {
       bytes<-as.numeric(tx$one(paste0("SELECT COALESCE(sum(pg_total_relation_size(to_regclass(x))),0)::text FROM unnest(ARRAY[",paste(vapply(stages,.store_literal,""),collapse=","),"]) x")))
       peak<<-max(peak,bytes);.population_need(bytes<=maxStageBytes,"Intermediate byte budget exceeded; generation rolled back")
-      stageTimings[[suffix]]<<-list(duration_ms=.run_ms(begin),sql_sha256=.hash(sql));tick();relation
+    }
+    stage<-function(suffix,sql,index=NULL) {
+      tick();name<-paste0(prefix,"_",suffix);relation<-paste0('pg_temp."',name,'"');begin<-proc.time()[["elapsed"]]
+      tx$execute(paste0('CREATE TEMP TABLE "',name,'" ON COMMIT DROP AS ',sql[[1L]]))
+      stages<<-c(stages,relation)
+      if(length(sql)>1L)stageBudget()
+      for(part in sql[-1L]) {
+        tick();tx$execute(paste("INSERT INTO",relation,part));stageBudget()
+      }
+      if(!is.null(index))tx$execute(paste0("CREATE INDEX ON ",relation," (",index,")"))
+      tx$execute(paste("ANALYZE",relation));stageBudget()
+      identity<-if(length(sql)==1L)sql else .json(as.list(sql))
+      stageTimings[[suffix]]<<-list(duration_ms=.run_ms(begin),sql_sha256=.hash(identity));tick();relation
     }
     source<-paste0('"',cdmSchema,'"')
     person<-stage("person",.population_source_sql("person",source),"person_id")
