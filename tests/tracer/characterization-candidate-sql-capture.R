@@ -112,6 +112,19 @@ testCharacterizationCandidateCapture<-function(program) {
     if(fault=='control')rejects(function()cap$verify()) else rejects(function()cap$replay('core.person.count',identity))
     cap$cleanup();stopifnot(run$budget$inspect()$bytes==0,run$budget$inspect()$files==0)
   }
+  # Reordering object members keeps the byte length and parsed row intact.
+  # Replay rejects the changed wire representation before delivering the row.
+  run<-fresh();cap<-run$capture;cap$visit(person$metric_id,person);cap$visit(gender$metric_id,gender);cap$complete(receipt(),program)
+  dir<-list.dirs(root,recursive=FALSE,full.names=TRUE)
+  path<-file.path(dir,paste0(f('.hash')(person$metric_id),'.rows'))
+  con<-file(path,'rb');header<-readBin(con,'raw',4L);payload<-rawToChar(readBin(con,'raw',file.info(path)$size-4L));close(con)
+  swapped<-sub('"denominator_refs":[],"dimensions":{}','"dimensions":{},"denominator_refs":[]',payload,fixed=TRUE)
+  stopifnot(!identical(swapped,payload),nchar(swapped,type='bytes')==nchar(payload,type='bytes'))
+  con<-file(path,'wb');writeBin(c(header,charToRaw(swapped)),con);close(con)
+  delivered<-FALSE
+  error<-tryCatch(cap$replay(person$metric_id,function(row)delivered<<-TRUE),error=identity)
+  stopifnot(inherits(error,'error'),identical(conditionMessage(error),'Noncanonical candidate row'),!delivered)
+  cap$cleanup()
   rejects(function()fresh(bytes=0));rejects(function()fresh(files=0))
   cancelled<-FALSE;run<-fresh(tick=function(){if(cancelled)stop('private capture cancellation sentinel')});cap<-run$capture
   cancelled<-TRUE;rejects(function()cap$visit(person$metric_id,person));cancelled<-FALSE;cap$cleanup()

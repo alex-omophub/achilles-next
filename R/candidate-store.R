@@ -109,7 +109,8 @@
         target<-capture$lookup(spec$metric_id,key)
       }
       row$denominator_refs<-.domain_denominators(mid,row,target)
-      .v2_row(mid,row,assets);writer$add(mid,row);count<<-.nv_add(count,"1")
+      # The bounded writer validates the final row and its references before enqueueing it.
+      writer$add(mid,row);count<<-.nv_add(count,"1")
       if(mid=="core.source.passport") {
         .v2_passport_check(row$values,.object(source_id=source$source_id,profile_id=assets$profile$profile_id,
           profile_revision=assets$profile$revision,profile_sha256=assets$hash,observed_schema_sha256=receipt$observed_schema_sha256,
