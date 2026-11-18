@@ -11,7 +11,7 @@ local({
   for(strategy in list(NULL,NA_character_,'approximate','',c('reference','weighted')))
     rejects(function()generateMeasurementBaseline(NULL,'cdm','source','results','5.5',numericStrategy=strategy),
       'Choose an exact measurement summary strategy')
-  for(limit in list(0,-1,0.5,Inf,NA_real_,'100',1000001))
+  for(limit in list(0,-1,0.5,Inf,NA_real_,'100',.Machine$integer.max+1))
     rejects(function()generateMeasurementBaseline(NULL,'cdm','source','results','5.5',maxAggregateRows=limit),
       'Invalid aggregate row budget')
   # An accepted double cap must reach exact decimal-string comparison intact.
@@ -23,6 +23,6 @@ local({
     limit
   }
   environment(generate)<-scope
-  for(limit in list(1e6,1000000L))stopifnot(identical(generate(NULL,'cdm','source','results','5.5',maxAggregateRows=limit),1000000L))
+  for(limit in list(1e6,1000000L,1000001L,.Machine$integer.max))stopifnot(identical(generate(NULL,'cdm','source','results','5.5',maxAggregateRows=limit),as.integer(limit)))
   cat('NINETEEN_MEASUREMENT_OUTPUTS_AND_PRECONNECTION_OPERATOR_BUDGET_GUARDS_OK\n')
 })
