@@ -1,0 +1,16 @@
+R/domain-reports.R
+  h_4046c129935915 16-17
+inst/sql/postgresql/domain-counts.sql
+  h_4046c129935915 1-7,9-10,12,14,17,19,21,23,25,27,29-30,33-34,40-42
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "012aef72abdcb49b1fd71648bb727a101a72874f",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
