@@ -236,10 +236,23 @@ class Reference:
         concept={'concept_tag':'concept_tag'};reasons=PROFILE['contracts']['eligibility-reasons']
         if suffix=='capture_count':
             scopes='periods' if observed else "(SELECT * FROM periods UNION ALL SELECT 'undated',NULL::date,NULL::date,false)"
-            cond="(s.period_kind='full_scope' OR (s.period_kind='undated' AND e.event_date IS NULL) OR (s.period_kind IN ('calendar_month','calendar_year') AND e.valid_date AND e.event_date BETWEEN s.lo AND s.hi))"
-            if observed:cond+=' AND e.observed'
+            match="""s.period_kind='full_scope' OR (s.period_kind='undated' AND e.event_date IS NULL)
+                OR (s.period_kind IN ('calendar_month','calendar_year') AND e.valid_date AND e.event_date BETWEEN s.lo AND s.hi)"""
             dims=obj(concept_tag='g.concept_tag',period_kind='s.period_kind',period_start=text('s.lo'),period_end=text('s.hi'))
-            return f"SELECT 'counts'::text AS row_kind,{dims} AS dimensions,jsonb_build_object('record_count',count(e.concept_tag)::text,'person_count',count(DISTINCT e.person_id) FILTER(WHERE e.linked)::text) AS values FROM (SELECT DISTINCT concept_tag FROM facts UNION ALL SELECT jsonb_build_object('kind','all')) g CROSS JOIN {scopes} s LEFT JOIN facts e ON (g.concept_tag->>'kind'='all' OR g.concept_tag=e.concept_tag) AND {cond} GROUP BY g.concept_tag,s.period_kind,s.lo,s.hi"
+            # Each matched event contributes to its own concept and the all-concepts
+            # cell. Keep the unfiltered inventory so unobserved concepts still emit zeros.
+            # The two consumers share scope IDs, including scopes with NULL endpoints.
+            return f"""WITH events AS (SELECT concept_tag,person_id,linked,event_date,valid_date{',observed' if observed else ''} FROM facts),
+              scopes AS MATERIALIZED (SELECT row_number() OVER () AS scope_id,p.* FROM {scopes} p),
+              concepts AS (SELECT DISTINCT concept_tag FROM events UNION ALL SELECT jsonb_build_object('kind','all')),
+              counted AS (SELECT s.scope_id,t.concept_tag,count(*) AS records,
+                    count(DISTINCT e.person_id) FILTER(WHERE e.linked) AS people
+                FROM scopes s JOIN events e ON ({match}) {'AND e.observed' if observed else ''}
+                CROSS JOIN LATERAL (VALUES(e.concept_tag),(jsonb_build_object('kind','all'))) t(concept_tag)
+                GROUP BY s.scope_id,t.concept_tag)
+              SELECT 'counts'::text AS row_kind,{dims} AS dimensions,
+                jsonb_build_object('record_count',coalesce(c.records,0)::text,'person_count',coalesce(c.people,0)::text) AS values
+              FROM concepts g CROSS JOIN scopes s LEFT JOIN counted c USING(scope_id,concept_tag)"""
         if observed and suffix=='year_gender_age_count':
             age='extract(year FROM event_date)::numeric-year_of_birth::numeric'
             fields=dict(year='extract(year FROM event_date)::integer::text',gender_concept_id=text('gender_concept_id'),year_age_decile=f"CASE WHEN year_of_birth BETWEEN 1 AND 9999 AND {age} BETWEEN 0 AND 130 THEN div({age},10)::text ELSE 'unknown' END")
