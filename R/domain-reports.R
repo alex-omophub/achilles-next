@@ -3,7 +3,17 @@
 # every concept. All counts and quantiles remain PostgreSQL exact NUMERIC.
 .domain_reports <- function(domain,table,person,periods,cap) {
   core<-paste0('core.',domain);observed<-paste0('observed.',domain)
-  parts<-list(.domain_sql('counts',list(classified=table,person=person,periods=periods,core=core,observed=observed)))
+  capture<-function(kind,key,eligible) {
+    scopes<-if(kind=="undated")"SELECT 'undated'::text AS period_kind,NULL::date AS period_start,NULL::date AS period_end" else
+      paste0("SELECT period_kind,period_start,period_end FROM ",periods," WHERE period_kind=",.store_literal(kind))
+    .domain_sql("capture",list(classified=table,core=core,observed=observed,period_key=key,eligible=eligible,scopes=scopes))
+  }
+  parts<-list(
+    capture("full_scope","'-infinity'::date","true"),
+    capture("undated","'-infinity'::date","event_date IS NULL"),
+    capture("calendar_month","date_trunc('month',event_date)::date","valid_date"),
+    capture("calendar_year","date_trunc('year',event_date)::date","valid_date"),
+    .domain_sql("counts",list(classified=table,person=person,core=core,observed=observed)))
   add<-function(sql)parts[[length(parts)+1L]]<<-sql
   counts<-function(suffix,dims,from=table,people=TRUE)paste0("SELECT '",core,'.',suffix,"'::text AS metric_id,'counts'::text AS row_kind,dimensions,",
     "jsonb_build_object('record_count',COUNT(*)::text",if(people)", 'person_count',COUNT(DISTINCT person_id) FILTER(WHERE linked)::text" else '',") AS values FROM (SELECT *,",dims," AS dimensions FROM ",from,") x GROUP BY dimensions")
@@ -14,9 +24,14 @@
   if(!is.null(.v2_assets()$profile$domains[[domain]]$end_date) && (domain!='procedure'||!is.null(cap$column('procedure_occurrence.procedure_end_date',FALSE))))
     flags<-c(flags,missing_end='end_date IS NULL',reversed_end='valid_date AND end_date BETWEEN DATE \'0001-01-01\' AND DATE \'9999-12-31\' AND end_date<event_date')
   flags<-c(flags,stats::setNames('duplicated',if(domain=='death')'repeated_person_rows' else 'duplicate_record_id'))
-  add(paste0("SELECT '",core,".integrity_count','counts',jsonb_build_object('flag',f.flag,'present',b.present::text),jsonb_build_object('record_count',COUNT(c.present)::text) FROM (VALUES ",
-    paste(vapply(names(flags),function(k)paste0('(', .store_literal(k),')'),''),collapse=','),") f(flag) CROSS JOIN (VALUES(true),(false)) b(present) LEFT JOIN (SELECT v.flag,v.present FROM ",table,
-    " CROSS JOIN LATERAL (VALUES ",paste(vapply(names(flags),function(k)paste0('(',.store_literal(k),',(',flags[[k]],') IS TRUE)'),''),collapse=','),") v(flag,present)) c ON c.flag=f.flag AND c.present=b.present GROUP BY f.flag,b.present"))
+  # Count flags in a single scan, then emit the two cells per flag even for
+  # empty input. NULL flag expressions belong to the false cell.
+  flagCounts<-vapply(names(flags),function(k)paste0("COUNT(*) FILTER (WHERE ",flags[[k]],") AS ",k),"")
+  flagRows<-vapply(names(flags),function(k)paste0("(",.store_literal(k),",t.",k,")"),"")
+  add(paste0("SELECT '",core,".integrity_count','counts',jsonb_build_object('flag',f.flag,'present',b.present::text),",
+    "jsonb_build_object('record_count',b.records::text) FROM (SELECT COUNT(*) AS total,",
+    paste(flagCounts,collapse=",")," FROM ",table,") t CROSS JOIN LATERAL (VALUES ",paste(flagRows,collapse=","),
+    ") f(flag,hits) CROSS JOIN LATERAL (VALUES (true,f.hits),(false,t.total-f.hits)) b(present,records)"))
   # One earliest finite dated event per linked person/concept, including a NULL
   # date group for people whose records are all undated/invalid.
   first<-paste0('(SELECT concept_tag,person_id,gender_concept_id,year_of_birth,MIN(event_date) FILTER(WHERE valid_date) AS first_date FROM ',table,' WHERE linked GROUP BY concept_tag,person_id,gender_concept_id,year_of_birth) f')
@@ -62,7 +77,7 @@
     add(paste0("SELECT '",core,".representation_count','counts',jsonb_build_object('concept_tag',g.concept_tag,'representation_flags',flags),jsonb_build_object('record_count',COUNT(c.representation_flags)::text,'person_count',COUNT(DISTINCT c.person_id) FILTER(WHERE c.linked)::text) FROM (SELECT DISTINCT concept_tag FROM ",table,") g CROSS JOIN (SELECT a.v||b.v||c.v||d.v||e.v AS flags FROM (VALUES('0'),('1')) a(v) CROSS JOIN (VALUES('0'),('1')) b(v) CROSS JOIN ",supported[[1]]," c(v) CROSS JOIN (VALUES('0'),('1')) d(v) CROSS JOIN ",supported[[2]]," e(v)) f LEFT JOIN ",table," c ON c.concept_tag=g.concept_tag AND c.representation_flags=f.flags GROUP BY g.concept_tag,flags"))
   }
   add(.domain_sql('summary',list(samples=paste(samples,collapse=' UNION ALL '),categories=paste0('SELECT * FROM (VALUES ',paste(categories,collapse=','),') v(metric_id,reason,measure)'))))
-  paste(vapply(parts,function(p)paste0('SELECT * FROM (',p,') report'),''),collapse=' UNION ALL ')
+  unlist(parts,use.names=FALSE)
 }
 .domain_density <- function(person,domains,measurement) {
   expressions<-vapply(c(unlist(domains),measurement),function(t)paste0('(EXISTS(SELECT 1 FROM ',t,' d WHERE d.person_id=p.person_id))::integer::text'),'')

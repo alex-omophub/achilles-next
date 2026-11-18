@@ -52,6 +52,17 @@ does not accept a clipped calendar window: the frozen complete-core path uses
 source-derived full history, matching the public core generator.
 Measurement quantiles use exact `weighted` or `reference` SQL. The existing
 population/domain/measurement SQL builders are shared with candidate generation.
+Domain report stages create one temporary table and append report groups
+before indexing it. Capture counts are generated separately for the full
+scope, undated events, calendar months and calendar years. Each group uses
+the complete concept grid for that scope, including explicit zero cells.
+Size `maxAggregateRows` for the entire run, including every capture-grid cell,
+all other numeric results and all output metadata rows. Each zero cell consumes
+one output row and its serialized UTF-8 payload counts toward `maxAggregateBytes`.
+`maxStageBytes` separately covers the temporary PostgreSQL tables and indexes.
+The statement timeout applies to each group and the elapsed deadline covers
+the whole execution.
+
 Fixed-size inventory totals are materialized once; no patient/concept list is
 enumerated in the R compiler.
 

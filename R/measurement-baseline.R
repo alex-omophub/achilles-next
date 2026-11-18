@@ -18,7 +18,7 @@ generateMeasurementBaseline <- function(connectionDetails,cdmSchema,sourceId,res
     statementTimeoutMs,TRUE,TRUE,numericStrategy,maxAggregateRows=as.integer(maxAggregateRows))
 }
 .measurement_reports <- function(table,person,periods,cap,numericStrategy) {
-  parts<-list(.domain_reports("measurement",table,person,periods,cap));core<-"core.measurement."
+  parts<-as.list(.domain_reports("measurement",table,person,periods,cap));core<-"core.measurement."
   dims<-function(...)paste0("jsonb_build_object(",paste(c(...),collapse=","),")")
   concept<-"'concept_tag',concept_tag"
   counts<-function(suffix,dimensions,people=TRUE)paste0("SELECT ",.store_literal(paste0(core,suffix)),"::text AS metric_id,'counts'::text AS row_kind,dimensions,",
@@ -62,5 +62,5 @@ generateMeasurementBaseline <- function(connectionDetails,cdmSchema,sourceId,res
   }
   .nv_need(!grepl("{{",sql,fixed=TRUE),"Unbound measurement SQL token")
   parts[[length(parts)+1L]]<-sql
-  paste(vapply(parts,function(p)paste0("SELECT * FROM (",p,") report"),""),collapse=" UNION ALL ")
+  unlist(parts,use.names=FALSE)
 }

@@ -61,7 +61,8 @@ renderCharacterizationSql <- function(cdmSchema,sourceId,declaredCdmVersion,sour
   guard<-function(id,sql,expected="0",message=id)add(id,"assert_scalar",sql,expected,message)
   stage<-function(id,sql,index=NULL) {
     name<-paste0(stagePrefix,"_",id);relation<-paste0('pg_temp."',name,'"');relations[[id]]<<-relation
-    add(paste0(id,".create"),"execute",paste0('CREATE TEMP TABLE "',name,'" ON COMMIT DROP AS ',sql))
+    add(paste0(id,".create"),"execute",paste0('CREATE TEMP TABLE "',name,'" ON COMMIT DROP AS ',sql[[1L]]))
+    for(i in seq_along(sql)[-1L])add(paste0(id,'.append.',i),'execute',paste('INSERT INTO',relation,sql[[i]]))
     if(!is.null(index))add(paste0(id,".index"),"execute",paste0("CREATE INDEX ON ",relation," (",index,")"))
     add(paste0(id,".analyze"),"execute",paste("ANALYZE",relation));relation
   }

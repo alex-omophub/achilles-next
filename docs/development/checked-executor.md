@@ -103,7 +103,7 @@ and refresh APIs keep their own orchestration and do not yet consume this stream
 | Program | Current closed compiler artifact, reconstructed before connection. Each ordered assertion must match before the next step proceeds; some assertions require temporary stages created by earlier steps. |
 | Output rows and UTF-8 bytes | Global aggregate/metadata-output limits, fixed cursor fetch count, per-row and cumulative query guards on PostgreSQL before JDBC receives rejected payloads. A tiny overflow status may be received. |
 | Metadata and receipt | Separate finite catalog, metadata-row/byte and statement-record caps. The receipt retains compact inventory and telemetry, not the aggregate stream. |
-| Temporary stage bytes | Own-prefix relations and indexes measured after CREATE, INDEX and DROP. This is post-allocation detection, not a disk reservation; PostgreSQL sort/spill files and engine-process memory are outside this measurement. |
+| Temporary stage bytes | Own-prefix relations and indexes measured after table creation, report inserts, index creation and drops. This is post-allocation detection, not a disk reservation; PostgreSQL sort/spill files and engine-process memory are outside this measurement. |
 | Statement time | PostgreSQL statement timeout plus JDBC query timeout. Queue, lock and execution time are not attributed as engine CPU. |
 | Whole-call deadline and `check` | Cooperative checks between JDBC calls and rows. `check` returning FALSE, raising an error or interrupting cancels execution. |
 
