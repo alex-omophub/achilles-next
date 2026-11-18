@@ -120,9 +120,11 @@
       n<-readBin(head,"integer",n=1L,size=4L,endian="big")
       .nv_need(!is.na(n)&&n>0L&&n<=65536L,"Invalid candidate frame")
       raw<-io(function()readBin(reader,"raw",n=n));.nv_need(length(raw)==n,"Truncated candidate row")
-      row<-.nv_json(raw);.nv_need(identical(raw,.v2_bytes(row)),"Noncanonical candidate row")
-      .v2_row(mid,row,assets);.nv_need(index$has(row$row_key),"Missing capture key")
-      if(mid%in%targets).nv_need(identical(index$get(row$row_key),c(targetPrefixes[[mid]],raw)),"Candidate target integrity failure")
+      row<-.nv_json(raw)
+      .v2_row(mid,row,assets,expectedBytes=raw)
+      if(mid%in%targets) {
+        .nv_need(identical(index$get(row$row_key),c(targetPrefixes[[mid]],raw)),"Candidate target integrity failure")
+      } else .nv_need(index$has(row$row_key),"Missing capture key")
       visitor(row);seen<-.nv_add(seen,"1");digest<-chain(digest,raw)
       .nv_need(.nv_unsigned_cmp(seen,counts[[mid]])<=0,"Extra candidate rows")
     }

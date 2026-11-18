@@ -84,7 +84,7 @@
   if (id == "core.execution.timing") .nv_need(if (v$availability == "measured") !is.null(v$duration_ms) && is.null(v$reason_code) else is.null(v$duration_ms) && !is.null(v$reason_code))
   invisible(TRUE)
 }
-.v2_row <- function(id, row, assets = .v2_assets(), capture = FALSE) {
+.v2_row <- function(id, row, assets = .v2_assets(), capture = FALSE, expectedBytes = NULL) {
   registry <- assets$rows[[id]]; .nv_need(!is.null(registry), "Unknown metric")
   .v2_keys(row, c("row_key", "dimensions", "row_kind", "state", "reason_code", "values", "denominator_refs"))
   .nv_need(row$row_kind %in% names(registry$value_keys_by_row_kind), "Unknown row kind")
@@ -128,6 +128,7 @@
   }
   bytes <- .v2_bytes(row)
   .nv_need(length(bytes) <= 65536L, "Row resource limit")
+  if (!is.null(expectedBytes)) .nv_need(identical(bytes, expectedBytes), "Noncanonical candidate row")
   if (capture) list(row = row, bytes = bytes) else key
 }
 
