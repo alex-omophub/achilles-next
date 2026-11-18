@@ -75,6 +75,8 @@ testCharacterizationCandidateCapture<-function(program) {
   stored<-cap$lookup('core.person.count',target$row_key)
   refs<-f('.domain_denominators')('core.person.gender_count',row,stored)
   stopifnot(length(refs)==1L,refs[[1]]$value==huge,stored$values$person_count==huge)
+  stopifnot(identical(wire(stored),wire(c(o(metric_id=person$metric_id),target))))
+  rejects(function()cap$lookup('core.condition.capture_count',target$row_key))
   rejects(function()cap$lookup('core.person.count',strrep('0',64)))
   rejects(function()cap$complete(receipt(),program))
   cap$cleanup();cap$cleanup();stopifnot(run$budget$inspect()$bytes==0,run$budget$inspect()$files==0)
