@@ -43,14 +43,14 @@ planAnalysisProfile <- function(profileId,cdmSchema,sourceId,declaredCdmVersion)
 #' @inheritParams planAnalysisProfile
 #' @param connectionDetails PostgreSQL DatabaseConnector connection details.
 #' @param resultsSchema Initialized writable aggregate schema, separate from source.
-#' @param maxRows Maximum aggregate rows, from 1 to 1000000; no patient rows are fetched.
+#' @param maxRows Maximum aggregate rows, from 1 to 2147483647; no patient rows are fetched.
 #' @param queryTimeoutSeconds Per-statement timeout, including the source aggregate.
 #' @return A complete building release; seal, validate and explicitly approve it separately.
 #' @export
 generateAnalysisProfile <- function(connectionDetails,cdmSchema,sourceId,resultsSchema,declaredCdmVersion,profileId,maxRows=10000L,queryTimeoutSeconds=60L) {
   plan <- planAnalysisProfile(profileId,cdmSchema,sourceId,declaredCdmVersion);assets <- .profile_assets(profileId)
   .nv_need(!identical(cdmSchema,resultsSchema),"Separate source and result schemas are required")
-  .nv_need(is.numeric(maxRows)&&length(maxRows)==1L&&is.finite(maxRows)&&maxRows>=1&&maxRows<=1000000&&maxRows==floor(maxRows),"Invalid aggregate row budget")
+  .nv_need(is.numeric(maxRows)&&length(maxRows)==1L&&is.finite(maxRows)&&maxRows>=1&&maxRows<=.Machine$integer.max&&maxRows==floor(maxRows),"Invalid aggregate row budget")
   .store_transaction(connectionDetails,resultsSchema,function(tx) {
     s <- tx$schema;lit <- .store_literal
     .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_profile_registry WHERE profile_sha256=",lit(assets$hash)))=="1","Install the registered profile in the result store first")

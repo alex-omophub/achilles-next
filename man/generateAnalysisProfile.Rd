@@ -11,7 +11,7 @@
 \item{resultsSchema}{Initialized writable aggregate schema, separate from source.}
 \item{declaredCdmVersion}{Declared CDM version: 5.3, 5.4 or 5.5.}
 \item{profileId}{ID of a separately installed profile.}
-\item{maxRows}{Maximum aggregate rows, from 1 to 1000000; patient rows are not fetched.}
+\item{maxRows}{Maximum aggregate rows, from 1 to 2147483647; patient rows are not fetched.}
 \item{queryTimeoutSeconds}{Per-statement timeout, including source aggregation.}
 }
 \value{A complete building release. Seal, validate and explicitly approve it separately before serving.}

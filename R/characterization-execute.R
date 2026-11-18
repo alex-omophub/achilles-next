@@ -26,7 +26,7 @@
 }
 .sql_execution_limits <- function(maxStageBytes,maxAggregateRows,maxAggregateBytes,maxRowBytes,fetchSize,statementTimeoutMs,maxElapsedSeconds,visit,check) {
   number<-function(x,lo,hi,integer=TRUE)is.numeric(x)&&!is.complex(x)&&length(x)==1L&&!is.na(x)&&is.finite(x)&&x>=lo&&x<=hi&&(!integer||x==floor(x))
-  .sql_execution_need(number(maxStageBytes,0,2^53)&&number(maxAggregateRows,0,1000000)&&
+  .sql_execution_need(number(maxStageBytes,0,2^53)&&number(maxAggregateRows,0,.Machine$integer.max)&&
     number(maxAggregateBytes,0,2^53)&&number(maxRowBytes,1,1024^2)&&number(fetchSize,1,1024)&&
     number(statementTimeoutMs,1,2147483647)&&number(maxElapsedSeconds,.001,604800,FALSE)&&
     is.function(visit)&&(is.null(check)||is.function(check)),"execution.invalid_limits")

@@ -20,7 +20,7 @@ not a hard allocation or sort-spill limit.}
 \item{check}{Optional cancellation function; signal an error to roll back.}
 \item{statementTimeoutMs}{Positive integral PostgreSQL statement timeout in ms.}
 \item{numericStrategy}{Exact measurement summary operator: weighted or reference.}
-\item{maxAggregateRows}{Integer from 1 through 1000000; all numeric and metadata
+\item{maxAggregateRows}{Integer from 1 through 2147483647; all numeric and metadata
 rows count towards this limit. Exceeding it rolls back instead of truncating.}
 }
 \description{Generates all 142 frozen outputs, including the 138 numeric baseline

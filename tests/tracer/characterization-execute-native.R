@@ -27,7 +27,7 @@
 # Unicode payloads cross the actual JDBC seam only after engine-side byte guards.
 testCharacterizationExecuteUtf8Transport <- function(details) {
   f<-function(n)get(n,asNamespace('AchillesNext'));original<-get('.jcall',asNamespace('rJava'))
-  trial<-function(name,sql,maxRowBytes,maxBytes,code,payloadReads,guards) {
+  trial<-function(name,sql,maxRowBytes,maxBytes,code,payloadReads,guards,maxRows=2L) {
     con<-DatabaseConnector::connect(details);jdbc<-con@jConnection
     on.exit(DatabaseConnector::disconnect(con),add=TRUE)
     rJava::.jcall(jdbc,'V','setAutoCommit',FALSE)
@@ -43,10 +43,10 @@ testCharacterizationExecuteUtf8Transport <- function(details) {
     }
     assignInNamespace('.jcall',spy,ns='rJava')
     on.exit(assignInNamespace('.jcall',original,ns='rJava'),add=TRUE)
-    limits<-f('.sql_execution_limits')(64*1024^2,1000000L,maxBytes,maxRowBytes,1L,5000L,10,function(...)NULL,NULL)
+    limits<-f('.sql_execution_limits')(64*1024^2,maxRows,maxBytes,maxRowBytes,1L,5000L,10,function(...)NULL,NULL)
     transport<-f('.sql_execution_transport')(jdbc,limits,function()NULL,proc.time()[['elapsed']])
     error<-tryCatch({transport$stream(sql,function(text){visited[[length(visited)+1L]]<<-text},
-      paste0('fixture.',name),'aggregate',maxRows=2L,maxBytes=maxBytes);NULL},error=identity)
+      paste0('fixture.',name),'aggregate',maxRows=maxRows,maxBytes=maxBytes);NULL},error=identity)
     assignInNamespace('.jcall',original,ns='rJava')
     if(is.null(code))stopifnot(is.null(error)) else
       stopifnot(inherits(error,'AchillesSqlExecutionFailure'),identical(error$reason_code,code))
@@ -69,6 +69,10 @@ testCharacterizationExecuteUtf8Transport <- function(details) {
     stopifnot(identical(actual,guards))
     invisible(TRUE)
   }
+  # Multiple one-row fetches with a large total budget; the sentinel limit
+  # must also be representable one row beyond the maximum accepted budget.
+  trial('large_budget',"SELECT * FROM (VALUES ('0'),('1'),('0')) z(doc)",
+    16L,64L,NULL,3L,rep('ok',3L),maxRows=.Machine$integer.max)
   # JSONB adds13ASCII bytes around this value. The exact row is64UTF8 bytes,
   # while the overflow row has only47characters but80UTF8 bytes.
   exact<-paste0('{"value": "',strrep('λ',25),'x"}')

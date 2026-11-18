@@ -15,7 +15,7 @@ database TEMPORARY and restricted result-store producer grants.}
 not a hard allocation, memory or spill limit.}
 \item{check}{Optional trusted cooperative cancellation function; signal to roll back.}
 \item{statementTimeoutMs}{Positive integral PostgreSQL statement timeout in milliseconds.}
-\item{maxAggregateRows}{Integer from 1 through 1000000, covering numeric and metadata rows.}
+\item{maxAggregateRows}{Integer from 1 through 2147483647, covering numeric and metadata rows.}
 }
 \description{Checks the complete request against current installed definitions,
 verifies store version and worker table privileges, and recomputes all 142 frozen
