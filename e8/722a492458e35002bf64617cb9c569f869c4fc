@@ -1,0 +1,22 @@
+tests/test_matched_reference_comparator.py
+  s_895f6ebe145fd3::t_a5fe4c15c81b57 5,74
+  s_895f6ebe145fd3::t_cf172b82e4b8c5 66-73,75
+tools/matched_reference_sql.py
+  s_895f6ebe145fd3::t_31ad7e880fae46 266-275
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e8722a492458e35002bf64617cb9c569f869c4fc",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
