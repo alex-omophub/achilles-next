@@ -1,0 +1,19 @@
+docs/development/compiled-candidate.md
+  s_8a2946710d3773::t_dffbf6443d8684 44-46
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "737bfbbf2c4ee55a5fe37bb5ef1c256e4fe2f6b5",
+  "prompts": {},
+  "sessions": {
+    "s_8a2946710d3773": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ee12-c231-7593-acb8-c60095a8f067",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
