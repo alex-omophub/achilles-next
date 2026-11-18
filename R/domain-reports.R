@@ -13,7 +13,8 @@
     capture("undated","'-infinity'::date","event_date IS NULL"),
     capture("calendar_month","date_trunc('month',event_date)::date","valid_date"),
     capture("calendar_year","date_trunc('year',event_date)::date","valid_date"),
-    .domain_sql("counts",list(classified=table,person=person,core=core,observed=observed)))
+    .domain_sql("counts",list(classified=table,person=person,core=core,observed=observed,
+      concept_tag=.domain_tag("concept_id"))))
   add<-function(sql)parts[[length(parts)+1L]]<<-sql
   counts<-function(suffix,dims,from=table,people=TRUE)paste0("SELECT '",core,'.',suffix,"'::text AS metric_id,'counts'::text AS row_kind,dimensions,",
     "jsonb_build_object('record_count',COUNT(*)::text",if(people)", 'person_count',COUNT(DISTINCT person_id) FILTER(WHERE linked)::text" else '',") AS values FROM (SELECT *,",dims," AS dimensions FROM ",from,") x GROUP BY dimensions")
