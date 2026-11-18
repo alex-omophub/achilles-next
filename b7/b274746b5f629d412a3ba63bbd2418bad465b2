@@ -1,0 +1,31 @@
+R/candidate-capture.R
+  s_895f6ebe145fd3::t_7632bec047e23c 90-91
+R/validation-spool.R
+  s_895f6ebe145fd3::t_cffce1bec53477 160-161,164-172
+  s_895f6ebe145fd3::t_4fcf12b2ec034a 91,162-163,173
+  s_895f6ebe145fd3::t_4de101aa0c30e4 195-200,209
+docs/development/inventory-proof.md
+  s_895f6ebe145fd3::t_f6b4842c6b16b8 128-129
+tests/tracer/result-wire.R
+  s_895f6ebe145fd3::t_ba0cd73476f1fe 31-34,87-88
+  s_895f6ebe145fd3::t_65a15e5e89dc69 89-94
+R/result-wire.R
+  s_895f6ebe145fd3::t_c9e509d9bd4168 87,93-97,129-131
+  s_895f6ebe145fd3::t_afa5dcecd54f1a 54
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b7b274746b5f629d412a3ba63bbd2418bad465b2",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
