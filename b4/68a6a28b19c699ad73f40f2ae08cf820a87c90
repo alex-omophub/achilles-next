@@ -1,0 +1,21 @@
+tests/tracer/characterization-candidate-sql-capture.R
+  s_895f6ebe145fd3::t_c8546c507d1809 78-79
+R/candidate-capture.R
+  s_895f6ebe145fd3::t_1a55f813700c3b 14-16,95,125,135-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b468a6a28b19c699ad73f40f2ae08cf820a87c90",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
