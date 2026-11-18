@@ -1,0 +1,19 @@
+tests/tracer/measurement-baseline-offline.R
+  s_8a2946710d3773::t_2829bffe38b7e2 14,26
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "48539ed08e9c726e1378dd910b365637bacb6296",
+  "prompts": {},
+  "sessions": {
+    "s_8a2946710d3773": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1ee12-c231-7593-acb8-c60095a8f067",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
