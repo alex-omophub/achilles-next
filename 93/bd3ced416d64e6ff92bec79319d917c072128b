@@ -1,0 +1,16 @@
+R/validation-spool.R
+  h_4046c129935915 154-205,212,217
+tests/tracer/validation-spool.R
+  h_4046c129935915 37-53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "93bd3ced416d64e6ff92bec79319d917c072128b",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
