@@ -11,6 +11,9 @@
 }
 .candidate_capture <- function(directory,assets,budget,tick) {
   ids<-names(assets$metrics);targets<-unique(unlist(lapply(ids,.analysis_dependency,assets=assets)))
+  # The attempt-local index binds each denominator to its metric, followed by
+  # the exact canonical frame already validated for the sequential row file.
+  targetPrefixes<-stats::setNames(lapply(targets,function(mid)charToRaw(paste0(mid,"\n"))),targets)
   index<-NULL;writer<-NULL;active<-NULL;owned<-FALSE;closed<-FALSE;complete<-FALSE
   counts<-stats::setNames(rep(list("0"),length(ids)),ids)
   chains<-stats::setNames(rep(list(strrep("0",64)),length(ids)),ids)
@@ -89,7 +92,7 @@
       reason_code=item$reason_code,values=item$values,denominator_refs=list())
     checked<-.v2_row(mid,row,assets,capture=TRUE)
     row<-checked$row;raw<-checked$bytes
-    index$put(row$row_key,if(mid%in%targets).v2_bytes(c(.object(metric_id=mid),row)) else raw())
+    index$put(row$row_key,if(mid%in%targets)c(targetPrefixes[[mid]],raw) else raw())
     if(!identical(active,mid)) {
       flushFrames();closeWriter()
       # The enclosing capture removes every file even when opening fails.
@@ -119,7 +122,7 @@
       raw<-io(function()readBin(reader,"raw",n=n));.nv_need(length(raw)==n,"Truncated candidate row")
       row<-.nv_json(raw);.nv_need(identical(raw,.v2_bytes(row)),"Noncanonical candidate row")
       .v2_row(mid,row,assets);.nv_need(index$has(row$row_key),"Missing capture key")
-      if(mid%in%targets).nv_need(identical(index$get(row$row_key),.v2_bytes(c(.object(metric_id=mid),row))),"Candidate target integrity failure")
+      if(mid%in%targets).nv_need(identical(index$get(row$row_key),c(targetPrefixes[[mid]],raw)),"Candidate target integrity failure")
       visitor(row);seen<-.nv_add(seen,"1");digest<-chain(digest,raw)
       .nv_need(.nv_unsigned_cmp(seen,counts[[mid]])<=0,"Extra candidate rows")
     }
@@ -129,9 +132,11 @@
   lookup<-function(mid,key) {
     guard();.nv_need(complete&&mid%in%targets,"Invalid candidate target");tick()
     raw<-index$get(key);.nv_need(!is.null(raw)&&length(raw)>0L,"Missing candidate denominator")
-    target<-.nv_json(raw)
-    .nv_need(identical(target$metric_id,mid)&&identical(target$row_key,key),"Mismatched candidate denominator")
-    target
+    prefix<-targetPrefixes[[mid]];header<-seq_along(prefix)
+    .nv_need(length(raw)>length(prefix)&&identical(raw[header],prefix),"Mismatched candidate denominator")
+    row<-.nv_json(raw[-header])
+    .nv_need(identical(row$row_key,key),"Mismatched candidate denominator")
+    c(.object(metric_id=mid),row)
   }
   ready<-TRUE
   list(visit=visit,complete=finish,verify=verify,replay=replay,lookup=lookup,cleanup=cleanup,
