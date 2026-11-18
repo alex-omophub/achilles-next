@@ -17,6 +17,15 @@
   lengths<-stats::setNames(rep(list(0),length(ids)),ids)
   paths<-stats::setNames(vapply(ids,function(mid)file.path(directory,paste0(.hash(mid),".rows")),""),ids)
   io<-.v2_scratch_io
+  frames<-list();frameBytes<-0
+  flushFrames<-function() {
+    if(!length(frames))return(invisible(NULL))
+    io(function() {
+      writeBin(do.call(c,frames),writer);flush(writer)
+      .nv_need(file.info(paths[[active]])$size==lengths[[active]],"Candidate capture length mismatch")
+    })
+    frames<<-list();frameBytes<<-0
+  }
   closeWriter<-function(){.v2_scratch_close(writer);writer<<-NULL;active<<-NULL}
   cleanup<-function() {
     if(closed)return(invisible(NULL))
@@ -44,7 +53,7 @@
   }
   controls<-NULL
   finish<-function(receipt,program) {
-    guard();.nv_need(!complete,"Candidate capture already completed");tick();closeWriter()
+    guard();.nv_need(!complete,"Candidate capture already completed");tick();flushFrames();closeWriter()
     .nv_need(receipt$state=="succeeded"&&identical(receipt$program_sha256,program$program_sha256)&&
       identical(.json(receipt$profile),.json(program$batch$profile))&&identical(.json(receipt$source),.json(program$batch$source))&&
       identical(receipt$cleanup$transaction,"rolled_back")&&identical(receipt$cleanup$connection,"disconnected")&&
@@ -82,14 +91,16 @@
     raw<-.v2_bytes(row);.nv_need(length(raw)<=65536L,"Candidate row resource limit")
     index$put(row$row_key,if(mid%in%targets).v2_bytes(c(.object(metric_id=mid),row)) else raw())
     if(!identical(active,mid)) {
-      closeWriter()
+      flushFrames();closeWriter()
       # The enclosing capture removes every file even when opening fails.
       if(!file.exists(paths[[mid]]))budget$acquire(0,1)
       suspendInterrupts({writer<<-io(function()file(paths[[mid]],"ab"));active<<-mid;allowInterrupts(Sys.sleep(0))})
     }
-    budget$acquire(4+length(raw));lengths[[mid]]<<-lengths[[mid]]+4+length(raw)
-    io(function(){writeBin(as.integer(length(raw)),writer,size=4L,endian="big");writeBin(raw,writer);flush(writer)
-      .nv_need(file.info(paths[[mid]])$size==lengths[[mid]])})
+    size<-4+length(raw)
+    if(length(frames)>=128L||frameBytes+size>1024^2)flushFrames()
+    budget$acquire(size);lengths[[mid]]<<-lengths[[mid]]+size
+    frames[[length(frames)+1L]]<<-c(writeBin(length(raw),raw(),size=4L,endian="big"),raw)
+    frameBytes<<-frameBytes+size
     counts[[mid]]<<-.nv_add(counts[[mid]],"1");chains[[mid]]<<-chain(chains[[mid]],raw);tick();invisible(NULL)
   }
   replay<-function(mid,visitor) {

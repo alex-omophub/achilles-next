@@ -1,7 +1,7 @@
 #' Generate the whole-source measurement and domain baseline
 #' @inheritParams generateDomainBaseline
 #' @param numericStrategy Exact summary operator, weighted (default) or reference.
-#' @param maxAggregateRows Maximum saved aggregate rows, integer 1 to 1000000.
+#' @param maxAggregateRows Maximum saved aggregate rows, integer 1 to 2147483647.
 #' @return A restricted building release with 138 of 142 outputs. Four metadata
 #'   outputs and complete publication remain unimplemented.
 #' @details Generates all nineteen measurement outputs across every recorded
@@ -13,7 +13,7 @@ generateMeasurementBaseline <- function(connectionDetails,cdmSchema,sourceId,res
   maxStageBytes=64*1024^2,check=NULL,statementTimeoutMs=30000L,numericStrategy="weighted",maxAggregateRows=1000000L) {
   .nv_need(.string(numericStrategy)&&numericStrategy%in%c("weighted","reference"),"Choose an exact measurement summary strategy")
   .nv_need(is.numeric(maxAggregateRows)&&length(maxAggregateRows)==1L&&is.finite(maxAggregateRows)&&maxAggregateRows>=1&&
-    maxAggregateRows<=1000000&&maxAggregateRows==floor(maxAggregateRows),"Invalid aggregate row budget")
+    maxAggregateRows<=.Machine$integer.max&&maxAggregateRows==floor(maxAggregateRows),"Invalid aggregate row budget")
   .baseline_generate(connectionDetails,cdmSchema,sourceId,resultsSchema,declaredCdmVersion,NULL,maxStageBytes,check,
     statementTimeoutMs,TRUE,TRUE,numericStrategy,maxAggregateRows=as.integer(maxAggregateRows))
 }

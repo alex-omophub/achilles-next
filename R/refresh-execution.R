@@ -47,7 +47,7 @@ executeCharacterizationRefresh <- function(connectionDetails,plan,maxStageBytes=
   statementTimeoutMs=30000L,maxAggregateRows=1000000L) {
   plan<-.refresh_plan(plan)
   .nv_need(is.numeric(maxAggregateRows)&&length(maxAggregateRows)==1L&&is.finite(maxAggregateRows)&&maxAggregateRows>=1&&
-    maxAggregateRows<=1000000&&maxAggregateRows==floor(maxAggregateRows),"Invalid aggregate row budget")
+    maxAggregateRows<=.Machine$integer.max&&maxAggregateRows==floor(maxAggregateRows),"Invalid aggregate row budget")
   source<-plan$batch$source
   .baseline_generate(connectionDetails,source$cdm_schema,source$source_id,plan$target$results_schema,source$declared_cdm_version,
     NULL,maxStageBytes,check,statementTimeoutMs,TRUE,TRUE,plan$request$numeric_strategy,

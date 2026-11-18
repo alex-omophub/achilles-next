@@ -78,6 +78,23 @@ testCharacterizationCandidateCapture<-function(program) {
   rejects(function()cap$lookup('core.person.count',strrep('0',64)))
   rejects(function()cap$complete(receipt(),program))
   cap$cleanup();cap$cleanup();stopifnot(run$budget$inspect()$bytes==0,run$budget$inspect()$files==0)
+  # Cross two frame batches, including a partial final batch and real zeros.
+  run<-fresh();cap<-run$capture
+  genders<-gender
+  for(i in seq_len(259L)) {
+    genders$dimensions$gender_concept_id<-as.character(i)
+    genders$values$person_count<-'0'
+    cap$visit(genders$metric_id,genders)
+  }
+  cap$visit(person$metric_id,person)
+  many<-receipt();many$inventory[[gender$metric_id]]$rows<-'259'
+  many$metric_rows[[gender$metric_id]]<-'259';many$rows<-'260'
+  cap$complete(many,program);seen<-0L
+  cap$replay(gender$metric_id,function(value) {
+    seen<<-seen+1L
+    stopifnot(value$dimensions$gender_concept_id==as.character(seen),value$values$person_count=='0')
+  })
+  stopifnot(seen==259L);cap$cleanup()
   # Every fault owns only its attempt directory and releases its budget.
   run<-fresh();cap<-run$capture;cap$visit(person$metric_id,person)
   rejects(function()cap$visit(person$metric_id,person));cap$cleanup()

@@ -23,7 +23,8 @@ Stage all callback output privately until this function returns successfully.}
 \item{maxStageBytes}{Nonnegative integer budget for this execution's temporary
 table and index bytes, at most \code{2^53}. Checked after CREATE, INDEX and DROP.}
 \item{maxAggregateRows}{Total output row budget, including metadata; integer
-from zero to one million.}
+from zero to 2147483647. The default is one million. JDBC fetch size and the
+output byte budget are independent of this total.}
 \item{maxAggregateBytes}{Nonnegative integer budget, at most \code{2^53}, for
 UTF-8 output JSON payload bytes before exact numeric-string normalization.
 SQL text, bound parameters and JDBC protocol/control overhead are separate.}

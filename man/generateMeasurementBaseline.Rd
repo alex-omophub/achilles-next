@@ -22,7 +22,7 @@ This is not a hard allocation, sort-spill or database-memory limit.}
 JDBC timeout is aligned above it.}
 \item{numericStrategy}{Exact numeric/range summary operator: weighted or reference.
 First-age summaries retain the shared exact domain operator in both modes.}
-\item{maxAggregateRows}{Integer from 1 through 1000000; cap on all generated
+\item{maxAggregateRows}{Integer from 1 through 2147483647; cap on all generated
 aggregate rows. Failure, never truncation, when exceeded.}
 }
 \description{Generates population/observation dependencies and all nine recorded

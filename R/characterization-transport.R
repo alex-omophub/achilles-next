@@ -26,7 +26,7 @@
     tick();record(id,phase,"execute",sql,duration,0,0,0);complete<-TRUE;invisible(NULL)
   }
   stream<-function(sql,visit,id,phase,parameter=NULL,maxRows=4096L,maxBytes=8*1024^2) {
-    tick();.sql_execution_need(is.numeric(maxRows)&&maxRows>=0&&maxRows<=1000000&&maxRows==floor(maxRows)&&
+    tick();.sql_execution_need(is.numeric(maxRows)&&maxRows>=0&&maxRows<=.Machine$integer.max&&maxRows==floor(maxRows)&&
       is.numeric(maxBytes)&&is.finite(maxBytes)&&maxBytes>=0,"execution.invalid_limits")
     if(!phase%in%c("aggregate","metadata_output")) {
       maxRows<-min(maxRows,8192L-metadataRows)
