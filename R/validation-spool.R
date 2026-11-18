@@ -151,25 +151,70 @@
     }
     stop("Validation index is full",call.=FALSE)
   }
+  readBlock<-function(connection,first,slots) {
+    size<-slots*width
+    block<-io(function(){seek(connection,first*width,origin="start",rw="read");readBin(connection,"raw",n=size)})
+    .nv_need(length(block)==size,"Truncated validation index")
+    block
+  }
+  writeBlock<-function(connection,first,block) {
+    io(function(){seek(connection,first*width,origin="start",rw="write");writeBin(block,connection);flush(connection)})
+  }
+  rehashBlock<-function(replacement,first,slots) {
+    old<-readBlock(index,first,slots)
+    starts<-seq.int(1L,length(old),by=width)
+    starts<-starts[old[starts]!=as.raw(0)]
+    if(!length(starts))return(invisible(NULL))
+    # On doubling, a key's home is in its old half or one capacity above it.
+    # Keep those two pages coherent while probing; collisions may still wrap
+    # into another page, where reads and writes go directly to the replacement.
+    page<-c(readBlock(replacement,first,slots),readBlock(replacement,first+capacity,slots))
+    changed<-c(FALSE,FALSE);n<-2*capacity
+    for(start in starts) {
+      rawSlot<-old[seq.int(start,length.out=width)]
+      entryText<-rawToChar(rawSlot)
+      .nv_need(nchar(entryText,type="bytes")==width,"Truncated validation slot")
+      hash<-substr(entryText,1L,64L)
+      at<-slot(hash,n)
+      for(probes in seq_len(n)) {
+        half<-as.integer(at>=capacity)
+        localSlot<-at-half*capacity-first
+        if(localSlot>=0 && localSlot<slots) {
+          pos<-(half*slots+localSlot)*width+1L
+          free<-page[pos]==as.raw(0) || identical(substr(rawToChar(page[seq.int(pos,length.out=width)]),1L,64L),hash)
+          if(free) {
+            page[seq.int(pos,length.out=width)]<-rawSlot
+            changed[half+1L]<-TRUE
+            break
+          }
+        } else {
+          entry<-readSlot(replacement,at)
+          if(is.null(entry)||identical(substr(entry,1,64),hash)) {
+            writeSlot(replacement,at,entryText)
+            break
+          }
+        }
+        if(probes==n)stop("Validation index is full",call.=FALSE)
+        at<-(at+1)%%n
+      }
+    }
+    size<-slots*width
+    if(changed[1L])writeBlock(replacement,first,page[seq_len(size)])
+    if(changed[2L])writeBlock(replacement,first+capacity,page[size+seq_len(size)])
+    invisible(NULL)
+  }
   grow<-function() {
     n<-capacity*2;nextPath<-file.path(directory,paste0("index-",sprintf("%.0f",n)))
     replacement<-NULL;ok<-FALSE
     on.exit(if(!ok).v2_scratch_cleanup(list(function()closeConnection(replacement),
       function()if(!is.null(owned[[nextPath]]))remove(nextPath))))
     suspendInterrupts({replacement<-fresh(nextPath,n*width);allowInterrupts(Sys.sleep(0))})
-    # Reinsert in old physical slot order so collision placement stays
-    # deterministic across block boundaries. Keep one old block in memory.
+    # Preserve physical insertion order and therefore the existing collision layout.
     first<-0
     while(first<capacity) {
       check()
       slots<-min(1024,capacity-first)
-      block<-io(function(){seek(index,first*width,origin="start",rw="read");readBin(index,"raw",n=slots*width)})
-      .nv_need(length(block)==slots*width,"Truncated validation index")
-      starts<-seq.int(1L,length(block),by=width)
-      for(start in starts[block[starts]!=as.raw(0)]) {
-        text<-rawToChar(block[start:(start+width-1L)])
-        writeSlot(replacement,find(substr(text,1,64),replacement,n)$at,text)
-      }
+      rehashBlock(replacement,first,slots)
       first<-first+slots
     }
     check()

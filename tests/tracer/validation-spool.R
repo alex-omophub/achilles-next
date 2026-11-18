@@ -34,6 +34,23 @@ local({
   cat('VALIDATION_DISK_SPOOL_COLLISIONS_REHASH_FLAGS_EMPTY_VALUES_WALK_BOUNDS_OK\n')
 })
 
+# Linear probes cross a replacement-page edge in both halves and wrap at the end.
+local({
+  path<-tempfile('validation-page-boundary-')
+  spool<-get('.v2_spool',asNamespace('AchillesNext'))(path)
+  on.exit({spool$close();unlink(path,recursive=TRUE)})
+  keys<-vapply(seq_len(1025L),function(i)digest::digest(as.character(i),algo='sha256',serialize=FALSE),'')
+  homes<-rep(c(1022L,2046L,3070L,4094L),each=8L)
+  substr(keys[seq_along(homes)],1L,8L)<-sprintf('%08x',homes)
+  for(i in seq_len(1024L))spool$put(keys[i],charToRaw(as.character(i)))
+  for(i in seq_along(homes))stopifnot(spool$flags(keys[i],2L))
+  stopifnot(spool$inspect()$slots==2048)
+  spool$put(keys[1025L],charToRaw('1025'))
+  stopifnot(spool$inspect()$slots==4096)
+  for(i in seq_along(keys))stopifnot(identical(spool$get(keys[i]),charToRaw(as.character(i))))
+  for(i in seq_along(homes))stopifnot(spool$flags(keys[i])==2L)
+})
+
 # Exact shared logical byte/file limits and old+replacement rehash peaks.
 local({
   ns<-asNamespace('AchillesNext');f<-function(n)get(n,ns)
