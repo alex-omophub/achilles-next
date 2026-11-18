@@ -157,8 +157,8 @@
     on.exit(if(!ok).v2_scratch_cleanup(list(function()closeConnection(replacement),
       function()if(!is.null(owned[[nextPath]]))remove(nextPath))))
     suspendInterrupts({replacement<-fresh(nextPath,n*width);allowInterrupts(Sys.sleep(0))})
-    # Read the old table in physical order. Keep only one block in memory
-    # and preserve insertion order when collisions probe the new table.
+    # Reinsert in old physical slot order so collision placement stays
+    # deterministic across block boundaries. Keep one old block in memory.
     first<-0
     while(first<capacity) {
       check()
