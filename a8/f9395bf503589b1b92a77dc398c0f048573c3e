@@ -1,0 +1,47 @@
+docs/development/compiled-candidate.md
+  s_895f6ebe145fd3::t_901110dd20816f 41-46
+R/core-metadata.R
+  s_895f6ebe145fd3::t_78039d3aa049ff 96
+R/profile-generation.R
+  s_895f6ebe145fd3::t_78039d3aa049ff 46,53
+R/characterization-transport.R
+  s_895f6ebe145fd3::t_78039d3aa049ff 29
+R/characterization-execute.R
+  s_895f6ebe145fd3::t_78039d3aa049ff 29
+man/executeCharacterizationRefresh.Rd
+  s_895f6ebe145fd3::t_78039d3aa049ff 18
+man/executeCharacterizationSql.Rd
+  s_895f6ebe145fd3::t_78039d3aa049ff 26-27
+R/measurement-baseline.R
+  s_895f6ebe145fd3::t_78039d3aa049ff 4,16
+R/candidate-capture.R
+  s_895f6ebe145fd3::t_d020bc51de0420 20-28,56,94,99-103
+man/generateCharacterizationCandidate.Rd
+  s_895f6ebe145fd3::t_78039d3aa049ff 23
+R/refresh-execution.R
+  s_895f6ebe145fd3::t_78039d3aa049ff 50
+man/generateAnalysisProfile.Rd
+  s_895f6ebe145fd3::t_78039d3aa049ff 14
+man/generateMeasurementBaseline.Rd
+  s_895f6ebe145fd3::t_78039d3aa049ff 25
+tests/tracer/characterization-candidate-sql-capture.R
+  s_895f6ebe145fd3::t_f89688a4c6300f 81-97
+tests/tracer/characterization-execute-native.R
+  s_895f6ebe145fd3::t_1a23a5cebcc60d 30,46,49,72-75
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a8f9395bf503589b1b92a77dc398c0f048573c3e",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
