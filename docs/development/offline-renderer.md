@@ -56,8 +56,9 @@ Domain report stages create one temporary table and append report groups
 before indexing it. Capture counts are generated separately for the full
 scope, undated events, calendar months and calendar years. Each group uses
 the complete concept grid for that scope, including explicit zero cells.
-Size `maxAggregateRows` for the entire grid. Each zero cell consumes one
-output row and its serialized UTF-8 payload counts toward `maxAggregateBytes`.
+Size `maxAggregateRows` for the entire run, including every capture-grid cell,
+all other numeric results and all output metadata rows. Each zero cell consumes
+one output row and its serialized UTF-8 payload counts toward `maxAggregateBytes`.
 `maxStageBytes` separately covers the temporary PostgreSQL tables and indexes.
 The statement timeout applies to each group and the elapsed deadline covers
 the whole execution.
