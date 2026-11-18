@@ -87,8 +87,8 @@
     .v2_keys(item,c("metric_id","row_kind","dimensions","values","state","reason_code"))
     row<-.object(row_key="",dimensions=item$dimensions,row_kind=item$row_kind,state=item$state,
       reason_code=item$reason_code,values=item$values,denominator_refs=list())
-    row$row_key<-.v2_row_identity(assets$rows[[mid]],row);.v2_row(mid,row,assets)
-    raw<-.v2_bytes(row);.nv_need(length(raw)<=65536L,"Candidate row resource limit")
+    checked<-.v2_row(mid,row,assets,capture=TRUE)
+    row<-checked$row;raw<-checked$bytes
     index$put(row$row_key,if(mid%in%targets).v2_bytes(c(.object(metric_id=mid),row)) else raw())
     if(!identical(active,mid)) {
       flushFrames();closeWriter()

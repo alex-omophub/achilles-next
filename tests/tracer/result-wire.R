@@ -28,6 +28,10 @@ cases <- list();add <- function(mid,row,valid,label) {
  row$row_key <- f('.v2_row_identity')(a$rows[[mid]],row)
  accepted <- tryCatch({f('.v2_row')(mid,row);TRUE},error=function(e){if(valid)message(mid,'/',row$row_kind,': ',conditionMessage(e));FALSE})
  stopifnot(accepted==valid)
+ input <- row;input$row_key <- ''
+ checked <- try(f('.v2_row')(mid,input,a,capture=TRUE),silent=TRUE)
+ if(valid) stopifnot(identical(checked$row,row),identical(checked$bytes,f('.v2_bytes')(row)))
+ else stopifnot(inherits(checked,'try-error'))
  cases[[length(cases)+1L]] <<- obj(metric_id=mid,row=row,valid=valid,label=label)
 }
 for(mid in names(a$rows)) for(kind in names(a$rows[[mid]]$value_keys_by_row_kind)) {
@@ -80,6 +84,14 @@ for(name in c('gender_concept_id','race_concept_id','ethnicity_concept_id','year
  stopifnot(!anyDuplicated(keys))
 }
 stopifnot(inherits(try(f('.v2_component')('null','year'),silent=TRUE),'try-error'))
+known <- cases[[1L]]
+stopifnot(inherits(try(f('.v2_row')(known$metric_id,known$row,a,capture=TRUE),silent=TRUE),'try-error'))
+codes <- c(intToUtf8(1:127,multiple=TRUE),strrep('Z',128),strrep('Z',129),'code\n','caf\u00e9','')
+for(code in codes) {
+  key <- try(f('.v2_component')(code,'period_kind'),silent=TRUE)
+  if(grepl('^[A-Za-z0-9._:-]{1,128}$',code)) stopifnot(identical(key,paste0('E:',code)))
+  else stopifnot(inherits(key,'try-error'))
+}
 stopifnot(f('.nv_mul')(strrep('9',1100),paste0('1',strrep('0',1000)))==paste0(strrep('9',1100),strrep('0',1000)))
 values <- c('-10','-2','0','2','10');keys <- vapply(values,f('.v2_component'),'',name='integer')
 stopifnot(identical(order(keys,method='radix'),seq_along(values)))
