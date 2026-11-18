@@ -263,7 +263,16 @@ class Reference:
             d=PROFILE['domains'][domain]
             if d['end_date'] and d['end_date'] in self.columns[d['table']]:flags.update(missing_end='end_date IS NULL',reversed_end=f'valid_date AND {valid_date("end_date")} AND end_date<event_date')
             flags['repeated_person_rows' if domain=='death' else 'duplicate_record_id']='duplicated'
-            return ' UNION ALL '.join(f"SELECT 'counts'::text AS row_kind,jsonb_build_object('flag',{lit(flag)},'present',b.present::text) AS dimensions,jsonb_build_object('record_count',(SELECT count(*)::text FROM facts WHERE ({expr}) IS NOT DISTINCT FROM b.present)) AS values FROM (VALUES(true),(false)) b(present)".replace(f'({expr}) IS NOT DISTINCT FROM b.present',f'(({expr}) IS TRUE)=b.present') for flag,expr in flags.items())
+            # FILTER counts only true predicates. Subtracting from the physical
+            # row count folds unknown into false and keeps both cells on empty input.
+            counts=', '.join(f'count(*) FILTER (WHERE {expr}) AS {ident(flag)}' for flag,expr in flags.items())
+            entries=', '.join(f'({lit(flag)},totals.{ident(flag)})' for flag in flags)
+            return f"""SELECT 'counts'::text AS row_kind,
+                jsonb_build_object('flag',f.flag,'present',b.present::text) AS dimensions,
+                jsonb_build_object('record_count',(CASE WHEN b.present THEN f.n ELSE totals.n-f.n END)::text) AS values
+              FROM (SELECT count(*) AS n,{counts} FROM facts) totals
+              CROSS JOIN LATERAL (VALUES {entries}) f(flag,n)
+              CROSS JOIN (VALUES (true),(false)) b(present)"""
         if suffix=='first_age_summary':
             age,reason=self.age_reason('first_date')
             source='(SELECT concept_tag,person_id,gender_concept_id,year_of_birth,min(event_date) FILTER(WHERE valid_date) AS first_date FROM facts WHERE linked GROUP BY concept_tag,person_id,gender_concept_id,year_of_birth) f'

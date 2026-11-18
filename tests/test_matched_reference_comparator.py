@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+import re
 import subprocess
 import tempfile
 from unittest.mock import Mock,patch
@@ -62,6 +63,16 @@ def metadata_snapshot():
 
 
 class MatchedReferenceTest(unittest.TestCase):
+    def test_domain_integrity_reads_event_facts_once(self):
+        for version in ('5.3','5.4','5.5'):
+            columns=assets(plan(version=version))[2]
+            reference=SQL.Reference('cdm_fixture',{table:{c['name']:c['type'] for c in fields}
+                                                    for table,fields in columns.items()})
+            for domain in SQL.DOMAINS:
+                with self.subTest(version=version,domain=domain):
+                    query=reference.domain(domain,'integrity_count',False)
+                    self.assertEqual(len(re.findall(r'\b(?:from|join)\s+facts\b',query,re.I)),1)
+
     def test_all_versions_compile_complete_pinned_numerical_inventory(self):
         for version in ['5.3','5.4','5.5']:
             columns=assets(plan(version=version))[2]
