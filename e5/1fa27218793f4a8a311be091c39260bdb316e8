@@ -1,0 +1,50 @@
+docs/development/checked-executor.md
+  s_895f6ebe145fd3::t_16d69ee189de1c 106
+R/population-baseline.R
+  s_895f6ebe145fd3::t_41be390adfce3d 101-103
+  s_895f6ebe145fd3::t_99473cdb524d22 99-100
+  s_895f6ebe145fd3::t_164b4d60675938 104
+  s_3e206b4a2cf4c3::t_253568db58171f 93-96,106-108
+docs/development/offline-renderer.md
+  s_895f6ebe145fd3::t_16d69ee189de1c 55-61
+man/executeCharacterizationSql.Rd
+  s_895f6ebe145fd3::t_16d69ee189de1c 24
+R/characterization-execute.R
+  s_895f6ebe145fd3::t_58d0609e764034 112
+R/characterization-render.R
+  s_895f6ebe145fd3::t_02c4117f89bfc1 64-65
+R/domain-reports.R
+  s_895f6ebe145fd3::t_8e7d36f5f44197 6-16,80
+R/domain-schema.R
+  s_895f6ebe145fd3::t_47dc3f2d7a610e 7
+R/measurement-baseline.R
+  s_895f6ebe145fd3::t_2a5e70a64ee70c 21,65
+inst/sql/postgresql/domain-capture.sql
+  s_895f6ebe145fd3::t_c81b4450d503b3 1-24
+inst/sql/postgresql/domain-counts.sql
+  s_895f6ebe145fd3::t_e257386ee5772b 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e51fa27218793f4a8a311be091c39260bdb316e8",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
