@@ -1,0 +1,25 @@
+R/candidate-capture.R
+  s_3e206b4a2cf4c3::t_bf01f091af7015 123-127
+R/candidate-store.R
+  s_3e206b4a2cf4c3::t_807eb9a77f8c69 112-113
+R/result-wire.R
+  s_3e206b4a2cf4c3::t_8204dd86dbf9ea 87,131
+tests/tracer/characterization-candidate-sql-capture.R
+  s_3e206b4a2cf4c3::t_ac28bef2cc39fd 115-127
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f2c2ff10753e395e1b3e2430722176d517eef126",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
