@@ -14,9 +14,14 @@
   if(!is.null(.v2_assets()$profile$domains[[domain]]$end_date) && (domain!='procedure'||!is.null(cap$column('procedure_occurrence.procedure_end_date',FALSE))))
     flags<-c(flags,missing_end='end_date IS NULL',reversed_end='valid_date AND end_date BETWEEN DATE \'0001-01-01\' AND DATE \'9999-12-31\' AND end_date<event_date')
   flags<-c(flags,stats::setNames('duplicated',if(domain=='death')'repeated_person_rows' else 'duplicate_record_id'))
-  add(paste0("SELECT '",core,".integrity_count','counts',jsonb_build_object('flag',f.flag,'present',b.present::text),jsonb_build_object('record_count',COUNT(c.present)::text) FROM (VALUES ",
-    paste(vapply(names(flags),function(k)paste0('(', .store_literal(k),')'),''),collapse=','),") f(flag) CROSS JOIN (VALUES(true),(false)) b(present) LEFT JOIN (SELECT v.flag,v.present FROM ",table,
-    " CROSS JOIN LATERAL (VALUES ",paste(vapply(names(flags),function(k)paste0('(',.store_literal(k),',(',flags[[k]],') IS TRUE)'),''),collapse=','),") v(flag,present)) c ON c.flag=f.flag AND c.present=b.present GROUP BY f.flag,b.present"))
+  # Count flags in a single scan, then emit the two cells per flag even for
+  # empty input. NULL flag expressions belong to the false cell.
+  flagCounts<-vapply(names(flags),function(k)paste0("COUNT(*) FILTER (WHERE ",flags[[k]],") AS ",k),"")
+  flagRows<-vapply(names(flags),function(k)paste0("(",.store_literal(k),",t.",k,")"),"")
+  add(paste0("SELECT '",core,".integrity_count','counts',jsonb_build_object('flag',f.flag,'present',b.present::text),",
+    "jsonb_build_object('record_count',b.records::text) FROM (SELECT COUNT(*) AS total,",
+    paste(flagCounts,collapse=",")," FROM ",table,") t CROSS JOIN LATERAL (VALUES ",paste(flagRows,collapse=","),
+    ") f(flag,hits) CROSS JOIN LATERAL (VALUES (true,f.hits),(false,t.total-f.hits)) b(present,records)"))
   # One earliest finite dated event per linked person/concept, including a NULL
   # date group for people whose records are all undated/invalid.
   first<-paste0('(SELECT concept_tag,person_id,gender_concept_id,year_of_birth,MIN(event_date) FILTER(WHERE valid_date) AS first_date FROM ',table,' WHERE linked GROUP BY concept_tag,person_id,gender_concept_id,year_of_birth) f')
