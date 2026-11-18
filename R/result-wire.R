@@ -51,7 +51,7 @@
   } else if (name %in% c("presence_bits", "representation_flags")) {
     .nv_need(grepl("^[01X]{1,16}$", x)); paste0("R:", x)
   } else {
-    .nv_need(grepl("^[A-Za-z0-9._:-]{1,128}$", x), "Invalid code dimension"); paste0("E:", x)
+    .nv_need(grepl("\\A[A-Za-z0-9._:-]{1,128}\\z", x, perl=TRUE, useBytes=TRUE), "Invalid code dimension"); paste0("E:", x)
   }
 }
 .v2_row_identity <- function(metric, row) .v2_hash(.v2_bytes(.object(metric_id = metric$id,
@@ -84,13 +84,17 @@
   if (id == "core.execution.timing") .nv_need(if (v$availability == "measured") !is.null(v$duration_ms) && is.null(v$reason_code) else is.null(v$duration_ms) && !is.null(v$reason_code))
   invisible(TRUE)
 }
-.v2_row <- function(id, row, assets = .v2_assets()) {
+.v2_row <- function(id, row, assets = .v2_assets(), capture = FALSE) {
   registry <- assets$rows[[id]]; .nv_need(!is.null(registry), "Unknown metric")
   .v2_keys(row, c("row_key", "dimensions", "row_kind", "state", "reason_code", "values", "denominator_refs"))
   .nv_need(row$row_kind %in% names(registry$value_keys_by_row_kind), "Unknown row kind")
   dims <- c(unlist(registry$dimensions), unlist(registry$extra_dimensions_by_row_kind[[row$row_kind]]))
   .v2_keys(row$dimensions, dims); .v2_dimensions(id,row,assets); key <- .v2_sort(registry, row)
-  .nv_need(identical(row$row_key, .v2_row_identity(registry, row)), "Row identity mismatch")
+  identity <- .v2_row_identity(registry, row)
+  if (capture) {
+    .nv_need(identical(row$row_key, ""), "Expected a new capture row")
+    row$row_key <- identity
+  } else .nv_need(identical(row$row_key, identity), "Row identity mismatch")
   .nv_need(row$state %in% c("computed", "empty_source", "empty_population", "suppressed", "unsupported", "unavailable"))
   if(row$state %in% c("unsupported","unavailable")) .nv_need(isTRUE(assets$is_core) && id=="core.visit.care_setting_count" && identical(row$dimensions$setting_kind,"place_of_service"),"Unavailable required stratum")
   .nv_need(if (row$state == "computed") is.null(row$reason_code) else .string(row$reason_code) && grepl("^[a-z0-9_.:-]{1,96}$", row$reason_code))
@@ -122,8 +126,9 @@
       }
     } else .v2_metadata(id, v, assets)
   }
-  .nv_need(length(.v2_bytes(row)) <= 65536L, "Row resource limit")
-  key
+  bytes <- .v2_bytes(row)
+  .nv_need(length(bytes) <= 65536L, "Row resource limit")
+  if (capture) list(row = row, bytes = bytes) else key
 }
 
 .v2_dimensions <- function(id,row,assets = .v2_assets()) {

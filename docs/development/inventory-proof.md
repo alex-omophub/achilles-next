@@ -125,7 +125,8 @@ use smaller pages rather than interpreting that rejection as an absent concept.
 
 Native full admission now spools row and concept witnesses into two disk maps,
 each with one value stream and a fixed-width hash index. The index grows at
-most half occupancy and rehashes one slot at a time. Exact keys, duplicate checks,
+most half occupancy. Rehashing reads up to 1,024 old slots per block and
+reinserts occupied slots in physical order. Exact keys, duplicate checks,
 reference lookups, label equality, retained-ID/name markers and the second pass
 are preserved. No million-row/name map is loaded into R. Rehashing checks the
 existing cancellation predicate every 1,024 slots; temporary connections/files

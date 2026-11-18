@@ -88,7 +88,7 @@
   invisible(NULL)
 }
 # Fixed-width open-addressed slots contain hash, byte offset, length and flags.
-# Values stay on disk; rehashing reads one slot at a time, never the whole index.
+# Values stay on disk; rehashing scans the old index in bounded blocks.
 .v2_spool <- function(directory,check=function()NULL,budget=.v2_scratch_budget()) {
   .nv_need(is.function(check));check()
   ownsDirectory<-FALSE;data<-NULL;index<-NULL;closed<-FALSE;poisoned<-FALSE;ready<-FALSE
@@ -157,10 +157,20 @@
     on.exit(if(!ok).v2_scratch_cleanup(list(function()closeConnection(replacement),
       function()if(!is.null(owned[[nextPath]]))remove(nextPath))))
     suspendInterrupts({replacement<-fresh(nextPath,n*width);allowInterrupts(Sys.sleep(0))})
-    for(at in seq.int(0,capacity-1)) {
-      if(at%%1024==0)check()
-      text<-readSlot(index,at)
-      if(!is.null(text))writeSlot(replacement,find(substr(text,1,64),replacement,n)$at,text)
+    # Read the old table in physical order. Keep only one block in memory
+    # and preserve insertion order when collisions probe the new table.
+    first<-0
+    while(first<capacity) {
+      check()
+      slots<-min(1024,capacity-first)
+      block<-io(function(){seek(index,first*width,origin="start",rw="read");readBin(index,"raw",n=slots*width)})
+      .nv_need(length(block)==slots*width,"Truncated validation index")
+      starts<-seq.int(1L,length(block),by=width)
+      for(start in starts[block[starts]!=as.raw(0)]) {
+        text<-rawToChar(block[start:(start+width-1L)])
+        writeSlot(replacement,find(substr(text,1,64),replacement,n)$at,text)
+      }
+      first<-first+slots
     }
     check()
     # Once the old index is removed, defer asynchronous interrupts until the
@@ -182,8 +192,12 @@
   }
   put<-function(hash,raw) {
     guard();key(hash);.nv_need(is.raw(raw)&&length(raw)<=131072L,"Validation value byte limit")
-    .nv_need(is.null(find(hash)$text),"Duplicate validation key")
-    if((count+1)*2>capacity)grow()
+    found<-find(hash)
+    .nv_need(is.null(found$text),"Duplicate validation key")
+    if((count+1)*2>capacity) {
+      grow()
+      found<-find(hash)
+    }
     .nv_need(end+64+length(raw)<=2^53-1,"Validation scratch offset limit")
     n<-64+length(raw);budget$acquire(n)
     # Failed append/index writes poison the spool; reserved bytes stay charged
@@ -192,7 +206,7 @@
     out<-.v2_scratch_capture(function(){
       io(function(){seek(data,end,origin="start",rw="write");writeBin(c(charToRaw(hash),raw),data);flush(data);.nv_need(file.info(file.path(directory,"values"))$size==end+n)})
       text<-paste0(hash,sprintf("%016.0f",end+64),sprintf("%08d",length(raw)),"0")
-      writeSlot(index,find(hash)$at,text);end<<-end+n;count<<-count+1
+      writeSlot(index,found$at,text);end<<-end+n;count<<-count+1
     })
     if(!out$ok){poisoned<<-TRUE;stop(out$failure)}
     invisible(NULL)
