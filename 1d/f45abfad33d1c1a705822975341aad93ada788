@@ -1,0 +1,32 @@
+R/domain-reports.R
+  s_3e206b4a2cf4c3::t_96f2215bef0eb0 39,47,84-87
+  s_895f6ebe145fd3::t_375aee129ef076 41-44,48,83,88-89
+tests/tracer/characterization-render-offline.R
+  s_895f6ebe145fd3::t_5438c21e54fd31 34-38
+docs/development/offline-renderer.md
+  s_895f6ebe145fd3::t_e44fa91a4234e1 64-66
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1df45abfad33d1c1a705822975341aad93ada788",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
