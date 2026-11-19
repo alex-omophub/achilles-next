@@ -37,11 +37,14 @@ class HandoffTests(unittest.TestCase):
         return value
 
     def test_static_inspection_binds_complete_reference_without_source_access(self):
-        with patch.object(H.T.L,'Client',side_effect=AssertionError('no source connection for static inspect')):
+        # Exercise the separate SQL file budget regardless of the compiler's output size.
+        metadata_limit = (self.directory/'handoff.json').stat().st_size
+        self.assertGreater((self.directory/'reference.json').stat().st_size, metadata_limit)
+        with patch.object(H.M,'JSON_BYTES',metadata_limit), \
+             patch.object(H.T.L,'Client',side_effect=AssertionError('no source connection for static inspect')):
             value=H.inspect(self.directory)
         self.assertEqual(set(value),H.FIELDS);self.assertFalse(value['analysis_execution_authorized']);self.assertFalse(value['qualifying'])
         self.assertEqual(len(self.compiled['queries']),138)
-        self.assertGreater((self.directory/'reference.json').stat().st_size,H.M.JSON_BYTES)
 
     def test_rehashed_reference_edits_do_not_replace_the_frozen_compiler(self):
         compiled=copy.deepcopy(self.compiled);compiled['queries']['core.person.count']['sql']='SELECT 1'
