@@ -1,0 +1,25 @@
+R/characterization-execute.R
+  s_895f6ebe145fd3::t_694707b257dbf8 171-172
+R/count-store-import.R
+  s_895f6ebe145fd3::t_694707b257dbf8 98-99
+inst/sql/postgresql/count-store-edges.sql
+  s_895f6ebe145fd3::t_694707b257dbf8 12,14,16-18
+tests/tracer/characterization-candidate-sql-copy.R
+  s_895f6ebe145fd3::t_694707b257dbf8 57-77
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c8c1fda196c316d060e323383862c9ecebdc3f8a",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
