@@ -75,7 +75,8 @@ def verify_reference_capture_membership(pg, columns):
     events=[(1,None,'2020-01-31',True),(1,0,'2020-02-01',True),(1,-7,'2020-02-05',True),
             (1,-7,'2020-02-05',True),(1,0,'2020-02-06',True),(1,-7,'2020-02-07',False),
             (1,None,'2020-03-01',True),(2,0,'2020-02-01',False),(77,9,'2020-01-01',False),
-            (None,9,'2020-02-01',False),(1,0,None,False),(2,9,'10000-01-01',False)]
+            (None,9,'2020-02-01',False),(1,0,None,False),(2,9,'10000-01-01',False),
+            (77,88,'2020-02-01',False)]
     tables['condition_occurrence']=[dict(person_id=p,condition_concept_id=c,condition_start_date=day)
                                  for p,c,day,_ in events]
     # A different domain extends the calendar into an otherwise empty month.
@@ -92,7 +93,7 @@ def verify_reference_capture_membership(pg, columns):
             rows=pg.rows(r.compile(prefix+'.condition.capture_count'),role='runner')
             expected={}
             for kind,lo,hi in scopes:
-                for concept in ('all',None,-7,0,9):
+                for concept in ('all',None,-7,0,9,88):
                     chosen=[(p,c,d) for p,c,d,inside in events if (inside or prefix=='core')
                             and (concept=='all' or concept==c)
                             and (kind=='full_scope' or kind=='undated' and d is None
@@ -108,6 +109,18 @@ def verify_reference_capture_membership(pg, columns):
                 need(row['row_kind']=='counts' and key not in actual,'Duplicate or unexpected capture cell')
                 actual[key]=int(values['record_count']),int(values['person_count'])
             need(actual==expected,'Reference capture period, distinct-person, zero or observation membership differs')
+        histogram={}
+        for row in pg.rows(r.compile('core.condition.frequency_histogram'),role='runner'):
+            dims=row['dimensions']
+            tag=dims['concept_tag']
+            concept=None if tag['kind']=='null' else int(tag['value'])
+            key=(concept,int(dims['event_count']))
+            need(row['row_kind']=='counts' and key not in histogram,'Duplicate or invalid frequency cell')
+            histogram[key]=int(row['values']['person_count'])
+        need(histogram=={
+            (None,0):1,(None,2):1,(-7,0):1,(-7,3):1,(0,0):0,(0,1):1,(0,3):1,
+            (9,0):1,(9,1):1,(88,0):2,
+        },'Frequency bins must include zero and orphan-only concepts and count each linked person once')
     finally:
         drop_preview(pg,fixture)
 
