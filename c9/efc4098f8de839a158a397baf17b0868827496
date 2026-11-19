@@ -1,0 +1,16 @@
+R/result-wire.R
+  h_4046c129935915 4,57-70,105-106,142
+tests/tracer/canonical-json.R
+  h_4046c129935915 50-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c9efc4098f8de839a158a397baf17b0868827496",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
