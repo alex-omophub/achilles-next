@@ -95,7 +95,8 @@
     " WHERE ", scope, "),'edges',(SELECT count(*)::text FROM ", table("denominator_edge"),
     " WHERE ", scope, "),'expected',(SELECT count(*)::text FROM (SELECT convert_from(doc,'UTF8')::jsonb->'dimensions' d",
     " FROM pg_temp.count_frames WHERE mid=", metric, ") f WHERE ", predicate, "))::text")))
-  .candidate_need(identical(totals$rows, dataset$rows) && identical(totals$expected, totals$edges))
+  .candidate_need(identical(totals$rows, dataset$rows))
+  .candidate_need(identical(totals$expected, totals$edges), "candidate.invalid_denominator")
   tick()
   list(rows = totals$rows, edges = totals$edges, cell_statements = 1L,
        edge_statements = as.integer(!is.null(rule)), sql_bytes = sum(sizes), max_statement_bytes = max(sizes))

@@ -9,11 +9,10 @@ WITH children AS (
 )
 INSERT INTO __STORE__.achillesnext_denominator_edge
     (release_id, metric_id, row_key, measure_key, target_metric_id, target_row_key, target_measure_key)
-SELECT __RELEASE__, __METRIC__, e.row_key, 'person_count', __TARGET__,
-       CASE WHEN t.dimensions = e.dims AND t.route_key = 'A' AND t.payload_kind = 'counts'
-             AND t.state IN ('computed','empty_source','empty_population')
-             AND e.person_count <= t.person_count THEN t.row_key END,
-       'person_count'
+SELECT __RELEASE__, __METRIC__, e.row_key, 'person_count', __TARGET__, t.row_key, 'person_count'
 FROM expected e
-LEFT JOIN __STORE__.achillesnext_aggregate_cell t
+JOIN __STORE__.achillesnext_aggregate_cell t
   ON t.release_id = __RELEASE__ AND t.metric_id = __TARGET__ AND t.row_key = e.target_key
+ AND t.dimensions = e.dims AND t.route_key = 'A' AND t.payload_kind = 'counts'
+ AND t.state IN ('computed','empty_source','empty_population')
+ AND e.person_count <= t.person_count

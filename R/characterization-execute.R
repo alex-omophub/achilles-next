@@ -168,6 +168,8 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
       if(metadata)"'computed'::text" else "state",",'reason_code',",if(metadata)"NULL::text" else "reason_code",")::text FROM (",spec$sql,") output")
     for(mid in numericIds) {
       spec<-program$outputs[[mid]]
+      # The checked COPY plan selects count shapes from the frozen profile.
+      # Reports with unsupported or unavailable rows use the ordinary spool.
       if (!is.null(copy) && mid %in% copy$metrics) {
         received <- copy$receive(jdbc,mid,limits$max_aggregate_rows-rows,limits$max_aggregate_bytes-bytes)
         rows <- rows + received$rows

@@ -54,6 +54,27 @@ testCharacterizationCandidateSqlCopy <- function(sourceDetails,program,storeDeta
     corrupted$reason_code=="candidate.invalid_capture",corrupted$outcome=="not_committed",
     identical(tableCounts(),before),identical(sort(list.files(out,all.files=TRUE,no..=TRUE)),files))
   prior()
+  # Build valid cells but miss their required person denominator in the edge join.
+  badTarget <- FALSE
+  targetSql <- get(".pg_count_target_sql",native)
+  scope$.pg_count_target_sql <- function(rule,registry,fields) {
+    bindings <- targetSql(rule,registry,fields)
+    if (identical(registry$id,"core.person.count")) {
+      bindings[["__TARGET_KEY__"]] <- "repeat('f',64)"
+      badTarget <<- TRUE
+    }
+    bindings
+  }
+  import <- get(".candidate_copy_import",native)
+  environment(import) <- scope
+  scope$.candidate_copy_import <- import
+  scope$.pg_count_copy_pages <- relay
+  scope$.candidate_copy_workspace <- workspace
+  bad <- tryCatch(run(generate=generate),error=identity)
+  stopifnot(badTarget,inherits(bad,"AchillesCandidateFailure"),
+    bad$reason_code=="candidate.invalid_denominator",bad$outcome=="not_committed",
+    identical(tableCounts(),before),identical(sort(list.files(out,all.files=TRUE,no..=TRUE)),files))
+  prior()
   result <- run()
   saved <- snap(result)
   wire <- get(".json",native)
