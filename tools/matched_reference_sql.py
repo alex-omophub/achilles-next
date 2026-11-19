@@ -190,6 +190,10 @@ class Reference:
             return self.capture_count(domain,prefix=='observed')
         if domain in DOMAINS and suffix=='frequency_histogram':
             return self.frequency_histogram(domain)
+        if domain in DOMAINS and suffix=='observation_qualification_count':
+            return self.observation_qualification(domain)
+        if domain in DOMAINS and prefix=='observed' and suffix=='year_gender_age_count':
+            return self.observed_demographics(domain)
         if domain=='person':query=self.person(suffix)
         elif domain=='observation_period':query=self.observation(suffix)
         elif domain=='density':query=self.density(suffix)
@@ -332,14 +336,64 @@ class Reference:
           jsonb_build_object('person_count',people::text) AS values
         FROM histogram"""
 
+    def observation_coverage(self):
+        observation=self.table('observation_period')
+        person=self.table('person')
+        return f"""coverage AS (
+          SELECT o.person_id,range_agg(daterange(o.observation_period_start_date,o.observation_period_end_date,'[]')) AS spans
+          FROM {observation} o JOIN {person} p ON p.person_id=o.person_id
+          WHERE {valid_date('o.observation_period_start_date')}
+            AND {valid_date('o.observation_period_end_date')}
+            AND o.observation_period_start_date<=o.observation_period_end_date
+          GROUP BY o.person_id
+        )"""
+
+    def observation_qualification(self,domain):
+        definition=PROFILE['domains'][domain]
+        events=self.table(definition['table'])
+        concept=self.col(domain,definition['concept'])
+        day=self.col(domain,definition['event_date'],'NULL::date')
+        person=self.table('person')
+        return f"""WITH {self.observation_coverage()}, events AS (
+          SELECT {concept} AS concept_id,p.person_id,
+            CASE WHEN p.person_id IS NULL THEN 'null_or_orphan_person'
+                 WHEN NOT ({valid_date(day)}) THEN 'undated'
+                 WHEN c.spans IS NULL THEN 'no_valid_intervals'
+                 WHEN {day} <@ c.spans THEN 'inside_valid_union'
+                 ELSE 'outside_valid_union' END AS reason
+          FROM {events} e LEFT JOIN {person} p ON p.person_id=e.person_id
+          LEFT JOIN coverage c ON c.person_id=p.person_id
+        )
+        SELECT 'counts'::text AS row_kind,
+          jsonb_build_object('concept_tag',{tag('concept_id')},'reason',reason) AS dimensions,
+          jsonb_build_object('record_count',count(*)::text,'person_count',count(DISTINCT person_id)::text) AS values
+        FROM events GROUP BY concept_id,reason"""
+
+    def observed_demographics(self,domain):
+        definition=PROFILE['domains'][domain]
+        events=self.table(definition['table'])
+        concept=self.col(domain,definition['concept'])
+        day=self.col(domain,definition['event_date'],'NULL::date')
+        person=self.table('person')
+        age=f'(extract(year FROM {day})::numeric-p.year_of_birth::numeric)'
+        return f"""WITH {self.observation_coverage()}, inside AS (
+          SELECT {concept} AS concept_id,p.person_id,p.gender_concept_id,
+            extract(year FROM {day})::integer AS year,
+            CASE WHEN p.year_of_birth BETWEEN 1 AND 9999 AND {age} BETWEEN 0 AND 130
+                 THEN div({age},10)::text ELSE 'unknown' END AS age_decile
+          FROM {events} e JOIN {person} p ON p.person_id=e.person_id
+          JOIN coverage c ON c.person_id=p.person_id AND {day} <@ c.spans
+        )
+        SELECT 'counts'::text AS row_kind,
+          jsonb_build_object('concept_tag',CASE WHEN grouping(concept_id)=1 THEN jsonb_build_object('kind','all') ELSE {tag('concept_id')} END,
+            'year',year::text,'gender_concept_id',{text('gender_concept_id')},'year_age_decile',age_decile) AS dimensions,
+          jsonb_build_object('person_count',count(DISTINCT person_id)::text) AS values
+        FROM inside GROUP BY GROUPING SETS ((concept_id,year,gender_concept_id,age_decile),(year,gender_concept_id,age_decile))"""
+
     def domain(self,domain,suffix,observed):
         concept={'concept_tag':'concept_tag'};reasons=PROFILE['contracts']['eligibility-reasons']
-        if observed and suffix=='year_gender_age_count':
-            age='extract(year FROM event_date)::numeric-year_of_birth::numeric'
-            fields=dict(year='extract(year FROM event_date)::integer::text',gender_concept_id=text('gender_concept_id'),year_age_decile=f"CASE WHEN year_of_birth BETWEEN 1 AND 9999 AND {age} BETWEEN 0 AND 130 THEN div({age},10)::text ELSE 'unknown' END")
-            return ' UNION ALL '.join(grouped('(SELECT * FROM facts WHERE observed) q',obj(concept_tag=ct,**fields),dict(person_count='count(DISTINCT person_id)::text')) for ct in ['concept_tag',"jsonb_build_object('kind','all')"])
         dimensions={'source_count':dict(source_concept_tag='source_tag',source_value_state='source_state'),
-                    'type_count':dict(type_concept_tag='type_tag'),'observation_qualification_count':dict(reason='qualification'),
+                    'type_count':dict(type_concept_tag='type_tag'),
                     'status_type_count':dict(status_concept_tag=tag('condition_status_concept_id'),type_concept_tag='type_tag'),
                     'unit_count':dict(unit_concept_tag=tag('unit_concept_id')),'coded_value_count':dict(value_concept_tag=tag('value_as_concept_id')),
                     'operator_count':dict(raw_operator_tag=tag('operator_concept_id')),'qualifier_count':dict(qualifier_concept_tag=tag('qualifier_concept_id'))}

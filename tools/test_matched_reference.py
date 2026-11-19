@@ -121,6 +121,27 @@ def verify_reference_capture_membership(pg, columns):
             (None,0):1,(None,2):1,(-7,0):1,(-7,3):1,(0,0):0,(0,1):1,(0,3):1,
             (9,0):1,(9,1):1,(88,0):2,
         },'Frequency bins must include zero and orphan-only concepts and count each linked person once')
+        qualification={}
+        for row in pg.rows(r.compile('core.condition.observation_qualification_count'),role='runner'):
+            dims=row['dimensions'];tag=dims['concept_tag']
+            concept=None if tag['kind']=='null' else int(tag['value'])
+            key=(concept,dims['reason'])
+            need(key not in qualification,'Duplicate observation qualification')
+            qualification[key]=(int(row['values']['record_count']),int(row['values']['person_count']))
+        need(qualification=={
+            (None,'inside_valid_union'):(2,1),
+            (0,'inside_valid_union'):(2,1),(0,'no_valid_intervals'):(1,1),(0,'undated'):(1,1),
+            (-7,'inside_valid_union'):(2,1),(-7,'outside_valid_union'):(1,1),
+            (9,'null_or_orphan_person'):(2,0),(9,'undated'):(1,1),(88,'null_or_orphan_person'):(1,0),
+        },'Qualification must preserve invalid dates and exclude invalid or unlinked intervals')
+        demographics={}
+        for row in pg.rows(r.compile('observed.condition.year_gender_age_count'),role='runner'):
+            dims=row['dimensions'];tag=dims['concept_tag']
+            concept=int(tag['value']) if tag['kind']=='id' else tag['kind']
+            need(dims['year']=='2020' and dims['gender_concept_id']=='null' and dims['year_age_decile']=='unknown'
+                 and concept not in demographics,'Unexpected observed demographic dimensions')
+            demographics[concept]=int(row['values']['person_count'])
+        need(demographics=={'all':1,'null':1,0:1,-7:1},'Observed demographics must preserve total and null-concept groups')
     finally:
         drop_preview(pg,fixture)
 
