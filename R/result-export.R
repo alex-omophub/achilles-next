@@ -201,6 +201,9 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
     .term_check(cancel)
     root <<- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel,maxExportBytes=maxExportBytes,maxSnapshotBytes=maxSnapshotBytes)
     admittedRoot<-.v2_directory(stage,check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)
+    .nv_need(identical(.v2_hash(.v2_bytes(admittedRoot)),root$sha256),"Admitted publication root mismatch")
+    pointer<-.v2_bytes(.object(contract_version=admittedRoot$contract_version,publication_id=pub,
+      source_id=validated$context$source_id,access_scope_id=accessScopeId,root=root))
     candidate <- .object(publication_id=pub,release_id=releaseId,source_id=validated$context$source_id,access_scope_id=accessScopeId,
       approval_id=approvalId,policy=policy,root=root)
     if(!is.null(savedTerminology))candidate<-c(candidate,.object(contract_version="2.1.0",saved_terminology=admittedRoot$saved_terminology))
@@ -210,11 +213,11 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
     receipt <- tx$one(paste0("SELECT receipt_id::text FROM ",tx$schema,".achillesnext_validation_receipt WHERE release_id=",.store_uuid(releaseId)," AND passed AND content_revision=",validated$context$content_revision," AND profile_sha256=",.store_literal(validated$context$profile_sha256)," ORDER BY validated_at DESC LIMIT 1"))
     tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_publication VALUES (",.store_uuid(pub),",",.store_uuid(releaseId),",",.store_uuid(receipt),",",.store_literal(accessScopeId),",",.store_literal(.v2_hash(.v2_bytes(policy))),",",.store_literal(approvalId),",",.store_literal(root$sha256),",'building',now(),null)"))
     # Walk validated reachable objects; never enumerate or reserialize payloads.
-    .v2_directory(stage,function(desc,bytes) {
+    .publication_pages(stage,root,pointer,function(desc,bytes) {
       .term_check(cancel)
       hex <- paste(sprintf("%02x",as.integer(bytes)),collapse="")
       tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_page_object VALUES (",.store_uuid(pub),",",.store_literal(desc$sha256),",",.store_literal(desc$kind),",decode('",hex,"','hex'))"))
-    },check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)
+    },check=function().term_check(cancel))
     tx$execute(paste0("UPDATE ",tx$schema,".achillesnext_publication SET state='ready',approved_at=now() WHERE publication_id=",.store_uuid(pub)))
     # Reserve a NEW directory atomically. A directory rename could replace a
     # foreign empty destination created after an earlier existence check.
@@ -230,9 +233,13 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
       .nv_need(.string(sha)&&grepl("^[a-f0-9]{64}$",sha),"Invalid export object identity")
       name<-paste0(sha,".json")
       .nv_need(suppressWarnings(file.rename(file.path(stage,"objects",name),file.path(destination,"objects",name))),"Cannot install export object")
+      .nv_need(identical(.v2_hash(.v2_safe_file(destination,paste0("objects/",name),.v2_limit("data"))),sha),
+        "Installed publication object differs from approved bytes")
     })
+    .nv_need(identical(.v2_safe_file(stage,"publication.json",262144L),pointer),"Publication pointer changed before installation")
     # No provider can admit a partially installed destination: pointer is last.
     .nv_need(suppressWarnings(file.rename(file.path(stage,"publication.json"),file.path(destination,"publication.json"))),"Cannot install export pointer")
+    .nv_need(identical(.v2_safe_file(destination,"publication.json",262144L),pointer),"Installed publication pointer mismatch")
     suspendInterrupts({
       .v2_scratch_io(function().nv_need(unlink(stage,recursive=TRUE)==0L&&!dir.exists(stage)))
       ownsStage<<-FALSE

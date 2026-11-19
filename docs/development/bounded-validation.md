@@ -30,10 +30,10 @@ the validator's initial indexes. This configured default is not a statement that
 every artifact fits within 1 GiB.
 
 `publishResultRelease()` accepts the same named controls. Its `maxScratchBytes`
-applies separately to each of its two sequential artifact admission passes: the
-first before institutional approval, and the second while inserting the exact
-approved pages into the database publication. Each pass has one shared budget;
-the limit is not multiplied by the number of spools within a pass. `maxExportBytes` separately limits the complete staged export, as described below.
+covers full semantic validation before institutional approval. After approval, the
+publisher checks page bytes against the admitted root and its content-addressed
+descendants as it writes them to the store. This pass reads one page at a time.
+The separate `maxExportBytes` limit covers the complete staged export.
 Existing arguments and defaults remain available. See the [result-store guide](result-store.md)
 for sealing, release validation, institutional approval and current-pointer
 promotion.
@@ -82,8 +82,7 @@ fails before opening the pointer. Page limits, validation, policy approval and
 compare-and-swap rules remain in force; the quota does not change wire bytes.
 
 The same bytes are charged once. Moving written objects into the reserved
-destination, copying approved pages into PostgreSQL and the two artifact admission
-passes do not add charges.
+destination, copying approved pages into PostgreSQL and verifying them consume no additional export quota.
 The terminology **INPUT snapshot copy** is explicitly outside this export quota;
 it has the separate `maxSnapshotBytes` limit described below. Validation scratch remains governed by
 `maxScratchBytes`. Database storage, filesystem metadata and client memory are

@@ -264,6 +264,50 @@
   })
   check();invisible(root)
 }
+# Only for a graph that completed .v2_directory in this publication attempt.
+# The approved root digest binds every descendant descriptor. Verify the exact
+# bytes again when sending them to the store, parsing only branching pages.
+.publication_pages <- function(directory, root, pointer, visit, check) {
+  check()
+  path <- normalizePath(directory, mustWork = TRUE)
+  .nv_need(!nzchar(Sys.readlink(directory)) && !nzchar(Sys.readlink(file.path(path, "objects"))),
+    "Unsafe publication directory")
+  checkPointer <- function() .nv_need(identical(.v2_safe_file(path, "publication.json", 262144L), pointer),
+    "Publication pointer changed after admission")
+  checkPointer()
+  pages <- 0
+  walk <- function(descriptor) {
+    check()
+    .v2_descriptor_check(descriptor)
+    bytes <- .v2_safe_file(path, paste0("objects/",descriptor$sha256,".json"), as.integer(descriptor$bytes))
+    .nv_need(identical(as.character(length(bytes)),descriptor$bytes) &&
+      identical(.v2_hash(bytes),descriptor$sha256), "Publication object changed after admission")
+    pages <<- pages + 1
+    visit(descriptor, bytes)
+    if (descriptor$kind == "root") {
+      doc <- .nv_json(bytes)
+      for (child in doc[c("catalogue","concepts","data","terminology")]) walk(child)
+    } else if (descriptor$kind == "index") {
+      doc <- .nv_json(bytes)
+      for (child in doc$children) walk(child$object)
+    }
+    invisible(NULL)
+  }
+  walk(root)
+  # Admission proved uniqueness and reachability. Every expected filename was
+  # just read by its digest, so any additional entry increases the inventory.
+  entries <- 0
+  .v2_directory_entries(path,function(name) {
+    check(); .nv_need(name %in% c("publication.json","objects"), "Undeclared artifact file")
+  })
+  .v2_directory_entries(file.path(path,"objects"),function(name) {
+    check(); entries <<- entries + 1
+    .nv_need(entries <= pages && grepl("^[0-9a-f]{64}[.]json$",name), "Undeclared artifact object")
+  })
+  .nv_need(entries == pages, "Publication object inventory changed")
+  checkPointer(); check()
+  invisible(NULL)
+}
 #' Validate an exact-byte approved artifact without Node
 #' @param bundleDir Directory containing publication.json and objects.
 #' @param maxScratchBytes Maximum total logical bytes of validation scratch files.

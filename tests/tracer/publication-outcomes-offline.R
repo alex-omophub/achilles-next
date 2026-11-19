@@ -23,7 +23,7 @@ local({
       args<-list(...)
       if(method%in%c('createStatement','executeQuery')){if(method=='executeQuery')lastSql<<-args[[1]];v<-new.env(parent=emptyenv());v$nextRow<-TRUE;return(v)}
       if(method=='next'){v<-obj$nextRow;obj$nextRow<-FALSE;return(v)}
-      if(method=='getString')return(if(grepl('SELECT sha256::text FROM',lastSql,fixed=TRUE))strrep('a',64) else if(grepl('promote_publication',lastSql,fixed=TRUE))'1' else '10000000-0000-4000-8000-000000000002')
+      if(method=='getString')return(if(grepl('SELECT sha256::text FROM',lastSql,fixed=TRUE))descriptor$sha256 else if(grepl('promote_publication',lastSql,fixed=TRUE))'1' else '10000000-0000-4000-8000-000000000002')
       if(method=='rollback'){rollbacks<<-rollbacks+1L;if(mode=='rollback_fail')stop('PRIVATE_ROLLBACK_SQL');if(mode=='rollback_warn')warning('PRIVATE_ROLLBACK_WARNING')}
       if(method=='commit'){committed<<-TRUE;return(invisible(NULL))}
       if(method%in%c('setAutoCommit','setReadOnly','setTransactionIsolation','setQueryTimeout','setFetchSize','execute','close','rollback'))return(invisible(NULL))
@@ -32,13 +32,17 @@ local({
     assignInNamespace('.store_commit',function(jdbc){if(mode=='before_commit')stop('PRIVATE_COMMIT_SQL');prior$commit(jdbc);if(mode=='ack_lost')stop('PRIVATE_COMMIT_SQL');if(mode=='commit_sigint')signal()},ns='AchillesNext')
     publish<-publishResultRelease;scope<-new.env(parent=environment(publish));lastSql<-''
     scope$.store_validate<-function(...)list(context=list(state='validated',source_id='fixture:outcome',content_revision='1',profile_sha256=strrep('a',64)))
-    descriptor<-o(sha256=strrep('a',64),bytes='8',kind='root',rows='0')
+    admitted<-o(contract_version='2.0.0');raw<-f('.v2_bytes')(admitted)
+    mockPointer<-NULL
+    descriptor<-o(sha256=f('.v2_hash')(raw),bytes=as.character(length(raw)),kind='root',rows='0')
     scope$.store_build_pages<-function(tx,validated,publicationId,scopeId,approvalId,policy,directory,...) {
       buildCalls<<-buildCalls+1L
-      writeBin(charToRaw('approved'),file.path(directory,'objects',paste0(descriptor$sha256,'.json')))
-      writeBin(charToRaw('pointer'),file.path(directory,'publication.json'));descriptor
+      writeBin(raw,file.path(directory,'objects',paste0(descriptor$sha256,'.json')))
+      mockPointer<<-f('.v2_bytes')(o(contract_version='2.0.0',publication_id=publicationId,source_id='fixture:outcome',access_scope_id=scopeId,root=descriptor))
+      writeBin(mockPointer,file.path(directory,'publication.json'));descriptor
     }
-    scope$.v2_directory<-function(directory,visit=function(...)NULL,...) {visit(descriptor,charToRaw('approved'));o()}
+    scope$.v2_directory<-function(directory,visit=function(...)NULL,...) {visit(descriptor,raw);admitted}
+    scope$.publication_pages<-function(directory,root,pointer,visit,check){check();visit(descriptor,raw)}
     environment(publish)<-scope
     foreignCreated<-FALSE
     moveAttempts<-c(object=0L,pointer=0L);moveSuccesses<-moveAttempts;moveFailures<-moveAttempts
@@ -103,7 +107,7 @@ local({
       }
     }
     stopifnot(identical(dir.exists(destination),retained),disconnects==if(mode%in%c('lock_sigint','stage_sigint'))0L else 1L)
-    if(retained)stopifnot(identical(readBin(file.path(destination,'publication.json'),'raw',n=100L),charToRaw('pointer')))
+    if(retained)stopifnot(identical(readBin(file.path(destination,'publication.json'),'raw',n=262144L),mockPointer))
     if(mode%in%c('object_move_fail','pointer_move_fail')) {
       stopifnot(transactionCalls==1L,buildCalls==1L,!committed,rollbacks==1L,
         identical(conditionMessage(error),'Result publication failed; prior current preserved'))
