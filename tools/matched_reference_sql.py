@@ -188,6 +188,8 @@ class Reference:
         prefix,domain,suffix=mid.split('.')
         if domain in DOMAINS and suffix=='capture_count':
             return self.capture_count(domain,prefix=='observed')
+        if domain in DOMAINS and suffix=='frequency_histogram':
+            return self.frequency_histogram(domain)
         if domain=='person':query=self.person(suffix)
         elif domain=='observation_period':query=self.observation(suffix)
         elif domain=='density':query=self.density(suffix)
@@ -306,6 +308,30 @@ class Reference:
           ON c.period_kind=s.period_kind AND c.start_key=coalesce(s.lo,{empty_date}) AND c.all_concepts=g.all_concepts
           AND (c.concept_id IS NULL)=(g.concept_id IS NULL) AND coalesce(c.concept_id,0)=coalesce(g.concept_id,0)"""
 
+    def frequency_histogram(self,domain):
+        definition=PROFILE['domains'][domain]
+        events=self.table(definition['table'])
+        concept=self.col(domain,definition['concept'])
+        person=self.table('person')
+        # Counts are per linked person and concept. A null person grouping
+        # retains concepts found only on unlinked records for their zero bin.
+        # Construct JSON after grouping numerical concept IDs.
+        return f"""WITH person_frequency AS (
+          SELECT {concept} AS concept_id,p.person_id,count(*) AS events
+          FROM {events} e LEFT JOIN {person} p ON p.person_id=e.person_id
+          GROUP BY {concept},p.person_id
+        ), histogram AS (
+          SELECT concept_id,events,count(*) AS people
+          FROM person_frequency WHERE person_id IS NOT NULL GROUP BY concept_id,events
+          UNION ALL
+          SELECT concept_id,0,(SELECT count(*) FROM {person})-count(person_id)
+          FROM person_frequency GROUP BY concept_id
+        )
+        SELECT 'counts'::text AS row_kind,
+          jsonb_build_object('concept_tag',{tag('concept_id')},'event_count',events::text) AS dimensions,
+          jsonb_build_object('person_count',people::text) AS values
+        FROM histogram"""
+
     def domain(self,domain,suffix,observed):
         concept={'concept_tag':'concept_tag'};reasons=PROFILE['contracts']['eligibility-reasons']
         if observed and suffix=='year_gender_age_count':
@@ -321,10 +347,6 @@ class Reference:
             fields=dimensions[suffix]
             if domain=='device' and suffix=='unit_count':fields=dict(fields,source_unit_presence="CASE WHEN unit_source_value IS NULL THEN 'null' WHEN btrim(unit_source_value,' ')='' THEN 'blank' ELSE 'nonblank' END")
             return count_rows('facts',obj(**concept,**fields))
-        if suffix=='frequency_histogram':
-            return f"""WITH frequency AS (SELECT concept_tag,person_id,count(*)::numeric AS n FROM facts WHERE linked GROUP BY concept_tag,person_id)
-              SELECT 'counts'::text AS row_kind,jsonb_build_object('concept_tag',concept_tag,'event_count',n::text) AS dimensions,jsonb_build_object('person_count',count(*)::text) AS values FROM frequency GROUP BY concept_tag,n
-              UNION ALL SELECT 'counts',jsonb_build_object('concept_tag',g.concept_tag,'event_count','0'),jsonb_build_object('person_count',((SELECT count(*) FROM people)-count(f.person_id))::text) FROM (SELECT DISTINCT concept_tag FROM facts) g LEFT JOIN frequency f USING(concept_tag) GROUP BY g.concept_tag"""
         if suffix=='distinct_concepts_histogram':return grouped('(SELECT p.person_id,count(DISTINCT e.concept_id)::numeric AS n FROM people p LEFT JOIN facts e USING(person_id) GROUP BY p.person_id) q',obj(concept_count='n::text'),dict(person_count='count(*)::text'))
         if suffix=='integrity_count':
             flags=dict(null_person='person_id IS NULL',orphan_person='person_id IS NOT NULL AND NOT linked',missing_date='event_date IS NULL',invalid_date='event_date IS NOT NULL AND NOT valid_date',null_concept='concept_id IS NULL',zero_concept='concept_id=0',unknown_concept='concept_id IS NOT NULL AND concept_id<>0 AND NOT known_concept',wrong_domain_concept='concept_id<>0 AND known_concept AND NOT right_domain')
