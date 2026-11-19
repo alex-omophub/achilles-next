@@ -1,0 +1,18 @@
+docs/development/persistence.md
+  h_4046c129935915 22-26,28-31
+inst/sql/postgresql/result-store.sql
+  h_4046c129935915 247-278
+tests/tracer/persistence-safety.R
+  h_4046c129935915 39-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6aa5817b092112e4f1f0fa54d52c8f7a6372c25b",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
