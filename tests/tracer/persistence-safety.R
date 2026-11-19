@@ -2,6 +2,18 @@
 # only copied synthetic aggregates and leave the original publication untouched.
 testPersistenceSafety<-function(details,schema,baseRelease,config,lib,out,execute,query) {
   ns<-asNamespace("AchillesNext");f<-function(n)get(n,ns);lit<-f(".store_literal");uuid<-f(".store_uuid")
+  # JDBC accepts the insert but PostgreSQL rejects the deferred key at COMMIT.
+  state<-new.env(parent=emptyenv())
+  rejected<-tryCatch({
+    f(".store_transaction")(details,schema,function(tx) {
+      tx$execute("CREATE TEMP TABLE ack_parent(id integer PRIMARY KEY) ON COMMIT DROP")
+      tx$execute("CREATE TEMP TABLE ack_child(id integer REFERENCES ack_parent(id) DEFERRABLE INITIALLY DEFERRED) ON COMMIT DROP")
+      tx$execute("INSERT INTO ack_child VALUES(1)")
+    },state=state)
+    FALSE
+  },error=function(e) inherits(e,"PSQLException"))
+  stopifnot(rejected,identical(state$outcome,"unknown"),
+    identical(state$rollback_state,"acknowledged_after_unknown_commit"),identical(state$disconnect_state,"confirmed"))
   a<-f(".profile_assets")("reference-person-v1");ids<-names(a$metrics)
   rows<-f(".store_transaction")(details,schema,function(tx) {
     result<-list()
