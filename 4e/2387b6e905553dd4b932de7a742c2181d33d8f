@@ -1,0 +1,19 @@
+tools/matched_reference_sql.py
+  s_97c80ded3189b3::t_7ee6de3aa14e86 84-113,227-228,464-489
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4e2387b6e905553dd4b932de7a742c2181d33d8f",
+  "prompts": {},
+  "sessions": {
+    "s_97c80ded3189b3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f575-c4d8-73a1-a56c-5ff9158da434",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
