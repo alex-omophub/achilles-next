@@ -142,7 +142,7 @@ SELECT a.pid, a.state, a.wait_event_type, a.wait_event,
        ) AS blocks_waiter_on_table
 FROM pg_stat_activity AS a
 LEFT JOIN pg_locks AS held ON held.pid = a.pid AND held.database = a.datid
-  AND held.locktype = 'relation' AND held.relation = to_regclass(:'source_relation')
+  AND held.locktype = 'relation' AND held.relation = :'source_relation'::regclass
 WHERE a.datname = current_database() AND a.application_name = :'source_app';
 ```
 
