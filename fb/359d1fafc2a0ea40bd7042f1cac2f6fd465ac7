@@ -1,0 +1,31 @@
+R/characterization-render-metadata.R
+  s_c0e82fa2935e8b::t_31c58f9d5b0324 57-67
+R/characterization-render.R
+  s_c0e82fa2935e8b::t_bc3da98cf7fc8f 98-100
+tests/test_matched_reference_comparator.py
+  s_c0e82fa2935e8b::t_2ed9e8bbab6ae9 5,67-122
+tests/tracer/characterization-render-offline.R
+  s_c0e82fa2935e8b::t_b03dcb26f1d90b 34-41
+tests/tracer/reference-care-settings.R
+  s_c0e82fa2935e8b::t_110899b6b60e17 1-17
+tools/benchmark/matched_reference.R
+  s_c0e82fa2935e8b::t_a4c03be46ee276 35-48,109
+tools/matched_reference_sql.py
+  s_c0e82fa2935e8b::t_21073e397377d7 343-352,354,357-360
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fb359d1fafc2a0ea40bd7042f1cac2f6fd465ac7",
+  "prompts": {},
+  "sessions": {
+    "s_c0e82fa2935e8b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f3a2-263b-7fc2-8f5d-1e9d9ef4a1d9",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
