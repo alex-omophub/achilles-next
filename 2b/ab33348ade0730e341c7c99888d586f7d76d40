@@ -1,0 +1,21 @@
+R/result-validation.R
+  s_c6ee002cd08c37::t_7c0184ccf6aec5 3-9
+tests/tracer/persistence-safety.R
+  s_c6ee002cd08c37::t_3bec5c4e2ed52a 5-16
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2bab33348ade0730e341c7c99888d586f7d76d40",
+  "prompts": {},
+  "sessions": {
+    "s_c6ee002cd08c37": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f40d-52fe-7933-85d9-534033f93c37",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
