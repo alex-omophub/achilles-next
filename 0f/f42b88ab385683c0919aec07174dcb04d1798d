@@ -1,0 +1,26 @@
+R/result-artifact.R
+  h_4046c129935915 267-310
+R/result-export.R
+  h_4046c129935915 204-206,216,220,236-237,239,242
+docs/development/bounded-validation.md
+  h_4046c129935915 33-36,85
+docs/development/client-paths.md
+  h_4046c129935915 23
+man/resultPublication.Rd
+  h_4046c129935915 28-29
+tests/tracer/publication-outcomes-offline.R
+  h_4046c129935915 26,35-37,40-42,44-45,110
+tests/tracer/result-export.R
+  h_4046c129935915 87-104,158,165,167,170,178,182,188,194
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0ff42b88ab385683c0919aec07174dcb04d1798d",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
