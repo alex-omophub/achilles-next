@@ -1,0 +1,26 @@
+tests/tracer/characterization-execute-native.R
+  s_895f6ebe145fd3::t_ea176b7bb69e27 53-54,230
+R/characterization-transport.R
+  s_895f6ebe145fd3::t_ea176b7bb69e27 5-9,30,45
+tests/tracer/characterization-execute-offline.R
+  s_895f6ebe145fd3::t_ea176b7bb69e27 109,128,148
+docs/development/checked-executor.md
+  s_895f6ebe145fd3::t_ea176b7bb69e27 95-115,118-132,136
+  s_895f6ebe145fd3::t_f5a7621eff9825 116-117,133-135
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4bf7e7fc52148fcfdac3dc0a87027b340345f39b",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
