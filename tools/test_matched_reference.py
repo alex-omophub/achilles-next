@@ -59,6 +59,28 @@ def load_model(pg,model,version):
     return dict(schema=schema,marker=marker,manifest_sha256=digest,version=version)
 
 
+def verify_reference_locks(pg, schema, queries):
+    """A standalone query should lock only the source tables its report needs."""
+    cases = {
+        'core.person.count': {'person'},
+        'core.observation_period.first_interval_30d_count': {'person', 'observation_period'},
+    }
+    for metric, expected in cases.items():
+        query = queries[metric]['sql']
+        locked = pg.value(f"""
+            BEGIN READ ONLY;
+            SET LOCAL statement_timeout='30s';
+            SELECT count(*) FROM ({query}) result;
+            SELECT string_agg(DISTINCT c.relname, ',' ORDER BY c.relname)
+            FROM pg_locks l JOIN pg_class c ON c.oid=l.relation
+            WHERE l.pid=pg_backend_pid() AND l.granted AND c.relkind='r'
+              AND c.relnamespace={literal(schema)}::regnamespace;
+            ROLLBACK;
+        """, role='runner').splitlines()
+        need(len(locked) == 2 and set(locked[1].split(',')) == expected,
+             f'Unexpected source table locks for {metric}')
+
+
 def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--state',type=Path,required=True);p.add_argument('--config',type=Path,required=True);p.add_argument('--output-dir',type=Path,required=True)
@@ -84,6 +106,8 @@ def main():
             one=load_model(pg,model,version);loaded.append(one);inputs.append(dict(one,case_id=case_id))
         for one in inputs:
             model=models[one['case_id']];compiled=Reference(one['schema'],model['columns'],model.get('denied_tables',[])).manifest()
+            if one['case_id']=='generated-5.5':
+                verify_reference_locks(pg, one['schema'], compiled['queries'])
             name=one['case_id']+'-reference.json';(out/name).write_text(json.dumps(compiled,indent=2)+'\n');one['compiled']=name
             one['model']=one['case_id']+'-model.json';(out/one['model']).write_text(json.dumps(model,indent=2)+'\n')
             expectations=numerical_expectations(case,one['version']) if one['case_id'].startswith('adversarial-') else dict(kind='generated',oracle=case_oracles[one['case_id']])
