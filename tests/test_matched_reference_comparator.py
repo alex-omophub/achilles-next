@@ -106,8 +106,10 @@ class MatchedReferenceTest(unittest.TestCase):
                           "THEN RAISE EXCEPTION 'CARE_SITE must be inaccessible in this fixture'; END IF; END $$;")
             if status in ('denied','absent'):
                 self.assertNotIn('"pg_temp"."care_site"', query)
+            # The fixture owner can create this session-local table and revoke its
+            # own SELECT privilege. The fixture setup grants the runner no TEMP.
             rows = json.loads(pg.value(f"""BEGIN; SET LOCAL statement_timeout='5s'; {setup}
-                WITH facts AS ({facts}) SELECT json_agg(r) FROM ({query}) r; ROLLBACK;""", role='runner'))
+                WITH facts AS ({facts}) SELECT json_agg(r) FROM ({query}) r; ROLLBACK;""", role='owner'))
             actual = []
             for row in rows:
                 dims = row['dimensions']; tag = dims['setting_concept_tag']; values = row['values'] or {}
