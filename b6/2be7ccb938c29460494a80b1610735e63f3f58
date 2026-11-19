@@ -1,0 +1,19 @@
+tools/matched_reference_sql.py
+  s_895f6ebe145fd3::t_eb9799ca7ef45d 168,275,280-281,331,334-336,339-346,355,377
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b62be7ccb938c29460494a80b1610735e63f3f58",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
