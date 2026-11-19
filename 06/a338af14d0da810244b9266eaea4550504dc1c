@@ -1,0 +1,22 @@
+tests/tracer/result-export.R
+  s_3e206b4a2cf4c3::t_317bcd5e2c3b1a 89-92,100-103,110-112
+docs/development/bounded-validation.md
+  s_3e206b4a2cf4c3::t_317bcd5e2c3b1a 35-39
+  s_3e206b4a2cf4c3::t_0a3ffed4a5b9f6 40-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "06a338af14d0da810244b9266eaea4550504dc1c",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
