@@ -1,0 +1,23 @@
+docs/development/persistence.md
+  s_5476db3ca8c879::t_c428a42163ccc2 28-33
+inst/sql/postgresql/result-store.sql
+  s_5476db3ca8c879::t_6c3efa22eb3f60 221,227-240
+tests/tracer/persistence-safety.R
+  s_5476db3ca8c879::t_98870b450bec90 27-39
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "182203be8876835b66b9342e991c53cb1ecab7ad",
+  "prompts": {},
+  "sessions": {
+    "s_5476db3ca8c879": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f36f-9a35-7411-8bcd-26e351cf4860",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
