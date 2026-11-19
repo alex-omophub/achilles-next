@@ -3,13 +3,14 @@
 generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,program,storeConnectionDetails,resultsSchema,
   maxScratchBytes=1024^3,scratchParent=tempdir(),maxStageBytes=64*1024^2,maxAggregateRows=1000000L,
   maxAggregateBytes=256*1024^2,maxRowBytes=131072L,fetchSize=128L,statementTimeoutMs=30000L,
-  maxElapsedSeconds=3600,check=NULL) {
+  maxElapsedSeconds=3600,check=NULL,transferStrategy="spool") {
   clock<-proc.time();wall<-function()proc.time()[["elapsed"]];started<-wall();ids<-NULL;capture<-NULL;captureFailure<-NULL;sourceControlReason<-NULL
   validation<-.v2_scratch_capture(function() {
     program<-.sql_execution_program(program)
     limits<-.sql_execution_limits(maxStageBytes,maxAggregateRows,maxAggregateBytes,maxRowBytes,fetchSize,
       statementTimeoutMs,maxElapsedSeconds,function(...)NULL,check)
     .v2_scratch_limit(maxScratchBytes)
+    .candidate_need(.string(transferStrategy) && transferStrategy %in% c("spool","postgresql_copy"),"candidate.invalid_limits")
     .candidate_need(inherits(sourceConnectionDetails,"ConnectionDetails")&&identical(sourceConnectionDetails$dbms,"postgresql")&&
       inherits(storeConnectionDetails,"ConnectionDetails")&&identical(storeConnectionDetails$dbms,"postgresql"),"candidate.invalid_limits")
     .candidate_need(.batch_identifier(resultsSchema)&&!resultsSchema%in%c("public","information_schema")&&
@@ -55,20 +56,59 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
     preflight<-.candidate_store_transaction(storeConnectionDetails,resultsSchema,function(tx).candidate_readiness(tx,assets),limits,tick,ids,TRUE,startedClock=started)
     budget<-.v2_scratch_budget(maxScratchBytes,maxFiles=512L)
     directory<-tempfile("achillesnext-candidate-",tmpdir=validation$value$parent)
-    suspendInterrupts({capture<<-.candidate_capture(directory,assets,budget,tick);allowInterrupts(Sys.sleep(0))})
-    receipt<-executeCharacterizationSql(sourceConnectionDetails,program,function(mid,item) {
+    fileBudget <- if (transferStrategy=="postgresql_copy") .candidate_copy_file_budget(budget) else budget
+    suspendInterrupts({capture<<-.candidate_capture(directory,assets,fileBudget,tick);allowInterrupts(Sys.sleep(0))})
+    capture_source <- function(copy=NULL) {
+      execute <- if (is.null(copy)) executeCharacterizationSql else function(...) .execute_characterization_sql(...,copy=copy)
+      execute(sourceConnectionDetails,program,function(mid,item) {
       out<-.v2_scratch_capture(function()capture$visit(mid,item))
       if(!out$ok){captureFailure<<-out$failure;stop(out$failure)}
     },maxStageBytes=maxStageBytes,maxAggregateRows=maxAggregateRows,maxAggregateBytes=maxAggregateBytes,
       maxRowBytes=maxRowBytes,fetchSize=fetchSize,statementTimeoutMs=statementTimeoutMs,
       maxElapsedSeconds=max(0.001,maxElapsedSeconds-(wall()-started)),check=sourceCheck)
-    tick();capture$complete(receipt,program)
-    store<-.candidate_store_transaction(storeConnectionDetails,resultsSchema,function(tx) {
-      persistence<-.candidate_import(tx,capture,receipt,program,ids,tick)
-      stats<-capture$stats();.candidate_need(cleanup(),"candidate.cleanup_failed");tick()
-      list(persistence=persistence,scratch=stats)
-    },limits,tick,ids,state=storeOutcome,startedClock=started)
+    }
+    copy_plan <- if (transferStrategy=="postgresql_copy") .pg_count_capture_plan(program) else NULL
+    receipt <- NULL
+    if (is.null(copy_plan)) {
+      receipt <- capture_source()
+      tick();capture$complete(receipt,program)
+    }
+    persist <- function(tx) {
+      copy <- NULL
+      if (!is.null(copy_plan)) {
+        copy <- .candidate_copy_workspace(tx,copy_plan,capture,budget,limits,tick,started)
+        source <- .v2_scratch_capture(function() capture_source(copy))
+        if (!source$ok) {
+          if (is.null(captureFailure)) captureFailure <<- source$failure
+          stop(source$failure)
+        }
+        receipt <<- source$value
+        tick();capture$complete(receipt,program,copy$complete(receipt))
+      }
+      persistenceStarted <- wall()
+      persistence <- if (is.null(copy)) .candidate_import(tx,capture,receipt,program,ids,tick) else
+        .candidate_import(tx,capture,receipt,program,ids,tick,copy=copy)
+      stats <- capture$stats()
+      if (!is.null(copy)) {
+        stats$spooled_bytes <- stats$bytes
+        stats$bytes <- budget$inspect()$bytes
+        stats$spooled_rows <- stats$rows
+        stats$rows <- receipt$rows
+        stats$copy <- copy$stats()
+        copy$drop()
+      }
+      .candidate_need(cleanup(),"candidate.cleanup_failed");tick()
+      list(persistence=persistence,scratch=stats,persistence_wall_ms=.sql_execution_ms(wall()-persistenceStarted))
+    }
+    store<-.candidate_store_transaction(storeConnectionDetails,resultsSchema,persist,
+      limits,tick,ids,state=storeOutcome,startedClock=started)
     tick()
+    if (!is.null(copy_plan)) {
+      store$telemetry$store_transaction_wall_ms <- store$telemetry$wall_ms
+      store$telemetry$wall_ms <- store$value$persistence_wall_ms
+      store$telemetry$wall_scope <- "Import, ordered verification and temporary cleanup after source disconnect"
+      store$telemetry$statement_scope <- "Store transaction helper queries; count COPY relay and per-page accounting are reported separately"
+    }
     c(ids,.object(profile_id=assets$profile$profile_id,profile_sha256=assets$hash,state="building",
       generated_metrics=as.list(names(assets$metrics)),expected_metric_count="142",generated_metric_count="142",
       publishable=FALSE,profile_complete=TRUE,publication_changed=FALSE,source_store_separate=TRUE,
@@ -78,7 +118,8 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
         store_persistence=store$telemetry,source_capture=receipt$telemetry)))
   })
   if(!result$ok) {
-    failure<-if(!is.null(captureFailure))captureFailure else result$failure
+    storeCleanupFailed <- inherits(result$failure,"AchillesCandidateFailure") && identical(result$failure$reason_code,"candidate.cleanup_failed")
+    failure<-if(!is.null(captureFailure) && !storeCleanupFailed)captureFailure else result$failure
     cleaned<-suspendInterrupts(cleanup())
     if(storeOutcome$outcome%in%c("unknown","committed")) {
       code<-if(storeOutcome$outcome=="unknown")"candidate.commit_unknown" else
@@ -91,6 +132,7 @@ generateCharacterizationCandidateFromSql <- function(sourceConnectionDetails,pro
     code<-if(!cleaned)"candidate.cleanup_failed" else if(inherits(failure,"AchillesCandidateFailure"))failure$reason_code else
       if(inherits(failure,"achillesnext_scratch_error"))paste0("candidate.scratch_",failure$code) else
       if(inherits(failure,"interrupt"))"candidate.cancelled" else if(inherits(failure,"AchillesSqlExecutionFailure"))
+        if(transferStrategy=="postgresql_copy" && identical(failure$reason_code,"execution.cleanup_failed"))"candidate.cleanup_failed" else
         if(identical(failure$reason_code,"execution.cancelled")&&!is.null(sourceControlReason))sourceControlReason else
           switch(failure$reason_code,execution.cancelled="candidate.cancelled",execution.elapsed_limit="candidate.elapsed_limit","candidate.source_failed") else "candidate.invalid_capture"
     cause<-if(inherits(failure,"AchillesSqlExecutionFailure"))failure$reason_code else NULL

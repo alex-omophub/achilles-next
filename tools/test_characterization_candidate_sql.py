@@ -101,7 +101,9 @@ def main():
     parser.add_argument('--state', required=True, type=Path)
     parser.add_argument('--config', required=True, type=Path)
     parser.add_argument('--output-dir', required=True, type=Path)
-    parser.add_argument('--full-matrix', action='store_true')
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument('--full-matrix', action='store_true')
+    mode.add_argument('--copy-only', action='store_true', help='Run only the PostgreSQL COPY/rollback/parity fixture')
     parser.add_argument('--admin-host', default='/tmp')
     parser.add_argument('--admin-user')
     parser.add_argument('--port', type=int, default=5432)
@@ -112,6 +114,8 @@ def main():
     empty = dict(case, id='empty_source', person=[], events=[], observation_period=[])
     cases = {case['id']: case, empty['id']: empty}
     matrix = [(case, '5.5'), (empty, '5.5')]
+    if args.copy_only:
+        matrix = [(case, '5.5')]
     if args.full_matrix:
         tail = core.observation_tail_fixture(case)
         cases[tail['id']] = tail
@@ -135,7 +139,7 @@ def main():
                       f'NOREPLICATION NOBYPASSRLS PASSWORD {literal(value["password"])}; '
                       f'GRANT CONNECT ON DATABASE {identifier(DB)} TO {identifier(role)};')
             created.append(role)
-        admin.run(f'GRANT TEMPORARY ON DATABASE {identifier(DB)} TO {identifier(roles["source"]["user"])};')
+        admin.run(f'GRANT TEMPORARY ON DATABASE {identifier(DB)} TO {identifier(roles["source"]["user"])}, {identifier(roles["store"]["user"])};')
         with tempfile.TemporaryDirectory(prefix='achilles-bridge-') as folder:
             path = Path(folder) / 'roles.json'
             path.touch(mode=0o600)
@@ -148,7 +152,12 @@ def main():
             env['ACHILLES_NEXT_SERVING_FIXTURE'] = str(reader_path)
             env['ACHILLES_NEXT_FIXTURE_STATE'] = str(args.state.resolve())
             subprocess.run(['Rscript', '--vanilla', 'tests/tracer/characterization-candidate-sql-native.R',
-                            str(args.config.resolve()), str(out)], cwd=ROOT, env=env, check=True)
+                            str(args.config.resolve()), str(out)] + (['--copy-only'] if args.copy_only else []), cwd=ROOT, env=env, check=True)
+        if args.copy_only:
+            proof = json.loads((out / 'copy-result.json').read_text())
+            assert proof['metrics'] == 45 and proof['parity_reports'] == 138 and proof['paired_pages'] > 0
+            print('PostgreSQL COPY cancellation, rollback and exact numerical parity passed')
+            return
         report = json.loads((out / 'report.json').read_text())
         verify_matrix_coverage(report, matrix)
         # Full-matrix runs contain repeated case IDs at different versions.

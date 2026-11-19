@@ -55,7 +55,7 @@
     io(function()readBin(connection,"raw",n=limit+1L))
   }
   controls<-NULL
-  finish<-function(receipt,program) {
+  finish<-function(receipt,program,transferred=list()) {
     guard();.nv_need(!complete,"Candidate capture already completed");tick();flushFrames();closeWriter()
     .nv_need(receipt$state=="succeeded"&&identical(receipt$program_sha256,program$program_sha256)&&
       identical(.json(receipt$profile),.json(program$batch$profile))&&identical(.json(receipt$source),.json(program$batch$source))&&
@@ -64,8 +64,13 @@
     .nv_need(setequal(names(receipt$inventory),ids)&&setequal(names(receipt$metric_rows),ids),"Incomplete source inventory")
     total<-"0"
     for(mid in ids) {
-      .nv_need(identical(counts[[mid]],receipt$metric_rows[[mid]])&&identical(counts[[mid]],receipt$inventory[[mid]]$rows),"Capture row count mismatch")
-      total<-.nv_add(total,counts[[mid]])
+      captured <- counts[[mid]]
+      if (mid %in% names(transferred)) {
+        .nv_need(identical(captured,"0"),"Metric captured through two transports")
+        captured <- transferred[[mid]]
+      }
+      .nv_need(identical(captured,receipt$metric_rows[[mid]])&&identical(captured,receipt$inventory[[mid]]$rows),"Capture row count mismatch")
+      total<-.nv_add(total,captured)
     }
     .nv_need(identical(total,receipt$rows),"Capture total mismatch")
     .sql_execution_audit_totals(.json(receipt$audit_totals))

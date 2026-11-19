@@ -145,10 +145,11 @@ testCharacterizationCandidateStoreTimeouts<-function(details) {
   if(!methods::isClass('AchillesCandidateClockConnection'))
     methods::setClass('AchillesCandidateClockConnection',slots=c(jConnection='environment'))
   previous<-list(connect=get('connect',asNamespace('DatabaseConnector')),
-    disconnect=get('disconnect',asNamespace('DatabaseConnector')),jcall=get('.jcall',asNamespace('rJava')))
+    disconnect=get('disconnect',asNamespace('DatabaseConnector')),jcall=get('.jcall',asNamespace('rJava')),jcheck=get('.jcheck',asNamespace('rJava')))
   on.exit({assignInNamespace('connect',previous$connect,ns='DatabaseConnector')
     assignInNamespace('disconnect',previous$disconnect,ns='DatabaseConnector')
-    assignInNamespace('.jcall',previous$jcall,ns='rJava')},add=TRUE)
+    assignInNamespace('.jcall',previous$jcall,ns='rJava');assignInNamespace('.jcheck',previous$jcheck,ns='rJava')},add=TRUE)
+    assignInNamespace('.jcheck',function(...)invisible(NULL),ns='rJava')
   trials<-list(list(now=7.4,statement=30000,expected=3L),list(now=7.4,statement=1500,expected=2L),
     list(now=9.9,statement=30000,expected=1L),list(now=7.4,acquisition=9.1,statement=30000,expected=1L),
     list(now=7.4,acquisition=10.1,statement=30000,expired=TRUE))
@@ -159,6 +160,7 @@ testCharacterizationCandidateStoreTimeouts<-function(details) {
     assignInNamespace('disconnect',function(...) {disconnects<<-disconnects+1L;invisible(NULL)},ns='DatabaseConnector')
     assignInNamespace('.jcall',function(obj,returnSig='V',method,...) {
       args<-list(...)
+      if(method=="isClosed")return(disconnects>0L)
       if(method%in%c('createStatement','prepareStatement')) {
         if(!is.null(trial$acquisition))now<<-trial$acquisition
         statement<-new.env(parent=emptyenv());statement$kind<-if(method=='createStatement')'write' else 'read';return(statement)
