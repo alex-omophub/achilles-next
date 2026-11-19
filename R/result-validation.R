@@ -1,6 +1,12 @@
 # JDBC strings preserve NUMERIC exactly. Each cursor fetch is bounded; it never
 # uses DatabaseConnector's data-frame conversion for aggregate values.
-.store_commit <- function(jdbc) rJava::.jcall(jdbc, "V", "commit")
+.store_commit <- function(jdbc) {
+  rJava::.jcall(jdbc, "V", "commit")
+  # A void JNI method can leave a deferred constraint or connection error
+  # pending until the next call. Verify the acknowledgement at this boundary.
+  rJava::.jcheck()
+  invisible(NULL)
+}
 .store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L, queryTimeoutSeconds = 60L,sourceRead=FALSE,state=NULL) {
   .nv_need(identical(details$dbms, "postgresql"), "PostgreSQL is required")
   .nv_need(identical(sourceRead,TRUE)||identical(sourceRead,FALSE))
