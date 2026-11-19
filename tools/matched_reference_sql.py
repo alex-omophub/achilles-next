@@ -162,13 +162,11 @@ class Reference:
         rid='e.person_id' if domain=='death' else c(d['record_id'])
         known=f'EXISTS(SELECT FROM {self.table("concept")} v WHERE v.concept_id={concept})'
         right=f'EXISTS(SELECT FROM {self.table("concept")} v WHERE v.concept_id={concept} AND v.domain_id IN ({",".join(lit(s) for s in d["expected_concept_domains"])}))'
-        observed=f'EXISTS(SELECT FROM unions u WHERE u.person_id=e.person_id AND {day} BETWEEN u.lo AND u.hi)'
         valid=valid_date(day)
         fields=dict(person_id='e.person_id',concept_id=concept,concept_tag=tag(concept),event_date=day,end_date=end,
                     linked='p.person_id IS NOT NULL',gender_concept_id='p.gender_concept_id',year_of_birth='p.year_of_birth',
-                    valid_date=valid,observed=observed,known_concept=known,right_domain=right,
+                    valid_date=valid,known_concept=known,right_domain=right,
                     duplicated=f'{rid} IS NOT NULL AND {rid} IN (SELECT duplicate_id FROM duplicates)',
-                    qualification=f"CASE WHEN p.person_id IS NULL THEN 'null_or_orphan_person' WHEN NOT ({valid}) THEN 'undated' WHEN NOT EXISTS(SELECT FROM unions u WHERE u.person_id=e.person_id) THEN 'no_valid_intervals' WHEN {observed} THEN 'inside_valid_union' ELSE 'outside_valid_union' END",
                     source_tag="jsonb_build_object('kind','schema_absent')" if d['source_concept'] is None else tag(c(d['source_concept'])),
                     source_state=f"CASE WHEN {c(d['source_text'],'NULL::text')} IS NULL THEN 'null' WHEN btrim({c(d['source_text'],'NULL::text')},' ')='' THEN 'blank' ELSE 'nonblank' END",type_tag=tag(c(d['type_concept'])))
         extra_names=['condition_status_concept_id','days_supply','refills','quantity','care_site_id','value_as_number','value_as_concept_id','unit_concept_id','operator_concept_id','range_low','range_high','qualifier_concept_id','anatomic_site_concept_id','disease_status_concept_id','visit_occurrence_id','visit_detail_id']
@@ -190,6 +188,10 @@ class Reference:
             return self.capture_count(domain,prefix=='observed')
         if domain in DOMAINS and suffix=='frequency_histogram':
             return self.frequency_histogram(domain)
+        if domain in DOMAINS and suffix=='observation_qualification_count':
+            return self.observation_qualification(domain)
+        if domain in DOMAINS and prefix=='observed' and suffix=='year_gender_age_count':
+            return self.observed_demographics(domain)
         if domain=='person':query=self.person(suffix)
         elif domain=='observation_period':query=self.observation(suffix)
         elif domain=='density':query=self.density(suffix)
@@ -259,7 +261,6 @@ class Reference:
             col=ident(entry['event_date'])
             bounds.append(f"SELECT min({col}),max({col}) FROM {self.table(entry['table'])} "
                           f"WHERE {col} BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'")
-        observation=self.table('observation_period')
         person=self.table('person')
         scopes=self.periods('bounds',False)
         # Full and undated have distinct period kinds and the same null start.
@@ -271,18 +272,13 @@ class Reference:
         if observed:
             # A person's coalesced coverage has one row irrespective of the
             # number of overlapping, adjacent or disjoint source intervals.
-            observed_cte=", coverage AS (SELECT person_id,range_agg(daterange(lo,hi,'[]')) AS spans FROM intervals GROUP BY person_id)"
+            observed_cte=", "+self.coverage_from_intervals()
             observed_join=f"JOIN coverage v ON v.person_id=e.person_id AND {day} <@ v.spans"
         # Grouping sets count distinct linked people at each requested grain.
         # Grouping(concept_id) separates all concepts from the real null concept,
         # while the last join also distinguishes null from the numeric ID zero.
-        return f"""WITH intervals AS (
-          SELECT o.person_id,o.observation_period_start_date AS lo,o.observation_period_end_date AS hi
-          FROM {observation} o WHERE {valid_date('o.observation_period_start_date')}
-            AND {valid_date('o.observation_period_end_date')}
-            AND o.observation_period_start_date<=o.observation_period_end_date
-            AND EXISTS(SELECT FROM {person} p WHERE p.person_id=o.person_id)
-        ), extrema AS ({' UNION ALL '.join(bounds)}), bounds AS (SELECT min(lo) AS lo,max(hi) AS hi FROM extrema)
+        return f"""WITH {self.observation_intervals()}, extrema AS ({' UNION ALL '.join(bounds)}),
+        bounds AS (SELECT min(lo) AS lo,max(hi) AS hi FROM extrema)
         {observed_cte}, scopes AS ({scopes}{undated}), concepts AS (
           SELECT DISTINCT {concept} AS concept_id,0 AS all_concepts FROM {events} e
           UNION ALL SELECT NULL::bigint,1
@@ -332,14 +328,70 @@ class Reference:
           jsonb_build_object('person_count',people::text) AS values
         FROM histogram"""
 
+    def observation_intervals(self):
+        observation=self.table('observation_period')
+        person=self.table('person')
+        return f"""intervals AS (
+          SELECT o.person_id,o.observation_period_start_date AS lo,o.observation_period_end_date AS hi
+          FROM {observation} o WHERE {valid_date('o.observation_period_start_date')}
+            AND {valid_date('o.observation_period_end_date')}
+            AND o.observation_period_start_date<=o.observation_period_end_date
+            AND EXISTS(SELECT FROM {person} p WHERE p.person_id=o.person_id)
+        )"""
+
+    @staticmethod
+    def coverage_from_intervals():
+        return """coverage AS (
+          SELECT person_id,range_agg(daterange(lo,hi,'[]')) AS spans
+          FROM intervals GROUP BY person_id
+        )"""
+
+    def observation_qualification(self,domain):
+        definition=PROFILE['domains'][domain]
+        events=self.table(definition['table'])
+        concept=self.col(domain,definition['concept'])
+        day=self.col(domain,definition['event_date'],'NULL::date')
+        person=self.table('person')
+        return f"""WITH {self.observation_intervals()}, {self.coverage_from_intervals()}, events AS (
+          SELECT {concept} AS concept_id,p.person_id,
+            CASE WHEN p.person_id IS NULL THEN 'null_or_orphan_person'
+                 WHEN NOT ({valid_date(day)}) THEN 'undated'
+                 WHEN c.spans IS NULL THEN 'no_valid_intervals'
+                 WHEN {day} <@ c.spans THEN 'inside_valid_union'
+                 ELSE 'outside_valid_union' END AS reason
+          FROM {events} e LEFT JOIN {person} p ON p.person_id=e.person_id
+          LEFT JOIN coverage c ON c.person_id=p.person_id
+        )
+        SELECT 'counts'::text AS row_kind,
+          jsonb_build_object('concept_tag',{tag('concept_id')},'reason',reason) AS dimensions,
+          jsonb_build_object('record_count',count(*)::text,'person_count',count(DISTINCT person_id)::text) AS values
+        FROM events GROUP BY concept_id,reason"""
+
+    def observed_demographics(self,domain):
+        definition=PROFILE['domains'][domain]
+        events=self.table(definition['table'])
+        concept=self.col(domain,definition['concept'])
+        day=self.col(domain,definition['event_date'],'NULL::date')
+        person=self.table('person')
+        age=f'(extract(year FROM {day})::numeric-p.year_of_birth::numeric)'
+        return f"""WITH {self.observation_intervals()}, {self.coverage_from_intervals()}, inside AS (
+          SELECT {concept} AS concept_id,p.person_id,p.gender_concept_id,
+            extract(year FROM {day})::integer AS year,
+            CASE WHEN p.year_of_birth BETWEEN 1 AND 9999 AND {age} BETWEEN 0 AND 130
+                 THEN div({age},10)::text ELSE 'unknown' END AS age_decile
+          FROM {events} e JOIN {person} p ON p.person_id=e.person_id
+          JOIN coverage c ON c.person_id=p.person_id AND {day} <@ c.spans
+        )
+        SELECT 'counts'::text AS row_kind,
+          jsonb_build_object('concept_tag',CASE WHEN grouping(concept_id)=1 THEN jsonb_build_object('kind','all') ELSE {tag('concept_id')} END,
+            'year',year::text,'gender_concept_id',{text('gender_concept_id')},'year_age_decile',age_decile) AS dimensions,
+          jsonb_build_object('person_count',count(DISTINCT person_id)::text) AS values
+        FROM inside GROUP BY GROUPING SETS ((concept_id,year,gender_concept_id,age_decile),(year,gender_concept_id,age_decile))"""
+
     def domain(self,domain,suffix,observed):
         concept={'concept_tag':'concept_tag'};reasons=PROFILE['contracts']['eligibility-reasons']
-        if observed and suffix=='year_gender_age_count':
-            age='extract(year FROM event_date)::numeric-year_of_birth::numeric'
-            fields=dict(year='extract(year FROM event_date)::integer::text',gender_concept_id=text('gender_concept_id'),year_age_decile=f"CASE WHEN year_of_birth BETWEEN 1 AND 9999 AND {age} BETWEEN 0 AND 130 THEN div({age},10)::text ELSE 'unknown' END")
-            return ' UNION ALL '.join(grouped('(SELECT * FROM facts WHERE observed) q',obj(concept_tag=ct,**fields),dict(person_count='count(DISTINCT person_id)::text')) for ct in ['concept_tag',"jsonb_build_object('kind','all')"])
         dimensions={'source_count':dict(source_concept_tag='source_tag',source_value_state='source_state'),
-                    'type_count':dict(type_concept_tag='type_tag'),'observation_qualification_count':dict(reason='qualification'),
+                    'type_count':dict(type_concept_tag='type_tag'),
                     'status_type_count':dict(status_concept_tag=tag('condition_status_concept_id'),type_concept_tag='type_tag'),
                     'unit_count':dict(unit_concept_tag=tag('unit_concept_id')),'coded_value_count':dict(value_concept_tag=tag('value_as_concept_id')),
                     'operator_count':dict(raw_operator_tag=tag('operator_concept_id')),'qualifier_count':dict(qualifier_concept_tag=tag('qualifier_concept_id'))}
