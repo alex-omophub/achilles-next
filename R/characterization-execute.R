@@ -52,6 +52,12 @@
 executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageBytes=64*1024^2,
   maxAggregateRows=1000000L,maxAggregateBytes=256*1024^2,maxRowBytes=131072L,fetchSize=128L,
   statementTimeoutMs=30000L,maxElapsedSeconds=3600,check=NULL) {
+  .execute_characterization_sql(connectionDetails,program,visit,maxStageBytes,maxAggregateRows,maxAggregateBytes,
+    maxRowBytes,fetchSize,statementTimeoutMs,maxElapsedSeconds,check)
+}
+
+.execute_characterization_sql <- function(connectionDetails,program,visit,maxStageBytes,maxAggregateRows,
+  maxAggregateBytes,maxRowBytes,fetchSize,statementTimeoutMs,maxElapsedSeconds,check,copy=NULL) {
   clock<-proc.time();wall<-function()proc.time()[["elapsed"]]
   startedClock<-wall();program<-.sql_execution_program(program)
   limits<-.sql_execution_limits(maxStageBytes,maxAggregateRows,maxAggregateBytes,maxRowBytes,fetchSize,
@@ -71,12 +77,12 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
   cleanup<-function() {
     if(cleaned)return(TRUE)
     if(!rollbackConfirmed)rollbackConfirmed<<-is.null(jdbc)||isTRUE(tryCatch({
-      rJava::.jcall(jdbc,"V","rollback");TRUE
+      .sql_owned_rollback(jdbc)
     },error=function(e)FALSE,interrupt=function(e)FALSE))
     # Attempt disconnect even when rollback failed. Retain each unconfirmed
     # action for on.exit retry; network failure is never a rollback guarantee.
     if(!disconnectConfirmed)disconnectConfirmed<<-is.null(connection)||isTRUE(tryCatch({
-      DatabaseConnector::disconnect(connection);TRUE
+      .sql_owned_disconnect(connection,jdbc)
     },error=function(e)FALSE,interrupt=function(e)FALSE))
     cleaned<<-rollbackConfirmed&&disconnectConfirmed;cleaned
   }
@@ -100,6 +106,7 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
       .sql_execution_need(.v2_count(bytes),"execution.invalid_metadata")
       if(.nv_unsigned_cmp(bytes,stagePeak)>0)stagePeak<<-bytes
       .sql_execution_need(.nv_unsigned_cmp(bytes,format(limits$max_stage_bytes,scientific=FALSE,trim=TRUE))<=0,"execution.stage_limit")
+      if (!is.null(copy)) copy$source_stage(as.numeric(bytes))
       invisible(NULL)
     }
     for(step in program$steps) {
@@ -161,8 +168,15 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
       if(metadata)"'computed'::text" else "state",",'reason_code',",if(metadata)"NULL::text" else "reason_code",")::text FROM (",spec$sql,") output")
     for(mid in numericIds) {
       spec<-program$outputs[[mid]]
-      transport$stream(outputSql(spec,FALSE),function(text)deliver(mid,text,FALSE),paste0("output.",mid),"aggregate",
-        maxRows=limits$max_aggregate_rows-rows,maxBytes=limits$max_aggregate_bytes-bytes)
+      if (!is.null(copy) && mid %in% copy$metrics) {
+        received <- copy$receive(jdbc,mid,limits$max_aggregate_rows-rows,limits$max_aggregate_bytes-bytes)
+        rows <- rows + received$rows
+        bytes <- bytes + received$bytes
+        metricRows[[mid]] <- format(received$rows,scientific=FALSE,trim=TRUE)
+      } else {
+        transport$stream(outputSql(spec,FALSE),function(text)deliver(mid,text,FALSE),paste0("output.",mid),"aggregate",
+          maxRows=limits$max_aggregate_rows-rows,maxBytes=limits$max_aggregate_bytes-bytes)
+      }
       .sql_execution_need(identical(metricRows[[mid]],preInventory[[mid]]$rows),"execution.invalid_metadata")
     }
     ended<-.stamp();timings<-.core_timing(stageTimings,.sql_execution_ms(wall()-generationClock))
@@ -191,6 +205,7 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
     telemetry$client_decode_visit_wall_ms<-.sql_execution_ms(decodeVisitSeconds)
     telemetry$engine<-.object(cpu_ms=NULL,peak_memory_bytes=NULL,query_id=NULL,reason_code="postgresql.jdbc_not_attributed")
     telemetry$stage_peak_bytes<-stagePeak
+    if (!is.null(copy)) telemetry$count_transfer <- copy$capture_stats()
     telemetry$enforcement<-"Stage bytes are sampled after CREATE/INDEX/DROP, not hard disk reservation; cancellation/deadline checks occur between JDBC calls and rows, with per-statement server/JDBC timeout"
     .object(format_version="1.0.0",kind="characterization_execution_receipt",state="succeeded",program_sha256=program$program_sha256,
       profile=program$batch$profile,source=program$batch$source,observed_schema_sha256=capabilities$schema_sha256,capabilities=capabilities$values,
@@ -204,7 +219,8 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
     interrupt=function(e)list(value=NULL,failure=e))
   if(!is.null(outcome$failure)) {
     .sql_execution_need(cleanup(),"execution.cleanup_failed")
-    if(inherits(outcome$failure,"AchillesSqlExecutionFailure"))stop(outcome$failure)
+    if(inherits(outcome$failure,"AchillesSqlExecutionFailure") || (!is.null(copy) &&
+      (inherits(outcome$failure,"AchillesCandidateFailure") || inherits(outcome$failure,"achillesnext_scratch_error")))) stop(outcome$failure)
     .sql_execution_error(if(inherits(outcome$failure,"interrupt"))"execution.cancelled" else "execution.query_failed")
   }
   result<-outcome$value
@@ -214,4 +230,18 @@ executeCharacterizationSql <- function(connectionDetails,program,visit,maxStageB
   result$telemetry$client_process_cpu_ms<-.sql_execution_ms(sum(used[c("user.self","sys.self")]))
   result$telemetry$client_call_wall_ms<-.sql_execution_ms(wall()-startedClock)
   result
+}
+
+# A void JNI return can leave a pending exception. A closed handle cannot
+# acknowledge rollback, even when the driver reports an idle transaction.
+.sql_owned_rollback <- function(jdbc) {
+  if (rJava::.jcall(jdbc,"Z","isClosed")) return(FALSE)
+  rJava::.jcall(jdbc,"V","rollback")
+  rJava::.jcheck()
+  TRUE
+}
+.sql_owned_disconnect <- function(connection,jdbc) {
+  DatabaseConnector::disconnect(connection)
+  rJava::.jcheck()
+  is.null(jdbc) || isTRUE(rJava::.jcall(jdbc,"Z","isClosed"))
 }

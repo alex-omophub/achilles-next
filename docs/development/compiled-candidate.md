@@ -16,7 +16,7 @@ candidate <- generateCharacterizationCandidateFromSql(
 )
 ```
 
-The function checks the store without writing, executes the source program and
+With the default `transferStrategy = "spool"`, the function checks the store without writing, executes the source program and
 captures its restricted output privately. Only after the source executor returns
 its successful cleanup receipt does a separate store transaction begin importing
 rows. Canonical identities and denominator references come from the installed
@@ -55,6 +55,45 @@ remains a separate explicit step.
 The source-only executor's timeout, cancellation and concurrent-DDL limitations
 continue to apply. This path does not establish large-source performance results
 or support for a second SQL engine.
+
+## PostgreSQL binary COPY
+
+Set `transferStrategy = "postgresql_copy"` to transfer registered count reports
+to a temporary table on the result-store session. This requires TEMPORARY
+privilege on the store database in addition to the usual producer privileges.
+The source still requires read access and TEMPORARY. Other reports use the
+existing local capture. Source and store may run on separate PostgreSQL hosts.
+
+The transaction writes to permanent result tables after the source has rolled
+back and disconnected. Ordered checksums cover both canonical rows and complete
+transferred tuples, including metric IDs, row keys and original byte charges.
+Import reconciles saved dataset, cell, denominator edge and release revision
+totals before commit. A failed attempt leaves the previous publication usable.
+
+COPY uses at most `min(fetchSize, 128)` rows per page and a 512 KiB binary
+buffer. Stage and scratch limits include the measured temporary table, indexes
+and sequence, checked after each page. Either limit may be exceeded briefly
+during an allocation. PostgreSQL sorts may process a complete metric before
+the first page and their work files are outside these relation measurements.
+The driver checks for cancellation between pages and applies the remaining
+statement and individual socket-read timeouts during a blocking COPY call.
+Actual engine runtime depends on its query plan and available resources.
+
+The source receipt reports transferred rows, bytes, pages and ordered digests.
+The result reports separate write totals for each transport, store verification
+time and temporary space. Store persistence wall time covers post-source work.
+The entire store transaction overlaps source generation.
+
+The maintained fixture uses restricted source and producer principals. It
+checks numerical results and denominator links, interrupts a real transfer,
+and alters a staged key before verification. Run it from a package checkout
+with the marked PostgreSQL fixture configured and the current package installed.
+
+```sh
+python3 tools/test_characterization_candidate_sql.py --copy-only \
+  --state .local/postgresql --config tools/tracer_fixture_config.R \
+  --output-dir .local/compiled-candidate-copy
+```
 
 ## Publish and open saved results
 

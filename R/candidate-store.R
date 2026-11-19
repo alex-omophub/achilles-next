@@ -14,8 +14,8 @@
   connection<-NULL;jdbc<-NULL;rollbackConfirmed<-FALSE;disconnectConfirmed<-FALSE
   commitStarted<-FALSE;commitConfirmed<-FALSE
   cleanup<-function() {
-    if(!rollbackConfirmed)rollbackConfirmed<<-is.null(jdbc)||isTRUE(tryCatch({rJava::.jcall(jdbc,"V","rollback");TRUE},error=function(e)FALSE,interrupt=function(e)FALSE))
-    if(!disconnectConfirmed)disconnectConfirmed<<-is.null(connection)||isTRUE(tryCatch({DatabaseConnector::disconnect(connection);TRUE},error=function(e)FALSE,interrupt=function(e)FALSE))
+    if(!rollbackConfirmed)rollbackConfirmed<<-is.null(jdbc)||isTRUE(tryCatch({.sql_owned_rollback(jdbc)},error=function(e)FALSE,interrupt=function(e)FALSE))
+    if(!disconnectConfirmed)disconnectConfirmed<<-is.null(connection)||isTRUE(tryCatch({.sql_owned_disconnect(connection,jdbc)},error=function(e)FALSE,interrupt=function(e)FALSE))
     rollbackConfirmed&&disconnectConfirmed
   }
   on.exit(if(!disconnectConfirmed||!rollbackConfirmed)suspendInterrupts(cleanup()))
@@ -44,7 +44,7 @@
     }
     execute(paste0("SET LOCAL statement_timeout=",limits$statement_timeout_ms));execute("SET LOCAL lock_timeout=2000")
     execute("SET LOCAL timezone='UTC'");execute("SET LOCAL datestyle='ISO,YMD'");execute("SET LOCAL standard_conforming_strings=on")
-    tx<-list(schema=paste0('"',schema,'"'),execute=execute,
+    tx<-list(schema=paste0('"',schema,'"'),execute=execute,jdbc=jdbc,
       one=function(sql){reads<<-reads+1L;transport$one(sql,paste0("store.scalar.",reads),"metadata")},
       stream=function(sql,visit){reads<<-reads+1L;transport$stream(sql,visit,paste0("store.catalog.",reads),"metadata",maxRows=4096L,maxBytes=8*1024^2)})
     value<-work(tx);tick()
@@ -73,7 +73,7 @@
   .nv_need(tx$one(paste0("SELECT count(*)::text FROM ",tx$schema,".achillesnext_profile_registry WHERE profile_sha256=",.store_literal(assets$hash)))=="1","Install matching core profile first")
   invisible(NULL)
 }
-.candidate_import <- function(tx,capture,receipt,program,ids,tick) {
+.candidate_import <- function(tx,capture,receipt,program,ids,tick,copy=NULL) {
   began<-proc.time()[["elapsed"]];tick();assets<-.v2_assets();metrics<-names(assets$metrics);source<-program$batch$source
   .candidate_readiness(tx,assets);capture$verify()
   .nv_need(identical(receipt$observed_schema_sha256,receipt$runtime_facts$observed_schema_sha256)&&
@@ -102,11 +102,16 @@
   writer<-.store_writer(tx,ids$release_id,assets);ledger<-list();capabilities<-list()
   for(mid in .candidate_order(assets)) {
     tick();count<-"0"
-    capture$replay(mid,function(row) {
+    if (!is.null(copy) && mid %in% copy$metrics) {
+      copy$persist(mid,datasets[[mid]],assets,ids)
+      next
+    }
+    replay <- if (is.null(copy)) capture$replay else copy$replay
+    replay(mid,function(row) {
       tick();spec<-.analysis_denominator(mid,row,assets,forKey=TRUE);target<-NULL
       if(!is.null(spec)&&!row$state%in%c("unsupported","unavailable")) {
         key<-.v2_row_identity(assets$rows[[spec$metric_id]],.object(row_kind="counts",dimensions=spec$dimensions))
-        target<-capture$lookup(spec$metric_id,key)
+        target<-if (!is.null(copy) && spec$metric_id %in% copy$metrics) copy$lookup(spec$metric_id,key) else capture$lookup(spec$metric_id,key)
       }
       row$denominator_refs<-.domain_denominators(mid,row,target)
       # The bounded writer validates the final row and its references before enqueueing it.
@@ -122,7 +127,9 @@
     })
     .nv_need(identical(count,datasets[[mid]]$rows),"Candidate metric count mismatch");writer$flush()
   }
-  persistence<-writer$finish();.v2_ledger_check(datasets,ledger);.v2_capability_check(datasets,capabilities)
+  persistence<-writer$finish()
+  if (!is.null(copy)) persistence <- copy$finish(persistence,receipt,ids)
+  .v2_ledger_check(datasets,ledger);.v2_capability_check(datasets,capabilities)
   .population_reconcile(tx,ids$release_id,datasets,audit$population);.domain_reconcile(tx,ids$release_id,datasets,audit$domains)
   operation<-function(id,dependencies,telemetry) {
     raw<-.v2_bytes(telemetry);.nv_need(length(raw)<=1024^2,"Candidate operation resource limit")

@@ -5,8 +5,10 @@ source('tests/tracer/characterization-execute-native.R')
 source('tests/tracer/characterization-candidate-sql-failures.R')
 source('tests/tracer/characterization-candidate-sql-publication.R')
 source('tests/tracer/characterization-candidate-sql-clock.R')
+source('tests/tracer/characterization-candidate-sql-copy.R')
 main<-function() {
-  args<-commandArgs(TRUE);stopifnot(length(args)==2L)
+  args<-commandArgs(TRUE);copyOnly<-length(args)==3L && identical(args[3],"--copy-only")
+  stopifnot(length(args)==2L || copyOnly)
   implementation<-implementationIdentity(getwd())
   env<-new.env(parent=globalenv());sys.source(args[1],env);out<-normalizePath(args[2],mustWork=TRUE)
   input<-jsonlite::fromJSON(file.path(out,'input.json'),simplifyVector=FALSE)
@@ -104,6 +106,14 @@ main<-function() {
       data.frame(table=table,column=names(x),type=vapply(x,function(t)switch(t,bigint='int8',integer='int4',t),''),
         readable=!table%in%unlist(case$denied_tables),stringsAsFactors=FALSE)
     }))
+    if (copyOnly) {
+      program <- renderCharacterizationSql(schema,sourceId,case$version,columns,numericStrategy="weighted")
+      result <- testCharacterizationCandidateSqlCopy(sourceDetails,program,storeDetails,results,out,snap,expected,prior,tableCounts)
+      proof <- list(metrics=result$telemetry$source_capture$count_transfer$metrics,parity_reports=138L,
+        paired_pages=result$scratch$copy$verification_pages)
+      jsonlite::write_json(proof,file.path(out,"copy-result.json"),auto_unbox=TRUE)
+      return(invisible(proof))
+    }
     for(strategy in c('weighted','reference')) {
       program<-renderCharacterizationSql(schema,sourceId,case$version,columns,numericStrategy=strategy)
       execute<-get('executeCharacterizationSql',asNamespace('AchillesNext'));observed<-NULL
@@ -201,6 +211,7 @@ main<-function() {
       ex(paste0('GRANT USAGE ON SCHEMA "',schema,'" TO ',roles$source$user))
       cat('CANDIDATE_SQL_142_CANONICAL_PARITY_AND_SOURCE_DENIED_REPLAY ',case$case,' ',case$version,' ',strategy,'\n',sep='')
     }
+    if(index==1L)testCharacterizationCandidateSqlCopy(sourceDetails,program,storeDetails,results,out,snap,expected,prior,tableCounts)
     if(index==1L)clockProof<-testCharacterizationCandidateSqlClock(sourceDetails,storeDetails,results,schema,sourceId,case$version,columns,out,q,f,qualified)
     if(index==1L)failures<-testCharacterizationCandidateSqlFailures(sourceDetails,program,storeDetails,results,out,
       f,patch,ex,q,qualified,tableCounts,prior,roles$source$user,schema)

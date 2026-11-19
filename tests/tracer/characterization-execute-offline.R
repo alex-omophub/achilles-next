@@ -63,6 +63,7 @@ local({
     ticks<<-ticks+1L
     structure(c(user.self=0,sys.self=0,elapsed=ticks*2,user.child=0,sys.child=0),class='proc_time')
   }
+  scope$.execute_characterization_sql<-f('.execute_characterization_sql');environment(scope$.execute_characterization_sql)<-scope
   environment(execute)<-scope
   expect(function()execute(details,program,function(...)NULL,maxElapsedSeconds=1),'execution.elapsed_limit')
   stopifnot(attempts==0L)
@@ -100,10 +101,11 @@ local({
     methods::setClass('AchillesCleanupTestConnection',slots=c(jConnection='environment'))
   cleanupTrial<-function(workSucceeds,rollbackFailures,disconnectFailures,code,sequence) {
     previous<-list(connect=get('connect',asNamespace('DatabaseConnector')),
-      disconnect=get('disconnect',asNamespace('DatabaseConnector')),jcall=get('.jcall',asNamespace('rJava')))
+      disconnect=get('disconnect',asNamespace('DatabaseConnector')),jcall=get('.jcall',asNamespace('rJava')),jcheck=get('.jcheck',asNamespace('rJava')))
     on.exit({assignInNamespace('connect',previous$connect,ns='DatabaseConnector')
       assignInNamespace('disconnect',previous$disconnect,ns='DatabaseConnector')
-      assignInNamespace('.jcall',previous$jcall,ns='rJava')},add=TRUE)
+      assignInNamespace('.jcall',previous$jcall,ns='rJava');assignInNamespace('.jcheck',previous$jcheck,ns='rJava')},add=TRUE)
+    assignInNamespace('.jcheck',function(...)invisible(NULL),ns='rJava')
     jdbc<-new.env(parent=emptyenv());statement<-new.env(parent=emptyenv())
     connection<-methods::new('AchillesCleanupTestConnection',jConnection=jdbc)
     submitted<-NULL;events<-character();rollbacks<-0L;disconnects<-0L;connections<-0L;workCalls<-0L;visits<-0L
@@ -115,6 +117,7 @@ local({
       invisible(NULL)
     },ns='DatabaseConnector')
     assignInNamespace('.jcall',function(obj,returnSig='V',method,...) {
+      if(identical(method,'isClosed'))return(disconnects>disconnectFailures)
       if(identical(method,'rollback')) {
         stopifnot(identical(obj,jdbc));rollbacks<<-rollbacks+1L
         events<<-c(events,paste0('rollback',rollbacks))
@@ -141,7 +144,8 @@ local({
       scope$.sql_execution_transport<-function(...)list(
         execute=function(...){workCalls<<-workCalls+1L;invisible(NULL)},
         one=function(...)wire(zero),stream=function(...)invisible(NULL),telemetry=function()f('.object')())
-      environment(execute)<-scope
+      scope$.execute_characterization_sql<-f('.execute_characterization_sql');environment(scope$.execute_characterization_sql)<-scope
+  environment(execute)<-scope
     }
     result<-tryCatch(execute(details,program,function(...){visits<<-visits+1L}),error=identity,interrupt=identity)
     stopifnot(connections==1L,workCalls>=1L,visits==0L,identical(events,sequence))
@@ -160,7 +164,7 @@ local({
   cleanupTrial(FALSE,0,0,'execution.query_failed',c('rollback1','disconnect1'))
   cleanupTrial(FALSE,0,1,'execution.cleanup_failed',c('rollback1','disconnect1','disconnect2'))
   cleanupTrial(FALSE,1,1,'execution.cleanup_failed',c('rollback1','disconnect1','rollback2','disconnect2'))
-  cleanupTrial(FALSE,Inf,0,'execution.cleanup_failed',c('rollback1','disconnect1','rollback2'))
+  cleanupTrial(FALSE,Inf,0,'execution.cleanup_failed',c('rollback1','disconnect1'))
   cleanupTrial(FALSE,Inf,Inf,'execution.cleanup_failed',c('rollback1','disconnect1','rollback2','disconnect2'))
   cleanupTrial(TRUE,0,0,NULL,c('rollback1','disconnect1'))
   cleanupTrial(TRUE,0,1,'execution.cleanup_failed',c('rollback1','disconnect1','disconnect2'))
