@@ -84,6 +84,33 @@ local({
   approved <- publishResultRelease(details,schema,release,file.path(root,'restricted'),'fixture-restricted','review-1',allow,function(candidate)TRUE,'0')
   validateResultArtifact(approved$export_dir)
   stopifnot(approved$revision=='1')
+  # Approval runs after semantic admission. Changed page bytes must roll back
+  # the attempted publication and preserve the already approved current pointer.
+  storedCounts <- function() q(paste0('SELECT ',
+    '(SELECT count(*) FROM ',schema,'.achillesnext_publication)::text AS publications,',
+    '(SELECT count(*) FROM ',schema,'.achillesnext_page_object)::text AS pages'))
+  priorCounts <- storedCounts()
+  damaged <- file.path(root,'changed-during-approval')
+  changed <- FALSE
+  error <- tryCatch({
+    publishResultRelease(details,schema,release,damaged,'fixture-restricted','review-changed',allow,function(candidate) {
+      stages <- Sys.glob(file.path(root,'.achilles-export-*'))
+      stage <- stages[file.exists(file.path(stages,'publication.json'))]
+      stopifnot(length(stage)==1L)
+      pagePath <- function(sha) file.path(stage,'objects',paste0(sha,'.json'))
+      # The root will already have been inserted when the catalogue fails.
+      catalogue <- jsonlite::read_json(pagePath(candidate$root$sha256))$catalogue
+      path <- pagePath(catalogue$sha256)
+      bytes <- readBin(path,'raw',n=file.size(path))
+      bytes[length(bytes)] <- as.raw(32L)
+      writeBin(bytes,path);changed <<- TRUE;TRUE
+    },'1')
+    NULL
+  },error=identity)
+  stopifnot(changed,inherits(error,'simpleError'),
+    identical(conditionMessage(error),'Result publication failed; prior current preserved'),
+    !file.exists(damaged),identical(storedCounts(),priorCounts),
+    q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID==approved$publication_id)
   # Exact stored bytes equal exported bytes for every approved object.
   f('.v2_directory')(approved$export_dir,function(d,bytes) {
     stored <- q(paste0("SELECT encode(payload,'hex') AS value FROM ",schema,".achillesnext_page_object WHERE publication_id=",lit(approved$publication_id),' AND sha256=',lit(d$sha256)))$VALUE
@@ -137,22 +164,19 @@ local({
   fail(function()publishResultRelease(details,schema,release,file.path(root,'denied'),'fixture-restricted','denied',allow,function(candidate)FALSE,'1'))
   fail(function()publishResultRelease(details,schema,release,file.path(root,'stale'),'fixture-restricted','stale',allow,function(candidate)TRUE,'0'))
   stopifnot(!dir.exists(file.path(root,'denied')),!dir.exists(file.path(root,'stale')),q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID==before)
-  # Both native artifact admission passes share the caller's scratch control.
-  # Fail before approval and after tentative publication insertion, respectively;
-  # no export, page/publication row or current-pointer change may survive.
+  # Semantic admission shares one scratch budget across its indexes and group files.
   originalDirectory<-f('.v2_directory');originalIO<-f('.v2_scratch_io')
   on.exit({assignInNamespace('.v2_directory',originalDirectory,ns='AchillesNext');assignInNamespace('.v2_scratch_io',originalIO,ns='AchillesNext')},add=TRUE)
   publicationCount<-q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_publication'))$N
   pageCount<-q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_page_object'))$N
   leftovers<-function()sort(Sys.glob(file.path(root,'.achilles-export-*')))
   priorFiles<-leftovers()
-  for(pass in 1:2)for(kind in c('byte','io')) {
+  for(kind in c('byte','io')) {
     admissions<-0L;approvalCalls<-0L;fired<-FALSE
-    requested<-if(pass==1L&&kind=='byte')0 else 1024^2
+    requested<-if(kind=='byte')0 else 1024^2
     assignInNamespace('.v2_directory',function(directory,visit=function(descriptor,bytes)NULL,check=function()NULL,maxScratchBytes=1024^3) {
       admissions<<-admissions+1L;stopifnot(identical(maxScratchBytes,requested))
-      if(admissions==pass) {
-        if(kind=='byte')maxScratchBytes<-0 else {
+      if(kind=='io') {
           assignInNamespace('.v2_scratch_io',function(work) {
             symbols<-all.names(body(work))
             if(!fired&&all(c('writeBin','data')%in%symbols)) {
@@ -160,24 +184,23 @@ local({
             }
             originalIO(work)
           },ns='AchillesNext')
-          on.exit(assignInNamespace('.v2_scratch_io',originalIO,ns='AchillesNext'))
-        }
+        on.exit(assignInNamespace('.v2_scratch_io',originalIO,ns='AchillesNext'))
       }
       originalDirectory(directory,visit,check,maxScratchBytes)
     },ns='AchillesNext')
-    destination<-file.path(root,paste0('scratch-',pass,'-',kind))
+    destination<-file.path(root,paste0('scratch-',kind))
     error<-tryCatch({publishResultRelease(details,schema,release,destination,'fixture-restricted','scratch-fault',allow,
       function(candidate){approvalCalls<<-approvalCalls+1L;TRUE},'1',maxScratchBytes=requested);NULL},error=identity)
     assignInNamespace('.v2_directory',originalDirectory,ns='AchillesNext')
     stopifnot(inherits(error,'achillesnext_scratch_error'),error$code==if(kind=='byte')'byte_limit' else 'io_failure',
       !grepl('PRIVATE_DISK_PATH_SENTINEL',conditionMessage(error),fixed=TRUE),
-      admissions==pass,approvalCalls==pass-1L,!dir.exists(destination),identical(priorFiles,leftovers()),
+      admissions==1L,approvalCalls==0L,!dir.exists(destination),identical(priorFiles,leftovers()),
       q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID==before,
       q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_publication'))$N==publicationCount,
       q(paste0('SELECT count(*)::text AS n FROM ',schema,'.achillesnext_page_object'))$N==pageCount)
     if(kind=='io')stopifnot(fired)
   }
-  cat('BOTH_ADMISSION_SCRATCH_LIMIT_AND_IO_FAILURE_PRESERVE_CURRENT_AND_EXPORT_OK\n')
+  cat('ADMISSION_SCRATCH_LIMIT_AND_IO_FAILURE_PRESERVE_CURRENT_AND_EXPORT_OK\n')
   # Once COMMIT is invoked, even a fake that fails before sending it has an
   # unknown client outcome. Retain its export until trusted store inspection.
   originalCommit <- f('.store_commit')
