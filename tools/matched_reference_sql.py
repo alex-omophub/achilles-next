@@ -186,6 +186,8 @@ class Reference:
         if mid not in self.ids or mid in METADATA:raise ValueError('Not a numerical reference output')
         if self.supported(mid):return "SELECT NULL::text AS row_kind,NULL::jsonb AS dimensions,NULL::jsonb AS values WHERE false"
         prefix,domain,suffix=mid.split('.')
+        if domain in DOMAINS and suffix=='capture_count':
+            return self.capture_count(domain,prefix=='observed')
         if domain=='person':query=self.person(suffix)
         elif domain=='observation_period':query=self.observation(suffix)
         elif domain=='density':query=self.density(suffix)
@@ -193,7 +195,7 @@ class Reference:
         if domain in ('person','density'):
             ctes=self.people()
         else:
-            clinical_calendar=(domain in DOMAINS and suffix=='capture_count') or (domain=='observation_period' and suffix in ('coverage_count','continuous_person_count'))
+            clinical_calendar=domain=='observation_period' and suffix in ('coverage_count','continuous_person_count')
             ctes=self.common(clinical_calendar)
         if domain in DOMAINS:ctes+=','+self.facts(domain)
         return f'WITH {ctes} SELECT * FROM ({query}) reference_output'
@@ -243,27 +245,67 @@ class Reference:
         dims=obj(presence_bits='bits') if suffix=='domain_presence_count' else obj(domain_count="length(replace(bits,'0',''))::text")
         return grouped(f'(SELECT {bits} AS bits FROM people p) b',dims,dict(person_count='count(*)::text'))
 
+    def capture_count(self,domain,observed):
+        definition=PROFILE['domains'][domain]
+        events=self.table(definition['table'])
+        concept=self.col(domain,definition['concept'])
+        day=self.col(domain,definition['event_date'],'NULL::date')
+        # The calendar spans every clinical domain and every valid linked interval.
+        # Bound each domain separately; indexed extrema can be read directly.
+        bounds=["SELECT min(lo) AS lo,max(hi) AS hi FROM intervals"]
+        for entry in PROFILE['domains'].values():
+            col=ident(entry['event_date'])
+            bounds.append(f"SELECT min({col}),max({col}) FROM {self.table(entry['table'])} "
+                          f"WHERE {col} BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'")
+        observation=self.table('observation_period')
+        person=self.table('person')
+        scopes=self.periods('bounds',False)
+        # Full and undated have distinct period kinds and the same null start.
+        # A single internal date sentinel makes the final enrichment an equijoin.
+        empty_date="DATE '-infinity'"
+        undated="" if observed else " UNION ALL SELECT 'undated',NULL::date,NULL::date,false"
+        observed_cte=""
+        observed_join=""
+        if observed:
+            # A person's coalesced coverage has one row irrespective of the
+            # number of overlapping, adjacent or disjoint source intervals.
+            observed_cte=", coverage AS (SELECT person_id,range_agg(daterange(lo,hi,'[]')) AS spans FROM intervals GROUP BY person_id)"
+            observed_join=f"JOIN coverage v ON v.person_id=e.person_id AND {day} <@ v.spans"
+        # Grouping sets count distinct linked people at each requested grain.
+        # Grouping(concept_id) separates all concepts from the real null concept,
+        # while the last join also distinguishes null from the numeric ID zero.
+        return f"""WITH intervals AS (
+          SELECT o.person_id,o.observation_period_start_date AS lo,o.observation_period_end_date AS hi
+          FROM {observation} o WHERE o.observation_period_start_date<=o.observation_period_end_date
+            AND EXISTS(SELECT FROM {person} p WHERE p.person_id=o.person_id)
+        ), extrema AS ({' UNION ALL '.join(bounds)}), bounds AS (SELECT min(lo) AS lo,max(hi) AS hi FROM extrema)
+        {observed_cte}, scopes AS ({scopes}{undated}), concepts AS (
+          SELECT DISTINCT {concept} AS concept_id,0 AS all_concepts FROM {events} e
+          UNION ALL SELECT NULL::bigint,1
+        ), contributions AS (
+          SELECT {concept} AS concept_id,p.person_id AS linked_person,m.period_kind,m.start_key
+          FROM {events} e LEFT JOIN {person} p ON p.person_id=e.person_id {observed_join}
+          CROSS JOIN LATERAL (VALUES
+            ('full_scope',{empty_date}),
+            ('undated',CASE WHEN {day} IS NULL THEN {empty_date} END),
+            ('calendar_month',CASE WHEN {valid_date(day)} THEN date_trunc('month',{day})::date END),
+            ('calendar_year',CASE WHEN {valid_date(day)} THEN date_trunc('year',{day})::date END)
+          ) m(period_kind,start_key) WHERE m.start_key IS NOT NULL
+        ), counted AS (
+          SELECT period_kind,start_key,concept_id,grouping(concept_id) AS all_concepts,
+                 count(*) AS records,count(DISTINCT linked_person) AS people
+          FROM contributions GROUP BY GROUPING SETS ((period_kind,start_key,concept_id),(period_kind,start_key))
+        )
+        SELECT 'counts'::text AS row_kind,jsonb_build_object('concept_tag',
+          CASE WHEN g.all_concepts=1 THEN jsonb_build_object('kind','all') ELSE {tag('g.concept_id')} END,
+          'period_kind',s.period_kind,'period_start',{text('s.lo')},'period_end',{text('s.hi')}) AS dimensions,
+          jsonb_build_object('record_count',coalesce(c.records,0)::text,'person_count',coalesce(c.people,0)::text) AS values
+        FROM scopes s CROSS JOIN concepts g LEFT JOIN counted c
+          ON c.period_kind=s.period_kind AND c.start_key=coalesce(s.lo,{empty_date}) AND c.all_concepts=g.all_concepts
+          AND (c.concept_id IS NULL)=(g.concept_id IS NULL) AND coalesce(c.concept_id,0)=coalesce(g.concept_id,0)"""
+
     def domain(self,domain,suffix,observed):
         concept={'concept_tag':'concept_tag'};reasons=PROFILE['contracts']['eligibility-reasons']
-        if suffix=='capture_count':
-            scopes='periods' if observed else "(SELECT * FROM periods UNION ALL SELECT 'undated',NULL::date,NULL::date,false)"
-            match="""s.period_kind='full_scope' OR (s.period_kind='undated' AND e.event_date IS NULL)
-                OR (s.period_kind IN ('calendar_month','calendar_year') AND e.valid_date AND e.event_date BETWEEN s.lo AND s.hi)"""
-            dims=obj(concept_tag='g.concept_tag',period_kind='s.period_kind',period_start=text('s.lo'),period_end=text('s.hi'))
-            # Each matched event contributes to its own concept and the all-concepts
-            # cell. Keep the unfiltered inventory so unobserved concepts still emit zeros.
-            # The two consumers share scope IDs, including scopes with NULL endpoints.
-            return f"""WITH events AS (SELECT concept_tag,person_id,linked,event_date,valid_date{',observed' if observed else ''} FROM facts),
-              scopes AS MATERIALIZED (SELECT row_number() OVER () AS scope_id,p.* FROM {scopes} p),
-              concepts AS (SELECT DISTINCT concept_tag FROM events UNION ALL SELECT jsonb_build_object('kind','all')),
-              counted AS (SELECT s.scope_id,t.concept_tag,count(*) AS records,
-                    count(DISTINCT e.person_id) FILTER(WHERE e.linked) AS people
-                FROM scopes s JOIN events e ON ({match}) {'AND e.observed' if observed else ''}
-                CROSS JOIN LATERAL (VALUES(e.concept_tag),(jsonb_build_object('kind','all'))) t(concept_tag)
-                GROUP BY s.scope_id,t.concept_tag)
-              SELECT 'counts'::text AS row_kind,{dims} AS dimensions,
-                jsonb_build_object('record_count',coalesce(c.records,0)::text,'person_count',coalesce(c.people,0)::text) AS values
-              FROM concepts g CROSS JOIN scopes s LEFT JOIN counted c USING(scope_id,concept_tag)"""
         if observed and suffix=='year_gender_age_count':
             age='extract(year FROM event_date)::numeric-year_of_birth::numeric'
             fields=dict(year='extract(year FROM event_date)::integer::text',gender_concept_id=text('gender_concept_id'),year_age_decile=f"CASE WHEN year_of_birth BETWEEN 1 AND 9999 AND {age} BETWEEN 0 AND 130 THEN div({age},10)::text ELSE 'unknown' END")
