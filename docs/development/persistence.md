@@ -19,17 +19,16 @@ reused. SQL errors and cancellation roll back the surrounding generation
 transaction, including previously flushed batches; a flush is not a commit or
 durable checkpoint.
 
-The existing SQL guards remain authoritative. Every cell/edge mutation still
-checks the building-release lock and advances its content revision. Batching
-reduces submitted write statements; it does **not** reduce the number of per-row
-revision updates. Sealed content, receipt binding and publication semantics are
-unchanged. No store migration, trigger bypass or output-format change is involved.
+Aggregate cell inserts on a newly initialized PostgreSQL store advance the
+content revision once per affected release and statement by the number of rows
+actually inserted. The guard reads the inserted rows from PostgreSQL's transition
+table and checks the release's building state under the same row lock used to
+serialize sealing. Direct inserts into a partition use the same guard.
 
-New PostgreSQL result stores remember the most recently updated release row's
-physical address within a transaction. Each update checks the release ID and
-building state at that address and falls back to the release primary key on a
-miss. This avoids repeated searches through earlier row versions during large
-writes. Existing result stores continue to use their installed guard.
+Cell updates and deletes and dataset and edge writes use the row-level release
+guard. It uses the most recently updated physical row address within the
+transaction and verifies the release ID and building state before using it.
+Existing installations use the guards installed when the store was created.
 
 Generation operation telemetry includes a `persistence` object with written row/
 edge counts, cell/edge statement counts, SQL bytes, configured queue bounds and

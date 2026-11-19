@@ -244,7 +244,38 @@ END
 $guard$;
 CREATE TRIGGER dataset_building BEFORE INSERT OR UPDATE OR DELETE ON __STORE__.achillesnext_dataset
  FOR EACH ROW EXECUTE FUNCTION __STORE__.guard_building_release();
-CREATE TRIGGER cell_building BEFORE INSERT OR UPDATE OR DELETE ON __STORE__.achillesnext_aggregate_cell
+-- Check and advance the release revision once per release touched by an INSERT.
+-- Transition rows include the accepted inserts across all targeted partitions.
+CREATE FUNCTION __STORE__.guard_inserted_cells() RETURNS trigger
+LANGUAGE plpgsql SET search_path=pg_catalog AS $guard$
+DECLARE batch record;
+BEGIN
+ FOR batch IN SELECT release_id, count(*) AS cell_count FROM inserted_cells
+              GROUP BY release_id ORDER BY release_id LOOP
+   UPDATE __STORE__.achillesnext_result_release
+   SET content_revision=content_revision+batch.cell_count
+   WHERE release_id=batch.release_id AND state='building';
+   IF NOT FOUND THEN RAISE EXCEPTION 'Release is not writable'; END IF;
+ END LOOP;
+ RETURN NULL;
+END
+$guard$;
+CREATE TRIGGER cell_insert_building AFTER INSERT ON __STORE__.achillesnext_aggregate_cell
+ REFERENCING NEW TABLE AS inserted_cells
+ FOR EACH STATEMENT EXECUTE FUNCTION __STORE__.guard_inserted_cells();
+-- Direct leaf writes fire their own statement triggers. A write through the
+-- parent fires only the parent's statement trigger.
+DO $partition_guards$
+BEGIN
+  FOR i IN 0..7 LOOP
+    EXECUTE format('CREATE TRIGGER cell_insert_building AFTER INSERT ON %s '
+      'REFERENCING NEW TABLE AS inserted_cells FOR EACH STATEMENT '
+      'EXECUTE FUNCTION __STORE__.guard_inserted_cells()',
+      '__STORE__.achillesnext_aggregate_cell_'||i);
+  END LOOP;
+END
+$partition_guards$;
+CREATE TRIGGER cell_building BEFORE UPDATE OR DELETE ON __STORE__.achillesnext_aggregate_cell
  FOR EACH ROW EXECUTE FUNCTION __STORE__.guard_building_release();
 CREATE TRIGGER denominator_building BEFORE INSERT OR UPDATE OR DELETE ON __STORE__.achillesnext_denominator_edge
  FOR EACH ROW EXECUTE FUNCTION __STORE__.guard_building_release();

@@ -36,6 +36,31 @@ testPersistenceSafety<-function(details,schema,baseRelease,config,lib,out,execut
   }
   good<-copyMetadata();f(".store_transaction")(details,schema,function(tx)fill(tx,good))
   stopifnot(count(good)=="5",revision(good)=="11")
+  # Parent inserts fire one statement guard across partitions. A direct leaf
+  # insert must enforce the same release lock and count each accepted row.
+  leaf<-query(paste0("SELECT p.relname AS leaf,c.row_key::text AS row_key FROM ",schema,
+    ".achillesnext_aggregate_cell c JOIN pg_catalog.pg_class p ON p.oid=c.tableoid WHERE c.release_id=",uuid(good)," ORDER BY c.row_key LIMIT 1"))
+  stopifnot(nrow(leaf)==1L,grepl("^achillesnext_aggregate_cell_[0-7]$",leaf$LEAF))
+  cells<-paste0(schema,".achillesnext_aggregate_cell")
+  target<-paste0(schema,".",leaf$LEAF)
+  leafRelease<-copyMetadata()
+  statement<-paste0("INSERT INTO ",target," SELECT (jsonb_populate_record(NULL::",cells,
+    ",to_jsonb(c)||jsonb_build_object('release_id',",uuid(leafRelease),"))).* FROM ",cells,
+    " c WHERE c.release_id=",uuid(good)," AND c.row_key=",lit(leaf$ROW_KEY))
+  execute(statement)
+  execute(paste0(statement," ON CONFLICT DO NOTHING"))
+  stopifnot(count(leafRelease)=="1",revision(leafRelease)=="3")
+  # A writable release earlier in a multi-release statement must roll back
+  # when another target is closed. Use unused keys in both releases.
+  execute(paste0("UPDATE ",schema,".achillesnext_result_release SET state='failed' WHERE release_id=",uuid(leafRelease)))
+  otherRelease<-copyMetadata()
+  mixed<-paste0("INSERT INTO ",cells," SELECT (jsonb_populate_record(NULL::",cells,
+    ",to_jsonb(c)||jsonb_build_object('release_id',target.id,'row_key',repeat('c',64),'sort_key','probe'))).* FROM ",cells,
+    " c CROSS JOIN (VALUES (",uuid(leafRelease),"),(",uuid(otherRelease),")) AS target(id)",
+    " WHERE c.release_id=",uuid(good)," AND c.row_key=",lit(leaf$ROW_KEY))
+  err<-tryCatch({execute(mixed);"ACCEPTED"},error=conditionMessage)
+  stopifnot(grepl("Release is not writable",err,fixed=TRUE), count(leafRelease)=="1",revision(leafRelease)=="3",
+    count(otherRelease)=="0",revision(otherRelease)=="2")
   # Exercise a valid address for a different release, invalid settings, and
   # revisions from conflict-skipped inserts in the same transaction.
   hinted<-copyMetadata()
