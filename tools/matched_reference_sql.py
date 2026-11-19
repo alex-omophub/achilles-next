@@ -56,29 +56,56 @@ def count_rows(source,dimensions,persons=True):
     return grouped(source,dimensions,values)
 
 
-def summary(samples,reasons,measure='record_count',extra=None):
+SUMMARY_RANKS=(('p10',1,10),('p25',1,4),('p50',1,2),('p75',3,4),('p90',9,10))
+
+
+def quantile_columns(n):
+    return ', '.join(f'max(value) FILTER(WHERE rank=div({n}*{num}+{den-1},{den})) AS {name}'
+                     for name,num,den in SUMMARY_RANKS)
+
+
+def summary_output(samples,aggregation,reasons,measure,extra):
     categories=','.join('('+lit(r)+')' for r in reasons)
-    values=dict(n='n::text',sum='total::text',mean_numerator='total::text',mean_denominator='CASE WHEN n>0 THEN n::text END',
-                min='minimum::text',max='maximum::text')
-    for k,num,den in [('p10',1,10),('p25',1,4),('p50',1,2),('p75',3,4),('p90',9,10)]:
-        values[k]=f'max(value) FILTER(WHERE rank=div(n*{num}+{den-1},{den}))::text'
-    sql=f"""WITH samples AS ({samples}), strata AS (
-        SELECT dimensions,count(*) FILTER(WHERE reason='eligible')::numeric AS n,
-               sum(value) FILTER(WHERE reason='eligible') AS total FROM samples GROUP BY dimensions
+    values=dict(n='coalesce(s.n,0)::text',sum='s.total::text',mean_numerator='s.total::text',
+                mean_denominator='s.n::text',min='s.minimum::text',max='s.maximum::text')
+    values.update({name:f's.{name}::text' for name,_,_ in SUMMARY_RANKS})
+    sql=f"""WITH samples AS ({samples}), eligibility AS (
+        SELECT dimensions,reason,count(*) AS records FROM samples GROUP BY dimensions,reason
+      ), strata AS (SELECT DISTINCT dimensions FROM eligibility), {aggregation}
+      SELECT 'summary'::text AS row_kind,d.dimensions,{obj(**values)} AS values
+      FROM strata d LEFT JOIN statistics s USING(dimensions)
+      UNION ALL SELECT 'eligibility_counts',d.dimensions||jsonb_build_object('eligibility_reason',c.reason),
+        jsonb_build_object({lit(measure)},coalesce(e.records,0)::text)
+      FROM strata d CROSS JOIN (VALUES {categories}) c(reason)
+      LEFT JOIN eligibility e ON e.dimensions=d.dimensions AND e.reason=c.reason"""
+    return f'SELECT * FROM ({sql}) summaries UNION ALL {extra}' if extra else sql
+
+
+def summary(samples,reasons,measure='record_count',extra=None):
+    aggregation=f"""sizes AS (
+        SELECT dimensions,count(*)::numeric AS n,sum(value) AS total,min(value) AS minimum,max(value) AS maximum
+        FROM samples WHERE reason='eligible' GROUP BY dimensions
       ), ranked AS (
         SELECT dimensions,value,row_number() OVER(PARTITION BY dimensions ORDER BY value)::numeric AS rank
         FROM samples WHERE reason='eligible'
-      ), stats AS (
-        SELECT s.dimensions,s.n,s.total,min(r.value) AS minimum,max(r.value) AS maximum
-        FROM strata s LEFT JOIN ranked r USING(dimensions) GROUP BY s.dimensions,s.n,s.total
-      ) SELECT 'summary'::text AS row_kind,s.dimensions,{obj(**values)} AS values
-      FROM stats s LEFT JOIN ranked r USING(dimensions) GROUP BY s.dimensions,n,total,minimum,maximum
-      UNION ALL SELECT 'eligibility_counts',s.dimensions||jsonb_build_object('eligibility_reason',c.reason),
-        jsonb_build_object({lit(measure)},count(v.reason)::text)
-      FROM strata s CROSS JOIN (VALUES {categories}) c(reason)
-      LEFT JOIN samples v ON v.dimensions=s.dimensions AND v.reason=c.reason GROUP BY s.dimensions,c.reason"""
-    if extra:sql=f'SELECT * FROM ({sql}) summaries UNION ALL {extra}'
-    return sql
+      ), statistics AS (
+        SELECT s.dimensions,s.n,s.total,s.minimum,s.maximum,{quantile_columns('n')}
+        FROM sizes s JOIN ranked r USING(dimensions) GROUP BY s.dimensions,n,total,minimum,maximum
+      )"""
+    return summary_output(samples,aggregation,reasons,measure,extra)
+
+
+def summary_ranked(samples,reasons,measure='record_count',extra=None):
+    # Compute the partition size and the exact nearest rank on one stream.
+    aggregation=f"""ranked AS (
+        SELECT dimensions,value,row_number() OVER(PARTITION BY dimensions ORDER BY value)::numeric AS rank,
+          count(*) OVER(PARTITION BY dimensions)::numeric AS sample_size
+        FROM samples WHERE reason='eligible'
+      ), statistics AS (
+        SELECT dimensions,max(sample_size) AS n,sum(value) AS total,min(value) AS minimum,max(value) AS maximum,
+          {quantile_columns('sample_size')} FROM ranked GROUP BY dimensions
+      )"""
+    return summary_output(samples,aggregation,reasons,measure,extra)
 
 
 class Reference:
@@ -194,6 +221,8 @@ class Reference:
             return self.observed_demographics(domain)
         if domain in ('measurement','observation') and suffix=='representation_count':
             return self.representation_count(domain)
+        if domain=='measurement' and suffix in ('range_low_summary','range_high_summary'):
+            return self.range_bound_summary(suffix.removesuffix('_summary'))
         if domain=='person':query=self.person(suffix)
         elif domain=='observation_period':query=self.observation(suffix)
         elif domain=='density':query=self.density(suffix)
@@ -429,6 +458,32 @@ class Reference:
           AND (c.concept_id IS NULL)=(g.concept_id IS NULL)
           AND coalesce(c.concept_id,0)=coalesce(g.concept_id,0)"""
 
+    def range_bound_summary(self,column):
+        domain='measurement'
+        definition=PROFILE['domains'][domain]
+        events=self.table(definition['table'])
+        vocab=self.table('concept')
+        concept=self.col(domain,definition['concept'])
+        unit=self.col(domain,'unit_concept_id')
+        candidate=self.col(domain,column,'NULL::numeric')
+        dimensions=dict(concept_tag=tag('concept_id'),unit_concept_tag=tag('unit_concept_id'))
+        why=f"""CASE WHEN bound IS NULL THEN 'bound_missing'
+          WHEN NOT {finite('bound')} THEN 'bound_non_finite' WHEN unit_concept_id IS NULL THEN 'unit_null'
+          WHEN unit_concept_id=0 THEN 'unit_zero' WHEN NOT known_unit THEN 'unit_unrecognized' ELSE 'eligible' END"""
+        samples=f'SELECT {obj(**dimensions)} AS dimensions,bound::numeric AS value,{why} AS reason FROM inputs WHERE known_unit'
+        missing=f"""SELECT 'eligibility_counts' AS row_kind,dimensions,jsonb_build_object('record_count',count(*)::text) AS values
+          FROM (SELECT {obj(**dimensions,eligibility_reason=why)} AS dimensions FROM inputs WHERE NOT known_unit) q GROUP BY dimensions"""
+        reasons=PROFILE['contracts']['eligibility-reasons']['range_boundary_order']
+        reads=summary_ranked(samples,reasons,extra=missing)
+        # Range summaries use the physical row even if its person is missing.
+        # A distinct vocabulary list recognizes each unit without multiplying rows.
+        return f"""WITH units AS (
+          SELECT DISTINCT concept_id FROM {vocab} WHERE concept_id>0 AND domain_id='Unit'
+        ), inputs AS (
+          SELECT {concept} AS concept_id,{unit} AS unit_concept_id,{candidate} AS bound,u.concept_id IS NOT NULL AS known_unit
+          FROM {events} e LEFT JOIN units u ON u.concept_id={unit}
+        ) {reads}"""
+
     def domain(self,domain,suffix,observed):
         concept={'concept_tag':'concept_tag'};reasons=PROFILE['contracts']['eligibility-reasons']
         dimensions={'source_count':dict(source_concept_tag='source_tag',source_value_state='source_state'),
@@ -476,11 +531,6 @@ class Reference:
             if domain=='measurement':fields['raw_operator_tag']=tag('operator_concept_id');where+=' AND (operator_concept_id IS NULL OR operator_concept_id=0)'
             else:order.remove('operator_explicit_measurement_only')
             return summary(f'SELECT {obj(**fields)} AS dimensions,value_as_number::numeric AS value,{numeric} AS reason FROM facts WHERE {where}',order)
-        if suffix in ['range_low_summary','range_high_summary']:
-            value=suffix.removesuffix('_summary');fields=dict(concept,unit_concept_tag=tag('unit_concept_id'))
-            why=f"CASE WHEN {value} IS NULL THEN 'bound_missing' WHEN NOT {finite(value)} THEN 'bound_non_finite' WHEN unit_concept_id IS NULL THEN 'unit_null' WHEN unit_concept_id=0 THEN 'unit_zero' WHEN NOT known_unit THEN 'unit_unrecognized' ELSE 'eligible' END"
-            extra=f"SELECT 'eligibility_counts' AS row_kind,dimensions,jsonb_build_object('record_count',count(*)::text) AS values FROM (SELECT {obj(**fields,eligibility_reason=why)} AS dimensions FROM facts WHERE NOT known_unit) q GROUP BY dimensions"
-            return summary(f'SELECT {obj(**fields)} AS dimensions,{value}::numeric AS value,{why} AS reason FROM facts WHERE known_unit',reasons['range_boundary_order'],extra=extra)
         if suffix=='range_status_count':
             why=f"CASE WHEN value_as_number IS NULL THEN 'numeric_missing' WHEN NOT {finite('value_as_number')} THEN 'numeric_non_finite' WHEN NOT known_unit THEN 'unit_unavailable_or_unrecognized' WHEN operator_concept_id IS NOT NULL AND operator_concept_id<>0 THEN 'operator_explicit' WHEN range_low IS NULL AND range_high IS NULL THEN 'both_bounds_missing' WHEN range_low IS NULL OR range_high IS NULL THEN 'one_bound_missing' WHEN NOT {finite('range_low')} OR NOT {finite('range_high')} THEN 'bound_non_finite' WHEN range_low>range_high THEN 'bounds_reversed' WHEN value_as_number<range_low THEN 'below' WHEN value_as_number>range_high THEN 'above' ELSE 'within' END"
             return count_rows('facts',obj(**concept,unit_concept_tag=tag('unit_concept_id'),raw_operator_tag=tag('operator_concept_id'),reason=why),False)
