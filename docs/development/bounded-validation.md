@@ -32,7 +32,13 @@ every artifact fits within 1 GiB.
 `publishResultRelease()` accepts the same named controls. Its `maxScratchBytes`
 covers full semantic validation before institutional approval. After approval, the
 publisher checks page bytes against the admitted root and its content-addressed
-descendants as it writes them to the store. This pass reads one page at a time.
+descendants as it writes them to the store. It verifies the staged publication
+pointer before and after this walk. Before committing, it rehashes each installed
+object and compares the installed pointer with the approved pointer bytes.
+A byte mismatch followed by successful rollback and cleanup raises an R
+`simpleError` with the message `Result publication failed; prior current preserved`.
+Rollback discards the tentative publication and pages. Cleanup removes the
+attempt-owned export, and the previous current publication remains available.
 The separate `maxExportBytes` limit covers the complete staged export.
 Existing arguments and defaults remain available. See the [result-store guide](result-store.md)
 for sealing, release validation, institutional approval and current-pointer

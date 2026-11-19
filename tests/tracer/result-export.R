@@ -86,6 +86,10 @@ local({
   stopifnot(approved$revision=='1')
   # Approval runs after semantic admission. Changed page bytes must roll back
   # the attempted publication and preserve the already approved current pointer.
+  storedCounts <- function() q(paste0('SELECT ',
+    '(SELECT count(*) FROM ',schema,'.achillesnext_publication)::text AS publications,',
+    '(SELECT count(*) FROM ',schema,'.achillesnext_page_object)::text AS pages'))
+  priorCounts <- storedCounts()
   damaged <- file.path(root,'changed-during-approval')
   changed <- FALSE
   error <- tryCatch({
@@ -93,14 +97,19 @@ local({
       stages <- Sys.glob(file.path(root,'.achilles-export-*'))
       stage <- stages[file.exists(file.path(stages,'publication.json'))]
       stopifnot(length(stage)==1L)
-      path <- file.path(stage,'objects',paste0(candidate$root$sha256,'.json'))
+      pagePath <- function(sha) file.path(stage,'objects',paste0(sha,'.json'))
+      # The root will already have been inserted when the catalogue fails.
+      catalogue <- jsonlite::read_json(pagePath(candidate$root$sha256))$catalogue
+      path <- pagePath(catalogue$sha256)
       bytes <- readBin(path,'raw',n=file.size(path))
       bytes[length(bytes)] <- as.raw(32L)
       writeBin(bytes,path);changed <<- TRUE;TRUE
     },'1')
     NULL
   },error=identity)
-  stopifnot(changed,inherits(error,'error'),!file.exists(damaged),
+  stopifnot(changed,inherits(error,'simpleError'),
+    identical(conditionMessage(error),'Result publication failed; prior current preserved'),
+    !file.exists(damaged),identical(storedCounts(),priorCounts),
     q(paste0('SELECT publication_id::text AS id FROM ',schema,'.achillesnext_current_publication'))$ID==approved$publication_id)
   # Exact stored bytes equal exported bytes for every approved object.
   f('.v2_directory')(approved$export_dir,function(d,bytes) {
