@@ -1,0 +1,23 @@
+R/result-validation.R
+  s_c7e9bd656f030b::t_f2563c4a53c3c1 132-138,157-161
+tests/tracer/registered-profile.R
+  s_c7e9bd656f030b::t_d85f32eb98cdc7 6,50
+tests/tracer/stored-denominators.R
+  s_c7e9bd656f030b::t_4401434227960e 1-58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "027b3498bbdd184f6760461e2ba875e6f899fb46",
+  "prompts": {},
+  "sessions": {
+    "s_c7e9bd656f030b": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f403-9f2e-7f12-9b06-d829ddb3acb8",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
