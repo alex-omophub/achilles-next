@@ -129,7 +129,13 @@
   sql <- paste0("SELECT jsonb_build_object('row_key',c.row_key,'dimensions',c.dimensions,'state',c.state,'reason_code',c.reason_code,",
     "'payload_kind',c.payload_kind,'route_key',c.route_key,'sort_key',c.sort_key,'metadata',c.metadata_value,'numeric',jsonb_build_object(",fields,"),",
     "'denominator_refs',COALESCE((SELECT jsonb_agg(jsonb_build_object('measure',e.measure_key,'metric_id',e.target_metric_id,'row_key',e.target_row_key,'field',e.target_measure_key,'target_dimensions',t.dimensions,",
-    "'value',CASE e.target_measure_key WHEN 'record_count' THEN t.record_count::text WHEN 'person_count' THEN t.person_count::text WHEN 'person_days' THEN t.person_days::text WHEN 'interval_count' THEN t.interval_count::text WHEN 'n' THEN t.n::text END) ORDER BY e.measure_key) FROM ",s,".achillesnext_denominator_edge e JOIN ",s,".achillesnext_aggregate_cell t ON (t.release_id,t.metric_id,t.row_key)=(e.release_id,e.target_metric_id,e.target_row_key) WHERE (e.release_id,e.metric_id,e.row_key)=(c.release_id,c.metric_id,c.row_key)), '[]'::jsonb))::text FROM ",s,".achillesnext_aggregate_cell c WHERE c.release_id=",.store_uuid(releaseId)," AND c.metric_id=",.store_literal(metricId)," ORDER BY c.route_key COLLATE \"C\",c.sort_key COLLATE \"C\"")
+    "'value',CASE e.target_measure_key WHEN 'record_count' THEN t.record_count::text WHEN 'person_count' THEN t.person_count::text WHEN 'person_days' THEN t.person_days::text WHEN 'interval_count' THEN t.interval_count::text WHEN 'n' THEN t.n::text END) ORDER BY e.measure_key) FROM ",s,".achillesnext_denominator_edge e ",
+    # An ordered seek can use all three primary-key columns even when statistics
+    # underestimate this release. Keep the edge when its exact target is missing
+    # so validation sees the missing value instead of silently dropping the edge.
+    "LEFT JOIN LATERAL (SELECT row_key,dimensions,record_count,person_count,person_days,interval_count,n FROM ",s,".achillesnext_aggregate_cell ",
+    "WHERE release_id=e.release_id AND metric_id=e.target_metric_id AND row_key>=e.target_row_key ORDER BY row_key LIMIT 1) t ",
+    "ON t.row_key=e.target_row_key WHERE (e.release_id,e.metric_id,e.row_key)=(c.release_id,c.metric_id,c.row_key)), '[]'::jsonb))::text FROM ",s,".achillesnext_aggregate_cell c WHERE c.release_id=",.store_uuid(releaseId)," AND c.metric_id=",.store_literal(metricId)," ORDER BY c.route_key COLLATE \"C\",c.sort_key COLLATE \"C\"")
   sql <- paste0("SELECT CASE WHEN octet_length(doc)<=131072 THEN doc ELSE NULL END FROM (",sub("::text FROM", "::text AS doc FROM",sql,fixed=TRUE),") bounded")
   tx$stream(sql,function(text) {
     .nv_need(.string(text) && nchar(text,type="bytes") <= 131072L, "Stored row resource limit")
@@ -148,7 +154,11 @@
       numeric[keys]
     }
     targets <- c$denominator_refs
-    refs <- lapply(targets,function(ref) {ref$target_dimensions <- NULL;ref})
+    refs <- lapply(targets,function(ref) {
+      .nv_need(!is.null(ref$target_dimensions), "Missing stored denominator target")
+      ref$target_dimensions <- NULL
+      ref
+    })
     row <- .object(row_key=c$row_key,dimensions=c$dimensions,row_kind=kind,state=c$state,reason_code=c$reason_code,values=values,denominator_refs=refs)
     sort <- .v2_row(metricId,row,assets)
     .v2_denominator_check(metricId,row,function(id,key) {
