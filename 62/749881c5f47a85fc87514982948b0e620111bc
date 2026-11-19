@@ -1,0 +1,19 @@
+tools/matched_reference_sql.py
+  s_c1711aea82fe65::t_1863d18c74cce5 328-340
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "62749881c5f47a85fc87514982948b0e620111bc",
+  "prompts": {},
+  "sessions": {
+    "s_c1711aea82fe65": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f16c-2ed1-72b0-b472-1d86395d8be2",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
