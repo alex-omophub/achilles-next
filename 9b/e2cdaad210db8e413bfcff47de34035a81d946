@@ -1,0 +1,14 @@
+inst/sql/postgresql/result-store.sql
+  h_4046c129935915 221,227-230
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "9be2cdaad210db8e413bfcff47de34035a81d946",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
