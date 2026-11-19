@@ -26,9 +26,10 @@ table and checks the release's building state under the same row lock used to
 serialize sealing. Direct inserts into a partition use the same guard.
 
 Cell updates and deletes and dataset and edge writes use the row-level release
-guard. It uses the most recently updated physical row address within the
-transaction and verifies the release ID and building state before using it.
-Existing installations use the guards installed when the store was created.
+guard. Both guards try the most recently updated physical row address within
+the transaction. They verify the release ID and building state and fall back
+to the release primary key if the address misses. Existing installations use
+the guards installed when the store was created.
 
 Generation operation telemetry includes a `persistence` object with written row/
 edge counts, cell/edge statement counts, SQL bytes, configured queue bounds and

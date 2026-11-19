@@ -47,13 +47,20 @@ testPersistenceSafety<-function(details,schema,baseRelease,config,lib,out,execut
   statement<-paste0("INSERT INTO ",target," SELECT (jsonb_populate_record(NULL::",cells,
     ",to_jsonb(c)||jsonb_build_object('release_id',",uuid(leafRelease),"))).* FROM ",cells,
     " c WHERE c.release_id=",uuid(good)," AND c.row_key=",lit(leaf$ROW_KEY))
-  execute(statement)
+  f(".store_transaction")(details,schema,function(tx) {
+    wrong<-tx$one(paste0("SELECT ctid::text FROM ",schema,".achillesnext_result_release WHERE release_id=",uuid(good)))
+    tx$one(paste0("SELECT set_config('achillesnext.revision_location',",lit(wrong),",true)"))
+    tx$execute(statement)
+    current<-tx$one(paste0("SELECT ctid::text FROM ",schema,".achillesnext_result_release WHERE release_id=",uuid(leafRelease)))
+    stopifnot(tx$one("SELECT current_setting('achillesnext.revision_location')")==current)
+  })
   execute(paste0(statement," ON CONFLICT DO NOTHING"))
-  stopifnot(count(leafRelease)=="1",revision(leafRelease)=="3")
-  # A writable release earlier in a multi-release statement must roll back
-  # when another target is closed. Use unused keys in both releases.
-  execute(paste0("UPDATE ",schema,".achillesnext_result_release SET state='failed' WHERE release_id=",uuid(leafRelease)))
+  stopifnot(count(leafRelease)=="1",revision(leafRelease)=="3",revision(good)=="11")
+  # Close the second target in UUID order so the first target is updated
+  # before the guard rejects the statement.
   otherRelease<-copyMetadata()
+  orderedReleases<-sort(c(leafRelease,otherRelease),method="radix")
+  execute(paste0("UPDATE ",schema,".achillesnext_result_release SET state='failed' WHERE release_id=",uuid(orderedReleases[[2L]])))
   mixed<-paste0("INSERT INTO ",cells," SELECT (jsonb_populate_record(NULL::",cells,
     ",to_jsonb(c)||jsonb_build_object('release_id',target.id,'row_key',repeat('c',64),'sort_key','probe'))).* FROM ",cells,
     " c CROSS JOIN (VALUES (",uuid(leafRelease),"),(",uuid(otherRelease),")) AS target(id)",

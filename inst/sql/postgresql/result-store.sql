@@ -248,14 +248,22 @@ CREATE TRIGGER dataset_building BEFORE INSERT OR UPDATE OR DELETE ON __STORE__.a
 -- Transition rows include the accepted inserts across all targeted partitions.
 CREATE FUNCTION __STORE__.guard_inserted_cells() RETURNS trigger
 LANGUAGE plpgsql SET search_path=pg_catalog AS $guard$
-DECLARE batch record;
+DECLARE batch record; hint text; updated tid;
 BEGIN
  FOR batch IN SELECT release_id, count(*) AS cell_count FROM inserted_cells
               GROUP BY release_id ORDER BY release_id LOOP
-   UPDATE __STORE__.achillesnext_result_release
-   SET content_revision=content_revision+batch.cell_count
-   WHERE release_id=batch.release_id AND state='building';
-   IF NOT FOUND THEN RAISE EXCEPTION 'Release is not writable'; END IF;
+   updated := NULL;
+   hint := current_setting('achillesnext.revision_location',true);
+   IF length(hint)<=16 AND hint COLLATE "C" ~ '^[(][0-9]{1,9},[0-9]{1,4}[)]$' THEN
+     UPDATE __STORE__.achillesnext_result_release SET content_revision=content_revision+batch.cell_count
+     WHERE ctid=hint::tid AND release_id=batch.release_id AND state='building' RETURNING ctid INTO updated;
+   END IF;
+   IF updated IS NULL THEN
+     UPDATE __STORE__.achillesnext_result_release SET content_revision=content_revision+batch.cell_count
+     WHERE release_id=batch.release_id AND state='building' RETURNING ctid INTO updated;
+   END IF;
+   IF updated IS NULL THEN RAISE EXCEPTION 'Release is not writable'; END IF;
+   PERFORM set_config('achillesnext.revision_location',updated::text,true);
  END LOOP;
  RETURN NULL;
 END
