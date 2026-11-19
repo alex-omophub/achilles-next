@@ -53,10 +53,16 @@
     ledger,query(ids[4],"jsonb_build_object('operation_id',t->'operation_id','phase',t->'phase')",timing,"facts CROSS JOIN LATERAL jsonb_array_elements(v->'timings') t")),ids)
 }
 .render_numeric_query <- function(mid,output,inventory,careReason) {
-  care<-if(mid=="core.visit.care_setting_count")paste0("o.dimensions->>'setting_kind'='place_of_service' AND (",careReason,") IS NOT NULL") else "FALSE"
   empty<-"o.row_kind='summary' AND o.values->>'n'='0'"
-  paste0("SELECT o.metric_id,o.row_kind,o.dimensions,CASE WHEN ",care," THEN NULL::jsonb ELSE o.values END AS values,",
-    "CASE WHEN ",care," THEN CASE WHEN (",careReason,")='capability.care_site_absent' THEN 'unsupported' ELSE 'unavailable' END WHEN ",empty," THEN 'empty_population' ELSE i.state END AS state,",
-    "CASE WHEN ",care," THEN ",careReason," WHEN ",empty," THEN 'summary.no_eligible' ELSE i.reason_code END AS reason_code FROM (SELECT * FROM ",output,
-    ") o JOIN ",inventory," i ON i.metric_id=o.metric_id WHERE o.metric_id=",.store_literal(mid))
+  values<-"o.values";state<-paste0("CASE WHEN ",empty," THEN 'empty_population' ELSE i.state END")
+  reason<-paste0("CASE WHEN ",empty," THEN 'summary.no_eligible' ELSE i.reason_code END")
+  if(mid=="core.visit.care_setting_count") {
+    missing<-paste0("o.dimensions->>'setting_kind'='place_of_service' AND (",careReason,") IS NOT NULL")
+    values<-paste0("CASE WHEN ",missing," THEN NULL::jsonb ELSE ",values," END")
+    state<-paste0("CASE WHEN ",missing," THEN CASE WHEN (",careReason,")='capability.care_site_absent'",
+      " THEN 'unsupported' ELSE 'unavailable' END ELSE ",state," END")
+    reason<-paste0("CASE WHEN ",missing," THEN ",careReason," ELSE ",reason," END")
+  }
+  paste0("SELECT o.metric_id,o.row_kind,o.dimensions,",values," AS values,",state," AS state,",reason," AS reason_code FROM (SELECT * FROM ",
+    output,") o JOIN ",inventory," i ON i.metric_id=o.metric_id WHERE o.metric_id=",.store_literal(mid))
 }

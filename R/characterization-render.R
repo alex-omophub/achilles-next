@@ -95,7 +95,9 @@ renderCharacterizationSql <- function(cdmSchema,sourceId,declaredCdmVersion,sour
     .nv_need(all(vapply(careMeta,function(m)m$type%in%c("int2","int4","int8"),TRUE)),"Unsupported CARE_SITE type")
     guard("care.readonly",paste0("SELECT (has_table_privilege(current_user,",.store_literal(paste0(source,'.care_site')),
       ",'INSERT,UPDATE,DELETE,TRUNCATE') OR has_any_column_privilege(current_user,",.store_literal(paste0(source,'.care_site')),",'INSERT,UPDATE'))::text"),"false","Use SELECT-only CARE_SITE privileges")
-    careAmbiguous<-paste0("EXISTS(SELECT 1 FROM ",source,".care_site WHERE care_site_id IS NOT NULL GROUP BY care_site_id HAVING COUNT(*)>1)")
+    careStatus<-stage("carestatus",paste0("SELECT EXISTS(SELECT 1 FROM ",source,
+      ".care_site WHERE care_site_id IS NOT NULL GROUP BY care_site_id HAVING COUNT(*)>1) AS ambiguous"))
+    careAmbiguous<-paste0("(SELECT ambiguous FROM ",careStatus,")")
     care<-stage("care",paste0("SELECT care_site_id,place_of_service_concept_id FROM ",source,".care_site WHERE NOT (",careAmbiguous,")"),"care_site_id")
   }
   careReasonSql<-if(is.null(careReason))paste0("CASE WHEN ",careAmbiguous," THEN 'capability.care_site_ambiguous'::text END") else paste0(.store_literal(careReason),"::text")

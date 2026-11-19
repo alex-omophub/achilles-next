@@ -31,6 +31,14 @@ local({
       all(vapply(p$steps,function(s)s$kind%in%c('execute','assert_scalar'),TRUE)),
       any(vapply(p$steps,function(s)s$id=='source.declaration'&&s$expected=='true',TRUE)))
     stopifnot(p$batch$scope$history=='source_derived_full_history',is.null(p$batch$scope$observed_window))
+    # Physical CARE_SITE reads belong to staging. Only the visit setting report
+    # depends on the saved ambiguity flag.
+    numerical<-Filter(function(spec)spec$kind=='aggregate',p$outputs)
+    uses<-function(text) vapply(numerical,function(spec)grepl(text,spec$sql,fixed=TRUE),TRUE)
+    stopifnot(!any(uses('"cdm".care_site')))
+    hasCare<-all(c('care_site.care_site_id','care_site.place_of_service_concept_id') %in%
+      paste(declaration$table[declaration$readable],declaration$column[declaration$readable],sep='.'))
+    stopifnot(identical(names(numerical)[uses('_carestatus"')],if(hasCare)'core.visit.care_setting_count' else character()))
     drugSteps<-Filter(function(step)startsWith(step$id,'drugreports.'),p$steps)
     drugMetrics<-paste0('core.drug.',c('first_age','days_supply','refills','quantity'),'_summary')
     matches<-vapply(drugMetrics,function(metric)

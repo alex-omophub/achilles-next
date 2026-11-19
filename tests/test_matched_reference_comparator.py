@@ -2,6 +2,7 @@
 import copy
 import hashlib
 import json
+import os
 import re
 import subprocess
 import tempfile
@@ -63,6 +64,62 @@ def metadata_snapshot():
 
 
 class MatchedReferenceTest(unittest.TestCase):
+    @unittest.skipUnless(os.environ.get('ACHILLES_NEXT_FIXTURE_STATE'), 'Requires the marked synthetic fixture database')
+    def test_visit_care_setting_marginals_and_states(self):
+        pg = CONTROLLER.Postgres(Path(os.environ['ACHILLES_NEXT_FIXTURE_STATE']).resolve())
+        CONTROLLER.guard_database(pg)
+        cols = {'care_site': {'care_site_id': 'bigint', 'place_of_service_concept_id': 'bigint'}}
+        facts = """SELECT jsonb_build_object('kind','id','value',concept::text) AS concept_tag,
+                   person_id,linked,admitted,discharged,care_site_id FROM (VALUES
+                   (101,1,true,10,20,1),(101,1,true,10,NULL,2),
+                   (202,2,false,NULL,30,NULL),(202,3,true,NULL,30,3))
+                   v(concept,person_id,linked,admitted,discharged,care_site_id)"""
+        cases = {
+            'mapped': ('', None),
+            'null_ids': (',(NULL,71),(NULL,72)', None),
+            'duplicate_referenced': (',(1,99)', 'ambiguous'),
+            'duplicate_unreferenced': (',(7,45)', 'ambiguous'),
+            'denied': ('', 'denied'),
+            'absent': ('', 'absent'),
+        }
+        unaffected = {
+            ('101','visit','101','2','1'), ('202','visit','202','2','1'),
+            ('101','admitted_from','10','2','1'), ('202','admitted_from','null','2','1'),
+            ('101','discharged_to','20','1','1'), ('101','discharged_to','null','1','1'),
+            ('202','discharged_to','30','2','1'),
+        }
+        mapped = {('101','place_of_service','99','1','1'), ('101','place_of_service','null','1','1'),
+                  ('202','place_of_service','null','2','1')}
+        missing = {(k,'place_of_service','schema_absent',None,None) for k in ('101','202')}
+        examples = []
+        for case, (extra, status) in cases.items():
+            compiler = SQL.Reference('pg_temp', {} if status == 'absent' else cols,
+                                 ('care_site',) if status == 'denied' else ())
+            query = compiler.domain('visit','care_setting_count',False)
+            setup = ''
+            if status != 'absent':
+                setup = ('CREATE TEMP TABLE care_site(care_site_id bigint, place_of_service_concept_id bigint); '
+                         f'INSERT INTO care_site VALUES (1,99),(2,NULL),(7,44){extra};')
+            if status == 'denied':
+                setup += (" REVOKE SELECT ON care_site FROM CURRENT_USER; "
+                          "DO $$ BEGIN IF has_table_privilege('pg_temp.care_site','SELECT') "
+                          "THEN RAISE EXCEPTION 'CARE_SITE must be inaccessible in this fixture'; END IF; END $$;")
+            if status in ('denied','absent'):
+                self.assertNotIn('"pg_temp"."care_site"', query)
+            rows = json.loads(pg.value(f"""BEGIN; SET LOCAL statement_timeout='5s'; {setup}
+                WITH facts AS ({facts}) SELECT json_agg(r) FROM ({query}) r; ROLLBACK;""", role='runner'))
+            actual = []
+            for row in rows:
+                dims = row['dimensions']; tag = dims['setting_concept_tag']; values = row['values'] or {}
+                actual.append((dims['concept_tag']['value'], dims['setting_kind'], tag.get('value',tag['kind']),
+                               values.get('record_count'), values.get('person_count')))
+            expected = unaffected | (mapped if status is None else missing)
+            self.assertCountEqual(actual, expected, case)
+            examples.append(dict(rows=rows,declared_reason=compiler.care_reason,
+                                 expected_reason=None if status is None else 'capability.care_site_'+status))
+        subprocess.run(['Rscript','--vanilla','tests/tracer/reference-care-settings.R'],
+                       cwd=ROOT, input=json.dumps(examples), text=True, check=True)
+
     def test_domain_integrity_reads_event_facts_once(self):
         for version in ('5.3','5.4','5.5'):
             columns=assets(plan(version=version))[2]

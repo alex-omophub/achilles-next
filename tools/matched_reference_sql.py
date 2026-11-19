@@ -340,13 +340,24 @@ class Reference:
             # marginals. Materializing the full facts CTE would evaluate unrelated
             # observation-window and event-integrity expressions for every visit.
             visits = 'visit_settings'
-            care = self.table('care_site')
-            place = f'(SELECT s.place_of_service_concept_id FROM {care} s WHERE s.care_site_id={visits}.care_site_id)'
-            place_tag = "jsonb_build_object('kind','schema_absent')" if self.care_reason else tag(place)
+            unavailable = "jsonb_build_object('kind','schema_absent')"
+            place_tag = unavailable
+            if self.care_reason is None:
+                care = self.table('care_site')
+                # Any repeated non-null site ID makes the mapping ambiguous
+                # for the entire source, including visits referencing unique IDs.
+                ambiguous = (f'EXISTS (SELECT 1 FROM {care} WHERE care_site_id IS NOT NULL '
+                             'GROUP BY care_site_id HAVING count(*) > 1)')
+                place = f'(SELECT s.place_of_service_concept_id FROM {care} s WHERE s.care_site_id={visits}.care_site_id)'
+                place_tag = f'CASE WHEN {ambiguous} THEN {unavailable} ELSE {tag(place)} END'
             settings = [('visit', 'concept_tag'), ('admitted_from', tag('admitted')),
-                        ('discharged_to', tag('discharged')), ('place_of_service', place_tag)]
+                        ('discharged_to', tag('discharged'))]
             marginals = [count_rows(visits, obj(**concept, setting_kind=lit(kind), setting_concept_tag=value))
                          for kind, value in settings]
+            place_rows = count_rows(visits, obj(**concept, setting_kind=lit('place_of_service'),
+                                                 setting_concept_tag=place_tag))
+            marginals.append("SELECT row_kind,dimensions,CASE WHEN dimensions->'setting_concept_tag'->>'kind' "
+                             f"= 'schema_absent' THEN NULL::jsonb ELSE values END AS values FROM ({place_rows}) place_rows")
             return ('WITH visit_settings AS (SELECT concept_tag,person_id,linked,admitted,discharged,care_site_id FROM facts) '
                     + ' UNION ALL '.join(marginals))
         if suffix=='site_status_count':return ' UNION ALL '.join(count_rows('facts',obj(**concept,dimension_kind=lit(k),dimension_concept_tag=tag(v))) for k,v in [('anatomic_site','anatomic_site_concept_id'),('disease_status','disease_status_concept_id')])

@@ -32,6 +32,20 @@ referenceOptimized <- function(details,source,sourceId,results,version,snapshot,
   generate(details,source,sourceId,results,version,maxAggregateRows=maxRows,check=if(is.null(observer))NULL else observer$check)
 }
 
+# Only the place-of-service marginal depends on CARE_SITE. A valid lookup
+# with no matched value produces the ordinary null tag and retains counts.
+referenceCareSettingRow <- function(row, declaredReason) {
+  if (!identical(row$dimensions$setting_kind, "place_of_service")) return(row)
+  unavailable <- identical(row$dimensions$setting_concept_tag$kind, "schema_absent")
+  stopifnot(is.null(declaredReason) || unavailable)
+  if (!unavailable) return(row)
+  reason <- if (is.null(declaredReason)) "capability.care_site_ambiguous" else declaredReason
+  row$state <- if (identical(reason, "capability.care_site_absent")) "unsupported" else "unavailable"
+  row$reason_code <- reason
+  row["values"] <- list(NULL)
+  row
+}
+
 referenceGenerate <- function(details,source,sourceId,results,version,compiled,snapshot,witnesses,maxRows=50000L,observer=NULL) {
   f<-function(n)get(n,asNamespace('AchillesNext'));lit<-f('.store_literal');uuid<-f('.store_uuid');o<-f('.object')
   if(!is.null(observer))f<-observer$lookup(f)
@@ -92,9 +106,7 @@ referenceGenerate <- function(details,source,sourceId,results,version,compiled,s
         v<-f('.store_decode')(raw);d<-datasets[[mid]]
         row<-o(row_key='',dimensions=v$dimensions,row_kind=v$row_kind,state=d$state,reason_code=d$reason_code,values=lapply(v$values,f('.baseline_normalize')),denominator_refs=list())
         if(row$row_kind=='summary'&&row$values$n=='0'){row$state<-'empty_population';row$reason_code<-'summary.no_eligible'}
-        if(mid=='core.visit.care_setting_count'&&row$dimensions$setting_kind=='place_of_service'&&!is.null(compiled$care_reason)) {
-          row$state<-if(compiled$care_reason=='capability.care_site_absent')'unsupported' else 'unavailable';row$reason_code<-compiled$care_reason;row['values']<-list(NULL)
-        }
+        if(mid=='core.visit.care_setting_count')row<-referenceCareSettingRow(row,compiled$care_reason)
         row$denominator_refs<-f('.domain_denominators')(mid,row,v$denominator)
         row$row_key<-f('.v2_row_identity')(assets$rows[[mid]],row);writer$add(mid,row)
       });writer$flush()
