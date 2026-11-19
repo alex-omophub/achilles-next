@@ -2,6 +2,11 @@
 # engine before JDBC sees a payload; cursor batches and callbacks remain bounded.
 .sql_execution_transport <- function(jdbc,limits,tick,startedClock) {
   records<-list();submitSeconds<-0;fetchSeconds<-0;metadataRows<-0;metadataBytes<-0
+  # Keep the registered step visible even when PostgreSQL truncates activity text.
+  statementTag <- function(id) {
+    .sql_execution_need(.string(id) && grepl("\\A[a-z0-9_.-]{1,128}\\z",id,perl=TRUE,useBytes=TRUE),"execution.invalid_program")
+    paste0("/* AchillesNext ",id," */ ")
+  }
   wall<-function()proc.time()[["elapsed"]]
   timeout<-function()as.integer(max(1,min(ceiling(limits$statement_timeout_ms/1000),
     ceiling(limits$max_elapsed_seconds-(wall()-startedClock)))))
@@ -22,7 +27,7 @@
     tick();stmt<-rJava::.jcall(jdbc,"Ljava/sql/Statement;","createStatement");complete<-FALSE
     on.exit(close(stmt,NULL,complete),add=TRUE)
     rJava::.jcall(stmt,"V","setQueryTimeout",timeout())
-    begin<-wall();rJava::.jcall(stmt,"Z","execute",sql);duration<-wall()-begin
+    begin<-wall();rJava::.jcall(stmt,"Z","execute",paste0(statementTag(id),sql));duration<-wall()-begin
     tick();record(id,phase,"execute",sql,duration,0,0,0);complete<-TRUE;invisible(NULL)
   }
   stream<-function(sql,visit,id,phase,parameter=NULL,maxRows=4096L,maxBytes=8*1024^2) {
@@ -37,7 +42,7 @@
     rowLimit<-format(maxRows,scientific=FALSE,trim=TRUE);byteLimit<-format(maxBytes,scientific=FALSE,trim=TRUE)
     guard<-paste0("CASE WHEN row_no>",rowLimit," THEN 'rows' WHEN doc IS NULL OR octet_length(convert_to(doc,'UTF8'))>",
       limits$max_row_bytes," THEN 'row_bytes' WHEN payload_bytes>",byteLimit," THEN 'bytes' ELSE 'ok' END")
-    wrapped<-paste0("SELECT CASE WHEN guard='ok' THEN doc ELSE NULL END AS doc,guard FROM (SELECT doc,",guard,
+    wrapped<-paste0(statementTag(id),"SELECT CASE WHEN guard='ok' THEN doc ELSE NULL END AS doc,guard FROM (SELECT doc,",guard,
       " AS guard FROM (SELECT doc,row_number() OVER (ROWS UNBOUNDED PRECEDING) AS row_no,",
       "sum(octet_length(convert_to(doc,'UTF8'))) OVER (ROWS UNBOUNDED PRECEDING) AS payload_bytes FROM (",sql,
       ") q(doc) LIMIT ",format(maxRows+1,scientific=FALSE,trim=TRUE),") bounded) guarded")
