@@ -1,0 +1,19 @@
+R/domain-reports.R
+  s_c1711aea82fe65::t_a392fc354469a1 19-27,60,66,72,76,78,80,84,86
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f2da3861711dc805afefeca2f5d40dd4e77bbdd5",
+  "prompts": {},
+  "sessions": {
+    "s_c1711aea82fe65": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f16c-2ed1-72b0-b472-1d86395d8be2",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
