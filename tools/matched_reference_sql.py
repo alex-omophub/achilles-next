@@ -192,6 +192,8 @@ class Reference:
             return self.observation_qualification(domain)
         if domain in DOMAINS and prefix=='observed' and suffix=='year_gender_age_count':
             return self.observed_demographics(domain)
+        if domain in ('measurement','observation') and suffix=='representation_count':
+            return self.representation_count(domain)
         if domain=='person':query=self.person(suffix)
         elif domain=='observation_period':query=self.observation(suffix)
         elif domain=='density':query=self.density(suffix)
@@ -388,6 +390,45 @@ class Reference:
           jsonb_build_object('person_count',count(DISTINCT person_id)::text) AS values
         FROM inside GROUP BY GROUPING SETS ((concept_id,year,gender_concept_id,age_decile),(year,gender_concept_id,age_decile))"""
 
+    def representation_count(self,domain):
+        d=PROFILE['domains'][domain]
+        events=self.table(d['table'])
+        concept=self.col(domain,d['concept'])
+        person=self.table('person')
+        names=['value_as_number','value_as_concept_id','value_source_value']
+        if domain=='observation':
+            names+=['value_as_string','value_as_date']
+        flags=[];grid=[]
+        for i,name in enumerate(names):
+            if name not in self.columns[d['table']]:
+                flags.append("'X'")
+                grid.append(f"(VALUES('X')) f{i}(v)")
+                continue
+            col=self.col(domain,name)
+            present=f'{col} IS NOT NULL'
+            if name=='value_as_concept_id':
+                present+=f' AND {col}<>0'
+            elif name in ('value_source_value','value_as_string'):
+                present+=f" AND btrim({col},' ')<>''"
+            flags.append(f'({present})::integer::text')
+            grid.append(f"(VALUES('0'),('1')) f{i}(v)")
+        observed='||'.join(flags)
+        enumerated='||'.join(f'f{i}.v' for i in range(len(names)))
+        choices=' CROSS JOIN '.join(grid)
+        return f"""WITH counted AS (
+          SELECT {concept} AS concept_id,{observed} AS flags,
+            count(*) AS records,count(DISTINCT p.person_id) AS people
+          FROM {events} e LEFT JOIN {person} p ON p.person_id=e.person_id
+          GROUP BY {concept},{observed}
+        ), concepts AS (SELECT DISTINCT concept_id FROM counted),
+        flags AS (SELECT {enumerated} AS value FROM {choices})
+        SELECT 'counts'::text AS row_kind,
+          jsonb_build_object('concept_tag',{tag('g.concept_id')},'representation_flags',f.value) AS dimensions,
+          jsonb_build_object('record_count',coalesce(c.records,0)::text,'person_count',coalesce(c.people,0)::text) AS values
+        FROM concepts g CROSS JOIN flags f LEFT JOIN counted c ON c.flags=f.value
+          AND (c.concept_id IS NULL)=(g.concept_id IS NULL)
+          AND coalesce(c.concept_id,0)=coalesce(g.concept_id,0)"""
+
     def domain(self,domain,suffix,observed):
         concept={'concept_tag':'concept_tag'};reasons=PROFILE['contracts']['eligibility-reasons']
         dimensions={'source_count':dict(source_concept_tag='source_tag',source_value_state='source_state'),
@@ -428,16 +469,6 @@ class Reference:
                 value='(end_date-event_date)::numeric';order=reasons['elapsed_duration_order']
                 why=f"CASE WHEN NOT valid_date THEN 'start_missing_or_invalid' WHEN NOT {valid_date('end_date')} THEN 'end_missing_or_invalid' WHEN end_date<event_date THEN 'end_before_start' ELSE 'eligible' END"
             return summary(f'SELECT {obj(**fields)} AS dimensions,{value} AS value,{why} AS reason FROM facts',order)
-        if suffix=='representation_count':
-            names=['value_as_number','value_as_concept_id','value_source_value']+(['value_as_string','value_as_date'] if domain=='observation' else [])
-            expr=[];grids=[]
-            for i,name in enumerate(names):
-                absent=name not in self.columns[PROFILE['domains'][domain]['table']]
-                grids.append(f"(VALUES('X')) f{i}(v)" if absent else f"(VALUES('0'),('1')) f{i}(v)")
-                present=f'{name} IS NOT NULL'+(f' AND {name}<>0' if name=='value_as_concept_id' else f" AND btrim({name},' ')<>''" if name in ['value_source_value','value_as_string'] else '')
-                expr.append("'X'" if absent else f'({present})::integer::text')
-            flags='||'.join(expr);grid=' CROSS JOIN '.join(grids);combos='||'.join(f'f{i}.v' for i in range(len(names)))
-            return f"SELECT 'counts'::text AS row_kind,jsonb_build_object('concept_tag',g.concept_tag,'representation_flags',b.flags) AS dimensions,jsonb_build_object('record_count',count(e.concept_tag)::text,'person_count',count(DISTINCT e.person_id) FILTER(WHERE e.linked)::text) AS values FROM (SELECT DISTINCT concept_tag FROM facts) g CROSS JOIN (SELECT {combos} AS flags FROM {grid}) b LEFT JOIN (SELECT *,{flags} AS flags FROM facts) e ON e.concept_tag=g.concept_tag AND e.flags=b.flags GROUP BY g.concept_tag,b.flags"
         numeric=f"CASE WHEN value_as_number IS NULL THEN 'numeric_missing' WHEN NOT {finite('value_as_number')} THEN 'numeric_non_finite' WHEN unit_concept_id IS NULL THEN 'unit_null' WHEN unit_concept_id=0 THEN 'unit_zero' WHEN NOT known_unit THEN 'unit_unrecognized' "+("WHEN operator_concept_id IS NOT NULL AND operator_concept_id<>0 THEN 'operator_explicit_measurement_only' " if domain=='measurement' else '')+"ELSE 'eligible' END"
         if suffix=='numeric_eligibility_count':return count_rows('facts',obj(**concept,reason=numeric),False)
         if suffix=='numeric_summary':
