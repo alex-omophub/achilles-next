@@ -107,8 +107,19 @@ many forms of `ALTER TABLE`. A session can show `idle in transaction` while the
 client processes aggregates between cursor fetches. [PostgreSQL table locks](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-TABLES) · [Activity states](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW).
 
 Set the source JDBC connection's `ApplicationName` property to a distinctive
-value for the run. From a second connection to the same database, substitute
-that name and the qualified table name below. Checked source statements begin with
+value for the run. Open a second connection to the same database using the source
+login or a role that can see its activity. An authorized monitoring role with
+`pg_read_all_stats` or a superuser can also see other sessions’ query text.
+PostgreSQL can hide the step ID and wait details from other roles. [PostgreSQL activity visibility](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-STATS-VIEWS).
+
+In `psql`, enter the application name and table for this run.
+
+```text
+\prompt 'Source JDBC ApplicationName > ' source_app
+\prompt 'Qualified source table > ' source_relation
+```
+
+Checked source statements begin with
 a comment containing the step ID. For example, `output.core.condition.capture_count`
 identifies a report fetch. In an idle transaction, PostgreSQL shows the last
 statement the backend executed. The last column shows whether
@@ -131,8 +142,8 @@ SELECT a.pid, a.state, a.wait_event_type, a.wait_event,
        ) AS blocks_waiter_on_table
 FROM pg_stat_activity AS a
 LEFT JOIN pg_locks AS held ON held.pid = a.pid AND held.database = a.datid
-  AND held.locktype = 'relation' AND held.relation = to_regclass('cdm.measurement')
-WHERE a.datname = current_database() AND a.application_name = 'achillesnext-source';
+  AND held.locktype = 'relation' AND held.relation = to_regclass(:'source_relation')
+WHERE a.datname = current_database() AND a.application_name = :'source_app';
 ```
 
 ## Bounds and cancellation
