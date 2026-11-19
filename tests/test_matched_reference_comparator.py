@@ -212,9 +212,11 @@ class MatchedReferenceTest(unittest.TestCase):
             argv=['test_matched_reference.py','--state',str(root),'--config',str(root/'config.R'),'--output-dir',str(out)]
             with patch.object(sys,'argv',argv),patch.object(CONTROLLER,'Postgres',return_value=pg),\
                  patch.object(CONTROLLER,'load_preview',side_effect=load),patch.object(CONTROLLER,'load_model',side_effect=load),\
-                 patch.object(CONTROLLER.subprocess,'run',side_effect=RuntimeError('worker failed')),\
+                 patch.object(CONTROLLER,'verify_reference_locks'),\
+                 patch.object(CONTROLLER.subprocess,'run',side_effect=RuntimeError('worker failed')) as worker,\
                  patch.object(CONTROLLER,'drop_preview',side_effect=[RuntimeError('cleanup denied'),None,None]) as cleanup:
                 with self.assertRaisesRegex(RuntimeError,'cleanup failed'):CONTROLLER.main()
+            worker.assert_called_once()
             self.assertEqual(len(loaded),3);self.assertEqual(cleanup.call_count,3)
             self.assertFalse((out/'oracle.json').exists())
 
