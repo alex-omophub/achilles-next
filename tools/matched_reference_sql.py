@@ -114,12 +114,14 @@ class Reference:
             if any(c not in self.columns.get(table,{}) for c in cols):return reason
         return None
 
-    def common(self):
+    def people(self):
+        return f"people AS (SELECT person_id,year_of_birth,gender_concept_id,race_concept_id,ethnicity_concept_id FROM {self.table('person')})"
+
+    def common(self, clinical_calendar=False):
         # PostgreSQL multirange union is independent of the producer's ordered
         # MAX/island implementation; adjacent and overlapping ranges coalesce.
-        p=self.table('person');o=self.table('observation_period')
-        dates=' UNION ALL '.join(f'SELECT {ident(d["event_date"])} AS day FROM {self.table(d["table"])} WHERE {valid_date(ident(d["event_date"]))}' for d in PROFILE['domains'].values())
-        return f"""people AS (SELECT person_id,year_of_birth,gender_concept_id,race_concept_id,ethnicity_concept_id FROM {p}), raw AS (
+        o=self.table('observation_period')
+        base=f"""{self.people()}, raw AS (
           SELECT o.person_id,observation_period_start_date AS lo,observation_period_end_date AS hi,period_type_concept_id,
             CASE WHEN o.person_id IS NULL THEN 'null_person' WHEN NOT EXISTS(SELECT FROM people p WHERE p.person_id=o.person_id) THEN 'orphan_person'
             WHEN observation_period_start_date IS NULL OR observation_period_end_date IS NULL THEN 'null_endpoints'
@@ -128,12 +130,17 @@ class Reference:
         unions AS (SELECT person_id,lower(span) AS lo,upper(span)-1 AS hi FROM multiranges CROSS JOIN LATERAL unnest(spans) span),
         person_stats AS (
           SELECT p.*,count(u.lo)::numeric AS intervals,COALESCE(sum((u.hi-u.lo+1)::numeric),0) AS total_days,min(u.lo) AS first_start,
-            (SELECT hi FROM unions x WHERE x.person_id=p.person_id ORDER BY lo LIMIT 1) AS first_end
+            min(u.hi) AS first_end
           FROM people p LEFT JOIN unions u USING(person_id) GROUP BY p.person_id,p.year_of_birth,p.gender_concept_id,p.race_concept_id,p.ethnicity_concept_id
         ), population_bounds AS (SELECT min(lo) AS lo,max(hi) AS hi FROM unions),
-        all_dates AS (SELECT lo AS day FROM unions UNION ALL SELECT hi FROM unions UNION ALL {dates}),
+        pop_periods AS ({self.periods('population_bounds',True)})"""
+        if not clinical_calendar:
+            return base
+        dates=' UNION ALL '.join(f'SELECT {ident(d["event_date"])} AS day FROM {self.table(d["table"])} WHERE {valid_date(ident(d["event_date"]))}' for d in PROFILE['domains'].values())
+        # Merged intervals for a person are disjoint, so their earliest end
+        # belongs to their earliest start. A person without intervals keeps NULL.
+        return base+f""", all_dates AS (SELECT lo AS day FROM unions UNION ALL SELECT hi FROM unions UNION ALL {dates}),
         domain_bounds AS (SELECT min(day) AS lo,max(day) AS hi FROM all_dates),
-        pop_periods AS ({self.periods('population_bounds',True)}),
         periods AS ({self.periods('domain_bounds',False)})"""
 
     @staticmethod
@@ -183,7 +190,11 @@ class Reference:
         elif domain=='observation_period':query=self.observation(suffix)
         elif domain=='density':query=self.density(suffix)
         else:query=self.domain(domain,suffix,prefix=='observed')
-        ctes=self.common()
+        if domain in ('person','density'):
+            ctes=self.people()
+        else:
+            clinical_calendar=(domain in DOMAINS and suffix=='capture_count') or (domain=='observation_period' and suffix in ('coverage_count','continuous_person_count'))
+            ctes=self.common(clinical_calendar)
         if domain in DOMAINS:ctes+=','+self.facts(domain)
         return f'WITH {ctes} SELECT * FROM ({query}) reference_output'
 
