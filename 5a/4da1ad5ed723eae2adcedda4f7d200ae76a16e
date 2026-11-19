@@ -1,0 +1,23 @@
+inst/sql/postgresql/result-store.sql
+  s_895f6ebe145fd3::t_cffe042d3793dd 251,255-266
+tests/tracer/persistence-safety.R
+  s_895f6ebe145fd3::t_cffe042d3793dd 50-56,58-60,62-63
+docs/development/persistence.md
+  s_895f6ebe145fd3::t_cffe042d3793dd 29-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5a4da1ad5ed723eae2adcedda4f7d200ae76a16e",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-sol"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
