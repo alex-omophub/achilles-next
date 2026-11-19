@@ -24,6 +24,19 @@ testPersistenceSafety<-function(details,schema,baseRelease,config,lib,out,execut
   }
   good<-copyMetadata();f(".store_transaction")(details,schema,function(tx)fill(tx,good))
   stopifnot(count(good)=="5",revision(good)=="11")
+  # Exercise a valid address for a different release, invalid settings, and
+  # revisions from conflict-skipped inserts in the same transaction.
+  hinted<-copyMetadata()
+  f(".store_transaction")(details,schema,function(tx) {
+    setHint<-function(value)tx$one(paste0("SELECT set_config('achillesnext.revision_location',",lit(value),",true)"))
+    other<-tx$one(paste0("SELECT ctid::text FROM ",schema,".achillesnext_result_release WHERE release_id=",uuid(good)))
+    dataset<-paste0(schema,".achillesnext_dataset")
+    retry<-paste0("INSERT INTO ",dataset," SELECT * FROM ",dataset," WHERE release_id=",uuid(hinted)," ON CONFLICT DO NOTHING")
+    for(hint in c(other,"malformed","(4294967296,65536)","(0,0)")) {
+      setHint(hint);tx$execute(retry)
+    }
+  })
+  stopifnot(revision(hinted)=="10",revision(good)=="11",count(hinted)=="0")
   sealResultRelease(details,schema,good)
   stale<-paste(c(uuid(f(".store_new_uuid")()),uuid(good),"10",lit("stale-test"),lit(a$hash),"true","now()","repeat('a',64)"),collapse=",")
   stopifnot(inherits(try(execute(paste0("INSERT INTO ",schema,".achillesnext_validation_receipt VALUES (",stale,")")),silent=TRUE),"try-error"))

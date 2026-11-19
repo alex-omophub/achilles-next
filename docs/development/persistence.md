@@ -25,6 +25,12 @@ reduces submitted write statements; it does **not** reduce the number of per-row
 revision updates. Sealed content, receipt binding and publication semantics are
 unchanged. No store migration, trigger bypass or output-format change is involved.
 
+New PostgreSQL result stores remember the most recently updated release row's
+physical address within a transaction. Each update checks the release ID and
+building state at that address and falls back to the release primary key on a
+miss. This avoids repeated searches through earlier row versions during large
+writes. Existing result stores continue to use their installed guard.
+
 Generation operation telemetry includes a `persistence` object with written row/
 edge counts, cell/edge statement counts, SQL bytes, configured queue bounds and
 observed peak queued rows/SQL bytes. It is generation telemetry, not an analytical

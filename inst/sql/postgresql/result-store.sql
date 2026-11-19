@@ -218,16 +218,26 @@ INSERT INTO __STORE__.achillesnext_storage_version VALUES ('2.0.0');
 
 CREATE FUNCTION __STORE__.guard_building_release() RETURNS trigger
 LANGUAGE plpgsql SET search_path=pg_catalog AS $guard$
-DECLARE target uuid;
+DECLARE target uuid; hint text; updated tid;
 BEGIN
  target := CASE WHEN TG_OP='DELETE' THEN OLD.release_id ELSE NEW.release_id END;
  IF TG_OP='UPDATE' AND NEW.release_id<>OLD.release_id THEN
    RAISE EXCEPTION 'Release identity is immutable';
  END IF;
- -- A concurrent sealer holds the same release row until its transaction ends.
- UPDATE __STORE__.achillesnext_result_release SET content_revision=content_revision+1
- WHERE release_id=target AND state='building';
- IF NOT FOUND THEN RAISE EXCEPTION 'Release is not writable'; END IF;
+ -- Repeated updates to the same release can otherwise revisit its old tuple
+ -- versions throughout a large transaction. The hint only selects a candidate
+ -- physical row. Both paths still check the release identity and building state.
+ hint := current_setting('achillesnext.revision_location',true);
+ IF length(hint)<=16 AND hint COLLATE "C" ~ '^[(][0-9]{1,9},[0-9]{1,4}[)]$' THEN
+   UPDATE __STORE__.achillesnext_result_release SET content_revision=content_revision+1
+   WHERE ctid=hint::tid AND release_id=target AND state='building' RETURNING ctid INTO updated;
+ END IF;
+ IF updated IS NULL THEN
+   UPDATE __STORE__.achillesnext_result_release SET content_revision=content_revision+1
+   WHERE release_id=target AND state='building' RETURNING ctid INTO updated;
+ END IF;
+ IF updated IS NULL THEN RAISE EXCEPTION 'Release is not writable'; END IF;
+ PERFORM set_config('achillesnext.revision_location',updated::text,true);
  IF TG_OP='DELETE' THEN RETURN OLD; END IF;
  RETURN NEW;
 END
