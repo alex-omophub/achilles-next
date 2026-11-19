@@ -325,9 +325,19 @@ class Reference:
             why=f"CASE WHEN value_as_number IS NULL THEN 'numeric_missing' WHEN NOT {finite('value_as_number')} THEN 'numeric_non_finite' WHEN NOT known_unit THEN 'unit_unavailable_or_unrecognized' WHEN operator_concept_id IS NOT NULL AND operator_concept_id<>0 THEN 'operator_explicit' WHEN range_low IS NULL AND range_high IS NULL THEN 'both_bounds_missing' WHEN range_low IS NULL OR range_high IS NULL THEN 'one_bound_missing' WHEN NOT {finite('range_low')} OR NOT {finite('range_high')} THEN 'bound_non_finite' WHEN range_low>range_high THEN 'bounds_reversed' WHEN value_as_number<range_low THEN 'below' WHEN value_as_number>range_high THEN 'above' ELSE 'within' END"
             return count_rows('facts',obj(**concept,unit_concept_tag=tag('unit_concept_id'),raw_operator_tag=tag('operator_concept_id'),reason=why),False)
         if suffix=='care_setting_count':
-            care=self.table('care_site');place=f'(SELECT s.place_of_service_concept_id FROM {care} s WHERE s.care_site_id=facts.care_site_id)'
-            place_tag="jsonb_build_object('kind','schema_absent')" if self.care_reason else tag(place)
-            return ' UNION ALL '.join(count_rows('facts',obj(**concept,setting_kind=lit(k),setting_concept_tag=v)) for k,v in [('visit','concept_tag'),('admitted_from',tag('admitted')),('discharged_to',tag('discharged')),('place_of_service',place_tag)])
+            # Project the shared visit fields before computing the four independent
+            # marginals. Materializing the full facts CTE would evaluate unrelated
+            # observation-window and event-integrity expressions for every visit.
+            visits = 'visit_settings'
+            care = self.table('care_site')
+            place = f'(SELECT s.place_of_service_concept_id FROM {care} s WHERE s.care_site_id={visits}.care_site_id)'
+            place_tag = "jsonb_build_object('kind','schema_absent')" if self.care_reason else tag(place)
+            settings = [('visit', 'concept_tag'), ('admitted_from', tag('admitted')),
+                        ('discharged_to', tag('discharged')), ('place_of_service', place_tag)]
+            marginals = [count_rows(visits, obj(**concept, setting_kind=lit(kind), setting_concept_tag=value))
+                         for kind, value in settings]
+            return ('WITH visit_settings AS (SELECT concept_tag,person_id,linked,admitted,discharged,care_site_id FROM facts) '
+                    + ' UNION ALL '.join(marginals))
         if suffix=='site_status_count':return ' UNION ALL '.join(count_rows('facts',obj(**concept,dimension_kind=lit(k),dimension_concept_tag=tag(v))) for k,v in [('anatomic_site','anatomic_site_concept_id'),('disease_status','disease_status_concept_id')])
         if suffix=='visit_link_presence_count':return ' UNION ALL '.join(count_rows('facts',obj(**concept,link_kind=lit(k),present=f'({k}_id IS NOT NULL)::text')) for k in ['visit_occurrence','visit_detail'])
         if suffix=='end_precision_count':
