@@ -115,7 +115,7 @@ class MatchedReferenceTest(unittest.TestCase):
                                values.get('record_count'), values.get('person_count')))
             expected = unaffected | (mapped if status is None else missing)
             self.assertCountEqual(actual, expected, case)
-            examples.append(dict(rows=rows,declared_reason=compiler.care_reason,
+            examples.append(dict(case=case,rows=rows,declared_reason=compiler.care_reason,
                                  expected_reason=None if status is None else 'capability.care_site_'+status))
         subprocess.run(['Rscript','--vanilla','tests/tracer/reference-care-settings.R'],
                        cwd=ROOT, input=json.dumps(examples), text=True, check=True)
