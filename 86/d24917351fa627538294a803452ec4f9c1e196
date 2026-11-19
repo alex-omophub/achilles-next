@@ -1,0 +1,21 @@
+tests/test_matched_reference_comparator.py
+  s_2e6736d37a173f::t_0a794286abe00b 118
+tests/tracer/reference-care-settings.R
+  s_2e6736d37a173f::t_66d93f901f7672 10,13-19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "86d24917351fa627538294a803452ec4f9c1e196",
+  "prompts": {},
+  "sessions": {
+    "s_2e6736d37a173f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1f374-d16b-7be2-80d3-7d82fea92584",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
