@@ -106,7 +106,7 @@ local({
       assignInNamespace('.jcall',previous$jcall,ns='rJava')},add=TRUE)
     jdbc<-new.env(parent=emptyenv());statement<-new.env(parent=emptyenv())
     connection<-methods::new('AchillesCleanupTestConnection',jConnection=jdbc)
-    events<-character();rollbacks<-0L;disconnects<-0L;connections<-0L;workCalls<-0L;visits<-0L
+    submitted<-NULL;events<-character();rollbacks<-0L;disconnects<-0L;connections<-0L;workCalls<-0L;visits<-0L
     assignInNamespace('connect',function(...) {connections<<-connections+1L;connection},ns='DatabaseConnector')
     assignInNamespace('disconnect',function(con,...) {
       stopifnot(identical(con,connection));disconnects<<-disconnects+1L
@@ -125,6 +125,7 @@ local({
       if(identical(method,'createStatement'))return(statement)
       if(method%in%c('setQueryTimeout','cancel','close'))return(invisible(NULL))
       if(identical(method,'execute')) {
+        submitted<<-list(...)[[1L]]
         workCalls<<-workCalls+1L
         stop('private SQL credential sentinel')
       }
@@ -144,6 +145,7 @@ local({
     }
     result<-tryCatch(execute(details,program,function(...){visits<<-visits+1L}),error=identity,interrupt=identity)
     stopifnot(connections==1L,workCalls>=1L,visits==0L,identical(events,sequence))
+    if(!workSucceeds)stopifnot(startsWith(submitted,"/* AchillesNext executor.statement_timeout */ SET LOCAL statement_timeout="))
     if(is.null(code))stopifnot(is.list(result),!inherits(result,'condition'),result$state=='succeeded',
       result$cleanup$transaction=='rolled_back',result$cleanup$connection=='disconnected') else {
       stopifnot(inherits(result,'AchillesSqlExecutionFailure'),identical(result$reason_code,code),

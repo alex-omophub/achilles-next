@@ -92,9 +92,48 @@ to cancel. Signaling a warning or an unrelated condition does not cancel.
 Callbacks should stage data until success. A callback can receive some rows before
 a later callback, timeout, cancellation or resource check fails. Source rollback
 cannot undo files, database writes or messages performed by arbitrary callbacks.
-The executor supplies no canonical row keys, denominator references, persistence,
-validation receipt, approval or current-publication change. Existing candidate
-and refresh APIs keep their own orchestration and do not yet consume this stream.
+The [compiled candidate generator](compiled-candidate.md) consumes this stream.
+It creates canonical row keys and stages the captured aggregates while the source
+transaction is open. After the executor confirms rollback and disconnection, the
+generator replays the capture into the result store and binds denominator
+references. Publication and approval are separate operations.
+
+## Inspect a long-running source session
+
+PostgreSQL normally holds an `AccessShareLock` on each source table it reads until
+the transaction ends. This lock is compatible with ordinary inserts, updates and
+deletes. It conflicts with `AccessExclusiveLock`, as requested by `TRUNCATE` and
+many forms of `ALTER TABLE`. A session can show `idle in transaction` while the
+client processes aggregates between cursor fetches. [PostgreSQL table locks](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-TABLES) · [Activity states](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW).
+
+Set the source JDBC connection's `ApplicationName` property to a distinctive
+value for the run. From a second connection to the same database, substitute
+that name and the qualified table name below. Checked source statements begin with
+a comment containing the step ID. For example, `output.core.condition.capture_count`
+identifies a report fetch. In an idle transaction, PostgreSQL shows the last
+statement the backend executed. The last column shows whether
+another session is currently waiting on this table with the source backend
+listed as a blocker. Empty lock columns mean the named session has no visible
+relation lock on that table. [JDBC connection properties](https://jdbc.postgresql.org/documentation/use/) · [PostgreSQL blocking sessions](https://www.postgresql.org/docs/current/functions-info.html#FUNCTIONS-INFO-SESSION).
+
+```sql
+SELECT a.pid, a.state, a.wait_event_type, a.wait_event,
+       substring(a.query FROM '/\* AchillesNext ([a-z0-9_.-]+) \*/') AS step_id,
+       held.mode, held.granted,
+       EXISTS (
+         SELECT 1
+         FROM pg_locks AS waiting
+         WHERE waiting.locktype = 'relation'
+           AND waiting.database = held.database
+           AND waiting.relation = held.relation
+           AND NOT waiting.granted
+           AND a.pid = ANY(pg_blocking_pids(waiting.pid))
+       ) AS blocks_waiter_on_table
+FROM pg_stat_activity AS a
+LEFT JOIN pg_locks AS held ON held.pid = a.pid AND held.database = a.datid
+  AND held.locktype = 'relation' AND held.relation = to_regclass('cdm.measurement')
+WHERE a.datname = current_database() AND a.application_name = 'achillesnext-source';
+```
 
 ## Bounds and cancellation
 

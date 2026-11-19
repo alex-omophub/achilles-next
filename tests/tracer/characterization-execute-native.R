@@ -50,7 +50,8 @@ testCharacterizationExecuteUtf8Transport <- function(details) {
     assignInNamespace('.jcall',original,ns='rJava')
     if(is.null(code))stopifnot(is.null(error)) else
       stopifnot(inherits(error,'AchillesSqlExecutionFailure'),identical(error$reason_code,code))
-    stopifnot(length(prepared)==1L,reads==payloadReads,length(visited)==payloadReads)
+    stopifnot(length(prepared)==1L,startsWith(prepared[[1]],paste0("/* AchillesNext fixture.",name," */ ")),
+      reads==payloadReads,length(visited)==payloadReads)
     for(text in visited)stopifnot(nchar(text,type='bytes')<=maxRowBytes)
     # Independently inspect what the engine returned, not just callback behavior.
     # Rollback acknowledges any cancellation before issuing a fresh audit query.
@@ -226,7 +227,7 @@ testCharacterizationExecuteFailures <- function(details,owner,schema,sourceId,ve
   while(!file.exists(resultFile)&&proc.time()[['elapsed']]-start<20) {
     controlSession$execute('SELECT pg_stat_clear_snapshot()')
     wait<-controlSession$query(paste0("SELECT count(*)::text AS waiting FROM pg_stat_activity WHERE datname=current_database() AND usename=current_user AND application_name=",
-      lit(ctx$app)," AND wait_event_type='Lock'"))
+      lit(ctx$app)," AND wait_event_type='Lock' AND position('/* AchillesNext ' in query)>0"))
     if(identical(wait$WAITING,'1'))blocked<-TRUE
     Sys.sleep(.02)
   }
