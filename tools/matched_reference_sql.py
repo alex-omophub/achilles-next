@@ -276,7 +276,9 @@ class Reference:
         # while the last join also distinguishes null from the numeric ID zero.
         return f"""WITH intervals AS (
           SELECT o.person_id,o.observation_period_start_date AS lo,o.observation_period_end_date AS hi
-          FROM {observation} o WHERE o.observation_period_start_date<=o.observation_period_end_date
+          FROM {observation} o WHERE {valid_date('o.observation_period_start_date')}
+            AND {valid_date('o.observation_period_end_date')}
+            AND o.observation_period_start_date<=o.observation_period_end_date
             AND EXISTS(SELECT FROM {person} p WHERE p.person_id=o.person_id)
         ), extrema AS ({' UNION ALL '.join(bounds)}), bounds AS (SELECT min(lo) AS lo,max(hi) AS hi FROM extrema)
         {observed_cte}, scopes AS ({scopes}{undated}), concepts AS (

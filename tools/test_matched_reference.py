@@ -66,6 +66,8 @@ def verify_reference_capture_membership(pg, columns):
     intervals=[(1,'2020-01-30','2020-02-02'),(1,'2020-02-01','2020-02-05'),
                (1,'2020-02-06','2020-02-06'),(1,'2020-03-01','2020-03-01'),
                (2,'2020-02-05','2020-02-01'),(2,None,'2020-02-03'),
+               (2,'-infinity','2020-02-03'),(2,'2020-01-01','infinity'),
+               (2,'0001-12-31 BC','2020-02-03'),(2,'2020-01-01','10000-01-01'),
                (77,'2019-01-01','2030-01-01')]
     tables['observation_period']=[dict(person_id=p,observation_period_start_date=lo,
                                     observation_period_end_date=hi) for p,lo,hi in intervals]
