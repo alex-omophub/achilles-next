@@ -59,6 +59,59 @@ def load_model(pg,model,version):
     return dict(schema=schema,marker=marker,manifest_sha256=digest,version=version)
 
 
+def verify_reference_capture_membership(pg, columns):
+    """Check distinct-person totals, sparse periods and unlinked facts on a marked local source."""
+    tables={name:[] for name in columns}
+    tables['person']=[dict(person_id=1),dict(person_id=2)]
+    intervals=[(1,'2020-01-30','2020-02-02'),(1,'2020-02-01','2020-02-05'),
+               (1,'2020-02-06','2020-02-06'),(1,'2020-03-01','2020-03-01'),
+               (2,'2020-02-05','2020-02-01'),(2,None,'2020-02-03'),
+               (2,'-infinity','2020-02-03'),(2,'2020-01-01','infinity'),
+               (2,'0001-12-31 BC','2020-02-03'),(2,'2020-01-01','10000-01-01'),
+               (77,'2019-01-01','2030-01-01')]
+    tables['observation_period']=[dict(person_id=p,observation_period_start_date=lo,
+                                    observation_period_end_date=hi) for p,lo,hi in intervals]
+    # Independent labels for the events inside the valid, linked interval union.
+    events=[(1,None,'2020-01-31',True),(1,0,'2020-02-01',True),(1,-7,'2020-02-05',True),
+            (1,-7,'2020-02-05',True),(1,0,'2020-02-06',True),(1,-7,'2020-02-07',False),
+            (1,None,'2020-03-01',True),(2,0,'2020-02-01',False),(77,9,'2020-01-01',False),
+            (None,9,'2020-02-01',False),(1,0,None,False),(2,9,'10000-01-01',False)]
+    tables['condition_occurrence']=[dict(person_id=p,condition_concept_id=c,condition_start_date=day)
+                                 for p,c,day,_ in events]
+    # A different domain extends the calendar into an otherwise empty month.
+    tables['measurement']=[dict(measurement_date='2020-04-01')]
+    fixture=load_model(pg,dict(columns=columns,tables=tables),'5.5')
+    try:
+        r=Reference(fixture['schema'],columns)
+        for prefix in ('core','observed'):
+            scopes=[('full_scope',None,None),('calendar_year','2020-01-01','2020-12-31')]
+            scopes += [('calendar_month','2020-'+m+'-01','2020-'+m+'-'+last)
+                       for m,last in [('01','31'),('02','29'),('03','31'),('04','30')]]
+            if prefix=='core':
+                scopes.append(('undated',None,None))
+            rows=pg.rows(r.compile(prefix+'.condition.capture_count'),role='runner')
+            expected={}
+            for kind,lo,hi in scopes:
+                for concept in ('all',None,-7,0,9):
+                    chosen=[(p,c,d) for p,c,d,inside in events if (inside or prefix=='core')
+                            and (concept=='all' or concept==c)
+                            and (kind=='full_scope' or kind=='undated' and d is None
+                                 or kind.startswith('calendar_') and d is not None and len(d)==10 and lo<=d<=hi)]
+                    expected[(kind,lo or 'null',hi or 'null',concept)]=(len(chosen),len({p for p,_,_ in chosen if p in (1,2)}))
+            actual={}
+            for row in rows:
+                dim=row['dimensions'];tag=dim['concept_tag'];values=row['values']
+                need(tag['kind'] in ('all','null','id') and set(values)=={'record_count','person_count'},
+                     'Unexpected capture tag or values')
+                concept=int(tag['value']) if tag['kind']=='id' else ('all' if tag['kind']=='all' else None)
+                key=(dim['period_kind'],dim['period_start'],dim['period_end'],concept)
+                need(row['row_kind']=='counts' and key not in actual,'Duplicate or unexpected capture cell')
+                actual[key]=int(values['record_count']),int(values['person_count'])
+            need(actual==expected,'Reference capture period, distinct-person, zero or observation membership differs')
+    finally:
+        drop_preview(pg,fixture)
+
+
 def verify_reference_locks(pg, schema, queries):
     """A standalone query should lock only the source tables its report needs."""
     cases = {
@@ -104,6 +157,7 @@ def main():
         for version in versions:
             case_id='adversarial-'+version;model=adversarial.physical(case,version);models[case_id]=model
             one=load_model(pg,model,version);loaded.append(one);inputs.append(dict(one,case_id=case_id))
+        verify_reference_capture_membership(pg, models['adversarial-5.5']['columns'])
         for one in inputs:
             model=models[one['case_id']];compiled=Reference(one['schema'],model['columns'],model.get('denied_tables',[])).manifest()
             if one['case_id']=='generated-5.5':
