@@ -1,7 +1,7 @@
 # Contract 2 pages use canonical UTF-8 JSON with exactly one trailing LF.
 .v2_bytes <- function(x) charToRaw(enc2utf8(paste0(.json(x), "\n")))
 .v2_hash <- function(bytes) digest::digest(bytes, algo = "sha256", serialize = FALSE)
-.v2_keys <- function(x, keys) .nv_need(.nv_object(x) && setequal(names(x), keys), "Unknown or missing fields")
+.v2_keys <- function(x, keys) .nv_need(.nv_object(x) && length(x) == length(keys) && setequal(names(x), keys), "Unknown, missing or duplicate fields")
 .v2_count <- function(x) .string(x) && grepl("^(0|[1-9][0-9]*)$", x)
 .v2_decimal <- function(x) .string(x) && grepl("^-?(0|[1-9][0-9]*)(\\.[0-9]*[1-9])?$", x) && x != "-0"
 .v2_assets <- function() {
@@ -54,8 +54,20 @@
     .nv_need(grepl("\\A[A-Za-z0-9._:-]{1,128}\\z", x, perl=TRUE, useBytes=TRUE), "Invalid code dimension"); paste0("E:", x)
   }
 }
-.v2_row_identity <- function(metric, row) .v2_hash(.v2_bytes(.object(metric_id = metric$id,
-  metric_version = metric$version, row_kind = row$row_kind, dimensions = row$dimensions)))
+.v2_row_identity <- function(metric, row, dimensions = .json(row$dimensions)) {
+  # Fields are in canonical radix order. Dimensions are encoded once for the
+  # identity and the row frame; every value still uses the scalar/list codec.
+  wire <- paste0('{"dimensions":', dimensions, ',"metric_id":', .json(metric$id),
+    ',"metric_version":', .json(metric$version), ',"row_kind":', .json(row$row_kind), '}\n')
+  .v2_hash(charToRaw(enc2utf8(wire)))
+}
+.v2_row_bytes <- function(row, dimensions) {
+  wire <- paste0('{"denominator_refs":', .json(row$denominator_refs), ',"dimensions":', dimensions,
+    ',"reason_code":', .json(row$reason_code), ',"row_key":', .json(row$row_key),
+    ',"row_kind":', .json(row$row_kind), ',"state":', .json(row$state),
+    ',"values":', .json(row$values), '}\n')
+  charToRaw(enc2utf8(wire))
+}
 .v2_sort <- function(metric, row) {
   names <- c(unlist(metric$dimensions), unlist(metric$extra_dimensions_by_row_kind[[row$row_kind]]))
   parts <- vapply(names, function(n) .v2_component(row$dimensions[[n]], n), "")
@@ -90,7 +102,8 @@
   .nv_need(row$row_kind %in% names(registry$value_keys_by_row_kind), "Unknown row kind")
   dims <- c(unlist(registry$dimensions), unlist(registry$extra_dimensions_by_row_kind[[row$row_kind]]))
   .v2_keys(row$dimensions, dims); .v2_dimensions(id,row,assets); key <- .v2_sort(registry, row)
-  identity <- .v2_row_identity(registry, row)
+  dimensions <- .json(row$dimensions)
+  identity <- .v2_row_identity(registry, row, dimensions)
   if (capture) {
     .nv_need(identical(row$row_key, ""), "Expected a new capture row")
     row$row_key <- identity
@@ -126,7 +139,7 @@
       }
     } else .v2_metadata(id, v, assets)
   }
-  bytes <- .v2_bytes(row)
+  bytes <- .v2_row_bytes(row, dimensions)
   .nv_need(length(bytes) <= 65536L, "Row resource limit")
   if (!is.null(expectedBytes)) .nv_need(identical(bytes, expectedBytes), "Noncanonical candidate row")
   if (capture) list(row = row, bytes = bytes) else key

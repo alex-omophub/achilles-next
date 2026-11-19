@@ -47,5 +47,26 @@ local({
     concept_tag=o(kind='id',value=as.character(i)),label=strings[[i%%length(strings)+1L]],
     label_state='available',domain_id=NULL,dimensions=o(),values=o(count=as.character(i))))))
   for(value in list(NA_character_,NA,character(),c('a','b'),o(a=1,a=2)))compare(value)
+  # Fixed-field identity and row envelopes must match the independent codec
+  # when dimensions are shared, including empty objects, arrays and escapes.
+  f<-function(name)get(name,asNamespace('AchillesNext'))
+  bytes<-function(x)charToRaw(enc2utf8(paste0(reference(x),"\n")))
+  metric<-o(id='example.count',version='1')
+  for(dimensions in list(o(),o(concept_tag=o(value='9007199254740993',kind='id')),
+                         o(label='quoted"/\\',unicode='Café 日'))) {
+    for(refs in list(list(),list(o(measure='person_count',metric_id='core.person.count',row_key=strrep('0',64),field='person_count',value='0')))) {
+      row<-o(values=o(person_count='0'),state='computed',row_kind='counts',row_key=strrep('1',64),
+             reason_code=NULL,dimensions=dimensions,denominator_refs=refs)
+      encoded<-actual(dimensions)
+      identity<-o(metric_id=metric$id,metric_version=metric$version,row_kind=row$row_kind,dimensions=dimensions)
+      stopifnot(identical(f('.v2_row_identity')(metric,row,encoded),f('.v2_hash')(bytes(identity))),
+                identical(f('.v2_row_bytes')(row,encoded),bytes(row)))
+    }
+  }
+  countRow<-o(row_key='',row_kind='counts',dimensions=o(),state='computed',reason_code=NULL,
+    values=o(person_count='0'),denominator_refs=list())
+  stopifnot(is.list(f('.v2_row')('core.person.count',countRow,capture=TRUE)))
+  duplicate<-c(countRow,list(values=o(person_count='1')))
+  stopifnot(inherits(try(f('.v2_row')('core.person.count',duplicate,capture=TRUE),silent=TRUE),'try-error'))
   cat('CANONICAL_JSON_FROZEN_ORACLE_ASCII_UTF8_ESCAPES_CLASSES_REJECTIONS_PARITY_OK\n')
 })
