@@ -36,6 +36,38 @@ testPersistenceSafety<-function(details,schema,baseRelease,config,lib,out,execut
   }
   good<-copyMetadata();f(".store_transaction")(details,schema,function(tx)fill(tx,good))
   stopifnot(count(good)=="5",revision(good)=="11")
+  # Parent inserts fire one statement guard across partitions. A direct leaf
+  # insert must enforce the same release lock and count each accepted row.
+  leaf<-query(paste0("SELECT p.relname AS leaf,c.row_key::text AS row_key FROM ",schema,
+    ".achillesnext_aggregate_cell c JOIN pg_catalog.pg_class p ON p.oid=c.tableoid WHERE c.release_id=",uuid(good)," ORDER BY c.row_key LIMIT 1"))
+  stopifnot(nrow(leaf)==1L,grepl("^achillesnext_aggregate_cell_[0-7]$",leaf$LEAF))
+  cells<-paste0(schema,".achillesnext_aggregate_cell")
+  target<-paste0(schema,".",leaf$LEAF)
+  leafRelease<-copyMetadata()
+  statement<-paste0("INSERT INTO ",target," SELECT (jsonb_populate_record(NULL::",cells,
+    ",to_jsonb(c)||jsonb_build_object('release_id',",uuid(leafRelease),"))).* FROM ",cells,
+    " c WHERE c.release_id=",uuid(good)," AND c.row_key=",lit(leaf$ROW_KEY))
+  f(".store_transaction")(details,schema,function(tx) {
+    wrong<-tx$one(paste0("SELECT ctid::text FROM ",schema,".achillesnext_result_release WHERE release_id=",uuid(good)))
+    tx$one(paste0("SELECT set_config('achillesnext.revision_location',",lit(wrong),",true)"))
+    tx$execute(statement)
+    current<-tx$one(paste0("SELECT ctid::text FROM ",schema,".achillesnext_result_release WHERE release_id=",uuid(leafRelease)))
+    stopifnot(tx$one("SELECT current_setting('achillesnext.revision_location')")==current)
+  })
+  execute(paste0(statement," ON CONFLICT DO NOTHING"))
+  stopifnot(count(leafRelease)=="1",revision(leafRelease)=="3",revision(good)=="11")
+  # Close the second target in UUID order so the first target is updated
+  # before the guard rejects the statement.
+  otherRelease<-copyMetadata()
+  orderedReleases<-sort(c(leafRelease,otherRelease),method="radix")
+  execute(paste0("UPDATE ",schema,".achillesnext_result_release SET state='failed' WHERE release_id=",uuid(orderedReleases[[2L]])))
+  mixed<-paste0("INSERT INTO ",cells," SELECT (jsonb_populate_record(NULL::",cells,
+    ",to_jsonb(c)||jsonb_build_object('release_id',target.id,'row_key',repeat('c',64),'sort_key','probe'))).* FROM ",cells,
+    " c CROSS JOIN (VALUES (",uuid(leafRelease),"),(",uuid(otherRelease),")) AS target(id)",
+    " WHERE c.release_id=",uuid(good)," AND c.row_key=",lit(leaf$ROW_KEY))
+  err<-tryCatch({execute(mixed);"ACCEPTED"},error=conditionMessage)
+  stopifnot(grepl("Release is not writable",err,fixed=TRUE), count(leafRelease)=="1",revision(leafRelease)=="3",
+    count(otherRelease)=="0",revision(otherRelease)=="2")
   # Exercise a valid address for a different release, invalid settings, and
   # revisions from conflict-skipped inserts in the same transaction.
   hinted<-copyMetadata()
