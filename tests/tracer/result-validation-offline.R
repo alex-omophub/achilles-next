@@ -103,9 +103,12 @@ local({
  scans<-character()
  scope$.store_scan_release<-f('.store_scan_release')
  environment(scope$.store_scan_release)<-scope
- scope$.store_rows<-function(tx,releaseId,mid,visit,assets) {
+ scope$.store_rows<-function(tx,releaseId,mid,visit,assets,includeFrame=FALSE) {
   scans<<-c(scans,mid)
-  for(row in rows[[mid]])visit(row,f('.v2_row')(mid,row,assets))
+  for(row in rows[[mid]]) {
+   checked<-f('.v2_row')(mid,row,assets,includeFrame=includeFrame)
+   if(includeFrame)visit(row,checked$key,checked$bytes) else visit(row,checked)
+  }
  }
  scope$.v2_capability_check<-function(datasets,capabilities)f('.v2_capability_check')(datasets,capabilities,requireEvidence=FALSE)
  scope$.store_summary_checks<-scope$.store_domain_reconcile<-scope$.store_reconcile<-function(...)NULL

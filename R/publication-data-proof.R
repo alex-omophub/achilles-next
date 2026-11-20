@@ -51,14 +51,10 @@
     .nv_need(.string(mid)&&mid%in%names(assets$metrics)&&.nv_array(doc$rows))
     rows <- length(doc$rows)
     .nv_need(rows>0L&&rows<=2048L&&identical(as.character(rows),d$rows),"Leaf row count mismatch")
-    envelope <- .v2_bytes(c(context,.object(kind="data",metric_id=mid,metric_version=assets$metrics[[mid]]$version,rows=list())))
-    marker <- regexpr('"rows":[]',rawToChar(envelope),fixed=TRUE,useBytes=TRUE)[1L]
-    .nv_need(marker>0L)
-    prefix <- marker+7L
-    suffix <- length(envelope)-prefix
-    end <- length(bytes)-suffix
-    .nv_need(end>prefix&&identical(bytes[seq_len(prefix)],envelope[seq_len(prefix)])&&
-      identical(bytes[seq.int(end+1L,length(bytes))],envelope[seq.int(prefix+1L,length(envelope))]),"Noncanonical data page envelope")
+    envelope <- .v2_data_envelope(context,mid,assets$metrics[[mid]]$version)
+    prefix <- length(envelope$prefix);end <- length(bytes)-length(envelope$suffix)
+    .nv_need(end>prefix&&identical(bytes[seq_len(prefix)],envelope$prefix)&&
+      identical(bytes[seq.int(end+1L,length(bytes))],envelope$suffix),"Noncanonical data page envelope")
     actual$add(mid,c(bytes[seq.int(prefix+1L,end)],comma))
     bound <- function(row)paste0(mid,"|",.v2_sort(assets$rows[[mid]],row))
     list(metric_id=mid,lo=bound(doc$rows[[1L]]),hi=bound(doc$rows[[rows]]))

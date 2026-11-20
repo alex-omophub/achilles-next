@@ -110,3 +110,30 @@ tree <- f('.v2_tree')('data',ctx,emit)
 for(i in 1:129)tree$add(obj(sha256=sprintf('%064d',i),bytes='1',kind='data',rows='1'),sprintf('%06d',i),sprintf('%06d',i))
 desc <- tree$finish();stopifnot(desc$kind=='index',desc$rows=='129',length(objects[[desc$sha256]]$children)==2L)
 cat('BOUNDED_PAGE_AND_INDEX_SPLITTING_OK\n')
+
+# Data leaves must retain the canonical object bytes at both partition limits.
+local({
+  metric <- 'core.person.count'
+  context <- obj(contract_version='2.0.0',source_id='escaped "rows":[] / caf\u00e9')
+  check <- function(row,count,firstPage) {
+    frame <- f('.v2_bytes')(row)
+    sizes <- integer()
+    emit <- function(value,kind,n) {
+      if(kind=='data') {
+        expected <- c(context,obj(kind='data',metric_id=metric,
+          metric_version=a$metrics[[metric]]$version,rows=rep(list(row),as.integer(n))))
+        stopifnot(is.raw(value),identical(value,f('.v2_bytes')(expected)))
+        sizes <<- c(sizes,as.integer(n))
+      } else value <- f('.v2_bytes')(value)
+      f('.v2_descriptor')(value,kind,n)
+    }
+    pages <- f('.v2_pages')('data',context,emit,metric,a)
+    for(i in seq_len(count)) pages$add(frame,sprintf('%06d',i))
+    root <- pages$finish()
+    stopifnot(identical(sizes,c(firstPage,count-firstPage)),root$rows==as.character(count))
+  }
+  check(obj(value='zero 0 / "quoted" \u00e9\n'),2049L,2048L)
+  big <- obj(value=strrep('z',64000L))
+  capacity <- as.integer((f('.v2_limit')('data')-8192L)%/%length(f('.v2_bytes')(big)))
+  check(big,capacity+1L,capacity)
+})

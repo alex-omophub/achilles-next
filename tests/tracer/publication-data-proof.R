@@ -15,7 +15,9 @@ testPublicationDataProof <- function(details,schema,release,root,policy) {
     changed <- FALSE;approved <- FALSE;cause <- NULL
     assignInNamespace(".v2_pages",function(kind,context,emit,metricId=NULL,assets=f(".v2_assets")()) {
       writer <- pages(kind,context,emit,metricId,assets);add <- writer$add
-      if(kind=="data") writer$add <- function(row,key) {
+      if(kind=="data") writer$add <- function(frame,key) {
+        if(changed) return(add(frame,key))
+        row <- f(".nv_json")(frame)
         if(!changed && mode=="value" && metricId=="core.person.count") {
           row$values$person_count <- f(".nv_add")(row$values$person_count,"1");changed <<- TRUE
         }
@@ -23,7 +25,7 @@ testPublicationDataProof <- function(details,schema,release,root,policy) {
           ref <- row$denominator_refs[[1L]]
           row$denominator_refs[[1L]]$value <- f(".nv_add")(ref$value,"1");changed <<- TRUE
         }
-        add(row,key)
+        add(if(changed) f(".v2_bytes")(row) else frame,key)
       }
       writer
     },ns="AchillesNext")

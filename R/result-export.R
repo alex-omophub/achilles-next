@@ -31,19 +31,42 @@
   }
   list(add=function(desc,lo,hi)add(.object(lower_key=lo,upper_key=hi,object=desc)),finish=finish)
 }
+# Split a canonical empty data envelope so already validated row frames can be
+# inserted without encoding those rows again. Offsets are UTF-8 byte offsets.
+.v2_data_envelope <- function(context,metricId,version) {
+  envelope <- .v2_bytes(c(context,.object(kind="data",metric_id=metricId,metric_version=version,rows=list())))
+  marker <- regexpr('"rows":[]',rawToChar(envelope),fixed=TRUE,useBytes=TRUE)[1L]
+  .nv_need(marker>0L,"Missing data rows envelope")
+  start <- marker+7L
+  list(prefix=envelope[seq_len(start)],suffix=envelope[seq.int(start+1L,length(envelope))])
+}
 .v2_pages <- function(kind, context, emit, metricId=NULL,assets=.v2_assets()) {
-  tree <- .v2_tree(kind,context,emit); rows <- list(); keys <- character(); bytes <- 0L
-  envelope <- function(rs) c(context,.object(kind=kind),if(kind=="data") .object(metric_id=metricId,metric_version=assets$metrics[[metricId]]$version,rows=rs) else .object(entries=rs))
+  tree <- .v2_tree(kind,context,emit); rows <- list(); bytes <- 0L
+  first <- last <- NULL
+  data <- kind=="data"
+  if(data) envelope <- .v2_data_envelope(context,metricId,assets$metrics[[metricId]]$version)
   flush <- function() {
     if(!length(rows)) return(invisible(NULL))
-    d <- emit(envelope(rows),kind,as.character(length(rows)));tree$add(d,keys[[1]],keys[[length(keys)]])
-    rows <<- list();keys <<- character();bytes <<- 0L
+    if(data) {
+      content <- do.call(c,rows)
+      length(content) <- length(content)-1L # omit the last separator
+      value <- c(envelope$prefix,content,envelope$suffix)
+    } else value <- c(context,.object(kind=kind,entries=rows))
+    d <- emit(value,kind,as.character(length(rows)));tree$add(d,first,last)
+    rows <<- list();bytes <<- 0L
   }
   add <- function(row,key) {
-    n <- length(.v2_bytes(row));.nv_need(n<=65536L,"Row resource limit")
-    # A conservative envelope reserve avoids encoding an oversized candidate.
+    if(data) {
+      n <- length(row)
+      .nv_need(is.raw(row)&&n>1L&&n<=65536L&&row[[n]]==as.raw(10L),"Invalid canonical row frame")
+      row[[n]] <- as.raw(44L)
+    } else {
+      n <- length(.v2_bytes(row));.nv_need(n<=65536L,"Row resource limit")
+    }
+    # Count the original frame bytes to retain the existing page boundaries.
     if(length(rows) && (length(rows)>=2048L || bytes+n+8192L>.v2_limit(kind))) flush()
-    rows[[length(rows)+1L]] <<- row;keys <<- c(keys,key);bytes <<- bytes+n
+    if(!length(rows)) first <<- key
+    last <<- key;rows[[length(rows)+1L]] <<- row;bytes <<- bytes+n
   }
   list(add=add,finish=function(){flush();tree$finish()})
 }
@@ -88,7 +111,8 @@
     profile_id=c$profile_id,profile_revision=c$profile_revision,profile_sha256=c$profile_sha256,access_scope_id=scopeId)
   emit <- function(doc,kind,rows) {
     .term_check(cancel)
-    raw <- .v2_bytes(doc);.nv_need(length(raw)<=.v2_limit(kind),"Page resource limit")
+    raw <- if(is.raw(doc))doc else .v2_bytes(doc)
+    .nv_need(length(raw)<=.v2_limit(kind),"Page resource limit")
     d <- .v2_descriptor(raw,kind,rows)
     path <- file.path(directory,"objects",paste0(d$sha256,".json"))
     .nv_need(!file.exists(path),"Duplicate page coverage")
