@@ -1,0 +1,34 @@
+R/result-validation.R
+  s_3e206b4a2cf4c3::t_55da842fa8377d 229
+  s_3e206b4a2cf4c3::t_f99b603563c6a8 124,163-164,172,213,228,231
+R/result-export.R
+  s_3e206b4a2cf4c3::t_55da842fa8377d 34-42,44-47,50-56,59-66,68-69,114-115
+R/publication-data-proof.R
+  s_3e206b4a2cf4c3::t_55da842fa8377d 54-57
+tests/tracer/saved-label-integration.R
+  s_3e206b4a2cf4c3::t_55da842fa8377d 99,101,106-107,139-141,143
+R/result-wire.R
+  s_3e206b4a2cf4c3::t_dd971f787843a8 99,145-146
+tests/tracer/publication-data-proof.R
+  s_3e206b4a2cf4c3::t_e7d417268f220e 18-20,28
+tests/tracer/result-validation-offline.R
+  s_3e206b4a2cf4c3::t_e1dcba893129e6 106,108-111
+tests/tracer/result-wire.R
+  s_3e206b4a2cf4c3::t_617d35f96e07b4 113-139
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "345c044adc66902746952a74bfc3a2c0ca28c43d",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
