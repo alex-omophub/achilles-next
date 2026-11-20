@@ -147,6 +147,8 @@ local({
   fullPolicy <- allow;fullPolicy$allow_metrics <- as.list(names(assets$metrics))
   full <- publishResultRelease(details,schema,release,file.path(root,'full-inventory'),'fixture-full','review-full',fullPolicy,function(candidate)TRUE)
   validateResultArtifact(full$export_dir)
+  source('tests/tracer/publication-data-proof.R')
+  testPublicationDataProof(details,schema,release,root,fullPolicy)
   testArtifactInventory(full$export_dir,root)
   testArtifactRegressions(full$export_dir,root)
   retainedRelease<-testStoreRegressions(details,schema,release,ids[[2]],ex,q)
@@ -174,7 +176,7 @@ local({
   for(kind in c('byte','io')) {
     admissions<-0L;approvalCalls<-0L;fired<-FALSE
     requested<-if(kind=='byte')0 else 1024^2
-    assignInNamespace('.v2_directory',function(directory,visit=function(descriptor,bytes)NULL,check=function()NULL,maxScratchBytes=1024^3) {
+    assignInNamespace('.v2_directory',function(directory,visit=function(descriptor,bytes)NULL,check=function()NULL,maxScratchBytes=1024^3,...) {
       admissions<<-admissions+1L;stopifnot(identical(maxScratchBytes,requested))
       if(kind=='io') {
           assignInNamespace('.v2_scratch_io',function(work) {
@@ -186,7 +188,7 @@ local({
           },ns='AchillesNext')
         on.exit(assignInNamespace('.v2_scratch_io',originalIO,ns='AchillesNext'))
       }
-      originalDirectory(directory,visit,check,maxScratchBytes)
+      originalDirectory(directory,visit,check,maxScratchBytes,...)
     },ns='AchillesNext')
     destination<-file.path(root,paste0('scratch-',kind))
     error<-tryCatch({publishResultRelease(details,schema,release,destination,'fixture-restricted','scratch-fault',allow,

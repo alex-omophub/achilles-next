@@ -63,6 +63,15 @@ Finalization streams this publication's stored object hashes to install its file
    requesting approval, saves the approved bytes in PostgreSQL and the artifact
    directory, and optionally advances current with compare-and-swap.
 
+For a complete core projection using contract 2.0, admission compares the
+canonical data rows in the staged files with the rows validated in the same
+locked store transaction. It checks a SHA-256 stream digest per metric,
+catalogue equality, page hashes, row counts and actual index endpoints. The
+store also checks global row-key uniqueness and full-scope capture totals.
+This keeps validation scratch bounded without a second on-disk row index for
+this case. Partial projections, saved terminology, registered profiles and
+standalone `validateResultArtifact()` use the file-based semantic validator.
+
 ```r
 policy <- list(id = "institution-approved", revision = "1",
                scope_kind = "restricted",

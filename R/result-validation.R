@@ -121,7 +121,7 @@
     })
   .nv_need(setequal(names(result), names(assets$metrics)), "Incomplete metric inventory"); result
 }
-.store_rows <- function(tx, releaseId, metricId, visit, assets = .v2_assets()) {
+.store_rows <- function(tx, releaseId, metricId, visit, assets = .v2_assets(),onFrame=NULL) {
   # Exact values cast to text at the server; scale normalization below never
   # passes through floating point. A correlated edge lookup is index bounded.
   s <- tx$schema; numeric <- c(record_count="record_count",person_count="person_count",person_days="person_days",interval_count="interval_count",n="n",sum="sum_value",min="minimum",max="maximum",p10="p10",p25="p25",p50="p50",p75="p75",p90="p90")
@@ -160,7 +160,7 @@
       ref
     })
     row <- .object(row_key=c$row_key,dimensions=c$dimensions,row_kind=kind,state=c$state,reason_code=c$reason_code,values=values,denominator_refs=refs)
-    sort <- .v2_row(metricId,row,assets)
+    sort <- .v2_row(metricId,row,assets,onFrame=onFrame)
     .v2_denominator_check(metricId,row,function(id,key) {
       matches <- Filter(function(ref)identical(ref$metric_id,id)&&identical(ref$row_key,key),targets)
       .nv_need(length(matches)>0L,"Missing streamed denominator dimensions")
@@ -199,7 +199,7 @@
 
 # Validate every stored row, including metrics omitted by disclosure policy.
 # A projection may consume the same checked stream into private staged pages.
-.store_scan_release <- function(tx, release, project=NULL, terminology=NULL) {
+.store_scan_release <- function(tx, release, project=NULL, terminology=NULL, proof=NULL) {
   context <- release$context
   releaseId <- context$release_id
   assets <- release$assets %||% .v2_assets()
@@ -209,7 +209,7 @@
     d <- datasets[[mid]]
     output <- if(!is.null(project)) project(mid,d)
     count <- "0"; first <- NULL; last <- NULL
-    .store_rows(tx,releaseId,mid,function(row,key) {
+    visit <- function(row,key) {
       .nv_need(is.null(last) || .v2_less(last,key),"Duplicate or unordered row")
       if(is.null(first)) first <<- key
       last <<- key; count <<- .nv_add(count,"1")
@@ -225,7 +225,9 @@
         if(!is.null(terminology)) .term_vocab_match(row$values,terminology)
       }
       if(!is.null(output)) output$add(row,key)
-    },assets)
+    }
+    if(is.null(proof)) .store_rows(tx,releaseId,mid,visit,assets) else
+      .store_rows(tx,releaseId,mid,visit,assets,onFrame=function(frame)proof$add(mid,frame))
     .nv_need(count==d$rows,"Dataset row count mismatch")
     if(mid=="core.execution.output_status" && d$state!="suppressed") .nv_need(count=="142","Missing output ledger rows")
     if(mid %in% assets$singletons && d$state!="suppressed") .nv_need(count=="1","Missing singleton")

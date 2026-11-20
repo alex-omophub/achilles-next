@@ -78,7 +78,7 @@
   tx$stream<-function(sql,visit){check();value<-stream(sql,function(text){check();visit(text);check()});check();value}
   tx
 }
-.store_build_pages <- function(tx, validated, publicationId, scopeId, approvalId, policy, directory,savedTerminology=NULL,cancel=function()FALSE,maxExportBytes=1024^3,maxSnapshotBytes=1024^3) {
+.store_build_pages <- function(tx, validated, publicationId, scopeId, approvalId, policy, directory,savedTerminology=NULL,cancel=function()FALSE,maxExportBytes=1024^3,maxSnapshotBytes=1024^3,proof=NULL) {
   .term_check(cancel)
   writer<-.export_writer(maxExportBytes,function().term_check(cancel))
   assets <- validated$assets %||% .v2_assets();allow <- .v2_policy(policy,assets);c <- validated$context
@@ -105,7 +105,8 @@
     list(add=function(row,key) pages$add(row,paste0(mid,"|",key)),
       finish=function(first,last) data$add(pages$finish(),paste0(mid,"|",first),paste0(mid,"|",last)))
   }
-  .store_scan_release(tx,validated,project,metadata)
+  .store_scan_release(tx,validated,project,metadata,proof)
+  if(!is.null(proof)) .publication_complete_checks(tx,c$release_id)
   # Flat saved concept browse is built only from retained typed dimensions. No
   # vocabulary/source lookups at publication or viewing time, and no raw text.
   concepts <- .v2_pages("concept_catalogue",context,emit,assets=assets)
@@ -196,8 +197,9 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
     .term_check(cancel);tx<-.publication_tx(tx,cancel)
     validated <- .store_validation_context(tx,releaseId);.nv_need(validated$context$state=="validated","Validate the release before publication")
     .term_check(cancel)
-    root <<- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel,maxExportBytes=maxExportBytes,maxSnapshotBytes=maxSnapshotBytes)
-    admittedRoot<-.v2_directory(stage,check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)
+    proof <- .publication_data_proof(validated,policy,savedTerminology,pub,accessScopeId)
+    root <<- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel,maxExportBytes=maxExportBytes,maxSnapshotBytes=maxSnapshotBytes,proof=proof)
+    admittedRoot<-.v2_directory(stage,check=function().term_check(cancel),maxScratchBytes=maxScratchBytes,proof=proof)
     .nv_need(identical(.v2_hash(.v2_bytes(admittedRoot)),root$sha256),"Admitted publication root mismatch")
     pointer<-.v2_bytes(.object(contract_version=admittedRoot$contract_version,publication_id=pub,
       source_id=validated$context$source_id,access_scope_id=accessScopeId,root=root))
