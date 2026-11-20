@@ -269,11 +269,31 @@ validateResultRelease <- function(connectionDetails, resultsSchema, releaseId) {
     if(!"summary"%in%names(.v2_assets()$rows[[mid]]$value_keys_by_row_kind) || datasets[[mid]]$state%in%c("suppressed","unsupported")) next
     # Each exact summary binds its included n to the eligible category under
     # precisely the same declared dimensions, including unit/operator strata.
-    where <- paste0(" release_id=",rid," AND metric_id=",.store_literal(mid))
-    invalid <- tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_aggregate_cell a WHERE a.",trimws(where)," AND a.payload_kind='summary' AND a.state<>'suppressed' AND NOT EXISTS (SELECT 1 FROM ",s,".achillesnext_aggregate_cell e WHERE (e.release_id,e.metric_id)=(a.release_id,a.metric_id) AND e.payload_kind='counts' AND e.state<>'suppressed' AND e.dimensions-'eligibility_reason'=a.dimensions AND e.dimensions->>'eligibility_reason'='eligible' AND COALESCE(e.record_count,e.person_count)=a.n)"))
-    .nv_need(invalid=="0","Summary eligibility does not reconcile")
-    invalid <- tx$one(paste0("SELECT count(*)::text FROM ",s,".achillesnext_aggregate_cell e WHERE e.",trimws(where)," AND e.payload_kind='counts' AND e.state<>'suppressed' AND e.dimensions->>'eligibility_reason'='eligible' AND NOT EXISTS (SELECT 1 FROM ",s,".achillesnext_aggregate_cell a WHERE (a.release_id,a.metric_id)=(e.release_id,e.metric_id) AND a.payload_kind='summary' AND a.dimensions=e.dimensions-'eligibility_reason' AND (a.state='suppressed' OR a.n=COALESCE(e.record_count,e.person_count)))"))
-    .nv_need(invalid=="0","Missing eligible summary")
+    cells <- paste0(s, ".achillesnext_aggregate_cell")
+    scope <- paste0(" WHERE release_id=", rid, " AND metric_id=", .store_literal(mid))
+    status <- tx$one(paste0(
+      "WITH summaries AS (",
+      " SELECT dimensions, n, state FROM ", cells, scope, " AND payload_kind='summary'",
+      "), eligible AS (",
+      " SELECT dimensions-'eligibility_reason' AS dimensions, COALESCE(record_count,person_count) AS n",
+      " FROM ", cells, scope, " AND payload_kind='counts' AND state<>'suppressed'",
+      " AND dimensions->>'eligibility_reason'='eligible'",
+      "), missing_counts AS (",
+      " SELECT dimensions, n FROM summaries WHERE state<>'suppressed'",
+      " EXCEPT SELECT dimensions, n FROM eligible WHERE n IS NOT NULL",
+      "), unmatched_counts AS (",
+      " SELECT dimensions, n FROM eligible",
+      " EXCEPT SELECT dimensions, n FROM summaries WHERE n IS NOT NULL",
+      "), missing_summaries AS (",
+      # A suppressed summary can account for an eligible count at the same
+      # dimensions without disclosing its n. Filter NULLs above to preserve SQL equality.
+      " SELECT dimensions FROM unmatched_counts",
+      " EXCEPT SELECT dimensions FROM summaries WHERE state='suppressed'",
+      ") SELECT CASE WHEN EXISTS (SELECT 1 FROM missing_counts) THEN 'missing_count'",
+      " WHEN EXISTS (SELECT 1 FROM missing_summaries) THEN 'missing_summary' ELSE 'ok' END"
+    ))
+    .nv_need(status != "missing_count", "Summary eligibility does not reconcile")
+    .nv_need(status == "ok", "Missing eligible summary")
   }
 }
 

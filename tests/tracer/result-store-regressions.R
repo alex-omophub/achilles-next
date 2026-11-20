@@ -3,7 +3,7 @@
 testStoreRegressions <- function(details,schema,baseRelease,baseRun,execute,query) {
  ns<-asNamespace('AchillesNext');f<-function(n)get(n,ns);lit<-f('.store_literal')
  retainedRelease<-NULL
- for(i in 1:5) {
+ for(i in 1:6) {
   run<-sprintf('20000000-0000-4000-8000-%012d',2*i);release<-sprintf('20000000-0000-4000-8000-%012d',2*i+1L)
   execute(paste0('INSERT INTO ',schema,'.achillesnext_analysis_run SELECT (jsonb_populate_record(NULL::',schema,'.achillesnext_analysis_run,to_jsonb(a)||jsonb_build_object(\'run_id\',',lit(run),'))).* FROM ',schema,'.achillesnext_analysis_run a WHERE run_id=',lit(baseRun)))
   execute(paste0('INSERT INTO ',schema,'.achillesnext_result_release VALUES (',lit(release),',',lit(run),",'building',142,0,null)"))
@@ -15,6 +15,13 @@ testStoreRegressions <- function(details,schema,baseRelease,baseRun,execute,quer
   } else if(i==5) {
    execute(paste0('UPDATE ',schema,".achillesnext_aggregate_cell SET state='suppressed',reason_code='fixture.policy_suppressed',metadata_value=NULL WHERE ",where," AND metric_id='core.execution.output_status' AND dimensions->>'metric_id'='core.person.count'"))
    expected<-'Missing ledger entry payload'
+  } else if(i==6) {
+   scope<-paste0(where," AND metric_id='core.measurement.numeric_summary'")
+   execute(paste0('DELETE FROM ',schema,'.achillesnext_aggregate_cell WHERE ',scope,
+     " AND dimensions->>'eligibility_reason'='eligible'"))
+   execute(paste0('UPDATE ',schema,'.achillesnext_dataset SET row_count=(SELECT count(*) FROM ',
+     schema,'.achillesnext_aggregate_cell WHERE ',scope,') WHERE ',scope))
+   expected<-'Summary eligibility does not reconcile'
   } else if(i==1) {
    execute(paste0('DELETE FROM ',schema,'.achillesnext_aggregate_cell WHERE ',where," AND metric_id='core.measurement.numeric_summary' AND payload_kind='summary' AND n>0"))
    execute(paste0('UPDATE ',schema,'.achillesnext_dataset SET row_count=row_count-1 WHERE ',where," AND metric_id='core.measurement.numeric_summary'"))
