@@ -98,20 +98,24 @@ local({
  tx<-list(stream=function(sql,visit)for(entry in concepts)visit(f('.json')(o(tag=entry$concept_tag,key=f('.v2_component')(entry$concept_tag,'concept_tag')))))
  build<-f('.store_build_pages');scope<-new.env(parent=environment(build));stamp<-f('.stamp')()
  scope$.stamp<-function()stamp
- scope$.store_scan_release<-function(tx,release,project,terminology) {
-  for(mid in sort(names(release$datasets),method='radix')) {
-   output<-project(mid,release$datasets[[mid]])
-   if(is.null(output))next
-   keys<-vapply(rows[[mid]],function(row)f('.v2_sort')(assets$rows[[mid]],row),'')
-   for(i in seq_along(keys))output$add(rows[[mid]][[i]],keys[[i]])
-   output$finish(keys[[1]],tail(keys,1))
-  }
+ # The fixture supplies projected rows without a backing SQL store. Exercise
+ # the real traversal, including omitted metrics and the default asset registry.
+ scans<-character()
+ scope$.store_scan_release<-f('.store_scan_release')
+ environment(scope$.store_scan_release)<-scope
+ scope$.store_rows<-function(tx,releaseId,mid,visit,assets) {
+  scans<<-c(scans,mid)
+  for(row in rows[[mid]])visit(row,f('.v2_row')(mid,row,assets))
  }
+ scope$.v2_capability_check<-function(datasets,capabilities)f('.v2_capability_check')(datasets,capabilities,requireEvidence=FALSE)
+ scope$.store_summary_checks<-scope$.store_domain_reconcile<-scope$.store_reconcile<-function(...)NULL
  environment(build)<-scope
  run<-function(name,limit) {
   directory<-file.path(root,name);dir.create(directory);dir.create(file.path(directory,'objects'))
-  build(tx,list(context=context,datasets=datasets,assets=assets),sourceRoot$publication_id,sourceRoot$access_scope_id,'fixture-budget',
+  scans<<-character()
+  build(tx,list(context=context,datasets=datasets),sourceRoot$publication_id,sourceRoot$access_scope_id,'fixture-budget',
     sourceRoot$disclosure$policy,directory,maxExportBytes=limit)
+  stopifnot(identical(scans,sort(names(datasets),method="radix")))
   directory
  }
  generous<-run('generous',1024^3);validateResultArtifact(generous)

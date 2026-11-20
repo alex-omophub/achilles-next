@@ -202,7 +202,7 @@
 .store_scan_release <- function(tx, release, project=NULL, terminology=NULL) {
   context <- release$context
   releaseId <- context$release_id
-  assets <- release$assets
+  assets <- release$assets %||% .v2_assets()
   datasets <- release$datasets
   capabilities <- list();ledger <- list()
   for(mid in sort(names(datasets),method="radix")) {
