@@ -31,7 +31,7 @@ local({
     },ns='rJava')
     assignInNamespace('.store_commit',function(jdbc){if(mode=='before_commit')stop('PRIVATE_COMMIT_SQL');prior$commit(jdbc);if(mode=='ack_lost')stop('PRIVATE_COMMIT_SQL');if(mode=='commit_sigint')signal()},ns='AchillesNext')
     publish<-publishResultRelease;scope<-new.env(parent=environment(publish));lastSql<-''
-    scope$.store_validate<-function(...)list(context=list(state='validated',source_id='fixture:outcome',content_revision='1',profile_sha256=strrep('a',64)))
+    scope$.store_validation_context<-function(...)list(context=list(state='validated',source_id='fixture:outcome',content_revision='1',profile_sha256=strrep('a',64)))
     admitted<-o(contract_version='2.0.0');raw<-f('.v2_bytes')(admitted)
     mockPointer<-NULL
     descriptor<-o(sha256=f('.v2_hash')(raw),bytes=as.character(length(raw)),kind='root',rows='0')

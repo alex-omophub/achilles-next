@@ -22,10 +22,6 @@
   writer$finish()
   metadata<-.object(extension_version="1.0.0",matching="ascii-fold-prefix-v1",label_source=header$label_source,
     vocabulary_release=header$vocabulary_release,snapshot_sha256=snapshot$sha256,capture=header$capture)
-  assets<-.profile_context(context)
-  if("core.source.passport"%in%names(assets$metrics)).store_rows(tx,context$release_id,"core.source.passport",function(row,key) {
-    if(row$state!="suppressed").term_vocab_match(row$values,metadata)
-  },assets)
   metadata
 }
 .term_project <- function(tx,sql,context,concepts,terms,cancel) {

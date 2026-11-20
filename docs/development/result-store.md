@@ -57,9 +57,11 @@ Finalization streams this publication's stored object hashes to install its file
    arithmetic, resolves denominators and checks implemented additive reconciliations.
    It issues a receipt bound to the sealed revision and profile, then validates the
    release. A receipt is distinct from institutional disclosure approval.
-3. `publishResultRelease()` builds a separate projection, validates the entire
-   artifact, obtains explicit approval, saves the same bytes in PostgreSQL and the
-   artifact directory, and optionally advances current with compare-and-swap.
+3. `publishResultRelease()` streams each metric from the result store once. It
+   validates every stored row and uses the same stream to build pages for the
+   metrics allowed by the disclosure policy. It checks the staged artifact before
+   requesting approval, saves the approved bytes in PostgreSQL and the artifact
+   directory, and optionally advances current with compare-and-swap.
 
 ```r
 policy <- list(id = "institution-approved", revision = "1",

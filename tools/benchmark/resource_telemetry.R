@@ -113,13 +113,14 @@ resourceTelemetry <- function(out,owner,schemas,source) {
   public<-function(name) {
     scope<-new.env(parent=ns)
     scope$.store_transaction<-transaction()
-    for(helper in c('.store_build_pages','.v2_directory','.store_validate')) {
+    for(helper in c('.store_validation_context','.store_build_pages','.v2_directory','.store_validate')) {
       original<-getn(helper)
       if(helper=='.store_build_pages') {
         environment(original)<-scope
         scope$writeBin<-function(...) {args<-list(...);measure('filesystem_write',function()do.call(base::writeBin,args),database=FALSE)}
       }
-      label<-switch(helper,'.store_build_pages'='projection_serialization_filesystem','.v2_directory'='native_artifact_admission','.store_validate'='stored_release_validation')
+      label<-switch(helper,'.store_validation_context'='publication_validation_context',
+        '.store_build_pages'='stored_row_validation_projection_serialization_filesystem','.v2_directory'='native_artifact_admission','.store_validate'='stored_release_validation')
       scope[[helper]]<-local({fun<-original;phase<-label;function(...) {args<-list(...);measure(phase,function()do.call(fun,args))}})
     }
     fn<-getn(name);environment(fn)<-scope;fn

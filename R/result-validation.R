@@ -184,7 +184,7 @@
     "WHERE (t.release_id,t.metric_id,t.row_key)=(e.release_id,e.target_metric_id,e.target_row_key) OFFSET 0) t ON TRUE ",
     "WHERE e.release_id=",id," AND (c.state='suppressed' OR t.state='suppressed')) THEN '1' ELSE '0' END")
 }
-.store_validate <- function(tx, releaseId, exclusive = FALSE) {
+.store_validation_context <- function(tx, releaseId, exclusive = FALSE) {
   context <- .store_context(tx,releaseId,exclusive); assets <- .profile_context(context)
   .nv_need(context$state %in% c("sealed","validated") && context$run_state=="succeeded", "A sealed successful release is required")
   .nv_need(context$profile_id==assets$profile$profile_id && context$profile_revision==assets$profile$revision && context$profile_sha256==assets$hash, "Unregistered runtime profile")
@@ -194,11 +194,24 @@
   # Every edge must resolve to an unsuppressed exact measure. Source/target
   # dimensions and declared population are checked below, independently of FK.
   .nv_need(tx$one(.store_denominator_endpoint_sql(s,releaseId))=="0","Suppressed denominator endpoint")
+  list(context=context,datasets=datasets,assets=assets)
+}
+
+# Validate every stored row, including metrics omitted by disclosure policy.
+# A projection may consume the same checked stream into private staged pages.
+.store_scan_release <- function(tx, release, project=NULL, terminology=NULL) {
+  context <- release$context
+  releaseId <- context$release_id
+  assets <- release$assets %||% .v2_assets()
+  datasets <- release$datasets
   capabilities <- list();ledger <- list()
-  for(mid in names(datasets)) {
-    count <- "0"; last <- NULL; d <- datasets[[mid]]
+  for(mid in sort(names(datasets),method="radix")) {
+    d <- datasets[[mid]]
+    output <- if(!is.null(project)) project(mid,d)
+    count <- "0"; first <- NULL; last <- NULL
     .store_rows(tx,releaseId,mid,function(row,key) {
       .nv_need(is.null(last) || .v2_less(last,key),"Duplicate or unordered row")
+      if(is.null(first)) first <<- key
       last <<- key; count <<- .nv_add(count,"1")
       if(d$state=="suppressed") .nv_need(row$state=="suppressed")
       if(d$state %in% c("empty_source","empty_population")) .nv_need(row$state %in% c(d$state,"suppressed"))
@@ -207,11 +220,16 @@
         .nv_need(row$state=="computed" && !is.null(row$values),"Missing ledger entry payload")
         ledger[[row$dimensions$metric_id]] <<- row$values
       }
-      if(mid=="core.source.passport" && row$state!="suppressed") .v2_passport_check(row$values,context)
+      if(mid=="core.source.passport" && row$state!="suppressed") {
+        .v2_passport_check(row$values,context)
+        if(!is.null(terminology)) .term_vocab_match(row$values,terminology)
+      }
+      if(!is.null(output)) output$add(row,key)
     },assets)
     .nv_need(count==d$rows,"Dataset row count mismatch")
     if(mid=="core.execution.output_status" && d$state!="suppressed") .nv_need(count=="142","Missing output ledger rows")
     if(mid %in% assets$singletons && d$state!="suppressed") .nv_need(count=="1","Missing singleton")
+    if(!is.null(output)) output$finish(first,last)
   }
   if(isTRUE(assets$is_core)) {
     .v2_ledger_check(datasets,ledger)
@@ -220,7 +238,12 @@
     .store_domain_reconcile(tx,releaseId,datasets)
     .store_reconcile(tx,releaseId)
   } else .profile_store_checks(tx,releaseId,datasets,assets)
-  list(context=context,datasets=datasets,assets=assets)
+  invisible(NULL)
+}
+.store_validate <- function(tx, releaseId, exclusive = FALSE) {
+  release <- .store_validation_context(tx,releaseId,exclusive)
+  .store_scan_release(tx,release)
+  release
 }
 # ASCII keys only; comparison must not inherit the user's locale.
 .v2_less <- function(a,b) !identical(a,b) && identical(order(c(a,b),method="radix"),c(1L,2L))
