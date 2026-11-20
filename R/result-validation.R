@@ -121,7 +121,7 @@
     })
   .nv_need(setequal(names(result), names(assets$metrics)), "Incomplete metric inventory"); result
 }
-.store_rows <- function(tx, releaseId, metricId, visit, assets = .v2_assets(),onFrame=NULL) {
+.store_rows <- function(tx, releaseId, metricId, visit, assets = .v2_assets(),includeFrame=FALSE) {
   # Exact values cast to text at the server; scale normalization below never
   # passes through floating point. A correlated edge lookup is index bounded.
   s <- tx$schema; numeric <- c(record_count="record_count",person_count="person_count",person_days="person_days",interval_count="interval_count",n="n",sum="sum_value",min="minimum",max="maximum",p10="p10",p25="p25",p50="p50",p75="p75",p90="p90")
@@ -160,7 +160,8 @@
       ref
     })
     row <- .object(row_key=c$row_key,dimensions=c$dimensions,row_kind=kind,state=c$state,reason_code=c$reason_code,values=values,denominator_refs=refs)
-    sort <- .v2_row(metricId,row,assets,onFrame=onFrame)
+    checked <- .v2_row(metricId,row,assets,includeFrame=includeFrame)
+    sort <- if(includeFrame) checked$key else checked
     .v2_denominator_check(metricId,row,function(id,key) {
       matches <- Filter(function(ref)identical(ref$metric_id,id)&&identical(ref$row_key,key),targets)
       .nv_need(length(matches)>0L,"Missing streamed denominator dimensions")
@@ -168,7 +169,7 @@
     },assets)
     .nv_need(identical(sort,c$sort_key),"Stored sort key mismatch")
     .nv_need(identical(c$route_key,"A"),"This exporter requires the registered ALL route")
-    visit(row,sort)
+    if(includeFrame) visit(row,sort,checked$bytes) else visit(row,sort)
   })
 }
 .store_denominator_endpoint_sql <- function(schema, releaseId) {
@@ -209,7 +210,7 @@
     d <- datasets[[mid]]
     output <- if(!is.null(project)) project(mid,d)
     count <- "0"; first <- NULL; last <- NULL
-    visit <- function(row,key) {
+    visit <- function(row,key,frame=NULL) {
       .nv_need(is.null(last) || .v2_less(last,key),"Duplicate or unordered row")
       if(is.null(first)) first <<- key
       last <<- key; count <<- .nv_add(count,"1")
@@ -224,10 +225,10 @@
         .v2_passport_check(row$values,context)
         if(!is.null(terminology)) .term_vocab_match(row$values,terminology)
       }
-      if(!is.null(output)) output$add(row,key)
+      if(!is.null(proof)) proof$add(mid,frame)
+      if(!is.null(output)) output$add(frame,key)
     }
-    if(is.null(proof)) .store_rows(tx,releaseId,mid,visit,assets) else
-      .store_rows(tx,releaseId,mid,visit,assets,onFrame=function(frame)proof$add(mid,frame))
+    .store_rows(tx,releaseId,mid,visit,assets,includeFrame=!is.null(output)||!is.null(proof))
     .nv_need(count==d$rows,"Dataset row count mismatch")
     if(mid=="core.execution.output_status" && d$state!="suppressed") .nv_need(count=="142","Missing output ledger rows")
     if(mid %in% assets$singletons && d$state!="suppressed") .nv_need(count=="1","Missing singleton")

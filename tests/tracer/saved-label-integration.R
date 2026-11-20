@@ -96,15 +96,15 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
   restricted<-policy;restricted$allow_metrics<-as.list(c('core.person.count','core.person.gender_count'))
   scanRows<-f('.store_rows');scans<-character()
   on.exit(assignInNamespace('.store_rows',scanRows,ns='AchillesNext'),add=TRUE)
-  assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets) {
+  assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets,...) {
     scans<<-c(scans,metricId)
-    scanRows(tx,releaseId,metricId,visit,assets)
+    scanRows(tx,releaseId,metricId,visit,assets,...)
   },ns='AchillesNext')
   reduced<-publishResultRelease(details,schema,release,file.path(root,'labels-reduced'),'fixture-person','review-reduced',restricted,function(c)TRUE,savedTerminology=snapshot)
   stopifnot(identical(scans,sort(names(f('.v2_assets')()$metrics),method='radix')))
   # A broken count in a policy-omitted dataset must still prevent approval.
-  assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets) {
-    if(metricId!='core.source.passport')scanRows(tx,releaseId,metricId,visit,assets)
+  assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets,...) {
+    if(metricId!='core.source.passport')scanRows(tx,releaseId,metricId,visit,assets,...)
   },ns='AchillesNext')
   called<-FALSE
   fail(function()publishResultRelease(details,schema,release,file.path(root,'missing-passport'),'fixture-person','review-omitted',
@@ -136,11 +136,11 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
       phase<<-'projection';stage<<-directory
       originals[['.store_build_pages']](tx,validated,publicationId,scopeId,approvalId,policy,directory,...)
     },ns='AchillesNext')
-    assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets=f('.v2_assets')()) {
-      originals[['.store_rows']](tx,releaseId,metricId,function(row,key) {
-        visit(row,key)
+    assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets=f('.v2_assets')(),...) {
+      originals[['.store_rows']](tx,releaseId,metricId,function(row,key,...) {
+        visit(row,key,...)
         if(identical(phase,'projection')){builtRows<<-builtRows+1L;if(mode=='rows'&&builtRows==3L)cancelled<<-TRUE}
-      },assets)
+      },assets,...)
     },ns='AchillesNext')
     assignInNamespace('.v2_descriptor',function(bytes,kind,rows) {
       descriptor<-originals[['.v2_descriptor']](bytes,kind,rows)
