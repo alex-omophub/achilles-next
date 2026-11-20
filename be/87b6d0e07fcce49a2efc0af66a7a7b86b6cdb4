@@ -1,0 +1,32 @@
+R/publication-data-proof.R
+  h_4046c129935915 1-94
+R/result-artifact.R
+  h_4046c129935915 14,33-39,63-67,77,175-186,279
+R/result-export.R
+  h_4046c129935915 81,108-109,200-202
+R/result-validation.R
+  h_4046c129935915 124,163,202,212,228-230
+R/result-wire.R
+  h_4046c129935915 99,145
+docs/development/result-store.md
+  h_4046c129935915 66-74
+tests/tracer/publication-data-proof.R
+  h_4046c129935915 1-54
+tests/tracer/result-export.R
+  h_4046c129935915 150-151,179,191
+tests/tracer/result-validation-offline.R
+  h_4046c129935915 196-214
+tests/tracer/saved-label-integration.R
+  h_4046c129935915 150-151
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "be87b6d0e07fcce49a2efc0af66a7a7b86b6cdb4",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
