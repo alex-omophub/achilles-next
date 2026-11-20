@@ -192,10 +192,12 @@ it. It refuses an unmarked database. The test inventory is explicitly synthetic
 and mostly policy-suppressed; it is not a proof of implemented domain computation.
 The legacy publication test also runs with a deliberately unusable Node executable.
 
-Per-row revision guards and export throughput remain unqualified. No large-source
-performance, additional-engine compatibility or general-purpose clinical validation
-is claimed. Trusted operators control base writes and receipts; manually inserting
-approval/validation rows bypasses the R pipeline. A crash before database commit
+New stores advance the release revision once per release and INSERT statement for
+aggregate cells and denominator edges. Each inserted row counts towards the revision.
+Updates and deletes retain the per-row guard. Export throughput remains unqualified.
+No large-source performance, additional-engine compatibility or general-purpose
+clinical validation is claimed. Trusted operators control base writes and receipts.
+Manually inserting approval/validation rows bypasses the R pipeline. A crash before database commit
 can leave an approved but unreferenced export, which is never selected automatically.
 Finalization atomically reserves a new destination directory, moves its admitted
 objects with bounded traversal, then installs `publication.json` last. A destination

@@ -36,6 +36,12 @@ testPersistenceSafety<-function(details,schema,baseRelease,config,lib,out,execut
   }
   good<-copyMetadata();f(".store_transaction")(details,schema,function(tx)fill(tx,good))
   stopifnot(count(good)=="5",revision(good)=="11")
+  edges<-paste0(schema,".achillesnext_denominator_edge")
+  # Conflict-skipped replays do not change the release or its edge inventory.
+  retryEdges<-paste0("INSERT INTO ",edges," SELECT * FROM ",edges,
+    " WHERE release_id=",uuid(good)," ON CONFLICT DO NOTHING")
+  execute(retryEdges)
+  stopifnot(revision(good)=="11")
   # Parent inserts fire one statement guard across partitions. A direct leaf
   # insert must enforce the same release lock and count each accepted row.
   leaf<-query(paste0("SELECT p.relname AS leaf,c.row_key::text AS row_key FROM ",schema,
@@ -89,6 +95,10 @@ testPersistenceSafety<-function(details,schema,baseRelease,config,lib,out,execut
   extra$row$row_key<-f(".v2_row_identity")(a$rows[[extra$mid]],extra$row)
   error<-tryCatch({f(".store_transaction")(details,schema,function(tx)fill(tx,good,list(extra)));"ACCEPTED"},error=conditionMessage)
   stopifnot(grepl("Release is not writable",error,fixed=TRUE),revision(good)=="11",count(good)=="5")
+  newEdge<-paste0("INSERT INTO ",edges," SELECT release_id,metric_id,row_key,'guard_probe',target_metric_id,",
+    "target_row_key,target_measure_key FROM ",edges," WHERE release_id=",uuid(good)," LIMIT 1")
+  error<-tryCatch({execute(newEdge);"ACCEPTED"},error=conditionMessage)
+  stopifnot(grepl("Release is not writable",error,fixed=TRUE),revision(good)=="11")
   # Fail an edge after earlier flushes succeeded. Both cells and revision bumps
   # must roll back, not only the statement containing the invalid edge.
   broken<-copyMetadata();badRows<-rows;badRows[[5]]$row$denominator_refs[[1]]$row_key<-strrep("f",64)
