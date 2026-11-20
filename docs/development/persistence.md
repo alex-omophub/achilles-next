@@ -19,14 +19,14 @@ reused. SQL errors and cancellation roll back the surrounding generation
 transaction, including previously flushed batches; a flush is not a commit or
 durable checkpoint.
 
-Aggregate cell inserts on a newly initialized PostgreSQL store advance the
-content revision once per affected release and statement by the number of rows
-actually inserted. The guard reads the inserted rows from PostgreSQL's transition
+Aggregate cell and denominator edge inserts on a newly initialized PostgreSQL
+store advance the content revision once per affected release and statement by
+the number of rows actually inserted. The guard reads them from PostgreSQL's transition
 table and checks the release's building state under the same row lock used to
 serialize sealing. Direct inserts into a partition use the same guard.
 
-Cell updates and deletes and dataset and edge writes use the row-level release
-guard. Both guards try the most recently updated physical row address within
+Cell and denominator edge updates and deletes, and all dataset writes, use the
+row-level release guard. Both guards try the most recently updated physical row address within
 the transaction. They verify the release ID and building state and fall back
 to the release primary key if the address misses. Existing installations use
 the guards installed when the store was created.
