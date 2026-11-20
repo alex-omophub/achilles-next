@@ -1,0 +1,34 @@
+tools/benchmark/resource_telemetry.R
+  s_895f6ebe145fd3::t_0a738288499f21 122
+R/result-validation.R
+  s_895f6ebe145fd3::t_b6c5376a6e79af 187,197-206,208-211,214,223-227,232,241-246
+tests/tracer/export-budget-native.R
+  s_895f6ebe145fd3::t_b6c5376a6e79af 12
+tests/tracer/publication-outcomes-offline.R
+  s_895f6ebe145fd3::t_b6c5376a6e79af 34
+docs/development/result-store.md
+  s_895f6ebe145fd3::t_0a738288499f21 60-64
+tests/tracer/result-validation-offline.R
+  s_895f6ebe145fd3::t_b6c5376a6e79af 101-109
+  s_895f6ebe145fd3::t_e748631fdc0423 98
+R/result-export.R
+  s_895f6ebe145fd3::t_b6c5376a6e79af 84,99,103,105-106,108,197
+tests/tracer/saved-label-integration.R
+  s_895f6ebe145fd3::t_552fe6b74a31e0 97-102,104-113,129-130,133-134,136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "fd0d5d26d9d2dcf9cd04dc309142ed418c101e11",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
