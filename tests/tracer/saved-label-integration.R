@@ -147,8 +147,8 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
       if(identical(phase,'projection')){emitted<<-emitted+1L;if(mode=='emission'&&emitted==1L)cancelled<<-TRUE}
       descriptor
     },ns='AchillesNext')
-    assignInNamespace('.v2_directory',function(directory,visit=function(d,b)NULL,check=function()NULL,maxScratchBytes=1024^3) {
-      phase<<-'admission';originals[['.v2_directory']](directory,visit,check,maxScratchBytes)
+    assignInNamespace('.v2_directory',function(directory,visit=function(d,b)NULL,check=function()NULL,maxScratchBytes=1024^3,...) {
+      phase<<-'admission';originals[['.v2_directory']](directory,visit,check,maxScratchBytes,...)
     },ns='AchillesNext')
     assignInNamespace('.v2_denominator_check',function(mid,row,lookup,assets=f('.v2_assets')()) {
       value<-originals[['.v2_denominator_check']](mid,row,lookup,assets)

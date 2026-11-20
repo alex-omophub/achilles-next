@@ -193,3 +193,26 @@ local({
  condition<-simpleError('returned value');stopifnot(identical(original(function()condition),condition))
  cat('EXPORT_BUDGET_IO_SHORT_WRITE_WARN_CLOSE_SIGINT_AND_CANCEL_OWNERSHIP_OK\n')
 })
+
+# Row-stream fingerprints are independent of caller chunking and bind both
+# metric membership and every byte across complete and partial hash blocks.
+local({
+ stream<-get('.publication_row_stream',asNamespace('AchillesNext'))
+ raw<-c(as.raw(rep(0:255,768L)),as.raw(17L));pieces<-function(data,size) {
+  starts<-seq.int(1L,length(data),by=size)
+  lapply(starts,function(i)data[seq.int(i,min(length(data),i+size-1L))])
+ }
+ signature<-function(chunks,mid='a') {
+  s<-stream();for(chunk in chunks)s$add(mid,chunk);s$finish()
+ }
+ want<-signature(list(raw))
+ for(size in c(257L,65535L,65536L,65537L))stopifnot(identical(want,signature(pieces(raw,size))))
+ for(i in c(65536L,length(raw))) {
+  changed<-raw;changed[i]<-as.raw(0L)
+  stopifnot(!identical(want,signature(list(changed))))
+ }
+ stopifnot(!identical(want,signature(list(raw),'b')),
+   !identical(want,signature(list(raw[-length(raw)]))))
+ s<-stream();s$add('b',raw[1]);error<-tryCatch(s$add('a',raw[1]),error=identity)
+ stopifnot(inherits(error,'error'),identical(conditionMessage(error),'Unordered projection metric'))
+})

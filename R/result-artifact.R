@@ -11,7 +11,7 @@
   }
   invisible(NULL)
 }
-.v2_directory <- function(directory, visit=function(descriptor,bytes)NULL,check=function()NULL,maxScratchBytes=1024^3) {
+.v2_directory <- function(directory, visit=function(descriptor,bytes)NULL,check=function()NULL,maxScratchBytes=1024^3,proof=NULL) {
   budget<-.v2_scratch_budget(maxScratchBytes)
   .nv_need(is.function(check));check()
   rootDir <- normalizePath(directory,mustWork=TRUE)
@@ -30,11 +30,13 @@
     .v2_scratch_io(function().nv_need(dir.create(scratch,mode="0700")))
     ownsScratch<-TRUE;allowInterrupts(Sys.sleep(0))
   })
-  .v2_scratch_io(function(){.nv_need(dir.create(file.path(scratch,"seen"),mode="0700"));.nv_need(dir.create(file.path(scratch,"groups"),mode="0700"))})
-  # Keep constructor return and ownership assignment atomic to asynchronous
-  # interrupts; admission cleanup can then close every allocated spool.
-  suspendInterrupts({rows<-.v2_spool(file.path(scratch,"rows"),check,budget);allowInterrupts(Sys.sleep(0))})
-  suspendInterrupts({concepts<-.v2_spool(file.path(scratch,"concepts"),check,budget);allowInterrupts(Sys.sleep(0))})
+  .v2_scratch_io(function().nv_need(dir.create(file.path(scratch,"seen"),mode="0700")))
+  if(is.null(proof)) {
+    .v2_scratch_io(function().nv_need(dir.create(file.path(scratch,"groups"),mode="0700")))
+    # Claim each new spool before allowing asynchronous interruption.
+    suspendInterrupts({rows<-.v2_spool(file.path(scratch,"rows"),check,budget);allowInterrupts(Sys.sleep(0))})
+    suspendInterrupts({concepts<-.v2_spool(file.path(scratch,"concepts"),check,budget);allowInterrupts(Sys.sleep(0))})
+  }
   termKey<-function(key).v2_hash(charToRaw(key))
   suppressed <- list();captureTotals <- list()
   groupPath <- function(mid,key)file.path(scratch,"groups",mid,.v2_hash(.v2_bytes(key)))
@@ -58,6 +60,11 @@
     .v2_descriptor_check(d)
     mark <- file.path(scratch,"seen",d$sha256);.nv_need(!file.exists(mark),"Repeated page or cycle")
     .v2_scratch_file(mark,raw(),budget);raw <- safe(paste0("objects/",d$sha256,".json"),.v2_limit(d$kind))
+    if(!is.null(proof)&&d$kind=="data"&&expectedKind=="data") {
+      range <- proof$read(d,raw,context)
+      mid <- range$metric_id;counts[[mid]] <<- .nv_add(counts[[mid]],d$rows)
+      visit(d,raw);return(range)
+    }
     doc <- .v2_verified_bytes(raw,d)
     common <- c("contract_version","publication_id","release_id","source_id","profile_id","profile_revision","profile_sha256","access_scope_id")
     if(is.null(context)) {
@@ -67,6 +74,7 @@
       .store_uuid(doc$publication_id);.store_uuid(doc$release_id)
       assets <<- .profile_context(doc)
       counts <<- stats::setNames(rep(list("0"),length(assets$metrics)),names(assets$metrics));sums <<- counts
+      if(!is.null(proof)) .nv_need(doc$contract_version=="2.0.0","Unexpected witnessed contract") else
       for(mid in names(assets$metrics)) .v2_scratch_io(function().nv_need(dir.create(file.path(scratch,"groups",mid),mode="0700")))
     }
     .nv_need(identical(.json(doc[common]),.json(context)) && doc$kind==d$kind,"Page context mismatch")
@@ -164,6 +172,18 @@
     if(mid=="core.execution.output_status" && d$state!="suppressed") .nv_need(d$rows=="142","Incomplete output ledger coverage")
     if(!mid %in% allowed) .nv_need(d$state=="suppressed" && d$rows=="0","Policy output leak")
   }
+  inventory <- function() {
+    .v2_directory_entries(rootDir,function(name){check();.nv_need(name%in%c("objects","publication.json"),"Undeclared artifact file")})
+    .nv_need(!nzchar(Sys.readlink(file.path(rootDir,"objects"))),"Symlinked object directory")
+    .v2_directory_entries(file.path(rootDir,"objects"),function(name) {
+      check()
+      .nv_need(grepl("^[0-9a-f]{64}[.]json$",name) && file.exists(file.path(scratch,"seen",sub("[.]json$","",name))),"Undeclared artifact object")
+    })
+  }
+  if(!is.null(proof)) {
+    proof$finish(root,catalogue);inventory();check()
+    return(invisible(root))
+  }
   # Disk-spooled second pass validates references without an in-memory row map.
   rows$walk(function(name,raw) {
     check()
@@ -256,12 +276,7 @@
       })
     }
   }
-  .v2_directory_entries(rootDir,function(name){check();.nv_need(name%in%c("objects","publication.json"),"Undeclared artifact file")})
-  .nv_need(!nzchar(Sys.readlink(file.path(rootDir,"objects"))),"Symlinked object directory")
-  .v2_directory_entries(file.path(rootDir,"objects"),function(name) {
-    check()
-    .nv_need(grepl("^[0-9a-f]{64}[.]json$",name) && file.exists(file.path(scratch,"seen",sub("[.]json$","",name))),"Undeclared artifact object")
-  })
+  inventory()
   check();invisible(root)
 }
 # Only for a graph that completed .v2_directory in this publication attempt.
