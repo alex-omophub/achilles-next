@@ -9,7 +9,7 @@ testExportBudgetIntegration <- function(details,schema,release,root,policy,q,sav
  ref<-file.path(root,paste0('export-budget-',label,'-reference'));stopifnot(dir.create(ref),dir.create(file.path(ref,'objects')))
  publication<-uuid();scope<-paste0('fixture-budget-',label);approval<-'synthetic-export-budget'
  descriptor<-f('.store_transaction')(details,schema,function(tx) {
-  validated<-f('.store_validate')(tx,release)
+  validated<-f('.store_validation_context')(tx,release)
   f('.store_build_pages')(tx,validated,publication,scope,approval,policy,ref,savedTerminology,maxExportBytes=2^53-1)
  },isolation=2L)
  validateResultArtifact(ref)

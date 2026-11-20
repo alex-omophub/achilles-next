@@ -119,7 +119,7 @@ resourceTelemetry <- function(out,owner,schemas,source) {
         environment(original)<-scope
         scope$writeBin<-function(...) {args<-list(...);measure('filesystem_write',function()do.call(base::writeBin,args),database=FALSE)}
       }
-      label<-switch(helper,'.store_build_pages'='projection_serialization_filesystem','.v2_directory'='native_artifact_admission','.store_validate'='stored_release_validation')
+      label<-switch(helper,'.store_build_pages'='stored_validation_projection_serialization_filesystem','.v2_directory'='native_artifact_admission','.store_validate'='stored_release_validation')
       scope[[helper]]<-local({fun<-original;phase<-label;function(...) {args<-list(...);measure(phase,function()do.call(fun,args))}})
     }
     fn<-getn(name);environment(fn)<-scope;fn

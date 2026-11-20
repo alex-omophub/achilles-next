@@ -81,7 +81,7 @@
 .store_build_pages <- function(tx, validated, publicationId, scopeId, approvalId, policy, directory,savedTerminology=NULL,cancel=function()FALSE,maxExportBytes=1024^3,maxSnapshotBytes=1024^3) {
   .term_check(cancel)
   writer<-.export_writer(maxExportBytes,function().term_check(cancel))
-  assets <- validated$assets %||% .v2_assets();allow <- .v2_policy(policy,assets);c <- validated$context;datasets <- validated$datasets
+  assets <- validated$assets %||% .v2_assets();allow <- .v2_policy(policy,assets);c <- validated$context
   metadata<-if(is.null(savedTerminology))NULL else .term_load(tx,savedTerminology,c,cancel,maxSnapshotBytes=maxSnapshotBytes)
   version<-if(is.null(metadata))"2.0.0" else "2.1.0"
   context <- .object(contract_version=version,publication_id=publicationId,release_id=c$release_id,source_id=c$source_id,
@@ -96,19 +96,16 @@
   }
   catalogue <- .v2_pages("metric_catalogue",context,emit,assets=assets)
   data <- .v2_tree("data",context,emit)
-  for(mid in sort(names(datasets),method="radix")) {
+  project <- function(mid,d) {
     .term_check(cancel)
-    d <- datasets[[mid]]
     if(!mid %in% allow) {d$state <- "suppressed";d$reason_code <- "policy.output_omitted";d$rows <- "0"}
     catalogue$add(d,mid)
-    if(d$rows=="0") next
+    if(d$rows=="0") return(NULL)
     pages <- .v2_pages("data",context,emit,mid,assets)
-    .store_rows(tx,c$release_id,mid,function(row,key){.term_check(cancel);pages$add(row,paste0(mid,"|",key))},assets)
-    desc <- pages$finish()
-    # The page tree carries the exact range, not a truncated metric label.
-    bounds <- .store_decode(tx$one(paste0("SELECT jsonb_build_object('lo',min(sort_key COLLATE \"C\"),'hi',max(sort_key COLLATE \"C\"))::text FROM ",tx$schema,".achillesnext_aggregate_cell WHERE release_id=",.store_uuid(c$release_id)," AND metric_id=",.store_literal(mid))))
-    data$add(desc,paste0(mid,"|",bounds$lo),paste0(mid,"|",bounds$hi))
+    list(add=function(row,key) pages$add(row,paste0(mid,"|",key)),
+      finish=function(first,last) data$add(pages$finish(),paste0(mid,"|",first),paste0(mid,"|",last)))
   }
+  .store_scan_release(tx,validated,project,metadata)
   # Flat saved concept browse is built only from retained typed dimensions. No
   # vocabulary/source lookups at publication or viewing time, and no raw text.
   concepts <- .v2_pages("concept_catalogue",context,emit,assets=assets)
@@ -197,7 +194,7 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
     .nv_need(dir.create(file.path(stage,"objects"),mode="0700",showWarnings=FALSE),"Cannot prepare export objects")
     .store_transaction(connectionDetails,resultsSchema,function(tx) {
     .term_check(cancel);tx<-.publication_tx(tx,cancel)
-    validated <- .store_validate(tx,releaseId);.nv_need(validated$context$state=="validated","Validate the release before publication")
+    validated <- .store_validation_context(tx,releaseId);.nv_need(validated$context$state=="validated","Validate the release before publication")
     .term_check(cancel)
     root <<- .store_build_pages(tx,validated,pub,accessScopeId,approvalId,policy,stage,savedTerminology,cancel,maxExportBytes=maxExportBytes,maxSnapshotBytes=maxSnapshotBytes)
     admittedRoot<-.v2_directory(stage,check=function().term_check(cancel),maxScratchBytes=maxScratchBytes)

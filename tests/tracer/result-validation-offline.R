@@ -95,14 +95,18 @@ local({
  })
  context<-c(sourceRoot[f('.saved_common')()],o(observed_schema_sha256=sourceRoot$source_schema$sha256,
    declared_cdm_version=sourceRoot$source_schema$declared_cdm_version,consistency_basis=sourceRoot$source_consistency$within_run))
- tx<-list(schema='"fixture"',one=function(sql) {
-  mids<-names(rows)[vapply(names(rows),function(mid)grepl(f('.store_literal')(mid),sql,fixed=TRUE),TRUE)]
-  stopifnot(length(mids)==1L);keys<-vapply(rows[[mids]],function(row)f('.v2_sort')(assets$rows[[mids]],row),'')
-  f('.json')(o(lo=sort(keys,method='radix')[[1]],hi=tail(sort(keys,method='radix'),1)))
- },stream=function(sql,visit)for(entry in concepts)visit(f('.json')(o(tag=entry$concept_tag,key=f('.v2_component')(entry$concept_tag,'concept_tag')))))
+ tx<-list(stream=function(sql,visit)for(entry in concepts)visit(f('.json')(o(tag=entry$concept_tag,key=f('.v2_component')(entry$concept_tag,'concept_tag')))))
  build<-f('.store_build_pages');scope<-new.env(parent=environment(build));stamp<-f('.stamp')()
  scope$.stamp<-function()stamp
- scope$.store_rows<-function(tx,releaseId,mid,visit,assets)for(row in rows[[mid]])visit(row,f('.v2_sort')(assets$rows[[mid]],row))
+ scope$.store_scan_release<-function(tx,release,project,terminology) {
+  for(mid in sort(names(release$datasets),method='radix')) {
+   output<-project(mid,release$datasets[[mid]])
+   if(is.null(output))next
+   keys<-vapply(rows[[mid]],function(row)f('.v2_sort')(assets$rows[[mid]],row),'')
+   for(i in seq_along(keys))output$add(rows[[mid]][[i]],keys[[i]])
+   output$finish(keys[[1]],tail(keys,1))
+  }
+ }
  environment(build)<-scope
  run<-function(name,limit) {
   directory<-file.path(root,name);dir.create(directory);dir.create(file.path(directory,'objects'))

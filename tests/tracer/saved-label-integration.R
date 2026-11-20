@@ -94,7 +94,23 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
   # Restore the observer before producer/migration assertions.
   unlockBinding('.store_transaction',ns);assign('.store_transaction',original,ns);lockBinding('.store_transaction',ns)
   restricted<-policy;restricted$allow_metrics<-as.list(c('core.person.count','core.person.gender_count'))
+  scanRows<-f('.store_rows');scans<-character()
+  on.exit(assignInNamespace('.store_rows',scanRows,ns='AchillesNext'),add=TRUE)
+  assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets) {
+    scans<<-c(scans,metricId)
+    scanRows(tx,releaseId,metricId,visit,assets)
+  },ns='AchillesNext')
   reduced<-publishResultRelease(details,schema,release,file.path(root,'labels-reduced'),'fixture-person','review-reduced',restricted,function(c)TRUE,savedTerminology=snapshot)
+  stopifnot(identical(scans,sort(names(f('.v2_assets')()$metrics),method='radix')))
+  # A broken count in a policy-omitted dataset must still prevent approval.
+  assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets) {
+    if(metricId!='core.source.passport')scanRows(tx,releaseId,metricId,visit,assets)
+  },ns='AchillesNext')
+  called<-FALSE
+  fail(function()publishResultRelease(details,schema,release,file.path(root,'missing-passport'),'fixture-person','review-omitted',
+    restricted,function(c){called<<-TRUE;TRUE},savedTerminology=snapshot),publicationError,causeMessage='Dataset row count mismatch')
+  stopifnot(!called,!dir.exists(file.path(root,'missing-passport')))
+  assignInNamespace('.store_rows',scanRows,ns='AchillesNext')
   doc<-f('.nv_json')(readBin(file.path(reduced$export_dir,'objects',paste0(reduced$root$sha256,'.json')),'raw',n=262145L))
   ctx<-c(doc[f('.saved_common')()],o(root=reduced$root,authorization_epoch='1',instance_id='reduced-labels'))
   p<-openArtifactResultProvider(reduced$export_dir,ctx,function(c)TRUE);on.exit(p$close(),add=TRUE)
@@ -110,21 +126,19 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
   validateResultArtifact(file.path(root,'restricted'))
   # Cancellation interrupts actual release validation/producer work, rather than
   # waiting for a whole export and accepting any generic failure afterwards.
-  originals<-lapply(c('.store_validate','.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_denominator_check'),f)
-  names(originals)<-c('.store_validate','.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_denominator_check')
+  originals<-lapply(c('.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_denominator_check'),f)
+  names(originals)<-c('.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_denominator_check')
   restore<-function()for(n in names(originals))assignInNamespace(n,originals[[n]],ns='AchillesNext')
   on.exit(restore(),add=TRUE)
-  for(mode in c('validation','rows','emission','admission')) {
-    phase<-NULL;validationRows<-0L;builtRows<-0L;emitted<-0L;admittedRows<-0L;cancelled<-FALSE;stage<-NULL;buildCalled<-FALSE
-    assignInNamespace('.store_validate',function(tx,releaseId,exclusive=FALSE){phase<<-'validation';originals[['.store_validate']](tx,releaseId,exclusive)},ns='AchillesNext')
+  for(mode in c('rows','emission','admission')) {
+    phase<-NULL;builtRows<-0L;emitted<-0L;admittedRows<-0L;cancelled<-FALSE;stage<-NULL
     assignInNamespace('.store_build_pages',function(tx,validated,publicationId,scopeId,approvalId,policy,directory,...) {
-      phase<<-'projection';stage<<-directory;buildCalled<<-TRUE
+      phase<<-'projection';stage<<-directory
       originals[['.store_build_pages']](tx,validated,publicationId,scopeId,approvalId,policy,directory,...)
     },ns='AchillesNext')
     assignInNamespace('.store_rows',function(tx,releaseId,metricId,visit,assets=f('.v2_assets')()) {
       originals[['.store_rows']](tx,releaseId,metricId,function(row,key) {
         visit(row,key)
-        if(identical(phase,'validation')){validationRows<<-validationRows+1L;if(mode=='validation'&&validationRows==3L)cancelled<<-TRUE}
         if(identical(phase,'projection')){builtRows<<-builtRows+1L;if(mode=='rows'&&builtRows==3L)cancelled<<-TRUE}
       },assets)
     },ns='AchillesNext')
@@ -143,7 +157,6 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
     },ns='AchillesNext')
     fail(function()publishResultRelease(details,schema,release,file.path(root,paste0('cancel-',mode)),'fixture-restricted','review-cancel',policy,function(c)TRUE,
       expectedRevision='1',cancel=function()cancelled),publicationError,causeCode='aborted')
-    if(mode=='validation')stopifnot(validationRows==3L,!buildCalled)
     if(mode=='rows')stopifnot(builtRows==3L)
     if(mode=='emission')stopifnot(emitted==1L)
     if(mode=='admission')stopifnot(admittedRows==3L)
