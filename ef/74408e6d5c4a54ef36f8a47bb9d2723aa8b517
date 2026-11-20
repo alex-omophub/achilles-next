@@ -1,0 +1,23 @@
+R/result-validation.R
+  s_3e206b4a2cf4c3::t_a33251b7bb3230 205
+tests/tracer/result-validation-offline.R
+  s_3e206b4a2cf4c3::t_bf1caa85bc5323 101-108,110-111,115-116,118
+tools/benchmark/resource_telemetry.R
+  s_3e206b4a2cf4c3::t_3fae75bb86ba99 116,122-123
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "ef74408e6d5c4a54ef36f8a47bb9d2723aa8b517",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
