@@ -1,0 +1,21 @@
+tests/tracer/result-store-regressions.R
+  s_3e206b4a2cf4c3::t_7bb9afda855eaf 6,18-24
+R/result-validation.R
+  s_3e206b4a2cf4c3::t_7bb9afda855eaf 272-296
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0a58ddb32416b9129c29214d2cd50158e2db5537",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
