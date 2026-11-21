@@ -1,0 +1,21 @@
+R/saved-page.R
+  s_895f6ebe145fd3::t_5fcea96b8bc5db 10-23,27,47-49,88,92
+tests/tracer/saved-transport.R
+  s_895f6ebe145fd3::t_bb77b345ef3c28 99-118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "b261861c4404c732b6af487ee3d5efd1266e25b5",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
