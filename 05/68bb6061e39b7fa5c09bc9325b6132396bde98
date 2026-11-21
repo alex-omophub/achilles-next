@@ -1,0 +1,42 @@
+R/artifact-data-leaf.R
+  s_895f6ebe145fd3::t_b3ccb57d5470d7 3,21-22,35-38
+R/saved-page.R
+  s_895f6ebe145fd3::t_b3ccb57d5470d7 28-33
+R/result-wire.R
+  s_895f6ebe145fd3::t_b3ccb57d5470d7 126
+  s_895f6ebe145fd3::t_4395b367870b54 102
+tests/tracer/saved-transport-integration.R
+  s_895f6ebe145fd3::t_1b14b355ec71e3 24-29
+  s_895f6ebe145fd3::t_04dd397315412c 4-21
+tests/tracer/saved-transport.R
+  s_895f6ebe145fd3::t_4395b367870b54 100-131
+R/saved-reader.R
+  s_895f6ebe145fd3::t_b3ccb57d5470d7 52-54,61-63,65-75,77,79-82,148
+  s_895f6ebe145fd3::t_4395b367870b54 10,64
+R/result-reader.R
+  s_895f6ebe145fd3::t_04dd397315412c 42,45-58
+  s_895f6ebe145fd3::t_0153323692fd01 16-19,24-41,43-44
+R/saved-transport.R
+  s_895f6ebe145fd3::t_0153323692fd01 41
+R/result-validation.R
+  s_895f6ebe145fd3::t_04dd397315412c 10-11,21
+docs/development/saved-transports.md
+  s_895f6ebe145fd3::t_4395b367870b54 39,104-109
+  s_895f6ebe145fd3::t_567aaf7ea2967c 110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "0568bb6061e39b7fa5c09bc9325b6132396bde98",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
