@@ -49,6 +49,14 @@ JDBC disconnect and restores the caller's previous signal mask afterward.
 On macOS a socket write can send SIGPIPE to another unblocked thread in the
 process, including a JVM thread. The library leaves those threads' signal masks
 and the application's signal handlers under host control.
+
+A host that owns a dedicated macOS reader worker can block SIGPIPE in the child
+before executing `Rscript`. R and subsequently created JVM threads inherit the
+mask. Keep it set for the worker's lifetime and handle socket or pipe write
+errors (EPIPE) normally. The launcher should leave the parent process untouched.
+Changing the calling thread's mask after a shared JVM starts cannot establish
+the same property for its existing threads.
+
 The reader reports database or driver cleanup failures. Windows
 uses the ordinary JDBC disconnect path. Installing the R package from source
 requires the platform's R C toolchain.
