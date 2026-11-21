@@ -102,7 +102,7 @@ local({
     damaged <- FALSE
     tr <- f('.saved_transport')(x$context,authorize,function(d) {
       raw <- f('.v2_safe_file')(x$directory,paste0('objects/',d$sha256,'.json'),f('.v2_limit')(d$kind))
-      if(damaged) raw[[1L]] <- as.raw(32L)
+      if(damaged && d$kind=="data") raw[[1L]] <- as.raw(32L)
       raw
     },cacheAllowed=cacheAllowed)
     r <- f('.saved_reader')(tr)
