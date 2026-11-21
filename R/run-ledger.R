@@ -5,8 +5,16 @@
   ids <- sort(setdiff(ls(ns, all.names = TRUE), c(".__NAMESPACE__.", ".__S3MethodsTable__.", ".packageName")))
   syntax <- function(x) paste(deparse(x, width.cutoff = 500L,
     control = c("keepInteger", "quoteExpressions", "showAttributes", "keepNA", "S_compatible")), collapse = "\n")
+  dll <- getLoadedDLLs()[["AchillesNext"]]
+  libraryHash <- digest::digest(file=dll[["path"]],algo="sha256")
   bindings <- lapply(ids, function(id) {
     x <- get(id, ns)
+    if (inherits(x,"NativeSymbolInfo")) {
+      .nv_need(identical(x$dll,dll),"Foreign native routine in the package namespace")
+      # Native addresses and install paths vary between workers using the same build.
+      return(.hash(.json(.object(routine=x$name,interface=class(x)[[1L]],
+        arity=x$numParameters,library_sha256=libraryHash))))
+    }
     .hash(if (is.function(x)) paste(syntax(formals(x)), syntax(body(x)), sep = "\n") else syntax(x))
   })
   sql <- system.file("sql/postgresql", package = "AchillesNext", mustWork = TRUE)

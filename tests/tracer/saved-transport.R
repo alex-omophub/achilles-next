@@ -1,5 +1,43 @@
 # Internal page traversal: routing-only fixtures do not assert full admission.
 library(AchillesNext)
+if (.Platform$OS.type=="unix") local({
+  ns <- asNamespace("AchillesNext")
+  guard <- get(".with_serving_disconnect_guard", ns)
+  block <- function() .Call(get("C_block_serving_sigpipe", ns))
+  unblock <- function() .Call(get("C_unblock_serving_sigpipe", ns))
+  initiallyUnblocked <- block()
+  on.exit(if(initiallyUnblocked) unblock(), add=TRUE)
+  stopifnot(identical(guard(function() "closed"), "closed"), !block())
+  if (initiallyUnblocked) {
+    unblock()
+    previousLocale <- Sys.getlocale("LC_MESSAGES")
+    stopifnot(Sys.setlocale("LC_MESSAGES","C")=="C")
+    on.exit(Sys.setlocale("LC_MESSAGES",previousLocale), add=TRUE)
+    ready <- tempfile()
+    writer <- pipe(paste("exec 0</dev/null; : >", shQuote(ready)), "wb")
+    on.exit({ suppressWarnings(try(guard(function() close(writer)), silent=TRUE)); unlink(ready) }, add=TRUE)
+    for (i in seq_len(200L)) {
+      if (file.exists(ready)) break
+      Sys.sleep(0.01)
+    }
+    stopifnot(file.exists(ready))
+    writeClosedPipe <- function() {
+      # The child acknowledged closing its read end. A real EPIPE here must
+      # leave the callback in control until it has returned to the guard.
+      message <- tryCatch({
+        writeLines(strrep("x",65536L),writer)
+        flush(writer)
+        NULL
+      },error=conditionMessage)
+      stopifnot(is.character(message),length(message)==1L,grepl("Broken pipe",message,fixed=TRUE))
+    }
+    stopifnot(identical(guard(function() {writeClosedPipe(); "closed"}), "closed"), block())
+    unblock()
+    original <- tryCatch(guard(function() {writeClosedPipe(); stop("original failure")}), error=conditionMessage)
+    stopifnot(identical(original, "original failure"), block())
+    unblock()
+  }
+})
 local({
   f <- function(n)get(n,asNamespace('AchillesNext'));o<-f('.object');wire<-f('.v2_bytes');hash<-f('.v2_hash');a<-f('.v2_assets')()
   folder<-tempfile('saved-transport-test-');stopifnot(dir.create(folder));on.exit(unlink(folder,recursive=TRUE))
@@ -97,6 +135,38 @@ local({
     cursor<-result$cursor
   }
   stopifnot(identical(ids,as.character(1:130)),reader$inspect()$cache_hits>0L,checks>10L)
+  # Repeat verification may reuse semantics only for the same descriptor and bytes.
+  for(cacheAllowed in c(TRUE,FALSE)) {
+    damaged <- FALSE
+    tr <- f('.saved_transport')(x$context,authorize,function(d) {
+      raw <- f('.v2_safe_file')(x$directory,paste0('objects/',d$sha256,'.json'),f('.v2_limit')(d$kind))
+      if(damaged && d$kind=="data") raw[[1L]] <- as.raw(32L)
+      raw
+    },cacheAllowed=cacheAllowed)
+    r <- f('.saved_reader')(tr)
+    one <- r$scan('data')
+    expected <- one$pages[[1L]]$document
+    one$pages[[1L]]$document$metric_id <- 'changed'
+    one$pages[[1L]]$bytes[[1L]] <- as.raw(32L)
+    before <- r$inspect()
+    two <- r$scan('data')
+    after <- r$inspect()
+    stopifnot(identical(two$pages[[1L]]$document,expected),identical(one$budget,two$budget),
+      after$validated_pages==before$validated_pages,
+      after$fetched_objects==before$fetched_objects+if(cacheAllowed)0L else two$budget$objects)
+    if(!cacheAllowed) {
+      stopifnot(after$cache_bytes==0L,after$cache_objects==0L)
+      damaged <- TRUE
+      fail(function()r$scan('data'),'integrity_failure')
+      damaged <- FALSE
+      r$scan('data')
+      stopifnot(r$inspect()$validated_pages==before$validated_pages+two$budget$objects)
+    }
+    approved <- FALSE
+    fail(function()r$scan('data'),'inaccessible')
+    approved <- TRUE
+    r$close()
+  }
   # Semantic selection belongs to a later layer; these return complete partitions.
   result<-reader$scan('data');stopifnot(result$pages[[1]]$document$rows[[1]]$values$person_count=='9007199254740993')
   stopifnot(reader$scan('terminology')$complete,length(reader$scan('terminology')$pages)==0L)

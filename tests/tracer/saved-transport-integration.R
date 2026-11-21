@@ -1,8 +1,32 @@
 # Real serving-only principal, approved bytes, and observed SQL boundary.
 testSavedTransportIntegration <- function(directory,descriptor,details,serving,results,role,execute) {
   ns<-asNamespace('AchillesNext');f<-function(n)get(n,ns)
+  # An ordinary close error still propagates, and cleanup never replays the close.
+  checkClose <- function(closeConnection, message=NULL) {
+    con <- DatabaseConnector::connect(details)
+    on.exit(if(!rJava::.jcall(con@jConnection, "Z", "isClosed")) DatabaseConnector::disconnect(con))
+    attempts <- 0L
+    close <- function(connection) {
+      attempts <<- attempts + 1L
+      if (closeConnection) DatabaseConnector::disconnect(connection)
+      if (!is.null(message)) stop(message, call.=FALSE)
+    }
+    outcome <- tryCatch(f('.disconnect_approved_page_reader')(con, close), error=conditionMessage)
+    stopifnot(attempts==1L)
+    outcome
+  }
+  stopifnot(identical(checkClose(TRUE), TRUE),
+            identical(checkClose(FALSE), "Approved page connection remained open"),
+            identical(checkClose(TRUE, "Other disconnect error"), "Other disconnect error"),
+            identical(checkClose(FALSE, "ignoring SIGPIPE signal"), "ignoring SIGPIPE signal"))
   root<-f('.nv_json')(readBin(file.path(directory,'objects',paste0(descriptor$sha256,'.json')),'raw',n=262145L))
   context<-c(root[f('.saved_common')()],f('.object')(root=descriptor,authorization_epoch='1',instance_id='fixture-adapter'))
+  # The standalone reader still checks the host descriptor against the bytes from the view.
+  wrongSize <- root$catalogue
+  wrongSize$bytes <- "0"
+  rejected <- tryCatch(readResultObject(details, serving, context$source_id, context$publication_id,
+                                        context$access_scope_id, descriptor$sha256, wrongSize), error=identity)
+  stopifnot(inherits(rejected, "error"), identical(conditionMessage(rejected), "Approved result page unavailable or invalid"))
   allowed<-function(c)identical(c,context)
   artifact<-f('.saved_reader')(f('.saved_artifact_transport')(directory,context,allowed))
   database<-f('.saved_reader')(f('.saved_database_transport')(details,serving,context,allowed))

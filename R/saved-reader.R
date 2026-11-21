@@ -7,7 +7,7 @@
   if(!transport$cacheAllowed) cacheBytes <- 0L
   state <- new.env(parent=emptyenv());state$closed <- FALSE;state$generation <- 0L
   state$cache <- list();state$order <- character();state$bytes <- 0L
-  state$stats <- list(fetched_objects=0L,fetched_bytes=0,cache_hits=0L)
+  state$stats <- list(fetched_objects=0L,fetched_bytes=0,cache_hits=0L,validated_pages=0L)
   # UUID.randomUUID uses the already required JVM's secure random source.
   rJava::.jinit();uuid <- rJava::.jcall("java/util/UUID","Ljava/util/UUID;","randomUUID")
   secret <- rJava::.jcall(uuid,"S","toString")
@@ -49,26 +49,37 @@
         used$rows <- used$rows+as.integer(d$rows)
       }
       if(used$objects>maxObjects || used$bytes>maxBytes) .saved_error("resource_limit")
-      raw <- state$cache[[d$sha256]]
+      entry <- state$cache[[d$sha256]]
+      if(!is.null(entry)) .nv_need(identical(d[names(entry$descriptor)],entry$descriptor),"Conflicting descriptor")
+      raw <- entry$raw
       if(is.null(raw)) {
         raw <- transport$read(d,cancel);check(cancel,generation)
         .nv_need(is.raw(raw) && length(raw)<=.v2_limit(d$kind),"Transport byte limit")
         state$stats$fetched_objects <- state$stats$fetched_objects+1L
         state$stats$fetched_bytes <- state$stats$fetched_bytes+length(raw)
       } else state$stats$cache_hits <- state$stats$cache_hits+1L
-      page <- .saved_page(raw,d,context[.saved_common()],assets);check(cancel,generation)
-      # Cache only verified raw bytes, never mutable decoded objects or authority.
-      if(cacheBytes>0L && length(raw)<=cacheBytes) {
-        if(!is.null(state$cache[[d$sha256]])) {
-          state$bytes <- state$bytes-length(state$cache[[d$sha256]])
-          state$order <- state$order[state$order!=d$sha256];state$cache[[d$sha256]]<-NULL
-        }
-        while(length(state$order)>=64L || state$bytes+length(raw)>cacheBytes) {
-          oldest <- state$order[[1]];state$order <- state$order[-1]
-          state$bytes <- state$bytes-length(state$cache[[oldest]]);state$cache[[oldest]]<-NULL
-        }
-        state$cache[[d$sha256]]<-raw;state$order<-c(state$order,d$sha256);state$bytes<-state$bytes+length(raw)
+
+      if(is.null(entry)) {
+        page <- .saved_page(raw,d,context[.saved_common()],assets)
+        state$stats$validated_pages <- state$stats$validated_pages+1L
+        entry <- list(descriptor=d,lo=page$lo,hi=page$hi)
+        if(length(raw)<=cacheBytes) entry$raw <- raw
+      } else {
+        # A refetch still needs to prove it supplied the same validated bytes.
+        if(is.null(entry$raw)) .nv_need(identical(as.character(length(raw)),d$bytes) &&
+          identical(.v2_hash(raw),d$sha256),"Page integrity mismatch")
+        page <- list(document=jsonlite::fromJSON(rawToChar(raw),simplifyVector=FALSE),lo=entry$lo,hi=entry$hi)
       }
+      check(cancel,generation)
+      if(is.null(state$cache[[d$sha256]])) {
+        while(length(state$order)>=64L || state$bytes+length(entry$raw)>cacheBytes) {
+          oldest <- state$order[[1]];state$order <- state$order[-1]
+          state$bytes <- state$bytes-length(state$cache[[oldest]]$raw);state$cache[[oldest]]<-NULL
+        }
+        state$cache[[d$sha256]] <- entry
+        state$bytes <- state$bytes+length(entry$raw)
+      } else state$order <- state$order[state$order!=d$sha256]
+      state$order <- c(state$order,d$sha256)
       result <- c(list(descriptor=d,bytes=raw),page)
       memo[[d$sha256]] <<- result;result
     }
@@ -134,5 +145,5 @@
   },responseLimit=responseLimit)
   list(session=session,root=function(cancel=function()FALSE)run(cancel,function(get,budget)list(page=get(context$root))),scan=scan,
     close=function(){if(!state$closed){state$closed<-TRUE;clear()};invisible(NULL)},
-    inspect=function()c(state$stats,list(cache_bytes=state$bytes,cache_objects=length(state$order),cache_allowed=transport$cacheAllowed,closed=state$closed,generation=state$generation)))
+    inspect=function()c(state$stats,list(cache_bytes=state$bytes,cache_objects=sum(vapply(state$cache,function(entry)!is.null(entry$raw),TRUE)),cache_allowed=transport$cacheAllowed,closed=state$closed,generation=state$generation)))
 }

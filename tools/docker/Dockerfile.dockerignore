@@ -11,6 +11,10 @@
 !.github/workflows/count-tracer.yml
 !R/
 !R/**
+!src/
+!src/serving-disconnect.c
+!src/Makevars
+!src/Makevars.win
 !man/
 !man/**
 !inst/
