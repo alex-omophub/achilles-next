@@ -7,11 +7,46 @@
   .nv_need(.nv_unsigned_cmp(d$bytes,as.character(.v2_limit(d$kind)))<=0L,"Descriptor byte limit")
   invisible(d)
 }
-.v2_verified_bytes <- function(bytes,d,context=NULL) {
+# Metric catalogue entries share a closed object layout and repeat values such
+# as completeness and scope. Encode identical values once within this page.
+.saved_catalogue_frames <- function(entries) {
+  fields <- names(entries[[1L]])
+  uniform <- length(entries)>1L && length(fields)>0L && length(fields)<=16L && !anyDuplicated(fields) &&
+    all(vapply(entries,function(entry) identical(names(entry),fields),TRUE))
+  if(!uniform) return(vapply(entries,.json,"",USE.NAMES=FALSE))
+
+  frames <- rep("",length(entries))
+  separator <- "{"
+  for(field in sort(fields,method="radix")) {
+    values <- lapply(entries,`[[`,field)
+    first <- values[[1L]]
+    same <- vapply(values,identical,TRUE,y=first,num.eq=FALSE)
+    encoded <- rep(.json(first),length(values))
+    if(any(!same)) encoded[!same] <- vapply(values[!same],.json,"",USE.NAMES=FALSE)
+    frames <- paste0(frames,separator,.json(field),":",encoded)
+    separator <- ","
+  }
+  paste0(frames,"}")
+}
+
+# Reuse each canonical entry for both its size check and the exact page comparison.
+.saved_metric_catalogue_bytes <- function(doc) {
+  .v2_keys(doc,c(.saved_common(),"kind","entries"))
+  .nv_need(.nv_array(doc$entries) && length(doc$entries)>0L && length(doc$entries)<=2048L)
+  entries <- .saved_catalogue_frames(doc$entries)
+  .nv_need(all(nchar(enc2utf8(entries),type="bytes")+1L<=65536L),"Catalogue entry byte limit")
+  array <- paste0("[",paste(entries,collapse=","),"]")
+  fields <- vapply(sort(names(doc),method="radix"),function(key) {
+    value <- if(key=="entries") array else .json(doc[[key]])
+    paste0(.json(key),":",value)
+  },"",USE.NAMES=FALSE)
+  charToRaw(enc2utf8(paste0("{",paste(fields,collapse=","),"}\n")))
+}
+.v2_verified_bytes <- function(bytes,d,context=NULL,encodePage=.v2_bytes) {
   .v2_descriptor_check(d)
   .nv_need(is.raw(bytes) && length(bytes)<=.v2_limit(d$kind) && identical(as.character(length(bytes)),d$bytes) && .v2_hash(bytes)==d$sha256,"Page integrity mismatch")
   doc <- .nv_json(bytes)
-  .nv_need(identical(bytes,.v2_bytes(doc)) && identical(doc$kind,d$kind),"Noncanonical or wrong-kind page")
+  .nv_need(identical(bytes,encodePage(doc)) && identical(doc$kind,d$kind),"Noncanonical or wrong-kind page")
   if(!is.null(context)) .nv_need(identical(.json(doc[names(context)]),.json(context)),"Page context mismatch")
   doc
 }
@@ -31,7 +66,9 @@
     leaf <- .v2_artifact_data_leaf(bytes,d,context,assets,check=function()NULL,retainFrames=FALSE)
     return(list(document=leaf$doc,lo=leaf$keys[[1]],hi=leaf$keys[[length(leaf$keys)]]))
   }
-  doc <- .v2_verified_bytes(bytes,d,context);common <- .saved_common()
+  catalogue <- d$kind=="metric_catalogue"
+  encode <- if(catalogue) .saved_metric_catalogue_bytes else .v2_bytes
+  doc <- .v2_verified_bytes(bytes,d,context,encode);common <- .saved_common()
   keys <- character()
   if(d$kind=="root") {
     .nv_need(.term_version(doc$contract_version))
@@ -70,11 +107,11 @@
     .v2_keys(doc,c(common,"kind","entries"))
     .nv_need(.nv_array(doc$entries) && length(doc$entries)>0L && length(doc$entries)<=2048L)
     keys <- vapply(doc$entries,function(entry) {
-      .nv_need(length(.v2_bytes(entry))<=65536L)
-      if(d$kind=="metric_catalogue") {
+      if(catalogue) {
         .nv_need(.string(entry$state) && .string(entry$conditional_support$state))
         .v2_dataset(entry,assets);return(entry$metric_id)
       }
+      .nv_need(length(.v2_bytes(entry))<=65536L)
       .term_entry(entry,d$kind,doc$contract_version)
     },"")
   }

@@ -96,6 +96,34 @@ local({
     list(directory=normalizePath(directory),context=context,root=root)
   }
   x<-make();approved<-TRUE;checks<-0L
+  # The catalogue encoder checks the same UTF-8 frame (including LF) as wire().
+  catalogueBytes <- f('.saved_metric_catalogue_bytes')
+  pin <- x$root$catalogue
+  rawCatalogue <- readBin(file.path(x$directory,'objects',paste0(pin$sha256,'.json')),
+                          'raw',n=as.integer(pin$bytes))
+  catalogue <- f('.nv_json')(rawCatalogue)
+  stopifnot(identical(catalogueBytes(catalogue),rawCatalogue))
+  candidate <- catalogue[rev(names(catalogue))]
+  candidate$source_id <- 'fixture/\u00e9"'
+  candidate$entries <- list(o(note='\u00e9/\n"'),catalogue$entries[[1L]])
+  stopifnot(identical(catalogueBytes(candidate),wire(candidate)))
+  # Repeated and exceptional column values keep their JSON types, escapes and
+  # nested object keys, even when a field is null in just one catalogue entry.
+  candidate$entries <- list(o(label='same',detail=o(x=TRUE),item=NULL),
+                            o(label='\u00e9/"',detail=o(x=TRUE),item=list()),
+                            o(label='same',detail=o(y=TRUE),item=FALSE))
+  stopifnot(identical(catalogueBytes(candidate),wire(candidate)))
+  candidate$entries[[2L]] <- rev(candidate$entries[[2L]])
+  stopifnot(identical(catalogueBytes(candidate),wire(candidate)))
+  blank <- o(note='')
+  room <- 65536L-length(wire(blank))
+  candidate$entries <- list(blank,o(note=strrep('x',room)))
+  stopifnot(identical(catalogueBytes(candidate),wire(candidate)))
+  candidate$entries[[2L]]$note <- paste0(candidate$entries[[2L]]$note,'x')
+  fail(function()catalogueBytes(candidate))
+  badBytes <- c(as.raw(32L),rawCatalogue)
+  rehashed <- f('.v2_descriptor')(badBytes,pin$kind,pin$rows)
+  fail(function()f('.saved_page')(badBytes,rehashed,x$context[f('.saved_common')()],a))
   # Root policy constrains catalogue metadata as well as data pages.
   for(values in list(c('computed','1'),c('computed','0'),c('suppressed','1'))) {
     z<-make(n=1L,retained=FALSE,catalogueState=values[[1]],catalogueRows=values[[2]])
