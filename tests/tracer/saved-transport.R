@@ -10,6 +10,9 @@ if (.Platform$OS.type=="unix") local({
   stopifnot(identical(guard(function() "closed"), "closed"), !block())
   if (initiallyUnblocked) {
     unblock()
+    previousLocale <- Sys.getlocale("LC_MESSAGES")
+    stopifnot(Sys.setlocale("LC_MESSAGES","C")=="C")
+    on.exit(Sys.setlocale("LC_MESSAGES",previousLocale), add=TRUE)
     ready <- tempfile()
     writer <- pipe(paste("exec 0</dev/null; : >", shQuote(ready)), "wb")
     on.exit({ suppressWarnings(try(guard(function() close(writer)), silent=TRUE)); unlink(ready) }, add=TRUE)
@@ -21,8 +24,12 @@ if (.Platform$OS.type=="unix") local({
     writeClosedPipe <- function() {
       # The child acknowledged closing its read end. A real EPIPE here must
       # leave the callback in control until it has returned to the guard.
-      message <- tryCatch({suppressWarnings(writeBin(raw(65536L), writer)); NULL}, error=conditionMessage)
-      stopifnot(!identical(message, gettext("ignoring SIGPIPE signal", domain="R")))
+      message <- tryCatch({
+        writeLines(strrep("x",65536L),writer)
+        flush(writer)
+        NULL
+      },error=conditionMessage)
+      stopifnot(is.character(message),length(message)==1L,grepl("Broken pipe",message,fixed=TRUE))
     }
     stopifnot(identical(guard(function() {writeClosedPipe(); "closed"}), "closed"), block())
     unblock()
