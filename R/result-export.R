@@ -238,8 +238,8 @@ publishResultRelease <- function(connectionDetails,resultsSchema,releaseId,expor
     # Walk validated reachable objects; never enumerate or reserialize payloads.
     .publication_pages(stage,root,pointer,function(desc,bytes) {
       .term_check(cancel)
-      hex <- paste(sprintf("%02x",as.integer(bytes)),collapse="")
-      tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_page_object VALUES (",.store_uuid(pub),",",.store_literal(desc$sha256),",",.store_literal(desc$kind),",decode('",hex,"','hex'))"))
+      encoded <- jsonlite::base64_enc(bytes)
+      tx$execute(paste0("INSERT INTO ",tx$schema,".achillesnext_page_object VALUES (",.store_uuid(pub),",",.store_literal(desc$sha256),",",.store_literal(desc$kind),",decode('",encoded,"','base64'))"))
     },check=function().term_check(cancel))
     tx$execute(paste0("UPDATE ",tx$schema,".achillesnext_publication SET state='ready',approved_at=now() WHERE publication_id=",.store_uuid(pub)))
     # Reserve a NEW directory atomically. A directory rename could replace a

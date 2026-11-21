@@ -127,7 +127,7 @@
   s <- tx$schema; numeric <- c(record_count="record_count",person_count="person_count",person_days="person_days",interval_count="interval_count",n="n",sum="sum_value",min="minimum",max="maximum",p10="p10",p25="p25",p50="p50",p75="p75",p90="p90")
   fields <- paste(vapply(names(numeric), function(k) paste0(.store_literal(k),",c.",numeric[[k]],"::text"),""), collapse=",")
   sql <- paste0("SELECT jsonb_build_object('row_key',c.row_key,'dimensions',c.dimensions,'state',c.state,'reason_code',c.reason_code,",
-    "'payload_kind',c.payload_kind,'route_key',c.route_key,'sort_key',c.sort_key,'metadata',c.metadata_value,'numeric',jsonb_build_object(",fields,"),",
+    "'payload_kind',c.payload_kind,'route_key',c.route_key,'sort_key',c.sort_key,'metadata',c.metadata_value,'numeric',jsonb_strip_nulls(jsonb_build_object(",fields,")),",
     "'denominator_refs',COALESCE((SELECT jsonb_agg(jsonb_build_object('measure',e.measure_key,'metric_id',e.target_metric_id,'row_key',e.target_row_key,'field',e.target_measure_key,'target_dimensions',t.dimensions,",
     "'value',CASE e.target_measure_key WHEN 'record_count' THEN t.record_count::text WHEN 'person_count' THEN t.person_count::text WHEN 'person_days' THEN t.person_days::text WHEN 'interval_count' THEN t.interval_count::text WHEN 'n' THEN t.n::text END) ORDER BY e.measure_key) FROM ",s,".achillesnext_denominator_edge e ",
     # An ordered seek can use all three primary-key columns even when statistics
@@ -151,7 +151,8 @@
       numeric <- lapply(numeric,normalize)
       numeric["mean_numerator"] <- list(numeric$sum);numeric["mean_denominator"] <- list(if(identical(numeric$n,"0"))NULL else numeric$n)
       .nv_need(all(vapply(numeric[setdiff(names(numeric),c(keys,"mean_numerator","mean_denominator"))],is.null,TRUE)),"Unexpected stored value")
-      numeric[keys]
+      # Rebuild the registered shape, including explicit null summary values.
+      stats::setNames(lapply(keys,function(key) numeric[[key]]),keys)
     }
     targets <- c$denominator_refs
     refs <- lapply(targets,function(ref) {
