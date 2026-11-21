@@ -87,8 +87,8 @@
   if (is.null(ref)) return(NULL)
   c(.object(metric_id = ref$metric_id), assets$analysis$definitions$rules[[ref$rule]])
 }
-.analysis_denominator <- function(mid, row, assets = .v2_assets(), forKey = FALSE) {
-  rule <- .analysis_rule(mid, assets)
+.analysis_denominator <- function(mid, row, assets = .v2_assets(), forKey = FALSE,
+                                  rule = .analysis_rule(mid, assets)) {
   if (is.null(rule) || row$state == "suppressed" || row$row_kind != rule$row_kind) return(NULL)
   for (key in names(rule$when))
     if (!identical(row$dimensions[[key]], rule$when[[key]])) return(NULL)

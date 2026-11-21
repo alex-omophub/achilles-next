@@ -24,10 +24,16 @@ makeDimension <- function(name,mid) {
  if(name%in%c('operation_id'))return('fixture')
  '0'
 }
-cases <- list();add <- function(mid,row,valid,label) {
+cases <- list();codecs <- new.env(parent=emptyenv())
+add <- function(mid,row,valid,label) {
  row$row_key <- f('.v2_row_identity')(a$rows[[mid]],row)
  accepted <- tryCatch({f('.v2_row')(mid,row);TRUE},error=function(e){if(valid)message(mid,'/',row$row_kind,': ',conditionMessage(e));FALSE})
  stopifnot(accepted==valid)
+ if(is.null(codecs[[mid]])) codecs[[mid]] <- f('.v2_leaf_dimension_codec')(mid,a)
+ cached <- try(f('.v2_row')(mid,row,a,includeFrame=TRUE,dimensionCodec=codecs[[mid]]),silent=TRUE)
+ if(valid) stopifnot(!inherits(cached,'try-error'),identical(cached$key,f('.v2_sort')(a$rows[[mid]],row)),
+   identical(cached$bytes,f('.v2_bytes')(row)),identical(cached$dimensions,f('.json')(row$dimensions)))
+ else stopifnot(inherits(cached,'try-error'))
  input <- row;input$row_key <- ''
  checked <- try(f('.v2_row')(mid,input,a,capture=TRUE),silent=TRUE)
  if(valid) stopifnot(identical(checked$row,row),identical(checked$bytes,f('.v2_bytes')(row)))
@@ -48,6 +54,21 @@ for(mid in names(a$rows)) for(kind in names(a$rows[[mid]]$value_keys_by_row_kind
    bad <- row;bad$values[[1]] <- 9007199254740992;add(mid,bad,FALSE,'unsafe number')
  }
 }
+# A cache hint can collide while the full typed object or its sibling fields differ.
+local({
+ mid <- 'core.drug.capture_count'
+ row <- obj(row_key='',row_kind='counts',state='computed',reason_code=NULL,
+   dimensions=obj(concept_tag=obj(kind='id',value='17'),period_kind='calendar_month',
+     period_start='2020-03-01',period_end='2020-03-31'),
+   values=obj(record_count='1',person_count='1'),denominator_refs=list())
+ add(mid,row,TRUE,'warm concept tag and March bounds')
+ changed <- row;changed$dimensions$concept_tag$extra <- 'unexpected'
+ add(mid,changed,FALSE,'same hint with unregistered tag field')
+ april <- row;april$dimensions$period_start <- '2020-04-01';april$dimensions$period_end <- '2020-04-30'
+ add(mid,april,TRUE,'warm April bounds')
+ changed <- row;changed$dimensions$period_end <- april$dimensions$period_end
+ add(mid,changed,FALSE,'cached individual dates span different calendar months')
+})
 # Optional CARE_SITE support is an explicit null-valued marginal, never zero.
 for(state in c('unsupported','unavailable')) {
  mid <- 'core.visit.care_setting_count';row <- obj(row_key='',dimensions=obj(concept_tag=obj(kind='id',value='1'),setting_kind='place_of_service',setting_concept_tag=obj(kind='schema_absent')),row_kind='counts',state=state,reason_code='capability.care_site_absent',values=NULL,denominator_refs=list())
@@ -136,4 +157,43 @@ local({
   big <- obj(value=strrep('z',64000L))
   capacity <- as.integer((f('.v2_limit')('data')-8192L)%/%length(f('.v2_bytes')(big)))
   check(big,capacity+1L,capacity)
+})
+
+# Re-hash each edited page so byte and row checks are exercised beyond integrity.
+local({
+  metric <- 'core.person.gender_count'
+  context <- obj(contract_version='2.0.0',source_id='site/"rows": []/caf\u00e9')
+  makeRow <- function(id) {
+    row <- obj(row_key='',dimensions=obj(gender_concept_id=id),row_kind='counts',
+      state='computed',reason_code=NULL,values=obj(person_count='0'),denominator_refs=list())
+    f('.v2_row')(metric,row,a,capture=TRUE)$row
+  }
+  rows <- lapply(c('0','1','2'),makeRow)
+  page <- function(rows)f('.v2_bytes')(c(context,obj(kind='data',metric_id=metric,
+    metric_version=a$metrics[[metric]]$version,rows=rows)))
+  bytes <- page(rows)
+  admit <- function(bytes,count='3',expected=context) {
+    desc <- f('.v2_descriptor')(bytes,'data',count)
+    f('.v2_artifact_data_leaf')(bytes,desc,expected,a,function()NULL)
+  }
+  checked <- admit(bytes)
+  stopifnot(identical(checked$frames,lapply(rows,f('.v2_bytes'))),
+    identical(checked$dimensions,vapply(rows,function(row)f('.json')(row$dimensions),"")),
+    identical(checked$keys,vapply(rows,function(row)paste0(metric,'|',f('.v2_sort')(a$rows[[metric]],row)),"")))
+  reject <- function(x) stopifnot(inherits(try(x,silent=TRUE),'try-error'))
+  replaceBytes <- function(from,to) {
+    changed <- charToRaw(sub(from,to,rawToChar(bytes),fixed=TRUE))
+    stopifnot(!identical(changed,bytes))
+    changed
+  }
+  reject(admit(replaceBytes('"rows":[','"rows": [')))
+  reject(admit(replaceBytes('},{"denominator_refs":','}, {"denominator_refs":')))
+  reject(admit(replaceBytes('"person_count":"0"','"person_count": "0"')))
+  reject(admit(c(bytes,as.raw(10L))))
+  reject(admit(page(rev(rows))))
+  reject(admit(page(rows[c(1L,2L,2L)])))
+  reject(admit(bytes,'2'))
+  wrong <- context;wrong$source_id <- 'other';reject(admit(bytes,expected=wrong))
+  broken <- rows;broken[[2L]]$values$person_count <- '-1'
+  reject(admit(page(broken)))
 })

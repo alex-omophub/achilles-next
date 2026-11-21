@@ -235,10 +235,10 @@
     raw<-io(function(){seek(data,offset,origin="start",rw="read");readBin(data,"raw",n=n)})
     .nv_need(length(raw)==n,"Truncated validation value");raw
   }
-  put<-function(hash,raw) {
+  put<-function(hash,raw,duplicateMessage="Duplicate validation key") {
     guard();key(hash);.nv_need(is.raw(raw)&&length(raw)<=131072L,"Validation value byte limit")
     found<-find(hash)
-    .nv_need(is.null(found$text),"Duplicate validation key")
+    .nv_need(is.null(found$text),duplicateMessage)
     if((count+1)*2>capacity) {
       grow()
       found<-find(hash)

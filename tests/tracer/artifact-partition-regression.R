@@ -2,6 +2,7 @@
 # rows. Reject rehashed changes to either a partition or the all-concepts total.
 testArtifactPartition<-function(bundleDir,evidenceDir) {
   f<-function(n)get(n,asNamespace('AchillesNext'))
+  testArtifactGroupStreams()
   validateResultArtifact(bundleDir)
   for(mode in c('record-partition','capture-total')) {
     path<-file.path(evidenceDir,paste0('wrong-',mode));stopifnot(dir.create(path))
@@ -31,4 +32,34 @@ testArtifactPartition<-function(bundleDir,evidenceDir) {
     stopifnot(message==if(mode=='record-partition')'Projected record partition does not reconcile' else 'Projected all-concepts record total does not reconcile')
   }
   cat('FULL_SCOPE_ALL_BUCKET_ACCEPTED_REHASHED_PARTITION_AND_TOTAL_MISMATCHES_REJECTED_OK\n')
+}
+
+# Core concept-first order permits streaming. For a different registered order,
+# an intervening concept must not split the original subtotal. Both paths keep
+# zero buckets and add decimal counts beyond the exact range of doubles.
+testArtifactGroupStreams <- function() {
+  f <- function(name)get(name,asNamespace("AchillesNext"))
+  root <- tempfile("artifact-groups-");stopifnot(dir.create(root))
+  on.exit(unlink(root,recursive=TRUE))
+  tag <- function(id) list(kind="id",value=id)
+  for(ordered in c(TRUE,FALSE)) {
+    path <- file.path(root,as.character(ordered));stopifnot(dir.create(path))
+    for(mid in c("capture","partition","missing_zero")) stopifnot(dir.create(file.path(path,mid)))
+    g <- f(".artifact_groups")(path,f(".v2_scratch_budget")(),ordered,function()NULL)
+    g$add("capture",tag("1"),"9007199254740993");g$add("capture",tag("2"),"0")
+    g$add("partition",tag("1"),"9007199254740992")
+    if(!ordered) g$add("partition",tag("2"),"0")
+    g$add("partition",tag("1"),"1")
+    if(ordered) g$add("partition",tag("2"),"0")
+    g$add("missing_zero",tag("1"),"9007199254740993")
+    g$finish()
+    stopifnot(isTRUE(g$equal("capture","partition")))
+    mismatch <- tryCatch({g$equal("capture","missing_zero");""},error=conditionMessage)
+    stopifnot(identical(mismatch,"Projected record partition does not reconcile"))
+    if(ordered) {
+      stopifnot(unlink(file.path(path,"partition","totals"))==0L)
+      failure <- tryCatch({g$equal("capture","partition");NULL},error=identity)
+      stopifnot(inherits(failure,"achillesnext_scratch_error"),failure$code=="io_failure")
+    }
+  }
 }
