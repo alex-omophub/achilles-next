@@ -1,0 +1,27 @@
+docs/development/saved-transports.md
+  s_895f6ebe145fd3::t_9950ee128365fb 141
+R/saved-reader.R
+  s_895f6ebe145fd3::t_9950ee128365fb 7
+R/saved-transport.R
+  s_895f6ebe145fd3::t_9950ee128365fb 59,63,66-68
+tests/tracer/saved-transport.R
+  s_895f6ebe145fd3::t_9950ee128365fb 207-209
+tests/tracer/saved-transport-integration.R
+  s_895f6ebe145fd3::t_9950ee128365fb 47-52,54,199-209,211
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "df2d070ed3950fc7dcc11a5e328493fa878681fa",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
