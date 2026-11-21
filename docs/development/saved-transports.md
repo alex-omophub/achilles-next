@@ -41,6 +41,12 @@ current, reads unrestricted aggregates, joins the CDM or has a source connection
 parameter. The supplied principal should have only the approved serving views.
 Database raw caching is disabled: every fetch checks the view's enabled audience
 grant. A static host callback cannot make a revoked database grant readable.
+On POSIX systems the serving reader defers SIGPIPE on the calling thread during
+JDBC disconnect. Signal delivery resumes after JDBC returns. The reader preserves
+the caller's signal mask and reports database or driver cleanup failures. Windows
+uses the ordinary JDBC disconnect path. Installing the R package from source
+requires the platform's R C toolchain.
+
 Independently exported artifacts remain subject to their own institutional file
 policy and cannot be recalled by revoking the database view.
 

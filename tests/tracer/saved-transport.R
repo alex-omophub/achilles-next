@@ -1,5 +1,36 @@
 # Internal page traversal: routing-only fixtures do not assert full admission.
 library(AchillesNext)
+if (.Platform$OS.type=="unix") local({
+  ns <- asNamespace("AchillesNext")
+  guard <- get(".with_serving_disconnect_guard", ns)
+  block <- function() .Call(get("C_block_serving_sigpipe", ns))
+  unblock <- function() .Call(get("C_unblock_serving_sigpipe", ns))
+  initiallyUnblocked <- block()
+  on.exit(if(initiallyUnblocked) unblock(), add=TRUE)
+  stopifnot(identical(guard(function() "closed"), "closed"), !block())
+  if (initiallyUnblocked) {
+    unblock()
+    ready <- tempfile()
+    writer <- pipe(paste("exec 0</dev/null; : >", shQuote(ready)), "wb")
+    on.exit({ suppressWarnings(try(guard(function() close(writer)), silent=TRUE)); unlink(ready) }, add=TRUE)
+    for (i in seq_len(200L)) {
+      if (file.exists(ready)) break
+      Sys.sleep(0.01)
+    }
+    stopifnot(file.exists(ready))
+    writeClosedPipe <- function() {
+      # The child acknowledged closing its read end. A real EPIPE here must
+      # leave the callback in control until it has returned to the guard.
+      message <- tryCatch({suppressWarnings(writeBin(raw(65536L), writer)); NULL}, error=conditionMessage)
+      stopifnot(!identical(message, gettext("ignoring SIGPIPE signal", domain="R")))
+    }
+    stopifnot(identical(guard(function() {writeClosedPipe(); "closed"}), "closed"), block())
+    unblock()
+    original <- tryCatch(guard(function() {writeClosedPipe(); stop("original failure")}), error=conditionMessage)
+    stopifnot(identical(original, "original failure"), block())
+    unblock()
+  }
+})
 local({
   f <- function(n)get(n,asNamespace('AchillesNext'));o<-f('.object');wire<-f('.v2_bytes');hash<-f('.v2_hash');a<-f('.v2_assets')()
   folder<-tempfile('saved-transport-test-');stopifnot(dir.create(folder));on.exit(unlink(folder,recursive=TRUE))

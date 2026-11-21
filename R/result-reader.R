@@ -44,16 +44,26 @@ readResultObject <- function(connectionDetails,servingSchema,sourceId,publicatio
   as.raw(strtoi(substring(text, at, at+1L), 16L))
 }
 
-# A TLS socket can report SIGPIPE while JDBC closes a completed read. Confirm
-# the connection is closed before accepting that signal as successful cleanup.
+# R may handle SIGPIPE by unwinding the stack. Deliver any socket-close signal
+# after the Java call returns so that it cannot unwind through a live JNI frame.
+.with_serving_disconnect_guard <- function(work) {
+  changed <- FALSE
+  on.exit(if (changed) tryCatch(.Call(C_unblock_serving_sigpipe), error=function(e) {
+    if (!inherits(e, "simpleError") ||
+        !identical(conditionMessage(e), gettext("ignoring SIGPIPE signal", domain="R"))) stop(e)
+    # R's signal handler can itself leave SIGPIPE blocked after its nonlocal jump.
+    .Call(C_unblock_serving_sigpipe)
+  }))
+  suspendInterrupts(changed <- .Call(C_block_serving_sigpipe))
+  work()
+}
+
 .disconnect_approved_page_reader <- function(connection, close=DatabaseConnector::disconnect) {
-  for (attempt in 1:2) {
-    failure <- tryCatch({ close(connection); NULL }, error=identity)
-    if (is.null(failure)) return(invisible(TRUE))
-    if (!inherits(failure, "simpleError") ||
-        !identical(conditionMessage(failure), gettext("ignoring SIGPIPE signal", domain="R"))) stop(failure)
-    closed <- rJava::.jcall(connection@jConnection, "Z", "isClosed")
-    if (identical(closed, TRUE)) return(invisible(TRUE))
-    if (!identical(closed, FALSE) || attempt==2L) stop(failure)
-  }
+  .with_serving_disconnect_guard(function() {
+    close(connection)
+    rJava::.jcheck()
+    .nv_need(identical(rJava::.jcall(connection@jConnection, "Z", "isClosed"), TRUE),
+             "Approved page connection remained open")
+    invisible(TRUE)
+  })
 }

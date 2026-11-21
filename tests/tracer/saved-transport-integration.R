@@ -1,24 +1,24 @@
 # Real serving-only principal, approved bytes, and observed SQL boundary.
 testSavedTransportIntegration <- function(directory,descriptor,details,serving,results,role,execute) {
   ns<-asNamespace('AchillesNext');f<-function(n)get(n,ns)
-  # Exercise cleanup against a real JDBC connection in each possible socket state.
-  checkClose <- function(alreadyClosed, message, failTwice=FALSE) {
+  # An ordinary close error still propagates, and cleanup never replays the close.
+  checkClose <- function(closeConnection, message=NULL) {
     con <- DatabaseConnector::connect(details)
     on.exit(if(!rJava::.jcall(con@jConnection, "Z", "isClosed")) DatabaseConnector::disconnect(con))
     attempts <- 0L
     close <- function(connection) {
       attempts <<- attempts + 1L
-      if (alreadyClosed || (attempts==2L && !failTwice)) DatabaseConnector::disconnect(connection)
-      if (attempts==1L || failTwice) stop(message, call.=FALSE)
+      if (closeConnection) DatabaseConnector::disconnect(connection)
+      if (!is.null(message)) stop(message, call.=FALSE)
     }
-    outcome <- tryCatch(f('.disconnect_approved_page_reader')(con, close), error=identity)
-    list(ok=identical(outcome, TRUE), attempts=attempts, closed=rJava::.jcall(con@jConnection, "Z", "isClosed"))
+    outcome <- tryCatch(f('.disconnect_approved_page_reader')(con, close), error=conditionMessage)
+    stopifnot(attempts==1L)
+    outcome
   }
-  signal <- gettext("ignoring SIGPIPE signal", domain="R")
-  stopifnot(identical(checkClose(TRUE, signal), list(ok=TRUE, attempts=1L, closed=TRUE)),
-            identical(checkClose(FALSE, signal), list(ok=TRUE, attempts=2L, closed=TRUE)),
-            identical(checkClose(FALSE, signal, TRUE), list(ok=FALSE, attempts=2L, closed=FALSE)),
-            identical(checkClose(TRUE, "Other disconnect error"), list(ok=FALSE, attempts=1L, closed=TRUE)))
+  stopifnot(identical(checkClose(TRUE), TRUE),
+            identical(checkClose(FALSE), "Approved page connection remained open"),
+            identical(checkClose(TRUE, "Other disconnect error"), "Other disconnect error"),
+            identical(checkClose(FALSE, "ignoring SIGPIPE signal"), "ignoring SIGPIPE signal"))
   root<-f('.nv_json')(readBin(file.path(directory,'objects',paste0(descriptor$sha256,'.json')),'raw',n=262145L))
   context<-c(root[f('.saved_common')()],f('.object')(root=descriptor,authorization_epoch='1',instance_id='fixture-adapter'))
   # The standalone reader still checks the host descriptor against the bytes from the view.

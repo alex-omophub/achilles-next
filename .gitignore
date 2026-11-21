@@ -92,3 +92,10 @@ docs/references/
 project.json
 GOVERNANCE.md
 CONTEXT.md
+
+# Native R package build products
+/src/*.o
+/src/*.so
+/src/*.dll
+/src/*.d
+/src/symbols.rds

@@ -1,3 +1,4 @@
+useDynLib(AchillesNext, .registration=TRUE, .fixes="C_")
 export(generateCountTracer)
 export(viewResults)
 export(generateObservationTracer)
