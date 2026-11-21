@@ -36,7 +36,7 @@ and immutable-export management remain host responsibilities. Hash verification
 rejects changed bytes; this is not an OS-level hostile-filesystem sandbox.
 
 The database adapter receives serving-principal connection details separately and
-uses `readResultObject()` on `achillesnext_approved_pages`. It never resolves
+shares its scoped page query with `readResultObject()` on `achillesnext_approved_pages`. It never resolves
 current, reads unrestricted aggregates, joins the CDM or has a source connection
 parameter. The supplied principal should have only the approved serving views.
 Database raw caching is disabled: every fetch checks the view's enabled audience
@@ -100,6 +100,13 @@ The opt-in `2.1.0` name-tree writer uses a fanout of 32 for long Unicode keys, w
 same 128-child reader ceiling and 256 KiB index limit. Its encoded keys allow 4,096 bytes;
 original `2.0.0` keeps 2,048 bytes. Label-specific limits and scope/index admission are
 documented in the [concept guide](saved-concepts.md).
+
+Each reader remembers the full descriptor and verified key range of its 64 most
+recent pages. For a repeat read, the reader decodes the verified artifact bytes
+again. When it fetches fresh bytes, it checks their length and SHA-256 before
+reusing the page validation. This includes every database read. Authorization,
+disclosure checks and request budgets apply on both paths. Errors and close
+discard the remembered descriptors together with any cached artifact bytes.
 
 A bounded operation may reuse already verified decoded pages for multiple exact
 lookups under the same budget and live host checks. That operation-local memo is

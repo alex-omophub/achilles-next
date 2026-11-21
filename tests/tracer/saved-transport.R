@@ -97,6 +97,38 @@ local({
     cursor<-result$cursor
   }
   stopifnot(identical(ids,as.character(1:130)),reader$inspect()$cache_hits>0L,checks>10L)
+  # Repeat verification may reuse semantics only for the same descriptor and bytes.
+  for(cacheAllowed in c(TRUE,FALSE)) {
+    damaged <- FALSE
+    tr <- f('.saved_transport')(x$context,authorize,function(d) {
+      raw <- f('.v2_safe_file')(x$directory,paste0('objects/',d$sha256,'.json'),f('.v2_limit')(d$kind))
+      if(damaged) raw[[1L]] <- as.raw(32L)
+      raw
+    },cacheAllowed=cacheAllowed)
+    r <- f('.saved_reader')(tr)
+    one <- r$scan('data')
+    expected <- one$pages[[1L]]$document
+    one$pages[[1L]]$document$metric_id <- 'changed'
+    one$pages[[1L]]$bytes[[1L]] <- as.raw(32L)
+    before <- r$inspect()
+    two <- r$scan('data')
+    after <- r$inspect()
+    stopifnot(identical(two$pages[[1L]]$document,expected),identical(one$budget,two$budget),
+      after$validated_pages==before$validated_pages,
+      after$fetched_objects==before$fetched_objects+if(cacheAllowed)0L else two$budget$objects)
+    if(!cacheAllowed) {
+      stopifnot(after$cache_bytes==0L,after$cache_objects==0L)
+      damaged <- TRUE
+      fail(function()r$scan('data'),'integrity_failure')
+      damaged <- FALSE
+      r$scan('data')
+      stopifnot(r$inspect()$validated_pages==before$validated_pages+two$budget$objects)
+    }
+    approved <- FALSE
+    fail(function()r$scan('data'),'inaccessible')
+    approved <- TRUE
+    r$close()
+  }
   # Semantic selection belongs to a later layer; these return complete partitions.
   result<-reader$scan('data');stopifnot(result$pages[[1]]$document$rows[[1]]$values$person_count=='9007199254740993')
   stopifnot(reader$scan('terminology')$complete,length(reader$scan('terminology')$pages)==0L)

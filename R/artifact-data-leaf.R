@@ -1,6 +1,6 @@
 # Verify canonical data bytes using the frames produced by semantic validation.
 # Each row is compared with its exact location in the bounded input page.
-.v2_artifact_data_leaf <- function(bytes, descriptor, context, assets, check) {
+.v2_artifact_data_leaf <- function(bytes, descriptor, context, assets, check, retainFrames=TRUE) {
   .nv_need(identical(as.character(length(bytes)),descriptor$bytes) &&
     identical(.v2_hash(bytes),descriptor$sha256),"Page integrity mismatch")
   doc <- .nv_json(bytes)
@@ -18,8 +18,8 @@
     identical(bytes[seq.int(end+1L,length(bytes))],envelope$suffix),"Noncanonical data page envelope")
 
   keys <- character(n)
-  frames <- vector("list",n)
-  dimensions <- character(n)
+  frames <- if(retainFrames) vector("list",n)
+  dimensions <- if(retainFrames) character(n)
   comma <- as.raw(44L)
   dimensionCodec <- .v2_leaf_dimension_codec(mid,assets)
   for(i in seq_len(n)) {
@@ -32,8 +32,10 @@
     frame[[size]] <- if(i==n) as.raw(93L) else comma
     .nv_need(offset+size<=end+1L && identical(bytes[seq.int(offset+1L,length.out=size)],frame),
       "Noncanonical data row bytes")
-    frames[[i]] <- checked$bytes
-    dimensions[[i]] <- checked$dimensions
+    if(retainFrames) {
+      frames[[i]] <- checked$bytes
+      dimensions[[i]] <- checked$dimensions
+    }
     offset <- offset+size
     keys[[i]] <- paste0(mid,"|",checked$key)
   }
