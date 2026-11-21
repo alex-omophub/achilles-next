@@ -40,7 +40,10 @@ shares its scoped page query with `readResultObject()` on `achillesnext_approved
 current, reads unrestricted aggregates, joins the CDM or has a source connection
 parameter. The supplied principal should have only the approved serving views.
 Database raw caching is disabled: every fetch checks the view's enabled audience
-grant. A static host callback cannot make a revoked database grant readable.
+grant. A bounded operation opens one serving connection on its first fetch.
+Each page query runs in a separate read-only transaction so subsequent fetches can
+observe a revoked grant. The operation closes its connection on success or failure.
+A static host callback cannot make a revoked database grant readable.
 On POSIX systems the serving reader defers SIGPIPE on the calling thread during
 JDBC disconnect. Signal delivery resumes after JDBC returns. The reader preserves
 the caller's signal mask and reports database or driver cleanup failures. Windows
@@ -60,6 +63,10 @@ converted to floating point. `.saved_page()` additionally checks all eight wire
 context fields, closed root/index/page fields, installed metric/version/definition,
 row identity and native exact mathematical predicates, ordering, row count,
 index fanout/sums/ranges and the currently approved terminology fields.
+For saved core capture-count pages, the reader validates repeated concept tags and
+periods once per distinct value. It reconstructs every computed count row and
+compares the entire page body with its canonical bytes. Rows with denominator
+references or other states go through the general row validator.
 Cross-page completeness, denominator/partition reconciliation, admission and
 institutional approval still belong to the full release operation.
 
@@ -131,7 +138,7 @@ Cancellation is a host-supplied boolean predicate, checked before/after transpor
 work, after page validation and before return. Cancellation, authorization changes
 and other failures clear raw caches and invalidate existing cursors. Closed or
 superseded work cannot repopulate the cache or return late data. Closing is
-idempotent; transports retain no JDBC connection or open file between calls.
+idempotent. Transports release JDBC connections and file handles by the end of each bounded operation.
 
 R/JDBC execution is synchronous. Cancellation discards late results at these
 bounded checkpoints; it does not promise immediate interruption of an in-flight

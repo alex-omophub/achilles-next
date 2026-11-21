@@ -47,7 +47,7 @@ if(args[[1]]=='admit') {
       transaction(connectionDetails,schema,function(tx) {
         one<-tx$one
         tx$one<-function(statement) {
-          stopifnot(startsWith(statement,paste0("SELECT encode(payload,'hex') FROM \"",config$serving_schema,"\".achillesnext_approved_pages WHERE ")))
+          stopifnot(startsWith(statement,paste0("SELECT encode(payload,'base64') FROM \"",config$serving_schema,"\".achillesnext_approved_pages WHERE ")))
           sql<<-c(sql,statement);one(statement)
         }
         work(tx)

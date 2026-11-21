@@ -32,15 +32,26 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
   database<-f('.saved_reader')(f('.saved_database_transport')(details,serving,context,allowed))
   on.exit({artifact$close();database$close()},add=TRUE)
   # Observe actual SQL submitted by these real transactions without changing it.
-  original<-f('.store_transaction');statements<-character()
+  original<-f('.store_transaction');statements<-character();probe<-NULL
   observed<-function(details,schema,work,...)original(details,schema,function(tx) {
-    one<-tx$one;tx$one<-function(sql){statements<<-c(statements,sql);one(sql)};work(tx)
+    one<-tx$one;tx$one<-function(sql) {
+      statements<<-c(statements,sql)
+      if(is.null(probe))one(sql) else probe(one,sql)
+    }
+    work(tx)
   },...)
   environment(observed)<-environment()
   unlockBinding('.store_transaction',ns);assign('.store_transaction',observed,ns);lockBinding('.store_transaction',ns)
   on.exit({unlockBinding('.store_transaction',ns);assign('.store_transaction',original,ns);lockBinding('.store_transaction',ns)},add=TRUE)
   same<-function(left,right)stopifnot(identical(left$descriptor,right$descriptor),identical(left$bytes,right$bytes))
+  # PostgreSQL wraps encoded output at 76 columns. Exercise those actual bytes.
+  probe <- function(one,sql) {
+    value <- one(sql)
+    stopifnot(grepl("\n",value,fixed=TRUE))
+    value
+  }
   same(artifact$root()$page,database$root()$page)
+  probe <- NULL
   total<-0L
   for(branch in c('data','metric_catalogue','concept_catalogue','terminology')) {
     left<-NULL;right<-NULL
@@ -116,7 +127,7 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
     length(statements)==database$inspect()$fetched_objects+dbProvider$inspect()$fetched_objects)
   cat('SAVED_SEMANTIC_PROVIDER_REAL_142_METRICS_ROWS_DEPENDENCIES_PAGINATION_PARITY_OK\n')
   expected<-paste0(' FROM "',serving,'".achillesnext_approved_pages WHERE ')
-  stopifnot(all(startsWith(statements,'SELECT encode(payload,\'hex\') FROM ')),all(grepl(expected,statements,fixed=TRUE)),
+  stopifnot(all(startsWith(statements,'SELECT encode(payload,\'base64\') FROM ')),all(grepl(expected,statements,fixed=TRUE)),
     !any(grepl('achillesnext_approved_current|achillesnext_aggregate_cell|cdm_',statements)))
   # No host callback change: the DB view itself must enforce revocation.
   revoke<-paste0('UPDATE "',results,'".achillesnext_audience_grant SET enabled=')
@@ -134,6 +145,70 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
   stopifnot(fileProvider$listMetrics(limit=1L)$state=='available')
   stopifnot(length(artifact$root()$page$bytes)>0L)
   execute(paste0(revoke,'true',where));same(artifact$root()$page,database$root()$page)
+  # JDBC close can return just before the backend disappears from pg_stat_activity.
+  waitClosed <- function(pids) {
+    deadline <- Sys.time()+5
+    repeat {
+      active <- original(details,serving,function(tx)tx$one(paste0(
+        "SELECT count(*)::text FROM pg_stat_activity WHERE pid<>pg_backend_pid() AND pid IN (",
+        paste(unique(pids),collapse=","),")")),readOnly=TRUE)
+      if(identical(active,"0")) return(invisible(TRUE))
+      if(Sys.time()>=deadline) stop("Serving backend remained active after the request")
+      Sys.sleep(0.025)
+    }
+  }
+  # Observe committed grants through the live view on each page, even when the
+  # host callback keeps approving and the reader reuses the same connection.
+  pids <- character()
+  probe <- function(one,sql) {
+    pids <<- c(pids,one("SELECT pg_backend_pid()::text"))
+    stopifnot(one("SELECT current_setting('transaction_read_only')")=="on")
+    value <- one(sql)
+    if(length(pids)==1L) execute(paste0(revoke,'false',where))
+    value
+  }
+  denied <- tryCatch(database$scan('data'),error=identity)
+  stopifnot(inherits(denied,'achillesnext_read_error'),denied$code=='unavailable',
+    length(pids)==2L,pids[[1L]]==pids[[2L]],database$inspect()$cache_bytes==0L)
+  execute(paste0(revoke,'true',where))
+  waitClosed(pids)
+  # A reentrant operation gets its own session, then the outer read resumes
+  # on its original connection. Neither connection survives the operation.
+  pids <- character()
+  probe <- function(one,sql) {
+    pids <<- c(pids,one("SELECT pg_backend_pid()::text"))
+    value <- one(sql)
+    if(length(pids)==1L) database$root()
+    value
+  }
+  database$scan('data')
+  probe <- NULL
+  stopifnot(length(pids)>=3L,pids[[1L]]!=pids[[2L]],all(pids[-2L]==pids[[1L]]))
+  waitClosed(pids)
+  # An authorized query can succeed and its final disconnect still fail.
+  # The response must be discarded and the driver error kept private.
+  realClose <- f('.disconnect_approved_page_reader')
+  closes <- 0L
+  failingClose <- function(con) {
+    realClose(con)
+    closes <<- closes+1L
+    stop("private fixture error after disconnect",call.=FALSE)
+  }
+  generation <- database$inspect()$generation
+  assignInNamespace('.disconnect_approved_page_reader',failingClose,ns='AchillesNext')
+  on.exit(assignInNamespace('.disconnect_approved_page_reader',realClose,ns='AchillesNext'),add=TRUE)
+  failed <- tryCatch(database$root(),error=identity)
+  cancelled <- FALSE
+  probe <- function(one,sql) {
+    value <- one(sql)
+    cancelled <<- TRUE
+    value
+  }
+  aborted <- tryCatch(database$root(function()cancelled),error=identity)
+  stopifnot(closes==2L,inherits(aborted,'achillesnext_read_error'),aborted$code=='aborted',
+    inherits(failed,'achillesnext_read_error'),failed$code=='unavailable',
+    !grepl("private fixture error",conditionMessage(failed),fixed=TRUE),
+    database$inspect()$generation==generation+2L)
   cat('SAVED_CONCEPT_REAL_LOOKUP_PAGINATION_UNAVAILABLE_SEARCH_PARITY_REVOCATION_OK\n')
   cat('SAVED_TRANSPORT_REAL_ARTIFACT_DATABASE_BYTES_SQL_ONLY_APPROVED_VIEW_REVOCATION_OK pages=',total,'statements=',length(statements),'\n')
 }

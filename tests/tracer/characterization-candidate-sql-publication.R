@@ -123,7 +123,7 @@ testCharacterizationCandidateSqlPublication<-function(env,owner,results,serving,
     ' AND database_role=',lit(roles$reader$user)))
   same(providers$full$file$selectSavedRows('core.person.count'),providers$full$database$selectSavedRows('core.person.count'))
   stopifnot(identical(beforePointer,pointer()),identical(beforePages,pages()),length(statements)>0L,
-    all(startsWith(statements,"SELECT encode(payload,'hex') FROM ")),
+    all(startsWith(statements,"SELECT encode(payload,'base64') FROM ")),
     all(grepl(paste0(' FROM "',serving,'".achillesnext_approved_pages WHERE '),statements,fixed=TRUE)),
     !any(grepl('achillesnext_approved_current|achillesnext_aggregate_cell|cdm_',statements)))
   proof$program_sha256<-candidate$source_receipt$program_sha256

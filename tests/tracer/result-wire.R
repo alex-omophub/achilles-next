@@ -197,3 +197,57 @@ local({
   broken <- rows;broken[[2L]]$values$person_count <- '-1'
   reject(admit(page(broken)))
 })
+
+# Saved capture-count pages must agree with the scalar verifier for complete
+# typed rows, including exceptional rows carrying references or suppression.
+local({
+  mid <- "core.drug.capture_count"
+  metric <- a$rows[[mid]]
+  context <- obj(contract_version="2.0.0",source_id="fixture:capture-count")
+  row <- function(tag,kind,start,end,people,records,state="computed",refs=list()) {
+    r <- obj(row_key="",dimensions=obj(concept_tag=tag,period_kind=kind,period_start=start,period_end=end),
+      row_kind="counts",state=state,reason_code=if(state=="computed")NULL else "fixture.suppressed",
+      values=if(state=="suppressed")NULL else obj(person_count=people,record_count=records),denominator_refs=refs)
+    f(".v2_row")(mid,r,a,capture=TRUE)$row
+  }
+  tag <- obj(kind="id",value="-9007199254740995")
+  all <- obj(kind="all")
+  reference <- obj(field="person_count",measure="person_count",metric_id="core.person.count",
+    row_key=strrep("a",64L),value="9007199254740993")
+  rows <- list(row(all,"calendar_month","2024-02-01","2024-02-29","0","0"),
+    row(all,"undated","null","null","1","2"),
+    row(tag,"calendar_month","2024-02-01","2024-02-29","9007199254740993","9007199254740994"),
+    row(tag,"full_scope","null","null","1","3",refs=list(reference)),
+    row(tag,"undated","null","null",NULL,NULL,"suppressed"))
+  sortRows <- function(rows) rows[order(vapply(rows,function(r) f(".v2_sort")(metric,r),""),method="radix")]
+  admit <- function(rows,retain,check=function()NULL,sort=TRUE,change=identity) {
+    bytes <- change(f(".v2_bytes")(c(context,obj(kind="data",metric_id=mid,
+      metric_version=metric$version,rows=if(sort)sortRows(rows) else rows))))
+    descriptor <- f(".v2_descriptor")(bytes,"data",as.character(length(rows)))
+    f(".v2_artifact_data_leaf")(bytes,descriptor,context,a,check,retainFrames=retain)
+  }
+  scalar <- admit(rows,TRUE); batched <- admit(rows,FALSE)
+  stopifnot(identical(scalar$doc,batched$doc),identical(scalar$keys,batched$keys),
+    is.null(batched$frames),is.null(batched$dimensions))
+  rejected <- function(rows,...) {
+    for(retain in c(FALSE,TRUE)) stopifnot(inherits(try(admit(rows,retain,...),silent=TRUE),"try-error"))
+  }
+  # Rehashed nonrepresentative rows cannot borrow the first tag or period's validation.
+  bad <- rows;bad[[3]]$dimensions$capture_field <- "extra";rejected(bad,sort=FALSE)
+  bad <- rows;bad[[2]]$dimensions$concept_tag$other <- "extra";rejected(bad,sort=FALSE)
+  bad <- rows;bad[[2]]$reason_code <- "unexpected";rejected(bad,sort=FALSE)
+  bad <- rows;bad[[3]]$values$person_count <- "9007199254740995";rejected(bad)
+  bad <- rows;bad[[3]]$values$person_count <- list("0");rejected(bad)
+  bad <- rows;bad[[3]]$values$record_count <- strrep("9",65536L);rejected(bad)
+  bad <- rows;bad[[3]]$row_key <- strrep("0",64L);rejected(bad)
+  bad <- rows;bad[[4]]$denominator_refs[[1]]$measure <- list("person_count");rejected(bad)
+  bad <- rows;bad[[5]]$values <- obj(person_count="0",record_count="0");rejected(bad)
+  rejected(rev(sortRows(rows)),sort=FALSE)
+  rejected(c(rows,rows[1]))
+  rejected(rows,change=function(bytes)charToRaw(sub('"person_count":"0"','"person_count": "0"',
+    rawToChar(bytes),fixed=TRUE)))
+  checks <- 0L
+  stopifnot(inherits(try(admit(rows,FALSE,function(){checks<<-checks+1L;if(checks==3L)stop("cancelled")}),
+    silent=TRUE),"try-error"),checks==3L)
+  cat("SAVED_CAPTURE_COUNT_BATCH_CANONICAL_PARITY_OK\n")
+})
