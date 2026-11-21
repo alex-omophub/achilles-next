@@ -1,0 +1,21 @@
+R/validation-spool.R
+  s_3e206b4a2cf4c3::t_0310a07f9e1274 262-265
+tests/tracer/validation-spool.R
+  s_3e206b4a2cf4c3::t_29085027c20867 619-636
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "4ae1f9757a0466962d66f322159c8ff420f0c306",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
