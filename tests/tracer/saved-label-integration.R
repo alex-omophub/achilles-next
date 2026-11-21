@@ -126,8 +126,8 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
   validateResultArtifact(file.path(root,'restricted'))
   # Cancellation interrupts actual release validation/producer work, rather than
   # waiting for a whole export and accepting any generic failure afterwards.
-  originals<-lapply(c('.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_denominator_check'),f)
-  names(originals)<-c('.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_denominator_check')
+  originals<-lapply(c('.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_row'),f)
+  names(originals)<-c('.store_build_pages','.store_rows','.v2_descriptor','.v2_directory','.v2_row')
   restore<-function()for(n in names(originals))assignInNamespace(n,originals[[n]],ns='AchillesNext')
   on.exit(restore(),add=TRUE)
   for(mode in c('rows','emission','admission')) {
@@ -150,8 +150,8 @@ testSavedLabelIntegration <- function(details,schema,serve,release,root,policy,r
     assignInNamespace('.v2_directory',function(directory,visit=function(d,b)NULL,check=function()NULL,maxScratchBytes=1024^3,...) {
       phase<<-'admission';originals[['.v2_directory']](directory,visit,check,maxScratchBytes,...)
     },ns='AchillesNext')
-    assignInNamespace('.v2_denominator_check',function(mid,row,lookup,assets=f('.v2_assets')()) {
-      value<-originals[['.v2_denominator_check']](mid,row,lookup,assets)
+    assignInNamespace('.v2_row',function(...) {
+      value<-originals[['.v2_row']](...)
       if(identical(phase,'admission')){admittedRows<<-admittedRows+1L;if(mode=='admission'&&admittedRows==3L)cancelled<<-TRUE}
       value
     },ns='AchillesNext')

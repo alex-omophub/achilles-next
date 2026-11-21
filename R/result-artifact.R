@@ -34,16 +34,14 @@
   if(is.null(proof)) {
     .v2_scratch_io(function().nv_need(dir.create(file.path(scratch,"groups"),mode="0700")))
     # Claim each new spool before allowing asynchronous interruption.
-    suspendInterrupts({rows<-.v2_spool(file.path(scratch,"rows"),check,budget);allowInterrupts(Sys.sleep(0))})
     suspendInterrupts({concepts<-.v2_spool(file.path(scratch,"concepts"),check,budget);allowInterrupts(Sys.sleep(0))})
   }
   termKey<-function(key).v2_hash(charToRaw(key))
-  suppressed <- list();captureTotals <- list()
-  groupPath <- function(mid,key)file.path(scratch,"groups",mid,.v2_hash(.v2_bytes(key)))
-  groupRead<-function(path).v2_scratch_io(function()readLines(path,warn=FALSE))
-  accumulate <- function(mid,key,value) {
-    path <- groupPath(mid,key);old <- if(file.exists(path))groupRead(path) else "0"
-    .v2_scratch_file(path,charToRaw(paste0(.nv_add(old,value),"\n")),budget)
+  relations <- rootDocument <- NULL
+  makeRelations <- function() .artifact_relations(rootDocument,context,assets,catalogue,rows,scratch,budget,check)
+  inspectRow <- function(mid,row,frame,dimensions) {
+    if(is.null(relations)) relations <<- makeRelations()
+    relations$inspect(mid,row,frame,dimensions)
   }
   safe <- function(path,limit) {
     check();bytes<-.v2_safe_file(rootDir,path,limit);check();bytes
@@ -55,6 +53,9 @@
   .v2_keys(pointer,c("contract_version","publication_id","source_id","access_scope_id","root"))
   .nv_need(.term_version(pointer$contract_version))
   context <- NULL;assets <- NULL;catalogue <- list();counts <- list();sums <- list();last <- list()
+  personPartitions <- c("core.person.gender_count","core.person.birth_year_count","core.person.race_count",
+    "core.person.ethnicity_count","core.person.birth_year_gender_count","core.person.race_ethnicity_count",
+    "core.density.domain_count","core.density.domain_presence_count")
   read <- function(d,expectedKind,depth=0L) {
     check()
     .v2_descriptor_check(d)
@@ -65,7 +66,11 @@
       mid <- range$metric_id;counts[[mid]] <<- .nv_add(counts[[mid]],d$rows)
       visit(d,raw);return(range)
     }
-    doc <- .v2_verified_bytes(raw,d)
+    dataLeaf <- d$kind=="data" && expectedKind=="data"
+    if(dataLeaf) {
+      leaf <- .v2_artifact_data_leaf(raw,d,context,assets,check)
+      doc <- leaf$doc
+    } else doc <- .v2_verified_bytes(raw,d)
     common <- c("contract_version","publication_id","release_id","source_id","profile_id","profile_revision","profile_sha256","access_scope_id")
     if(is.null(context)) {
       context <<- doc[common]
@@ -92,6 +97,14 @@
       .nv_need(.string(doc$source_schema$sha256) && grepl("^[0-9a-f]{64}$",doc$source_schema$sha256) && .string(doc$source_schema$declared_cdm_version) && nchar(doc$source_schema$declared_cdm_version)<=256L)
       schema <- assets$metadata;.nv_schema(doc$source_consistency,schema$`$defs`$consistency,schema)
       .nv_need(!doc$source_consistency$reusable,"No reusable source identity in this artifact contract")
+      if(is.null(proof)) {
+        .v2_descriptor_check(doc$data)
+        suspendInterrupts({
+          rows <<- .v2_validation_rows(file.path(scratch,"rows"),check,budget,doc$data$rows)
+          allowInterrupts(Sys.sleep(0))
+        })
+      }
+      rootDocument <<- doc
       read(doc$catalogue,"metric_catalogue");read(doc$concepts,"concept_catalogue");read(doc$data,"data");read(doc$terminology,"terminology")
       return(doc)
     }
@@ -111,23 +124,24 @@
     }
     .nv_need(d$kind==expectedKind,"Wrong page kind")
     if(d$kind=="data") {
-      .v2_keys(doc,c(common,"kind","metric_id","metric_version","rows"))
-      mid <- doc$metric_id;m <- assets$metrics[[mid]]
-      .nv_need(!is.null(m)&&doc$metric_version==m$version&&.nv_array(doc$rows)&&length(doc$rows)<=2048L)
-      keys <- character()
-      for(row in doc$rows) {
+      mid <- doc$metric_id;keys <- leaf$keys
+      .nv_need(is.null(last[[mid]])||.v2_less(last[[mid]],keys[[1L]]),"Duplicate row coverage")
+      last[[mid]] <<- keys[[length(keys)]]
+      counts[[mid]] <<- .nv_add(counts[[mid]],d$rows)
+      sumPeople <- !isTRUE(assets$is_core) || mid=="core.person.count" || mid %in% personPartitions
+      hashes <- character(length(keys));values <- vector("list",length(keys))
+      for(i in seq_along(doc$rows)) {
         check()
-        key <- paste0(mid,"|",.v2_row(mid,row,assets));.nv_need(is.null(last[[mid]])||.v2_less(last[[mid]],key),"Duplicate row coverage")
-        last[[mid]] <<- key;keys <- c(keys,key)
-        counts[[mid]] <<- .nv_add(counts[[mid]],"1")
-        if(!is.null(row$values$person_count)) sums[[mid]] <<- .nv_add(sums[[mid]],row$values$person_count)
-        .nv_need(!rows$has(row$row_key),"Repeated row identity")
-        rows$put(row$row_key,.v2_bytes(c(.object(metric_id=mid),row)))
+        row <- doc$rows[[i]]
+        if(sumPeople && !is.null(row$values$person_count)) sums[[mid]] <<- .nv_add(sums[[mid]],row$values$person_count)
+        hashes[[i]] <- row$row_key
+        values[[i]] <- inspectRow(mid,row,leaf$frames[[i]],leaf$dimensions[[i]])
         if(context$contract_version=="2.1.0")for(id in .term_row_ids(row)) {
           hash<-termKey(id);.nv_need(concepts$has(hash),"Missing retained concept metadata")
           concepts$flags(hash,1L)
         }
       }
+      rows$putMany(hashes,values,duplicateMessage="Repeated row identity")
     } else {
       .v2_keys(doc,c(common,"kind","entries"));.nv_need(.nv_array(doc$entries)&&length(doc$entries)<=2048L)
       keys <- vapply(doc$entries,function(entry) {
@@ -151,7 +165,7 @@
       },"")
     }
     .nv_need(length(keys)>0L && as.character(length(keys))==d$rows,"Leaf row count mismatch")
-    if(length(keys)>1L) for(i in seq_len(length(keys)-1L)) .nv_need(.v2_less(keys[[i]],keys[[i+1L]]),"Unordered leaf")
+    if(!dataLeaf && length(keys)>1L) for(i in seq_len(length(keys)-1L)) .nv_need(.v2_less(keys[[i]],keys[[i+1L]]),"Unordered leaf")
     list(lo=keys[[1]],hi=keys[[length(keys)]])
   }
   root <- read(pointer$root,"root")
@@ -162,7 +176,6 @@
     entry<-.nv_json(raw)
     .nv_need(identical(bitwAnd(flags,2L)!=0L,entry$label_state=="available"),"Missing or extra name-index entry")
   })
-  capabilities <- list();ledger <- list()
   .nv_need(setequal(names(catalogue),names(assets$metrics)),"Incomplete catalogue")
   allowed <- .v2_policy(root$disclosure$policy,assets)
   for(mid in names(catalogue)) {
@@ -184,75 +197,10 @@
     proof$finish(root,catalogue);inventory();check()
     return(invisible(root))
   }
-  # Disk-spooled second pass validates references without an in-memory row map.
-  rows$walk(function(name,raw) {
-    check()
-    row <- .nv_json(raw);mid <- row$metric_id;row$metric_id <- NULL
-    targets <- list()
-    for(ref in row$denominator_refs) {
-      .nv_need(rows$has(ref$row_key),"Missing projected denominator")
-      target <- .nv_json(rows$get(ref$row_key))
-      .nv_need(target$metric_id==ref$metric_id && target$state!="suppressed" && identical(target$values[[ref$field]],ref$value),"Invalid projected denominator")
-      targets[[paste(ref$metric_id,ref$row_key,sep="|")]] <- target
-    }
-    .v2_denominator_check(mid,row,function(id,key) {
-      target <- targets[[paste(id,key,sep="|")]]
-      .nv_need(!is.null(target),"Missing projected denominator");target$dimensions
-    },assets)
-    d <- catalogue[[mid]]
-    if(mid=="core.source.capabilities" && row$state!="suppressed") capabilities[[row$dimensions$probe_id]] <<- row$values
-    if(mid=="core.execution.output_status" && d$state!="suppressed") {
-      .nv_need(row$state=="computed" && !is.null(row$values),"Missing ledger entry payload")
-      ledger[[row$dimensions$metric_id]] <<- row$values
-    }
-    if(mid=="core.source.passport" && row$state!="suppressed") .v2_passport_check(row$values,c(context,.object(
-      observed_schema_sha256=root$source_schema$sha256,declared_cdm_version=root$source_schema$declared_cdm_version,
-      consistency_basis=root$source_consistency$within_run)))
-    if(mid=="core.source.passport"&&row$state!="suppressed") .term_vocab_match(row$values,root$saved_terminology)
-    if(row$state=="suppressed") suppressed[[mid]] <<- TRUE
-    # Record partitions are per concept. Capture also contains an all-concept
-    # total, which has no corresponding source/type partition bucket.
-    if(!is.null(row$values$record_count) && "concept_tag"%in%names(row$dimensions)) {
-      if(!grepl(".capture_count",mid,fixed=TRUE)) accumulate(mid,row$dimensions$concept_tag,row$values$record_count) else
-      if(row$dimensions$period_kind=="full_scope") {
-        totals <- captureTotals[[mid]] %||% list(all=NULL,parts="0")
-        if(row$dimensions$concept_tag$kind=="all") {
-          .nv_need(is.null(totals$all),"Duplicate full-scope all-concepts capture total")
-          totals$all <- row$values$record_count
-        } else {
-          totals$parts <- .nv_add(totals$parts,row$values$record_count)
-          accumulate(mid,row$dimensions$concept_tag,row$values$record_count)
-        }
-        captureTotals[[mid]] <<- totals
-      }
-    }
-    if(row$row_kind=="summary" && row$state!="suppressed") {
-      eligible <- row;eligible$row_kind <- "eligibility_counts";eligible$dimensions <- c(row$dimensions,.object(eligibility_reason="eligible"))
-      key <- .v2_row_identity(assets$rows[[mid]],eligible)
-      .nv_need(rows$has(key),"Missing projected eligibility count")
-      value <- .nv_json(rows$get(key))
-      .nv_need(value$state!="suppressed" && identical(value$values$record_count %||% value$values$person_count,row$values$n),"Projected summary n does not reconcile")
-    }
-    if(row$row_kind=="eligibility_counts" && row$state!="suppressed" && row$dimensions$eligibility_reason=="eligible") {
-      expected <- row;expected$row_kind <- "summary";expected$dimensions$eligibility_reason <- NULL
-      key <- .v2_row_identity(assets$rows[[mid]],expected)
-      .nv_need(rows$has(key),"Missing eligible summary")
-      target <- .nv_json(rows$get(key))
-      .nv_need(target$state=="suppressed" || identical(target$values$n,row$values$record_count %||% row$values$person_count),"Projected eligible summary does not reconcile")
-    }
-    if(grepl("^observed[.][a-z_]+[.]capture_count$",mid) && row$state!="suppressed") {
-      core <- sub("^observed[.]","core.",mid)
-      if(!catalogue[[core]]$state%in%c("suppressed","unsupported")) {
-        key <- .v2_row_identity(assets$rows[[core]],row)
-        .nv_need(rows$has(key),"Missing matching all-recorded cell")
-        target <- .nv_json(rows$get(key))
-        if(target$state!="suppressed") for(field in c("record_count","person_count")) .nv_need(.nv_unsigned_cmp(row$values[[field]],target$values[[field]])<=0L,"Observed counts exceed matching all-recorded counts")
-      }
-    }
-    if(d$state=="suppressed") .nv_need(row$state=="suppressed")
-    if(d$state%in%c("empty_source","empty_population")) .nv_need(row$state%in%c(d$state,"suppressed"))
-    check()
-  })
+  if(is.null(relations)) relations <- makeRelations()
+  result <- relations$finish()
+  capabilities <- result$capabilities;ledger <- result$ledger
+  suppressed <- result$suppressed;captureTotals <- result$captureTotals
   if(isTRUE(assets$is_core)) {
     .v2_ledger_check(catalogue,ledger)
     .v2_capability_check(catalogue,capabilities,requireEvidence=FALSE)
@@ -262,20 +210,10 @@
   # Do not add person counts or reconcile totals against suppressed evidence.
   for(mid in names(captureTotals)) if(available(mid) && !is.null(captureTotals[[mid]]$all))
     .nv_need(identical(captureTotals[[mid]]$all,captureTotals[[mid]]$parts),"Projected all-concepts record total does not reconcile")
-  if(available("core.person.count")) for(mid in c("core.person.gender_count","core.person.birth_year_count","core.person.race_count","core.person.ethnicity_count","core.person.birth_year_gender_count","core.person.race_ethnicity_count","core.density.domain_count","core.density.domain_presence_count")) {
+  if(available("core.person.count")) for(mid in personPartitions) {
     if(available(mid)) .nv_need(sums[[mid]]==sums[["core.person.count"]],"Projected PERSON partition does not reconcile")
   }
-  for(domain in c("condition","drug","procedure","visit","device","observation","death","specimen","measurement")) {
-    cap <- paste0("core.",domain,".capture_count");if(!available(cap)) next
-    for(suffix in c("source_count","type_count","representation_count","unit_count","coded_value_count","operator_count","numeric_eligibility_count","observation_qualification_count","range_status_count","status_type_count")) {
-      mid <- paste0("core.",domain,".",suffix);if(!available(mid)) next
-      for(pair in list(c(mid,cap),c(cap,mid))) .v2_directory_entries(file.path(scratch,"groups",pair[[1]]),function(key) {
-        check()
-        a <- file.path(scratch,"groups",pair[[1]],key);b <- file.path(scratch,"groups",pair[[2]],key)
-        .nv_need(file.exists(b)&&identical(groupRead(a),groupRead(b)),"Projected record partition does not reconcile")
-      })
-    }
-  }
+  relations$reconcile(available)
   inventory()
   check();invisible(root)
 }

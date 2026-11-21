@@ -235,10 +235,10 @@
     raw<-io(function(){seek(data,offset,origin="start",rw="read");readBin(data,"raw",n=n)})
     .nv_need(length(raw)==n,"Truncated validation value");raw
   }
-  put<-function(hash,raw) {
+  put<-function(hash,raw,duplicateMessage="Duplicate validation key") {
     guard();key(hash);.nv_need(is.raw(raw)&&length(raw)<=131072L,"Validation value byte limit")
     found<-find(hash)
-    .nv_need(is.null(found$text),"Duplicate validation key")
+    .nv_need(is.null(found$text),duplicateMessage)
     if((count+1)*2>capacity) {
       grow()
       found<-find(hash)
@@ -254,6 +254,15 @@
       writeSlot(index,found$at,text);end<<-end+n;count<<-count+1
     })
     if(!out$ok){poisoned<<-TRUE;stop(out$failure)}
+    invisible(NULL)
+  }
+  putMany<-function(hashes,values,duplicateMessage="Duplicate validation key") {
+    guard();check()
+    .nv_need(is.character(hashes)&&is.list(values)&&length(hashes)==length(values)&&length(hashes)<=2048L)
+    for(i in seq_along(hashes)) {
+      check()
+      put(hashes[[i]],values[[i]],duplicateMessage)
+    }
     invisible(NULL)
   }
   flags<-function(hash,bit=NULL) {
@@ -275,7 +284,7 @@
     .nv_need(at==end);invisible(NULL)
   }
   ready<-TRUE
-  list(get=get,put=put,flags=flags,walk=walk,has=function(hash){guard();key(hash);!is.null(find(hash)$text)},
+  list(get=get,put=put,putMany=putMany,flags=flags,walk=walk,has=function(hash){guard();key(hash);!is.null(find(hash)$text)},
     close=function(){if(!closed){closed<<-TRUE;.v2_scratch_cleanup(list(function()closeConnection(data),function()closeConnection(index)))};invisible(NULL)},
     inspect=function()list(entries=count,slots=capacity,value_bytes=end,index_bytes=capacity*width,closed=closed,poisoned=poisoned))
 }

@@ -500,3 +500,137 @@ if(.Platform$OS.type=='unix')local({
   stopifnot(all(clean))
   cat('VALIDATION_ARTIFACT_AND_SPOOL_ASYNC_SIGINT_DIRECTORY_OWNERSHIP_UNOWNED_PRESERVATION_OK\n')
 })
+
+# Force the immutable large-inventory path. Sharing every hash prefix exercises
+# both Bloom false positives and chains spanning and crossing leaf boundaries.
+local({
+  ns<-asNamespace('AchillesNext')
+  path<-tempfile('validation-row-batches-')
+  b<-get('.v2_scratch_budget',ns)(2*1024^2,1L)
+  s<-get('.v2_validation_rows',ns)(path,function()NULL,b,'16384')
+  on.exit({s$close();unlink(path,recursive=TRUE)})
+  keys<-sprintf('%064x',1:10)
+  values<-list(raw(),charToRaw('two'),as.raw(0xff),raw(17),charToRaw('five'))
+  fail<-function(f,message) {
+    e<-tryCatch({f();NULL},error=identity)
+    stopifnot(inherits(e,'error'),identical(conditionMessage(e),message))
+  }
+  s$putMany(keys[1:3],values[1:3])
+  s$putMany(keys[4:5],values[4:5])
+  for(i in 1:5)stopifnot(s$has(keys[[i]]),identical(s$get(keys[[i]]),values[[i]]))
+  stopifnot(is.null(s$get(keys[[6]])),!s$has(keys[[6]]),s$inspect()$entries==5)
+  fail(function()s$putMany(keys[c(6,2)],list(raw(),raw()),'Repeated row identity'),'Repeated row identity')
+  fail(function()s$putMany(keys[c(6,6)],list(raw(),raw()),'Repeated row identity'),'Repeated row identity')
+  fail(function()s$putMany(keys[6],list(raw(131073))),'Validation value byte limit')
+  fail(function()s$putMany(c(keys[6],NA_character_),list(raw(),raw())),'Invalid validation key')
+  stopifnot(!s$has(keys[[6]]),b$inspect()$files==1,b$inspect()$bytes==5*88+sum(lengths(values)),
+    file.info(file.path(path,'records'))$size==b$inspect()$bytes)
+  # A second scratch consumer can leave exactly the bytes needed for an empty
+  # marker. A refused write must neither poison the index nor grow the file.
+  b$acquire(b$inspect()$max_bytes-b$inspect()$bytes-88)
+  s$putMany(keys[6],list(raw()))
+  e<-tryCatch(s$putMany(keys[7],list(raw())),error=identity)
+  stopifnot(inherits(e,'achillesnext_scratch_error'),e$code=='byte_limit',
+    !s$inspect()$poisoned,s$inspect()$entries==6,!s$has(keys[[7]]),
+    identical(s$get(keys[[6]]),raw()),file.info(file.path(path,'records'))$size==6*88+sum(lengths(values)))
+  s$close();s$close()
+  fail(function()s$get(keys[[1]]),'Validation spool is closed')
+  cat('VALIDATION_ROW_BATCH_COLLISIONS_DUPLICATES_EMPTY_VALUES_EXACT_BUDGET_OK\n')
+})
+
+# Cancellation between two bounded writes leaves a partial file. Its full
+# reservation remains in force and no subsequent lookup or append can use it.
+local({
+  ns<-asNamespace('AchillesNext');path<-tempfile('validation-row-cancel-')
+  budget<-get('.v2_scratch_budget',ns)(16*1024^2)
+  armed<-FALSE;calls<-0L
+  poll<-function(){
+    if(armed){calls<<-calls+1L;if(calls==3L)stop('cancelled before remaining chunk',call.=FALSE)}
+  }
+  s<-get('.v2_validation_rows',ns)(path,poll,budget,'16384')
+  on.exit({s$close();unlink(path,recursive=TRUE)})
+  keys<-vapply(1:40,function(i)digest::digest(i,algo='sha256'),'')
+  values<-rep(list(raw(131072)),length(keys))
+  armed<-TRUE
+  e<-tryCatch(s$putMany(keys,values),error=identity)
+  reserved<-length(keys)*(88+131072)
+  stopifnot(inherits(e,'error'),conditionMessage(e)=='cancelled before remaining chunk',
+    s$inspect()$poisoned,budget$inspect()$bytes==reserved,
+    file.info(file.path(path,'records'))$size>0,file.info(file.path(path,'records'))$size<reserved)
+  for(f in list(function()s$get(keys[[1]]),function()s$putMany(keys[1],list(raw())))){
+    e<-tryCatch(f(),error=identity);stopifnot(inherits(e,'achillesnext_scratch_error'),e$code=='io_failure')
+  }
+  cat('VALIDATION_ROW_BATCH_PARTIAL_WRITE_CANCELLATION_FAIL_CLOSED_OK\n')
+})
+
+# Constructors must never claim an existing directory or leak a newly created
+# one when the file budget refuses. A short scratch append must fail safely.
+local({
+  ns<-asNamespace('AchillesNext');make<-get('.v2_validation_rows',ns);budget<-get('.v2_scratch_budget',ns)
+  root<-tempfile('validation-row-ownership-');dir.create(root)
+  on.exit(unlink(root,recursive=TRUE))
+  path<-file.path(root,'rows');b<-budget(16*1024^2,0L);baseline<-nrow(showConnections())
+  failure<-function(work,code) {
+    e<-tryCatch({work();NULL},error=identity)
+    stopifnot(inherits(e,'achillesnext_scratch_error'),identical(e$code,code))
+  }
+  failure(function()make(path,function()NULL,b,'16384'),'file_limit')
+  stopifnot(!dir.exists(path),b$inspect()$files==0,nrow(showConnections())==baseline)
+  dir.create(path);sentinel<-file.path(path,'keep');writeBin(as.raw(69),sentinel)
+  failure(function()make(path,function()NULL,b,'16384'),'io_failure')
+  stopifnot(identical(readBin(sentinel,'raw',1L),as.raw(69)),b$inspect()$files==0)
+  b<-budget(16*1024^2)
+  s<-make(file.path(root,'new'),function()NULL,b,'16384')
+  on.exit(s$close(),add=TRUE,after=FALSE)
+  original<-get('.v2_scratch_io',ns)
+  on.exit(assignInNamespace('.v2_scratch_io',original,ns='AchillesNext'),add=TRUE,after=FALSE)
+  # Simulate a write accepted by the connection but missing from disk at flush.
+  assignInNamespace('.v2_scratch_io',function(work) {
+    if('writeBin'%in%all.names(body(work)))return(invisible(NULL))
+    original(work)
+  },ns='AchillesNext')
+  failure(function()s$putMany(sprintf('%064x',1),list(raw())),'io_failure')
+  assignInNamespace('.v2_scratch_io',original,ns='AchillesNext')
+  stopifnot(s$inspect()$poisoned,b$inspect()$bytes==88,b$inspect()$files==1)
+  s$close()
+  stopifnot(nrow(showConnections())==baseline)
+  cat('VALIDATION_ROW_BATCH_CONSTRUCTOR_OWNERSHIP_SHORT_WRITE_POISON_OK\n')
+})
+
+# An empty leaf batch is still an operation on its spool.
+local({
+  ns <- asNamespace("AchillesNext")
+  for(hint in c("0","16384")) {
+    path <- tempfile("empty-validation-batch-")
+    cancel <- FALSE
+    check <- function() if(cancel) stop("cancelled",call.=FALSE)
+    spool <- get(".v2_validation_rows",ns)(path,check,get(".v2_scratch_budget",ns)(),hint)
+    tryCatch({
+      empty <- function() spool$putMany(character(),list())
+      empty()
+      cancel <- TRUE
+      stopifnot(identical(tryCatch(empty(),error=conditionMessage),"cancelled"))
+      spool$close()
+      stopifnot(identical(tryCatch(empty(),error=conditionMessage),"Validation spool is closed"))
+    },finally={spool$close();unlink(path,recursive=TRUE)})
+  }
+  cat("VALIDATION_EMPTY_BATCH_CANCEL_AND_CLOSE_OK\n")
+})
+
+# The small index polls between disk inserts even when a leaf never grows it.
+local({
+  ns <- asNamespace("AchillesNext")
+  path <- tempfile("cancel-validation-insert-")
+  armed <- FALSE
+  calls <- 0L
+  check <- function() if(armed) {
+    calls <<- calls+1L
+    if(calls==3L) stop("cancel between rows",call.=FALSE)
+  }
+  spool <- get(".v2_validation_rows",ns)(path,check,get(".v2_scratch_budget",ns)(),"2")
+  on.exit({spool$close();unlink(path,recursive=TRUE)})
+  keys <- sprintf("%064x",1:2)
+  armed <- TRUE
+  failure <- tryCatch(spool$putMany(keys,list(raw(),raw())),error=conditionMessage)
+  stopifnot(identical(failure,"cancel between rows"),spool$has(keys[[1L]]),!spool$has(keys[[2L]]))
+})

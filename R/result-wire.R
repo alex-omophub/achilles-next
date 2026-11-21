@@ -96,13 +96,21 @@
   if (id == "core.execution.timing") .nv_need(if (v$availability == "measured") !is.null(v$duration_ms) && is.null(v$reason_code) else is.null(v$duration_ms) && !is.null(v$reason_code))
   invisible(TRUE)
 }
-.v2_row <- function(id, row, assets = .v2_assets(), capture = FALSE, expectedBytes = NULL, includeFrame = FALSE) {
+.v2_row <- function(id, row, assets = .v2_assets(), capture = FALSE, expectedBytes = NULL, includeFrame = FALSE, dimensionCodec = NULL) {
   registry <- assets$rows[[id]]; .nv_need(!is.null(registry), "Unknown metric")
   .v2_keys(row, c("row_key", "dimensions", "row_kind", "state", "reason_code", "values", "denominator_refs"))
   .nv_need(row$row_kind %in% names(registry$value_keys_by_row_kind), "Unknown row kind")
   dims <- c(unlist(registry$dimensions), unlist(registry$extra_dimensions_by_row_kind[[row$row_kind]]))
-  .v2_keys(row$dimensions, dims); .v2_dimensions(id,row,assets); key <- .v2_sort(registry, row)
-  dimensions <- .json(row$dimensions)
+  .v2_keys(row$dimensions, dims)
+  if (is.null(dimensionCodec)) {
+    .v2_dimensions(id,row,assets)
+    key <- .v2_sort(registry,row)
+    dimensions <- .json(row$dimensions)
+  } else {
+    encoded <- dimensionCodec(row)
+    key <- encoded$key
+    dimensions <- encoded$wire
+  }
   identity <- .v2_row_identity(registry, row, dimensions)
   if (capture) {
     .nv_need(identical(row$row_key, ""), "Expected a new capture row")
@@ -143,12 +151,14 @@
   .nv_need(length(bytes) <= 65536L, "Row resource limit")
   if (!is.null(expectedBytes)) .nv_need(identical(bytes, expectedBytes), "Noncanonical candidate row")
   if (capture) return(list(row = row, bytes = bytes))
-  if (includeFrame) list(key = key, bytes = bytes) else key
+  if (includeFrame) list(key = key, bytes = bytes, dimensions = dimensions) else key
 }
 
 .v2_dimensions <- function(id,row,assets = .v2_assets()) {
-  d <- row$dimensions;profile <- assets$profile
-  for(name in names(d)) .nv_schema(d[[name]],assets$dimensions[[name]],assets$metadata)
+  for(name in names(row$dimensions)) .nv_schema(row$dimensions[[name]],assets$dimensions[[name]],assets$metadata)
+  .v2_dimension_rules(id,row,assets,.v2_dimension_enums(assets$profile))
+}
+.v2_dimension_enums <- function(profile) {
   enums <- list(period_kind=c("full_scope","calendar_month","calendar_year","undated"),
     boundary_kind=c("start","end"),source_value_state=c("null","blank","nonblank","schema_absent"),
     source_unit_presence=c("null","blank","nonblank","schema_absent"),
@@ -161,6 +171,10 @@
     "missing_duration","negative_duration","start_disagreement","end_disagreement"))
   enums$reason <- reasons;enums$eligibility_reason <- reasons
   enums$flag <- c("null_person","orphan_person","missing_date","invalid_date","null_concept","zero_concept","unknown_concept","wrong_domain_concept","missing_end","reversed_end","duplicate_record_id","repeated_person_rows")
+  enums
+}
+.v2_dimension_rules <- function(id,row,assets,enums) {
+  d <- row$dimensions;profile <- assets$profile
   for(name in intersect(names(d),names(enums))) .nv_need(d[[name]]%in%enums[[name]],"Unregistered dimension code")
   if("metric_id"%in%names(d)) .nv_need(d$metric_id%in%names(assets$metrics))
   if("probe_id"%in%names(d)) {
