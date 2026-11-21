@@ -47,8 +47,10 @@ A static host callback cannot make a revoked database grant readable.
 On POSIX systems the serving reader defers SIGPIPE on the calling thread during
 JDBC disconnect and restores the caller's previous signal mask afterward.
 On macOS a socket write can send SIGPIPE to another unblocked thread in the
-process, including a JVM thread. The library leaves those threads' signal masks
-and the application's signal handlers under host control.
+process, including a JVM thread. If the signal reaches R's error handler there,
+the saved read can fail or the worker can terminate before returning a result.
+The library leaves those threads' signal masks and the application's signal
+handlers under host control. [Darwin socket write implementation](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/sys_socket.c#L129-L152) · [R signal handlers](https://svn.r-project.org/R/tags/R-4-2-3/src/main/main.c).
 
 A host that owns a dedicated macOS reader worker can block SIGPIPE in the child
 before executing `Rscript`. R and subsequently created JVM threads inherit the
