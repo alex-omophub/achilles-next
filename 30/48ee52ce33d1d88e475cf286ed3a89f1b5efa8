@@ -1,0 +1,23 @@
+docs/development/weighted-quantiles.md
+  s_895f6ebe145fd3::t_1ec55d121b1224 115-117
+tests/tracer/implementation-identity.R
+  s_895f6ebe145fd3::t_fd710667ed50ad 2-3
+tools/benchmark/implementation_identity.R
+  s_895f6ebe145fd3::t_73a504953859e5 13,15,18,63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "3048ee52ce33d1d88e475cf286ed3a89f1b5efa8",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
