@@ -17,6 +17,17 @@
   .nv_need(end>offset && identical(bytes[seq_len(offset)],envelope$prefix) &&
     identical(bytes[seq.int(end+1L,length(bytes))],envelope$suffix),"Noncanonical data page envelope")
 
+  batch <- if (!retainFrames && n>1L) .v2_capture_count_page(doc,assets,check)
+  if (!is.null(batch)) {
+    # Exact comparison also enforces all closed field sets, scalar types,
+    # row identities and canonical encoding for non-representative rows.
+    .nv_need(sum(nchar(batch$frames,type="bytes"))+n-1L==end-offset,"Noncanonical capture-count page length")
+    canonical <- charToRaw(enc2utf8(paste(batch$frames,collapse=",")))
+    .nv_need(identical(bytes[seq.int(offset+1L,end)],canonical),
+      "Noncanonical capture-count page")
+    .nv_need(!anyDuplicated(batch$keys) && identical(order(batch$keys,method="radix"),seq_len(n)),"Unordered leaf")
+    return(list(doc=doc,keys=batch$keys,frames=NULL,dimensions=NULL))
+  }
   keys <- character(n)
   frames <- if(retainFrames) vector("list",n)
   dimensions <- if(retainFrames) character(n)

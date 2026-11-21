@@ -57,16 +57,22 @@
 .v2_row_identity <- function(metric, row, dimensions = .json(row$dimensions)) {
   # Fields are in canonical radix order. Dimensions are encoded once for the
   # identity and the row frame; every value still uses the scalar/list codec.
-  wire <- paste0('{"dimensions":', dimensions, ',"metric_id":', .json(metric$id),
-    ',"metric_version":', .json(metric$version), ',"row_kind":', .json(row$row_kind), '}\n')
-  .v2_hash(charToRaw(enc2utf8(wire)))
+  .hash(.v2_identity_json(metric,row$row_kind,dimensions))
+}
+.v2_identity_json <- function(metric,kind,dimensions) {
+  paste0('{"dimensions":', dimensions, ',"metric_id":', .json(metric$id),
+    ',"metric_version":', .json(metric$version), ',"row_kind":', .json(kind), '}\n')
+}
+# Assemble already encoded JSON fields in canonical order for scalar or batched checks.
+.v2_row_json <- function(references,dimensions,reason,key,kind,state,values) {
+  paste0('{"denominator_refs":',references,',"dimensions":',dimensions,
+    ',"reason_code":',reason,',"row_key":',key,',"row_kind":',kind,
+    ',"state":',state,',"values":',values,'}')
 }
 .v2_row_bytes <- function(row, dimensions) {
-  wire <- paste0('{"denominator_refs":', .json(row$denominator_refs), ',"dimensions":', dimensions,
-    ',"reason_code":', .json(row$reason_code), ',"row_key":', .json(row$row_key),
-    ',"row_kind":', .json(row$row_kind), ',"state":', .json(row$state),
-    ',"values":', .json(row$values), '}\n')
-  charToRaw(enc2utf8(wire))
+  wire <- .v2_row_json(.json(row$denominator_refs),dimensions,.json(row$reason_code),
+    .json(row$row_key),.json(row$row_kind),.json(row$state),.json(row$values))
+  charToRaw(enc2utf8(paste0(wire,"\n")))
 }
 .v2_sort <- function(metric, row) {
   names <- c(unlist(metric$dimensions), unlist(metric$extra_dimensions_by_row_kind[[row$row_kind]]))

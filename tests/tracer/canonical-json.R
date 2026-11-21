@@ -19,7 +19,7 @@ local({
   # and classed scalars must take the unchanged authoritative encoding path.
   strings<-c('',vapply(1:127,intToUtf8,''),intToUtf8(1:127),'a/b','</script>',
     'β blocker','💡','Cafe\u0301','Café','\u2028','\u2029','9007199254740993','-9007199254740993')
-  values<-c(as.list(strings),list(NULL,TRUE,FALSE,0L,1,-0,1.25,1e20,Inf,-Inf,NaN,
+  values<-c(as.list(strings),list(NULL,TRUE,FALSE,NA,I(TRUE),setNames(FALSE,"flag"),c(TRUE,FALSE),0L,1,-0,1.25,1e20,Inf,-Inf,NaN,
     I('plain'),setNames('named','key'),as.Date('2020-01-01'),factor('abc'),o(),list()))
   compare<-function(value) {
     a<-tryCatch(actual(value),error=function(e)list(error=conditionMessage(e)))

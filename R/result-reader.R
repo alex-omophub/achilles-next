@@ -26,7 +26,8 @@ readResultObject <- function(connectionDetails,servingSchema,sourceId,publicatio
 
 # Only the verified public reader and the saved provider's page verifier consume these bytes.
 .read_approved_page_bytes <- function(connectionDetails, servingSchema, sourceId, publicationId,
-                                      accessScopeId, rootSha256, descriptor=NULL) {
+                                      accessScopeId, rootSha256, descriptor=NULL,
+                                      connect=DatabaseConnector::connect, disconnect=.disconnect_approved_page_reader) {
   .nv_need(.string(sourceId)&&.string(accessScopeId)&&.string(rootSha256)&&grepl("^[0-9a-f]{64}$",rootSha256))
   .store_uuid(publicationId)
   if(!is.null(descriptor)) {
@@ -36,12 +37,11 @@ readResultObject <- function(connectionDetails,servingSchema,sourceId,publicatio
   sha <- if(is.null(descriptor))rootSha256 else descriptor$sha256
   kind <- if(is.null(descriptor))"root" else descriptor$kind
   text <- .store_transaction(connectionDetails, servingSchema, function(tx) {
-    tx$one(paste0("SELECT encode(payload,'hex') FROM ",tx$schema,".achillesnext_approved_pages WHERE publication_id=",.store_uuid(publicationId),
+    tx$one(paste0("SELECT encode(payload,'base64') FROM ",tx$schema,".achillesnext_approved_pages WHERE publication_id=",.store_uuid(publicationId),
       " AND source_id=",.store_literal(sourceId)," AND scope_id=",.store_literal(accessScopeId)," AND root_sha256=",.store_literal(rootSha256),
       " AND sha256=",.store_literal(sha)," AND kind=",.store_literal(kind)," AND octet_length(payload)<=",.v2_limit(kind)))
-  }, readOnly=TRUE, disconnect=.disconnect_approved_page_reader)
-  at <- seq.int(1L, nchar(text), 2L)
-  as.raw(strtoi(substring(text, at, at+1L), 16L))
+  }, readOnly=TRUE, connect=connect, disconnect=disconnect)
+  jsonlite::base64_dec(text)
 }
 
 # R may handle SIGPIPE by unwinding the stack. Deliver any socket-close signal

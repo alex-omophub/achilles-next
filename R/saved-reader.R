@@ -84,7 +84,7 @@
       memo[[d$sha256]] <<- result;result
     }
     budget <- function()list(objects=used$objects,bytes=used$bytes,rows=used$rows)
-    value <- work(get,budget)
+    value <- if(is.null(transport$withConnection)) work(get,budget) else transport$withConnection(function()work(get,budget))
     check(cancel,generation)
     value$budget <- budget()
     if(!is.null(responseLimit) && length(.v2_bytes(value))>responseLimit) .saved_error("resource_limit")

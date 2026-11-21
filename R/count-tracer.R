@@ -19,6 +19,8 @@
     return(paste0("[", paste(vapply(x, .json, ""), collapse = ","), "]"))
   }
   if (length(x) != 1L || anyNA(x)) stop("JSON values must be explicit scalars or lists", call. = FALSE)
+  # Registered catalogue entries contain many JSON booleans.
+  if (is.logical(x) && is.null(attributes(x))) return(if (x) "true" else "false")
   # Plain ASCII without double quotes, slashes, backslashes or control bytes needs no escaping.
   # Keep jsonlite authoritative for every other scalar, encoding and R class.
   if (is.character(x) && is.null(attributes(x))) {

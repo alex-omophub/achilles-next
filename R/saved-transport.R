@@ -38,8 +38,31 @@
 }
 .saved_database_transport <- function(connectionDetails,servingSchema,context,authorize) {
   context <- .saved_context(context)
-  .saved_transport(context,authorize,function(d).read_approved_page_bytes(connectionDetails,servingSchema,
+  # Each operation owns a lazy connection. Each page still opens and commits
+  # a separate read-only transaction, so a grant change is visible on the next fetch.
+  current <- NULL
+  connect <- function(details) {
+    if(is.null(current)) return(DatabaseConnector::connect(details))
+    if(is.null(current$connection))
+      suspendInterrupts(current$connection <- DatabaseConnector::connect(details))
+    current$connection
+  }
+  disconnect <- function(connection) {
+    if(is.null(current)) .disconnect_approved_page_reader(connection)
+  }
+  transport <- .saved_transport(context,authorize,function(d).read_approved_page_bytes(connectionDetails,servingSchema,
     context$source_id,context$publication_id,context$access_scope_id,context$root$sha256,
-    if(d$kind=="root")NULL else d),cacheAllowed=FALSE)
-  # No cached DB page can outlive its audience grant: each read rechecks the view.
+    if(d$kind=="root")NULL else d,connect=connect,disconnect=disconnect),cacheAllowed=FALSE)
+  transport$withConnection <- function(work) {
+    previous <- current
+    operation <- new.env(parent=emptyenv())
+    on.exit({
+      current <<- previous
+      if(!is.null(operation$connection)) tryCatch(.disconnect_approved_page_reader(operation$connection),
+        error=function(e).saved_error("unavailable"))
+    })
+    current <<- operation
+    work()
+  }
+  transport
 }

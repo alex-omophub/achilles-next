@@ -8,7 +8,7 @@
   invisible(NULL)
 }
 .store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L, queryTimeoutSeconds = 60L,sourceRead=FALSE,state=NULL,
-                               disconnect=DatabaseConnector::disconnect) {
+                               disconnect=DatabaseConnector::disconnect, connect=DatabaseConnector::connect) {
   .nv_need(identical(details$dbms, "postgresql"), "PostgreSQL is required")
   .nv_need(identical(sourceRead,TRUE)||identical(sourceRead,FALSE))
   .nv_need(!sourceRead||identical(readOnly,TRUE),"Source capture must be read-only")
@@ -17,7 +17,7 @@
     queryTimeoutSeconds>=1&&queryTimeoutSeconds<=2147483647&&queryTimeoutSeconds==floor(queryTimeoutSeconds),"Invalid store query timeout")
   committed <- FALSE
   if(is.null(state)) {
-    connection <- DatabaseConnector::connect(details)
+    connection <- connect(details)
     on.exit(disconnect(connection), add = TRUE)
     jdbc <- connection@jConnection
   } else {
