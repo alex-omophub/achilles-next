@@ -5,16 +5,7 @@
   hint <- if(.v2_count(expectedRows)) suppressWarnings(as.numeric(expectedRows)) else 0
   limit <- budget$inspect()
   hint <- min(hint,2^22,(limit$max_bytes-limit$bytes)/88)
-  if(hint<16384) {
-    spool <- .v2_spool(directory,check,budget)
-    put <- spool$put
-    spool$putMany <- function(hashes,values,duplicateMessage="Duplicate validation key") {
-      .nv_need(is.character(hashes)&&is.list(values)&&length(hashes)==length(values)&&length(hashes)<=2048L)
-      for(i in seq_along(hashes)) put(hashes[[i]],values[[i]],duplicateMessage)
-      invisible(NULL)
-    }
-    return(spool)
-  }
+  if(hint<16384) return(.v2_spool(directory,check,budget))
 
   .nv_need(is.function(check));check()
   # At most 32 MiB of chain heads and 8 MiB of filters, regardless of the

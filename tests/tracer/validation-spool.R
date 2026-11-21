@@ -596,3 +596,23 @@ local({
   stopifnot(nrow(showConnections())==baseline)
   cat('VALIDATION_ROW_BATCH_CONSTRUCTOR_OWNERSHIP_SHORT_WRITE_POISON_OK\n')
 })
+
+# An empty leaf batch is still an operation on its spool.
+local({
+  ns <- asNamespace("AchillesNext")
+  for(hint in c("0","16384")) {
+    path <- tempfile("empty-validation-batch-")
+    cancel <- FALSE
+    check <- function() if(cancel) stop("cancelled",call.=FALSE)
+    spool <- get(".v2_validation_rows",ns)(path,check,get(".v2_scratch_budget",ns)(),hint)
+    tryCatch({
+      empty <- function() spool$putMany(character(),list())
+      empty()
+      cancel <- TRUE
+      stopifnot(identical(tryCatch(empty(),error=conditionMessage),"cancelled"))
+      spool$close()
+      stopifnot(identical(tryCatch(empty(),error=conditionMessage),"Validation spool is closed"))
+    },finally={spool$close();unlink(path,recursive=TRUE)})
+  }
+  cat("VALIDATION_EMPTY_BATCH_CANCEL_AND_CLOSE_OK\n")
+})

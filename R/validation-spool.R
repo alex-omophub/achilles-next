@@ -256,6 +256,12 @@
     if(!out$ok){poisoned<<-TRUE;stop(out$failure)}
     invisible(NULL)
   }
+  putMany<-function(hashes,values,duplicateMessage="Duplicate validation key") {
+    guard();check()
+    .nv_need(is.character(hashes)&&is.list(values)&&length(hashes)==length(values)&&length(hashes)<=2048L)
+    for(i in seq_along(hashes)) put(hashes[[i]],values[[i]],duplicateMessage)
+    invisible(NULL)
+  }
   flags<-function(hash,bit=NULL) {
     guard();key(hash);found<-find(hash);.nv_need(!is.null(found$text),"Missing validation key")
     old<-as.integer(substr(found$text,89,89));.nv_need(old%in%0:3)
@@ -275,7 +281,7 @@
     .nv_need(at==end);invisible(NULL)
   }
   ready<-TRUE
-  list(get=get,put=put,flags=flags,walk=walk,has=function(hash){guard();key(hash);!is.null(find(hash)$text)},
+  list(get=get,put=put,putMany=putMany,flags=flags,walk=walk,has=function(hash){guard();key(hash);!is.null(find(hash)$text)},
     close=function(){if(!closed){closed<<-TRUE;.v2_scratch_cleanup(list(function()closeConnection(data),function()closeConnection(index)))};invisible(NULL)},
     inspect=function()list(entries=count,slots=capacity,value_bytes=end,index_bytes=capacity*width,closed=closed,poisoned=poisoned))
 }
