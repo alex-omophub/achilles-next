@@ -10,6 +10,10 @@ stopifnot(identical(current$source_bindings_sha256, current$installed_bindings_s
 # change the implementation identity or the execution-ledger fingerprint.
 ns <- asNamespace("AchillesNext")
 ledgerBefore <- get(".run_definitions",ns)()
+# A plan created here must retain its implementation identity in a fresh worker.
+remoteHash <- system2(file.path(R.home("bin"),"Rscript"),
+  c("--vanilla","-e",shQuote("cat(AchillesNext:::.run_definitions()$implementation_sha256)")),stdout=TRUE)
+stopifnot(is.null(attr(remoteHash,"status")),identical(remoteHash,ledgerBefore$implementation_sha256))
 for(version in c("1.0.0","1.1.0")) get(".nv_legacy_assets",ns)(version)
 invisible(get(".v2_assets",ns)())
 invisible(get(".profile_assets",ns)("reference-person-v1"))
