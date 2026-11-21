@@ -1,0 +1,18 @@
+R/native-validation.R
+  h_4046c129935915 12-17,27,34
+R/result-export.R
+  h_4046c129935915 241-242
+R/result-validation.R
+  h_4046c129935915 130,154-155
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "38caa9ee5f719dc5f4b143b991a30afed9346c4f",
+  "prompts": {},
+  "humans": {
+    "h_4046c129935915": {
+      "author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
