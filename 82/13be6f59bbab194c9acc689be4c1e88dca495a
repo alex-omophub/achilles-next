@@ -1,0 +1,19 @@
+R/saved-page.R
+  s_895f6ebe145fd3::t_09eb116f88f6df 10,14,34,73-74
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "8213be6f59bbab194c9acc689be4c1e88dca495a",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
