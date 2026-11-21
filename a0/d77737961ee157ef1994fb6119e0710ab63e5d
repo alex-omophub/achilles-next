@@ -1,0 +1,20 @@
+docs/development/saved-transports.md
+  s_895f6ebe145fd3::t_2418795a05c3fc 52-58
+  s_895f6ebe145fd3::t_ae42ae26ea560f 59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a0d77737961ee157ef1994fb6119e0710ab63e5d",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
