@@ -248,8 +248,14 @@ local({
   shared <- publishResultRelease(details,schema,release,file.path(root,'distributable'),'fixture-distributable','review-dist',dist,function(candidate)TRUE)
   validateResultArtifact(shared$export_dir)
   objects <- list.files(file.path(shared$export_dir,'objects'),full.names=TRUE)
-  payload <- paste(vapply(objects,function(p)paste(readLines(p,warn=FALSE),collapse=''),''),collapse='')
-  stopifnot(!grepl('20.5',payload,fixed=TRUE),!grepl('"value":"123"',payload,fixed=TRUE))
+  for(path in objects) {
+    payload <- readLines(path,warn=FALSE)
+    page <- jsonlite::fromJSON(payload,simplifyVector=FALSE)
+    # The suppressed measurement is an exact scalar. A timestamp can legitimately
+    # contain the same digits, for example at 12:30:20.500Z.
+    stopifnot(!('20.5' %in% unlist(page,use.names=FALSE)),
+              !any(grepl('"value":"123"',payload,fixed=TRUE)))
+  }
   # Rehash all ancestors after mutation: integrity alone must not admit unsafe
   # numbers or inconsistent partitions. The original approved export stays pinned.
   for(kind in c('unsafe-number','bad-partition')) {

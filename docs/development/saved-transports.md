@@ -45,8 +45,21 @@ Each page query runs in a separate read-only transaction so subsequent fetches c
 observe a revoked grant. The operation closes its connection on success or failure.
 A static host callback cannot make a revoked database grant readable.
 On POSIX systems the serving reader defers SIGPIPE on the calling thread during
-JDBC disconnect. Signal delivery resumes after JDBC returns. The reader preserves
-the caller's signal mask and reports database or driver cleanup failures. Windows
+JDBC disconnect and restores the caller's previous signal mask afterward.
+On macOS a socket write can send SIGPIPE to another unblocked thread in the
+process, including a JVM thread. If the signal reaches R's error handler there,
+the saved read can fail or the worker can terminate before returning a result.
+The library leaves those threads' signal masks and the application's signal
+handlers under host control. [Darwin socket write implementation](https://github.com/apple-oss-distributions/xnu/blob/main/bsd/kern/sys_socket.c#L129-L152) · [R signal handlers](https://svn.r-project.org/R/tags/R-4-2-3/src/main/main.c).
+
+A host that owns a dedicated macOS reader worker can block SIGPIPE in the child
+before executing `Rscript`. R and subsequently created JVM threads inherit the
+mask. Keep it set for the worker's lifetime and handle socket or pipe write
+errors (EPIPE) normally. The launcher should leave the parent process untouched.
+Changing the calling thread's mask after a shared JVM starts cannot establish
+the same property for its existing threads.
+
+The reader reports database or driver cleanup failures. Windows
 uses the ordinary JDBC disconnect path. Installing the R package from source
 requires the platform's R C toolchain.
 
