@@ -10,10 +10,12 @@ implementationIdentity <- function(root, installed = asNamespace("AchillesNext")
   names <- sort(ls(expected, all.names = TRUE))
   # useDynLib registers two .Call bindings in the installed namespace. Compare
   # their registration separately from functions and constants sourced from R/.
+  force(installed)
   dll <- getLoadedDLLs()[["AchillesNext"]]
+  if (is.null(dll)) stop("AchillesNext native library is not loaded; reinstall the package",call.=FALSE)
   native <- getDLLRegisteredRoutines(dll)
   calls <- c("block_serving_sigpipe","unblock_serving_sigpipe")
-  if (isTRUE(dll[["dynamicLookup"]]) || !setequal(names(native$.Call),calls) ||
+  if (isTRUE(dll[["dynamicLookup"]]) || !identical(sort(names(native$.Call),method="radix"),calls) ||
       any(lengths(native[c(".C",".External",".Fortran")]) != 0L))
     stop("Unexpected native registration for AchillesNext",call.=FALSE)
   nativeBindings <- paste0("C_",calls)
@@ -58,7 +60,7 @@ implementationIdentity <- function(root, installed = asNamespace("AchillesNext")
   analysisSource <- analysisHash(file.path(root,"inst/analysis"))
   analysisInstalled <- analysisHash(system.file("analysis",package="AchillesNext",mustWork=TRUE))
   if (!identical(analysisSource,analysisInstalled)) stop("Installed analysis definitions differ from checkout; reinstall AchillesNext",call.=FALSE)
-  list(method = "UTF-8 canonical deparse of function formals/body and namespace constants with explicit controls, compared in the same R runtime; function environments verified; native registrations checked and platform-specific library bytes recorded separately; excludes bytecode/dependency implementations",
+  list(method = "UTF-8 canonical deparse of function formals/body and namespace constants with explicit controls, compared in the same R runtime; function environments verified; native registrations checked; the installed library hash identifies the measured binary, and its correspondence to the recorded C source is unverified; excludes bytecode/dependency implementations",
     installed_native_library_sha256 = digest::digest(file=dll[["path"]],algo="sha256"),
     source_files_sha256 = fileHashes, source_bindings_sha256 = sourceHashes,
     installed_bindings_sha256 = installedHashes, installed_sql_sha256 = sqlInstalled,

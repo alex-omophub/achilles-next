@@ -112,7 +112,9 @@ constant with the checkout using canonical deparsed R syntax in the same runtime
 and verifies installed SQL. Canonical syntax avoids changes in serialized
 in-memory language representations after execution.
 It checks the two registered native routines and records the SHA-256 of the
-loaded platform library. The report also records the native build inputs, R
+loaded platform library. The binary fingerprint identifies the library used in the
+run. Source-to-binary equivalence requires a separate build record. The report
+also records the native build inputs, R
 modules, DESCRIPTION, NAMESPACE, SQL and benchmark scripts. It rechecks
 implementation identity after measurement and source hashes after verification. Reinstall
 from the checkout if these checks fail: a shared development version alone is

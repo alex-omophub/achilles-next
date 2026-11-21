@@ -1,5 +1,6 @@
 # Offline provenance regression: identical dev versions must not hide stale code.
-library(AchillesNext)
+
+# The default identity check loads the package in a fresh R process.
 source("tools/benchmark/implementation_identity.R")
 root <- normalizePath(".")
 current <- implementationIdentity(root)
