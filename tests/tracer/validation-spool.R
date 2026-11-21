@@ -616,3 +616,21 @@ local({
   }
   cat("VALIDATION_EMPTY_BATCH_CANCEL_AND_CLOSE_OK\n")
 })
+
+# The small index polls between disk inserts even when a leaf never grows it.
+local({
+  ns <- asNamespace("AchillesNext")
+  path <- tempfile("cancel-validation-insert-")
+  armed <- FALSE
+  calls <- 0L
+  check <- function() if(armed) {
+    calls <<- calls+1L
+    if(calls==3L) stop("cancel between rows",call.=FALSE)
+  }
+  spool <- get(".v2_validation_rows",ns)(path,check,get(".v2_scratch_budget",ns)(),"2")
+  on.exit({spool$close();unlink(path,recursive=TRUE)})
+  keys <- sprintf("%064x",1:2)
+  armed <- TRUE
+  failure <- tryCatch(spool$putMany(keys,list(raw(),raw())),error=conditionMessage)
+  stopifnot(identical(failure,"cancel between rows"),spool$has(keys[[1L]]),!spool$has(keys[[2L]]))
+})

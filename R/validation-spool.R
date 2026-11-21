@@ -259,7 +259,10 @@
   putMany<-function(hashes,values,duplicateMessage="Duplicate validation key") {
     guard();check()
     .nv_need(is.character(hashes)&&is.list(values)&&length(hashes)==length(values)&&length(hashes)<=2048L)
-    for(i in seq_along(hashes)) put(hashes[[i]],values[[i]],duplicateMessage)
+    for(i in seq_along(hashes)) {
+      check()
+      put(hashes[[i]],values[[i]],duplicateMessage)
+    }
     invisible(NULL)
   }
   flags<-function(hash,bit=NULL) {
