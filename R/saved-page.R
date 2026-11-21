@@ -25,6 +25,12 @@
 }
 .saved_common <- function() c("contract_version","publication_id","release_id","source_id","profile_id","profile_revision","profile_sha256","access_scope_id")
 .saved_page <- function(bytes,d,context,assets) {
+  if(d$kind=="data") {
+    .v2_descriptor_check(d)
+    .nv_need(is.raw(bytes) && length(bytes)<=.v2_limit(d$kind),"Transport byte limit")
+    leaf <- .v2_artifact_data_leaf(bytes,d,context,assets,check=function()NULL,retainFrames=FALSE)
+    return(list(document=leaf$doc,lo=leaf$keys[[1]],hi=leaf$keys[[length(leaf$keys)]]))
+  }
   doc <- .v2_verified_bytes(bytes,d,context);common <- .saved_common()
   keys <- character()
   if(d$kind=="root") {
@@ -60,17 +66,6 @@
     }
     .nv_need(total==d$rows,"Index row count mismatch")
     if(length(doc$children)) keys <- c(doc$children[[1]]$lower_key,previous)
-  } else if(d$kind=="data") {
-    .v2_keys(doc,c(common,"kind","metric_id","metric_version","rows"))
-    .nv_need(.string(doc$metric_id) && doc$metric_id%in%names(assets$metrics) && identical(doc$metric_version,assets$metrics[[doc$metric_id]]$version))
-    .nv_need(.nv_array(doc$rows) && length(doc$rows)>0L && length(doc$rows)<=2048L)
-    keys <- vapply(doc$rows,function(row) {
-      .nv_need(length(.v2_bytes(row))<=65536L)
-      for(n in c("row_key","row_kind","state")) .nv_need(.string(row[[n]]),"Invalid row scalar")
-      .nv_need(.nv_array(row$denominator_refs))
-      for(ref in row$denominator_refs) .nv_need(all(vapply(ref,.string,TRUE)),"Invalid reference scalar")
-      paste0(doc$metric_id,"|",.v2_row(doc$metric_id,row,assets))
-    },"")
   } else {
     .v2_keys(doc,c(common,"kind","entries"))
     .nv_need(.nv_array(doc$entries) && length(doc$entries)>0L && length(doc$entries)<=2048L)

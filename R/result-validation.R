@@ -7,7 +7,8 @@
   rJava::.jcheck()
   invisible(NULL)
 }
-.store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L, queryTimeoutSeconds = 60L,sourceRead=FALSE,state=NULL) {
+.store_transaction <- function(details, schema, work, readOnly = FALSE, isolation = 4L, queryTimeoutSeconds = 60L,sourceRead=FALSE,state=NULL,
+                               disconnect=DatabaseConnector::disconnect) {
   .nv_need(identical(details$dbms, "postgresql"), "PostgreSQL is required")
   .nv_need(identical(sourceRead,TRUE)||identical(sourceRead,FALSE))
   .nv_need(!sourceRead||identical(readOnly,TRUE),"Source capture must be read-only")
@@ -17,7 +18,7 @@
   committed <- FALSE
   if(is.null(state)) {
     connection <- DatabaseConnector::connect(details)
-    on.exit(DatabaseConnector::disconnect(connection), add = TRUE)
+    on.exit(disconnect(connection), add = TRUE)
     jdbc <- connection@jConnection
   } else {
     .nv_need(is.environment(state),"Invalid transaction outcome observer")

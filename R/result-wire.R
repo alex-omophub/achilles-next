@@ -99,6 +99,7 @@
 .v2_row <- function(id, row, assets = .v2_assets(), capture = FALSE, expectedBytes = NULL, includeFrame = FALSE, dimensionCodec = NULL) {
   registry <- assets$rows[[id]]; .nv_need(!is.null(registry), "Unknown metric")
   .v2_keys(row, c("row_key", "dimensions", "row_kind", "state", "reason_code", "values", "denominator_refs"))
+  .nv_need(.string(row$row_kind) && .string(row$state),"Invalid row scalar")
   .nv_need(row$row_kind %in% names(registry$value_keys_by_row_kind), "Unknown row kind")
   dims <- c(unlist(registry$dimensions), unlist(registry$extra_dimensions_by_row_kind[[row$row_kind]]))
   .v2_keys(row$dimensions, dims)
@@ -122,6 +123,7 @@
   .nv_need(.nv_array(row$denominator_refs) && length(row$denominator_refs)<=2L)
   for (ref in row$denominator_refs) {
     .v2_keys(ref, c("measure", "metric_id", "row_key", "field", "value"))
+    .nv_need(all(vapply(ref,.string,TRUE)),"Invalid reference scalar")
     .nv_need(ref$metric_id %in% names(assets$metrics))
     .nv_need(.v2_count(ref$value) && grepl("^[0-9a-f]{64}$", ref$row_key))
     .nv_need(ref$measure %in% names(row$values) && ref$field %in% c("record_count", "person_count", "person_days", "interval_count", "n"))

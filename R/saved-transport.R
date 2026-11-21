@@ -38,7 +38,7 @@
 }
 .saved_database_transport <- function(connectionDetails,servingSchema,context,authorize) {
   context <- .saved_context(context)
-  .saved_transport(context,authorize,function(d)readResultObject(connectionDetails,servingSchema,
+  .saved_transport(context,authorize,function(d).read_approved_page_bytes(connectionDetails,servingSchema,
     context$source_id,context$publication_id,context$access_scope_id,context$root$sha256,
     if(d$kind=="root")NULL else d),cacheAllowed=FALSE)
   # No cached DB page can outlive its audience grant: each read rechecks the view.
