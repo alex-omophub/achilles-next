@@ -9,6 +9,12 @@
     (is.numeric(a) && is.numeric(b) && length(a)==1L && length(b)==1L && isTRUE(a==b)))
   identical(.json(a),.json(b))
 }
+.nv_depth_delta <- local({
+  delta <- integer(256L)
+  delta[as.integer(charToRaw("{["))+1L] <- 1L
+  delta[as.integer(charToRaw("}]"))+1L] <- -1L
+  delta
+})
 .nv_json <- function(raw) {
   text <- rawToChar(raw)
   .nv_need(isTRUE(validUTF8(text)) && !anyNA(iconv(text, from = "UTF-8", to = "UTF-8", sub = NA)), "Invalid UTF-8")
@@ -18,14 +24,14 @@
     # byte can be mistaken for syntax. Byte offsets avoid rescanning multibyte
     # prefixes for each token, in both the regexp and first-byte extraction.
     first <- as.integer(raw[tokens])
-    depth <- cumsum(ifelse(first %in% c(123L, 91L), 1L, ifelse(first %in% c(125L, 93L), -1L, 0L)))
+    depth <- cumsum(.nv_depth_delta[first+1L])
     .nv_need(max(depth) <= 32L && min(depth) >= 0L, "JSON nesting limit exceeded")
   }
   result <- jsonlite::fromJSON(text, simplifyVector = FALSE)
   walk <- function(x) {
     if (is.list(x)) {
       .nv_need(!anyDuplicated(names(x)), "Duplicate JSON keys")
-      invisible(lapply(x, walk))
+      for (value in x) if (is.list(value)) walk(value)
     }
   }
   walk(result); result
