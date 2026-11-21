@@ -120,10 +120,12 @@ local({
   candidate$entries <- list(blank,o(note=strrep('x',room)))
   stopifnot(identical(catalogueBytes(candidate),wire(candidate)))
   candidate$entries[[2L]]$note <- paste0(candidate$entries[[2L]]$note,'x')
-  fail(function()catalogueBytes(candidate))
+  oversized <- fail(function()catalogueBytes(candidate))
+  stopifnot(identical(conditionMessage(oversized),'Catalogue entry byte limit'))
   badBytes <- c(as.raw(32L),rawCatalogue)
   rehashed <- f('.v2_descriptor')(badBytes,pin$kind,pin$rows)
-  fail(function()f('.saved_page')(badBytes,rehashed,x$context[f('.saved_common')()],a))
+  noncanonical <- fail(function()f('.saved_page')(badBytes,rehashed,x$context[f('.saved_common')()],a))
+  stopifnot(identical(conditionMessage(noncanonical),'Noncanonical or wrong-kind page'))
   # Root policy constrains catalogue metadata as well as data pages.
   for(values in list(c('computed','1'),c('computed','0'),c('suppressed','1'))) {
     z<-make(n=1L,retained=FALSE,catalogueState=values[[1]],catalogueRows=values[[2]])
