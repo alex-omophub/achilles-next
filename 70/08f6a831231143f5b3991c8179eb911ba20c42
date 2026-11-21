@@ -1,0 +1,66 @@
+R/validation-row-spool.R
+  s_895f6ebe145fd3::t_54ae47fe032860 1-100,103-108,110-115,121-139,147-158
+  s_3e206b4a2cf4c3::t_ee1bbc4d9caeaf 120,140-146
+  s_895f6ebe145fd3::t_7a9c26ce84b8e5 101-102,109,116-119
+tests/tracer/result-wire.R
+  s_895f6ebe145fd3::t_5818ef54ae2dfc 181
+  s_895f6ebe145fd3::t_c1e2bfe1a4b9bb 27-28,32-36,57-71
+  s_3e206b4a2cf4c3::t_38092cbb353532 161-180,182-199
+R/validation-spool.R
+  s_895f6ebe145fd3::t_54ae47fe032860 238,241
+R/analysis-definitions.R
+  s_895f6ebe145fd3::t_54d4a9d3ecf066 90-91
+R/result-wire.R
+  s_3e206b4a2cf4c3::t_e40cafd8fdddcd 99,104-113,154,158-161,174-177
+R/artifact-dimension-codec.R
+  s_3e206b4a2cf4c3::t_e40cafd8fdddcd 1-49
+R/result-artifact.R
+  s_895f6ebe145fd3::t_8f3131bbb18e88 132,137-138,144
+  s_3e206b4a2cf4c3::t_daa58d54d877af 133,135
+  s_895f6ebe145fd3::t_22d43c7aea099b 56-58,131,136
+  s_3e206b4a2cf4c3::t_8d339c96df5b7a 40-44,107,200-203,213,216
+  s_895f6ebe145fd3::t_54ce218c845521 69-73,127-130,168
+  s_895f6ebe145fd3::t_9f3e98c80db207 100-106
+tests/tracer/artifact-partition-regression.R
+  s_895f6ebe145fd3::t_eeb149df9b5ff2 5,36-64
+  s_3e206b4a2cf4c3::t_0b9e1e27aba079 65
+R/artifact-data-leaf.R
+  s_895f6ebe145fd3::t_5818ef54ae2dfc 24,27
+  s_3e206b4a2cf4c3::t_daa58d54d877af 21,35
+  s_895f6ebe145fd3::t_54ce218c845521 1-20,23,25-26,28-34,37-41,43
+  s_895f6ebe145fd3::t_22d43c7aea099b 22,36,42
+R/result-validation.R
+  s_895f6ebe145fd3::t_54d4a9d3ecf066 254-255,265-266
+R/artifact-relations.R
+  s_3e206b4a2cf4c3::t_1637012058f11f 1-4,6-7,11-12,14-17,19-23,31-63,65-81,83-99,101-142,146-156
+  s_895f6ebe145fd3::t_17d8bb06f52461 5,8-10,13,18,24-30,64,82,100,143-145,224-226,236
+  s_3e206b4a2cf4c3::t_8d339c96df5b7a 157-223,227-235,237-256
+tests/tracer/saved-label-integration.R
+  s_3e206b4a2cf4c3::t_e2404561eb07ab 129-130,153-154
+tests/tracer/validation-spool.R
+  s_3e206b4a2cf4c3::t_fd5e8bd5557afe 503-598
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "7008f6a831231143f5b3991c8179eb911ba20c42",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
