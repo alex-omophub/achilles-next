@@ -8,7 +8,25 @@ implementationIdentity <- function(root, installed = asNamespace("AchillesNext")
   paths <- sort(list.files(file.path(root, "R"), pattern = "[.]R$", full.names = TRUE))
   for (path in paths) sys.source(path, expected, keep.source = FALSE)
   names <- sort(ls(expected, all.names = TRUE))
-  actualNames <- setdiff(ls(installed, all.names = TRUE), c(".__NAMESPACE__.", ".__S3MethodsTable__.", ".packageName"))
+  # useDynLib registers two .Call bindings in the installed namespace. Compare
+  # their registration separately from functions and constants sourced from R/.
+  dll <- getLoadedDLLs()[["AchillesNext"]]
+  native <- getDLLRegisteredRoutines(dll)
+  calls <- c("block_serving_sigpipe","unblock_serving_sigpipe")
+  if (isTRUE(dll[["dynamicLookup"]]) || !setequal(names(native$.Call),calls) ||
+      any(lengths(native[c(".C",".External",".Fortran")]) != 0L))
+    stop("Unexpected native registration for AchillesNext",call.=FALSE)
+  nativeBindings <- paste0("C_",calls)
+  for (routine in calls) {
+    binding <- paste0("C_",routine)
+    symbol <- get0(binding,installed,inherits=FALSE)
+    if (!inherits(symbol,"CallRoutine") || !identical(symbol$name,routine) ||
+        !identical(symbol$numParameters,0L) || !identical(symbol$dll,dll) ||
+        !identical(symbol,get(binding,asNamespace("AchillesNext"),inherits=FALSE)) ||
+        !identical(native$.Call[[routine]]$numParameters,0L))
+      stop("Installed native binding differs: ",binding,call.=FALSE)
+  }
+  actualNames <- setdiff(ls(installed, all.names = TRUE), c(".__NAMESPACE__.", ".__S3MethodsTable__.", ".packageName", nativeBindings))
   if (!setequal(names, actualNames)) stop("Installed R implementation has different bindings; reinstall AchillesNext from this checkout", call. = FALSE)
   fingerprint <- function(value) {
     syntax <- function(x) deparse(x, width.cutoff = 500L,
@@ -25,7 +43,7 @@ implementationIdentity <- function(root, installed = asNamespace("AchillesNext")
   }), names)
   changed <- names[!vapply(names, function(n) identical(sourceHashes[[n]], installedHashes[[n]]), TRUE)]
   if (length(changed)) stop("Installed R implementation differs from checkout: ", paste(changed, collapse = ", "), "; reinstall AchillesNext", call. = FALSE)
-  relative <- c(paste0("R/", basename(paths)), "DESCRIPTION", "NAMESPACE")
+  relative <- c(paste0("R/", basename(paths)), "DESCRIPTION", "NAMESPACE","src/serving-disconnect.c","src/Makevars","src/Makevars.win")
   fileHashes <- stats::setNames(lapply(relative, function(p) digest::digest(file = file.path(root, p), algo = "sha256")), relative)
   sourceSql <- file.path(root, "inst/sql/postgresql")
   installedSql <- system.file("sql/postgresql", package = "AchillesNext", mustWork = TRUE)
@@ -40,7 +58,8 @@ implementationIdentity <- function(root, installed = asNamespace("AchillesNext")
   analysisSource <- analysisHash(file.path(root,"inst/analysis"))
   analysisInstalled <- analysisHash(system.file("analysis",package="AchillesNext",mustWork=TRUE))
   if (!identical(analysisSource,analysisInstalled)) stop("Installed analysis definitions differ from checkout; reinstall AchillesNext",call.=FALSE)
-  list(method = "UTF-8 canonical deparse of function formals/body and namespace constants with explicit controls, compared in the same R runtime; function environments verified; excludes bytecode/dependency implementations",
+  list(method = "UTF-8 canonical deparse of function formals/body and namespace constants with explicit controls, compared in the same R runtime; function environments verified; native registrations checked and platform-specific library bytes recorded separately; excludes bytecode/dependency implementations",
+    installed_native_library_sha256 = digest::digest(file=dll[["path"]],algo="sha256"),
     source_files_sha256 = fileHashes, source_bindings_sha256 = sourceHashes,
     installed_bindings_sha256 = installedHashes, installed_sql_sha256 = sqlInstalled,
     installed_analysis_sha256 = analysisInstalled)

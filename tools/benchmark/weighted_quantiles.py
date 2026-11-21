@@ -139,7 +139,8 @@ def main():
     oracle = cases()
     (output / 'oracle.json').write_text(json.dumps(oracle, indent=2) + '\n')
     definitions = [*sorted((ROOT / 'inst/sql/postgresql').glob('*.sql')), *sorted((ROOT / 'R').glob('*.R')),
-                   ROOT / 'DESCRIPTION', ROOT / 'NAMESPACE', ROOT / 'tools/benchmark/implementation_identity.R',
+                   ROOT / 'DESCRIPTION', ROOT / 'NAMESPACE', ROOT / 'src/serving-disconnect.c',
+                   ROOT / 'src/Makevars', ROOT / 'src/Makevars.win', ROOT / 'tools/benchmark/implementation_identity.R',
                    ROOT / 'tools/benchmark/weighted_quantiles.R', Path(__file__)]
     code_hashes = {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in definitions}
     begin = time.perf_counter()

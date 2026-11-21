@@ -21,7 +21,14 @@ for (name in names(current$installed_bindings_sha256)) {
   if (is.function(v)) v <- eval(call("function", formals(v), body(v)), clone)
   assign(name, v, clone)
 }
-stopifnot(identical(current, implementationIdentity(root, clone)))
+for (routine in c("C_block_serving_sigpipe","C_unblock_serving_sigpipe"))
+  assign(routine,get(routine,ns),clone)
+stopifnot(identical(current, implementationIdentity(root, clone)),
+  grepl("^[0-9a-f]{64}$",current$installed_native_library_sha256))
+clone$C_block_serving_sigpipe <- clone$C_unblock_serving_sigpipe
+error <- tryCatch({implementationIdentity(root,clone);"accepted"},error=conditionMessage)
+stopifnot(grepl("Installed native binding differs: C_block_serving_sigpipe",error,fixed=TRUE))
+clone$C_block_serving_sigpipe <- ns$C_block_serving_sigpipe
 body(clone$.generate_tracer) <- quote(stop("Stale implementation at the same version"))
 error <- tryCatch({implementationIdentity(root, clone); "accepted"}, error = conditionMessage)
 stopifnot(grepl("Installed R implementation differs from checkout: .generate_tracer", error, fixed = TRUE))
@@ -35,7 +42,7 @@ local({
   # A same-version install with stale registry bytes must not pass the guard.
   tree <- tempfile("identity-assets-");dir.create(tree)
   on.exit(unlink(tree,recursive=TRUE),add=TRUE)
-  stopifnot(all(file.copy(file.path(root,c("R","DESCRIPTION","NAMESPACE")),tree,recursive=TRUE)))
+  stopifnot(all(file.copy(file.path(root,c("R","src","DESCRIPTION","NAMESPACE")),tree,recursive=TRUE)))
   dir.create(file.path(tree,"inst/sql"),recursive=TRUE)
   stopifnot(file.copy(file.path(root,"inst/sql/postgresql"),file.path(tree,"inst/sql"),recursive=TRUE))
   dir.create(file.path(tree,"inst/analysis"))
