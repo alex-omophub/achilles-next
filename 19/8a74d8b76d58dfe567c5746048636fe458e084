@@ -1,0 +1,43 @@
+.gitignore
+  s_3e206b4a2cf4c3::t_668b4d38837e53 95-101
+NAMESPACE
+  s_895f6ebe145fd3::t_193c707d478c20 1
+docs/development/saved-transports.md
+  s_3e206b4a2cf4c3::t_668b4d38837e53 44-49
+tests/tracer/saved-transport-integration.R
+  s_895f6ebe145fd3::t_193c707d478c20 4-5,11-12,14-16,18-21
+src/Makevars
+  s_895f6ebe145fd3::t_193c707d478c20 1
+src/serving-disconnect.c
+  s_895f6ebe145fd3::t_193c707d478c20 1-48
+src/Makevars.win
+  s_895f6ebe145fd3::t_193c707d478c20 1
+R/result-reader.R
+  s_895f6ebe145fd3::t_193c707d478c20 47-60,62-68
+tests/tracer/saved-transport.R
+  s_895f6ebe145fd3::t_7d113d8a5c7b94 3-33
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "198a74d8b76d58dfe567c5746048636fe458e084",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
