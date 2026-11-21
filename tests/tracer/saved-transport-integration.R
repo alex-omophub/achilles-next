@@ -44,7 +44,14 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
   unlockBinding('.store_transaction',ns);assign('.store_transaction',observed,ns);lockBinding('.store_transaction',ns)
   on.exit({unlockBinding('.store_transaction',ns);assign('.store_transaction',original,ns);lockBinding('.store_transaction',ns)},add=TRUE)
   same<-function(left,right)stopifnot(identical(left$descriptor,right$descriptor),identical(left$bytes,right$bytes))
+  # PostgreSQL wraps encoded output at 76 columns. Exercise those actual bytes.
+  probe <- function(one,sql) {
+    value <- one(sql)
+    stopifnot(grepl("\n",value,fixed=TRUE))
+    value
+  }
   same(artifact$root()$page,database$root()$page)
+  probe <- NULL
   total<-0L
   for(branch in c('data','metric_catalogue','concept_catalogue','terminology')) {
     left<-NULL;right<-NULL
@@ -189,11 +196,19 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
   }
   generation <- database$inspect()$generation
   assignInNamespace('.disconnect_approved_page_reader',failingClose,ns='AchillesNext')
-  failed <- tryCatch(database$root(),error=identity,
-    finally=assignInNamespace('.disconnect_approved_page_reader',realClose,ns='AchillesNext'))
-  stopifnot(closes==1L,inherits(failed,'achillesnext_read_error'),failed$code=='unavailable',
+  on.exit(assignInNamespace('.disconnect_approved_page_reader',realClose,ns='AchillesNext'),add=TRUE)
+  failed <- tryCatch(database$root(),error=identity)
+  cancelled <- FALSE
+  probe <- function(one,sql) {
+    value <- one(sql)
+    cancelled <<- TRUE
+    value
+  }
+  aborted <- tryCatch(database$root(function()cancelled),error=identity)
+  stopifnot(closes==2L,inherits(aborted,'achillesnext_read_error'),aborted$code=='aborted',
+    inherits(failed,'achillesnext_read_error'),failed$code=='unavailable',
     !grepl("private fixture error",conditionMessage(failed),fixed=TRUE),
-    database$inspect()$generation==generation+1L)
+    database$inspect()$generation==generation+2L)
   cat('SAVED_CONCEPT_REAL_LOOKUP_PAGINATION_UNAVAILABLE_SEARCH_PARITY_REVOCATION_OK\n')
   cat('SAVED_TRANSPORT_REAL_ARTIFACT_DATABASE_BYTES_SQL_ONLY_APPROVED_VIEW_REVOCATION_OK pages=',total,'statements=',length(statements),'\n')
 }

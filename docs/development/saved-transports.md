@@ -138,7 +138,7 @@ Cancellation is a host-supplied boolean predicate, checked before/after transpor
 work, after page validation and before return. Cancellation, authorization changes
 and other failures clear raw caches and invalidate existing cursors. Closed or
 superseded work cannot repopulate the cache or return late data. Closing is
-idempotent; transports retain no JDBC connection or open file between calls.
+idempotent. Transports release JDBC connections and file handles by the end of each bounded operation.
 
 R/JDBC execution is synchronous. Cancellation discards late results at these
 bounded checkpoints; it does not promise immediate interruption of an in-flight

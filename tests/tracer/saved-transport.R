@@ -204,6 +204,9 @@ local({
   closing<-NULL
   t<-f('.saved_transport')(x$context,function(c)TRUE,function(d){closing$close();f('.v2_safe_file')(x$directory,paste0('objects/',d$sha256,'.json'),4194304L)})
   closing<-f('.saved_reader')(t);fail(function()closing$root(),'closed');stopifnot(closing$inspect()$cache_bytes==0L)
+  malformed <- transport
+  malformed$withConnection <- TRUE
+  fail(function()f('.saved_reader')(malformed))
   for(options in list(list(maxObjects=1L),list(maxBytes=32L),list(maxRows=1L))) {
     r<-do.call(f('.saved_reader'),c(list(transport=transport),options));on.exit(r$close(),add=TRUE)
     fail(function()r$scan('concept_catalogue',limit=2L),'resource_limit');stopifnot(r$inspect()$cache_bytes==0L)

@@ -56,13 +56,16 @@
   transport$withConnection <- function(work) {
     previous <- current
     operation <- new.env(parent=emptyenv())
+    completed <- FALSE
     on.exit({
       current <<- previous
       if(!is.null(operation$connection)) tryCatch(.disconnect_approved_page_reader(operation$connection),
-        error=function(e).saved_error("unavailable"))
+        error=function(e) {if(completed) .saved_error("unavailable")})
     })
     current <<- operation
-    work()
+    value <- work()
+    completed <- TRUE
+    value
   }
   transport
 }

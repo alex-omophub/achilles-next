@@ -4,6 +4,7 @@
   control <- function(x,lo,hi) is.numeric(x)&&length(x)==1L&&!is.na(x)&&is.finite(x)&&x==floor(x)&&x>=lo&&x<=hi
   .nv_need(control(cacheBytes,0,8388608L) && control(maxObjects,1,256L) && control(maxBytes,1,16777216L) && control(maxRows,1,32768L),"Invalid read budget")
   .nv_need(is.function(transport$read)&&is.function(transport$check)&&is.logical(transport$cacheAllowed)&&length(transport$cacheAllowed)==1L&&!is.na(transport$cacheAllowed))
+  .nv_need(is.null(transport$withConnection) || is.function(transport$withConnection),"Invalid transport connection callback")
   if(!transport$cacheAllowed) cacheBytes <- 0L
   state <- new.env(parent=emptyenv());state$closed <- FALSE;state$generation <- 0L
   state$cache <- list();state$order <- character();state$bytes <- 0L
