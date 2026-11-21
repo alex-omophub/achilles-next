@@ -1,0 +1,35 @@
+docs/development/weighted-quantiles.md
+  s_895f6ebe145fd3::t_d6f7f3206a7609 114-117
+tests/tracer/implementation-identity.R
+  s_3e206b4a2cf4c3::t_6debcce3da0fab 24-31,45
+tools/benchmark/implementation_identity.R
+  s_3e206b4a2cf4c3::t_60ad92b562374d 11-29,46,61-62
+tools/benchmark/weighted_quantiles.py
+  s_3e206b4a2cf4c3::t_744f9a4c604d79 142-143
+tools/docker/Dockerfile.dockerignore
+  s_3e206b4a2cf4c3::t_e5243b90080e7b 14-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "f6de61532938cf206de117be594a193b9119b3ea",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
