@@ -35,7 +35,7 @@ export function SavedReportChart({report, page}: {report: ReportPage; page: numb
     {points.length > omitted ? <>
       <figure aria-label={spec.title + ' · ' + valueLabel}>
         <figcaption>{valueLabel}</figcaption>
-        <GraphicBoundary><Suspense fallback={<p role="status">Loading chart…</p>}>
+        <GraphicBoundary key={JSON.stringify([report.context.instance_id, report.metric_id, page, group?.id, measure])}><Suspense fallback={<p role="status">Loading chart…</p>}>
           <Graphic points={points} quantiles={quantiles} measure={valueLabel}/>
         </Suspense></GraphicBoundary>
       </figure>

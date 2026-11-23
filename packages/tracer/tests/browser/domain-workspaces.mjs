@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {createServer} from 'vite';
-import {checkChartsAndEvidence} from './chart-evidence.mjs';
+import {checkChartRecovery, checkChartsAndEvidence} from './chart-evidence.mjs';
 
 // Playwright is test-only and can be installed separately through NODE_PATH.
 const {chromium} = createRequire(import.meta.url)('playwright');
@@ -82,6 +82,10 @@ try {
   assert.equal(await page.getByRole('main').count(), 0);
   const selected = await selectMetric(second, 'core.specimen.capture_count');
   await selected.getByText('fixture.empty_source', {exact: true}).waitFor();
+  await checkChartsAndEvidence(page, first, selectMetric, requests);
+  await first.getByRole('combobox', {name: 'Domain or section'}).selectOption('all');
+  await first.getByRole('heading', {name: 'Metric catalogue', exact: true}).waitFor();
+  assert.equal(await selected.locator('tbody tr').count(), 1);
   await first.getByRole('combobox', {name: 'Domain or section'}).selectOption('condition');
   await page.evaluate(() => { window.delayFirstReport = true; });
   await first.getByRole('button', {name: 'core.condition.capture_count', exact: true}).click();
@@ -111,6 +115,7 @@ try {
   const stillAuthorized = await selectMetric(second, 'core.visit.care_setting_count');
   await stillAuthorized.getByText('capability.care_site_absent', {exact: true}).waitFor();
   assert.deepEqual(errors, []);
+  await checkChartRecovery(page, host, selectMetric);
 } finally {
   await browser?.close();
   await server.close();

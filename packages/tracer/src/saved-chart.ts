@@ -56,12 +56,15 @@ function coordinate(exact: string, count: boolean): number | null {
   if (exact.length > 350 || !(count ? /^(0|[1-9]\d*)$/ : /^-?(0|[1-9]\d*)(\.\d+)?$/).test(exact)) return null;
   const value = Number(exact);
   if (!Number.isFinite(value) || Math.abs(value) > Number.MAX_SAFE_INTEGER) return null;
+  const [whole, fraction] = exact.split('.');
+  const significant = fraction?.replace(/0+$/, '');
+  const normalized = significant ? whole + '.' + significant : (whole === '-0' ? '0' : whole);
   const [mantissa, exponent] = String(value).split('e');
-  if (!exponent) return mantissa === exact ? value : null;
+  if (!exponent) return mantissa === normalized ? value : null;
   // All permitted positive exponents here use ordinary decimal notation.
   const digits = mantissa.replace('-', '').replace('.', '');
   const decimal = (value < 0 ? '-' : '') + '0.' + '0'.repeat(-Number(exponent) - 1) + digits;
-  return decimal === exact ? value : null;
+  return decimal === normalized ? value : null;
 }
 function point(row: ChartRow, key: string, label: string, detail: string, count: boolean): ChartPoint {
   const visible = ['computed', 'empty_source', 'empty_population'].includes(row.state);

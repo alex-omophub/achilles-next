@@ -20,7 +20,7 @@
     "packages/tracer/src/ObservationView.tsx": "e9ddf88dfef4c333104e923d6be475a753862fe63c045820a5ff61553aa92669",
     "packages/tracer/src/PublicationView.tsx": "437835c15955de2ead9eb21431198df00fafbe17752670614acbb67bc1eeb0fc",
     "packages/tracer/src/SavedChartGraphic.tsx": "5fa6df65b0e502765e9148b75d21c38fbfa8d18b879c6740fd3664e54a0004ed",
-    "packages/tracer/src/SavedReportChart.tsx": "929ec82aa49726b8674e1d6da204c644dff0f2933447a569a2a0605fc316b563",
+    "packages/tracer/src/SavedReportChart.tsx": "5c3eef08791eb00cb8d831623b65ee88d6cc1f8c27acd23b73774d464a248284",
     "packages/tracer/src/SavedReportEvidence.tsx": "5595adc92fc2f90f6fa1b71b11cf2e9d6dbf138ac8409a8bec7af78c6b9526a3",
     "packages/tracer/src/SavedReportTable.tsx": "054537bda85b4e7bee4efe1c0051cd231aaa32a8eb776cc3ff485da55044c9c5",
     "packages/tracer/src/ViewerApp.tsx": "add4567b515c3b22b436b08ec2a784e173de10f744a99e7f60665565c174fb65",
@@ -29,7 +29,7 @@
     "packages/tracer/src/measurement.ts": "fe79f281926c5f689cb62f0e6a68d1542a68d5e649a4333768d1353a4f1c64f7",
     "packages/tracer/src/observation.ts": "5f3f1d43e60d2c4c3a9e45812f71839d183df92cb10cf5ee9697b2ff45de253c",
     "packages/tracer/src/publication.css": "30de13d6b8fe70cc9f4b9762377c155318b18dd9009ab3157ffd6e353c3c102f",
-    "packages/tracer/src/saved-chart.ts": "e199b91c20f93f0089ea4a715ad7ce5aa011fb7a7b9b8fcb36b0ce1c39304945",
+    "packages/tracer/src/saved-chart.ts": "52d46c58743eee823efc9bb06d2a5cb911dc268fa53b327710f45231d10f51e6",
     "packages/tracer/src/saved-publication.ts": "e43a948b08ffcd33955ee30f34e9bb34d847094af89781aa397f5f40194b72bf",
     "packages/tracer/src/style.css": "369b46cc4838da49097ce3a3a3c66a904b4ef7af7d829d36e976baba853dcacb",
     "packages/tracer/tools/build-publication-validator.mjs": "e655aa58c6e81f230ca27700e8042c33410e4a77ce40073c5dfa8eda77dbc134",
@@ -41,13 +41,13 @@
   },
   "files": {
     "DEPENDENCY-LICENSES.txt": "2ac67813440ac367ffaf290b7608f08febb86d740fab58d325abea30d5ed3416",
-    "assets/CartesianChart-CUhbOnOf.js": "b7eaa1ee0a4ee40715619351ebd0786962ecd71f90d7f7255145b5aa33bd7d61",
-    "assets/ComposedChart-Dly5EmZD.js": "d5ce18a5929870af6d32c0b7124bce70bd912cc49db47b0f5f224ee7848d87ef",
-    "assets/MeasurementChart-BhQydq6h.js": "6af0b68182929f09f4b4ac63340c84a2195a7bc0c7f41a4b0a6a914cefcd8862",
-    "assets/ObservationChart-DYvgzeCg.js": "b620ea996ce431e971d72190b7d5464eeb6b99a54121eaca41748d52f61d0f49",
-    "assets/SavedChartGraphic-gmb733Pm.js": "91f006e39919fdd41e9932cdf2974102a1a4605552ef8f92e51b09bfeee3ba12",
+    "assets/CartesianChart-DFblcbi1.js": "b45a51c14a8fad1ea78e1d0fc3fa7b59193572d3f1f99e3ea15148e308de7899",
+    "assets/ComposedChart-BMEwAaYU.js": "969b43f18ba86c1d3c0c34da3a6d0ffc31c448cf33426a679d9ff61e0c635ca1",
+    "assets/MeasurementChart-Cd3Mj3us.js": "b136c6315718b6054d9540d04f2948d9f512f439ea0407c90b1efc9bd3773c69",
+    "assets/ObservationChart-q2rFfRzO.js": "66563b6a37e1b9e51f7f6a7a127f1081ec525e00f67b5d6130e903d550192143",
+    "assets/SavedChartGraphic-C6VM8OSv.js": "8027e81002e4667f7df197d0c01647fe5b991113d8cebd64ed381efccacc521e",
     "assets/index-C2UpvVc_.css": "51fc1b56c016973e5148910b6c86b7c9404910c20dc6011cb7f42df58bc38280",
-    "assets/index-IamwfMFE.js": "f112644832ae823fb6a628f00073a0834a02182f85f8e509597ab8d359499fe1",
-    "index.html": "1b6a20a662ab8051f1d8b7db7c77058446c74d0635a9acd2a48251701ece8fec"
+    "assets/index-Cuv3r5Um.js": "da413cc7e7d49a767057aca385d2cc1578970003b9a949fa4f3f48fc38be23b4",
+    "index.html": "93f902919d3ef39bf1c5a57279f2d4d048cf3c556bda6e6a83d59c145ee6a555"
   }
 }

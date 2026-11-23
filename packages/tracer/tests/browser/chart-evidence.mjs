@@ -90,3 +90,32 @@ export async function checkChartsAndEvidence(page, main, selectMetric, requests)
   assert.notEqual(fills[0], fills[1], 'Bar color did not adapt to the chart theme');
   assert.equal(reportReads(), before, 'Resize or color scheme requested more saved data');
 }
+
+// Deliberately fail only a single chart selection, independently of the saved
+// rows and native provider. A changed group or measure should render again.
+export async function checkChartRecovery(page, host, selectMetric) {
+  await page.route(url => url.pathname === '/src/SavedChartGraphic.tsx', route => route.fulfill({
+    contentType: 'application/javascript',
+    body: `export default function Graphic({points, measure}) {
+      if (points[0].label === 'Full scope' && measure === 'Records') throw new Error('Fixture chart failure');
+      return 'Recovered chart';
+    }`,
+  }));
+  await page.goto(host + '/tests/browser/domain-host.html');
+  const first = page.getByRole('region', {name: 'First workspace'});
+  const table = await selectMetric(first, 'core.condition.capture_count');
+  const chart = first.getByRole('region', {name: 'Saved chart'});
+  const groups = chart.getByRole('combobox', {name: 'Concept and period'});
+  const option = name => groups.getByRole('option', {name});
+  await groups.selectOption(await option(/ID 123.*Full scope/).getAttribute('value'));
+  const failure = chart.getByText(/The chart could not be displayed/);
+  const recovered = chart.getByRole('figure').filter({hasText: 'Recovered chart'});
+  await failure.waitFor();
+  await chart.getByRole('combobox', {name: 'Measure'}).selectOption('person_count');
+  await recovered.waitFor();
+  await chart.getByRole('combobox', {name: 'Measure'}).selectOption('record_count');
+  await failure.waitFor();
+  await groups.selectOption(await option(/ID 123.*Calendar month/).getAttribute('value'));
+  await recovered.waitFor();
+  assert.equal(await table.locator('tbody tr').count(), 8);
+}
