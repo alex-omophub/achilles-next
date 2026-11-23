@@ -1,0 +1,84 @@
+packages/tracer/tests/browser/chart-evidence.mjs
+  s_3e206b4a2cf4c3::t_29dd79cb2d4ca1 50,54-55
+  s_895f6ebe145fd3::t_a64e2cf58a6b6c 1-7,9-30,33-49,56-68,70-75,77-85,88-89,91-92
+  s_895f6ebe145fd3::t_42e51cd7c74ada 31-32,69,76,86-87,90
+  s_3e206b4a2cf4c3::t_0d294dbfb8c6e3 8
+  s_3e206b4a2cf4c3::t_77a84d07737def 51-53
+packages/tracer/src/saved-chart.ts
+  s_3e206b4a2cf4c3::t_bbb22a57c8daf3 1-90
+packages/tracer/src/PublicationView.tsx
+  s_3e206b4a2cf4c3::t_bbb22a57c8daf3 5-6,177,179
+packages/tracer/tests/saved-report-evidence.test.tsx
+  s_895f6ebe145fd3::t_16f96c2a4b01e0 1-32
+packages/tracer/src/SavedReportEvidence.tsx
+  s_895f6ebe145fd3::t_16f96c2a4b01e0 1-53
+packages/tracer/src/SavedChartGraphic.tsx
+  s_3e206b4a2cf4c3::t_bbb22a57c8daf3 1-21
+packages/tracer/tests/browser/domain-workspaces.mjs
+  s_895f6ebe145fd3::t_a64e2cf58a6b6c 4,71
+  s_3e206b4a2cf4c3::t_f4473587284226 85,93,97
+packages/tracer/tests/saved-chart.test.ts
+  s_3e206b4a2cf4c3::t_b9127d0bedf4a3 13,21,26,28,30,32,46-59,62-67,69-70,72
+  s_3e206b4a2cf4c3::t_bbb22a57c8daf3 1-12,14-20,22-25,27,29,31,33-45,60-61,68,71,73-86
+packages/tracer/src/saved-publication.ts
+  s_895f6ebe145fd3::t_16f96c2a4b01e0 125-131,139,141,154,168-184,200,205,208-212,214-225,228
+man/viewResults.Rd
+  s_895f6ebe145fd3::t_03431d35703f79 18
+tests/tracer/saved-result-fixture.R
+  s_3e206b4a2cf4c3::t_0a00ee4f368776 2,14-15
+packages/tracer/src/SavedReportChart.tsx
+  s_3e206b4a2cf4c3::t_bbb22a57c8daf3 1-45
+packages/tracer/src/publication.css
+  s_3e206b4a2cf4c3::t_bbb22a57c8daf3 55-63
+packages/tracer/tests/saved-publication.test.ts
+  s_895f6ebe145fd3::t_16f96c2a4b01e0 65,68,72,89-98,100
+  s_3e206b4a2cf4c3::t_90b0a92054b02e 101
+README.md
+  s_895f6ebe145fd3::t_03431d35703f79 7
+docs/viewing/local-viewer.md
+  s_895f6ebe145fd3::t_03431d35703f79 31-52
+tests/test_domain_workspaces.py
+  s_3e206b4a2cf4c3::t_0a00ee4f368776 27
+inst/viewer/assets/CartesianChart-CUhbOnOf.js
+  s_3e206b4a2cf4c3::t_66ee092048651b 1
+inst/viewer/assets/ComposedChart-Dly5EmZD.js
+  s_3e206b4a2cf4c3::t_9c5bf344c902ec 1
+inst/viewer/assets/MeasurementChart-BhQydq6h.js
+  s_3e206b4a2cf4c3::t_3e4a01371e7ecf 1,3-5
+inst/viewer/assets/ObservationChart-DYvgzeCg.js
+  s_3e206b4a2cf4c3::t_b3c34a00b86c96 1
+inst/viewer/assets/SavedChartGraphic-gmb733Pm.js
+  s_3e206b4a2cf4c3::t_1fb5487ca1f0e8 1
+inst/viewer/assets/index-C2UpvVc_.css
+  s_3e206b4a2cf4c3::t_8f6a84b7d0be02 1
+inst/viewer/assets/index-IamwfMFE.js
+  s_3e206b4a2cf4c3::t_a1af6acc229401 1,9-10,846,1682
+inst/viewer/index.html
+  s_3e206b4a2cf4c3::t_d70eac0a28cf34 3-4
+inst/viewer/viewer-lock.json
+  s_3e206b4a2cf4c3::t_87531fb20e6b9e 21-24,31-33,44-51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "d59020c6ffaefd767ee9375690458edfd044ac9a",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
