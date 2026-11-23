@@ -1,3 +1,5 @@
+import {canonical} from '../../contracts/src/index.mjs';
+
 // Only the fields used for display cross this boundary. The native provider
 // owns page verification, selection semantics and authorization.
 const contextKeys = ['contract_version', 'source_id', 'release_id', 'publication_id', 'access_scope_id',
@@ -139,6 +141,16 @@ export interface ReportRow {
   denominator_refs?: DenominatorReference[];
 }
 interface ReportDependency {metric_id: string; metric_version: string; row: ReportRow}
+export type ConceptTag = {kind: 'id'; value: string} | {kind: 'all' | 'null' | 'schema_absent'};
+export type SavedFilters = Readonly<Record<string, string | ConceptTag>>;
+export interface ReportCapability {
+  concept: string;
+  time: string;
+  unit: string;
+  operator: string;
+  period_kinds: string[];
+  period_bounds: {full_scope: string; calendar: string};
+}
 export interface ReportPage {
   context: Context;
   metric_id: string;
@@ -151,6 +163,7 @@ export interface ReportPage {
   datasetReason: string | null;
   rowKind: string;
   rows: ReportRow[];
+  capability?: ReportCapability;
   evidence?: {definitionSha256: string; dependencies: ReportDependency[]};
   cursor: string | null;
 }
@@ -184,8 +197,24 @@ function readRow(row: unknown): ReportRow {
 }
 export async function readReport(base: URL, metricId: string, cursor: string | null, signal: AbortSignal,
     fetchImpl = fetch): Promise<ReportPage> {
+  return selectReport(base, metricId, {}, cursor, signal, fetchImpl);
+}
+function reportCapability(item: unknown, metricId: string, version: string, population: string, rowKind: string): ReportCapability | undefined {
+  if (item === undefined) return undefined;
+  check(record(item) && item.metric_id === metricId && item.metric_version === version && item.population === population
+    && Array.isArray(item.row_kinds) && item.row_kinds.includes(rowKind) && typeof item.concept === 'string'
+    && typeof item.time === 'string' && typeof item.unit === 'string' && typeof item.operator === 'string'
+    && Array.isArray(item.period_kinds) && item.period_kinds.every(kind => typeof kind === 'string')
+    && record(item.period_bounds) && typeof item.period_bounds.full_scope === 'string' && typeof item.period_bounds.calendar === 'string');
+  return {concept: item.concept, time: item.time, unit: item.unit, operator: item.operator, period_kinds: item.period_kinds,
+    period_bounds: {full_scope: item.period_bounds.full_scope, calendar: item.period_bounds.calendar}};
+}
+export async function selectReport(base: URL, metricId: string, filters: SavedFilters, cursor: string | null,
+    signal: AbortSignal, fetchImpl = fetch): Promise<ReportPage> {
   check(metricId.length <= 128 && /^(core|observed)\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/.test(metricId));
   const url = new URL(`reports/${metricId}.json`, base);
+  const filterKey = canonical(filters);
+  if (Object.keys(filters).length) url.searchParams.set('filters', filterKey);
   if (cursor !== null) url.searchParams.set('cursor', cursor);
   const page = await request(url, signal, fetchImpl);
   const source = context(page);
@@ -199,6 +228,9 @@ export async function readReport(base: URL, metricId: string, cursor: string | n
     && typeof selection.row_kind === 'string' && typeof page.state === 'string' && reasonCode(page.reason_code)
     && digest(dataset.definition_sha256) && Array.isArray(page.dependencies)
     && Array.isArray(page.rows) && page.rows.length <= 12);
+  // A page, including a continuation, must answer the exact requested selection.
+  check(record(selection.filters) && canonical(selection.filters) === filterKey);
+  const capability = reportCapability(page.capability, metricId, dataset.version, dataset.population, selection.row_kind);
   const rowKind = selection.row_kind;
   const available = page.state === 'available';
   check(available ? page.rows.length > 0 && dataset.state !== 'suppressed' && dataset.state !== 'unsupported'
@@ -225,5 +257,56 @@ export async function readReport(base: URL, metricId: string, cursor: string | n
   }
   return {context: source, metric_id: metricId, version: dataset.version, grain: dataset.grain, population: dataset.population,
     state: page.state, reason: page.reason_code, datasetState: dataset.state, datasetReason: dataset.reason_code,
-    rowKind, rows, evidence: {definitionSha256: dataset.definition_sha256, dependencies}, cursor: page.cursor as string | null};
+    rowKind, rows, capability, evidence: {definitionSha256: dataset.definition_sha256, dependencies}, cursor: page.cursor as string | null};
+}
+
+export interface SavedConcept {
+  id: string;
+  label: string | null;
+  labelState: string;
+  state: string;
+  reason: string | null;
+}
+export interface ConceptPage {
+  context: Context;
+  state: string;
+  reason: string | null;
+  cursor: string | null;
+  concepts: SavedConcept[];
+}
+function conceptPage(body: Record<string, unknown>, exactId?: string): ConceptPage {
+  const source = context(body);
+  check((body.state === 'available' || body.state === 'unavailable') && reasonCode(body.reason_code)
+    && Array.isArray(body.concepts) && body.concepts.length <= (exactId === undefined ? 12 : 1)
+    && ((body.complete === true && body.cursor === null) || (body.complete === false && body.concepts.length > 0
+      && typeof body.cursor === 'string' && body.cursor.length > 0)));
+  const concepts = body.concepts.map((item: unknown): SavedConcept => {
+    check(record(item) && record(item.concept_tag) && item.concept_tag.kind === 'id' && typeof item.concept_tag.value === 'string'
+      && (exactId === undefined || item.concept_tag.value === exactId)
+      && (item.label_state === 'available' ? typeof item.label === 'string' : item.label_state === 'unavailable' && item.label === null));
+    const state = exactId === undefined ? 'available' : item.state;
+    const reason = item.reason_code ?? item.label_reason_code ?? null;
+    check((state === 'available' || state === 'not_saved') && reasonCode(reason));
+    return {id: item.concept_tag.value, label: item.label as string | null, labelState: item.label_state as string, state, reason};
+  });
+  if (body.state === 'unavailable') check(concepts.length === 0 && body.complete === true);
+  return {context: source, state: body.state, reason: body.reason_code, cursor: body.cursor as string | null, concepts};
+}
+export async function searchConcepts(base: URL, query: string, cursor: string | null, signal: AbortSignal,
+    fetchImpl = fetch): Promise<ConceptPage> {
+  const url = new URL('concepts/search.json', base);
+  url.searchParams.set('q', query);
+  if (cursor !== null) url.searchParams.set('cursor', cursor);
+  const body = await request(url, signal, fetchImpl);
+  check(body.query === query && ((body.state === 'available' && body.searched === true)
+    || (body.state === 'unavailable' && body.searched === false)));
+  return conceptPage(body);
+}
+export async function lookupConcept(base: URL, id: string, signal: AbortSignal, fetchImpl = fetch): Promise<ConceptPage> {
+  const url = new URL('concepts/lookup.json', base);
+  url.searchParams.set('id', id);
+  const body = await request(url, signal, fetchImpl);
+  const page = conceptPage(body, id);
+  check(page.state === 'available' && page.concepts.length === 1 && page.cursor === null);
+  return page;
 }

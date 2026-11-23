@@ -150,7 +150,8 @@ viewResults <- function(bundleDir, browse = TRUE, port = 0L, basePath = "/achill
         return(response(404L, "Not found"))
       reportMetric <- substr(key, nchar("api/reports/") + 1L, nchar(key) - nchar(".json"))
     }
-    if (publication && (!is.null(reportMetric) || key %in% c("api/catalogue.json", "api/people.json"))) {
+    if (publication && (!is.null(reportMetric) || key %in% c("api/catalogue.json", "api/people.json",
+        "api/concepts/search.json", "api/concepts/lookup.json"))) {
       # httpuv includes the leading question mark in QUERY_STRING.
       if (startsWith(query, "?")) query <- substring(query, 2L)
       json <- "application/json; charset=utf-8"

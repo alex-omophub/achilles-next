@@ -1,6 +1,7 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {assertSamePublication, PublicationReadError, readCatalogue, readPeople, readReport,
-  type CatalogueMetric, type CataloguePage, type PopulationResult, type ReportPage} from './saved-publication';
+import {assertSamePublication, PublicationReadError, readCatalogue, readPeople, readReport, selectReport, lookupConcept, searchConcepts,
+  type CatalogueMetric, type CataloguePage, type PopulationResult, type ReportPage, type SavedFilters, type ConceptPage} from './saved-publication';
+import {SavedReportFilters, supportsFilters} from './SavedReportFilters';
 import {SavedReportTable, stateLabel} from './SavedReportTable';
 import {SavedReportChart} from './SavedReportChart';
 import {SavedReportEvidence} from './SavedReportEvidence';
@@ -10,6 +11,9 @@ export interface PublicationProvider {
   people(signal: AbortSignal): Promise<PopulationResult>;
   catalogue(cursor: string | null, signal: AbortSignal): Promise<CataloguePage>;
   report(metricId: string, cursor: string | null, signal: AbortSignal): Promise<ReportPage>;
+  select?(metricId: string, filters: SavedFilters, cursor: string | null, signal: AbortSignal): Promise<ReportPage>;
+  search?(query: string, cursor: string | null, signal: AbortSignal): Promise<ConceptPage>;
+  lookup?(id: string, signal: AbortSignal): Promise<ConceptPage>;
 }
 
 const domains: Record<string, string> = {
@@ -25,8 +29,9 @@ interface Selection {
   catalogueStarts: Starts;
   metric: CatalogueMetric | null;
   rowStarts: Starts;
+  filters: SavedFilters;
 }
-const initial: Selection = {domain: 'all', catalogueStarts: [null], metric: null, rowStarts: [null]};
+const initial: Selection = {domain: 'all', catalogueStarts: [null], metric: null, rowStarts: [null], filters: {}};
 async function domainCatalogue(provider: PublicationProvider, context: PopulationResult['context'],
     domain: string, signal: AbortSignal): Promise<CataloguePage> {
   const metrics: CatalogueMetric[] = [];
@@ -72,6 +77,7 @@ function Session({provider}: {provider: PublicationProvider}) {
   const [people, setPeople] = useState<PopulationResult | null>(null);
   const [result, setResult] = useState<{catalogue?: CataloguePage; report?: ReportPage} | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const pinned = useRef<PopulationResult | null>(null);
   const active = useRef<AbortController | null>(null);
   const heading = useRef<HTMLHeadingElement>(null);
@@ -79,9 +85,17 @@ function Session({provider}: {provider: PublicationProvider}) {
   const selectedButton = useRef<HTMLButtonElement>(null);
   function open(next: Selection, returnTo: string | null = null) {
     active.current?.abort();
+    if (selection.metric !== next.metric) setFiltersOpen(false);
     restoreButton.current = returnTo;
     setResult(null);
     setSelection(next);
+  }
+  function failed(failure: unknown) {
+    active.current?.abort();
+    pinned.current = null;
+    setPeople(null);
+    setResult(null);
+    setError(failure instanceof PublicationReadError ? failure.message : 'The saved results could not be read.');
   }
   useEffect(() => {
     const controller = new AbortController();
@@ -95,7 +109,11 @@ function Session({provider}: {provider: PublicationProvider}) {
         [population, catalogue] = await Promise.all([provider.people(signal), provider.catalogue(null, signal)]);
       } else if (selection.metric) {
         const metric = selection.metric;
-        report = await provider.report(metric.metric_id, selection.rowStarts.at(-1) ?? null, signal);
+        const cursor = selection.rowStarts.at(-1) ?? null;
+        if (Object.keys(selection.filters).length) {
+          if (!provider.select) throw invalid();
+          report = await provider.select(metric.metric_id, selection.filters, cursor, signal);
+        } else report = await provider.report(metric.metric_id, cursor, signal);
         if (report.metric_id !== metric.metric_id || report.version !== metric.version
             || (report.cursor !== null && selection.rowStarts.includes(report.cursor))) throw invalid();
       } else if (selection.domain === 'all') {
@@ -115,11 +133,7 @@ function Session({provider}: {provider: PublicationProvider}) {
     }
     void load().catch(failure => {
       if (signal.aborted) return;
-      controller.abort();
-      pinned.current = null;
-      setPeople(null);
-      setResult(null);
-      setError(failure instanceof PublicationReadError ? failure.message : 'The saved results could not be read.');
+      failed(failure);
     });
     return () => controller.abort();
   }, [provider, selection]);
@@ -131,6 +145,7 @@ function Session({provider}: {provider: PublicationProvider}) {
   if (!people) return <p role="status">Opening saved publication…</p>;
   const {metric, domain, catalogueStarts, rowStarts} = selection;
   const {catalogue, report} = result ?? {};
+  const read = active.current;
   const starts = metric ? rowStarts : catalogueStarts;
   const next = report?.cursor ?? catalogue?.cursor ?? null;
   function page(forward: boolean) {
@@ -147,7 +162,7 @@ function Session({provider}: {provider: PublicationProvider}) {
             {Object.entries(domains).map(([id, name]) => <option value={id} key={id}>{name}</option>)}
           </select>
         </label>
-        {metric && <button type="button" className="publication-back" onClick={() => open({...selection, metric: null, rowStarts: [null]}, metric.metric_id)}>Back to catalogue</button>}
+        {metric && <button type="button" className="publication-back" onClick={() => open({...selection, metric: null, rowStarts: [null], filters: {}}, metric.metric_id)}>Back to catalogue</button>}
       </div>
       {!result ? <p role="status">{metric ? 'Loading saved rows…' : 'Loading catalogue…'}</p> : <>
         {catalogue && <>
@@ -158,7 +173,7 @@ function Session({provider}: {provider: PublicationProvider}) {
             <tbody>{catalogue.metrics.map(item => <tr key={item.metric_id}>
               <th scope="row"><button className="publication-metric" type="button"
                 ref={restoreButton.current === item.metric_id ? selectedButton : undefined}
-                onClick={() => open({...selection, metric: item, rowStarts: [null]})}>{item.metric_id}</button> <small>v{item.version}</small></th>
+                onClick={() => open({...selection, metric: item, rowStarts: [null], filters: {}})}>{item.metric_id}</button> <small>v{item.version}</small></th>
               <td>{stateLabel(item.state)}</td><td>{item.rows}</td>
             </tr>)}</tbody>
           </table>
@@ -174,6 +189,16 @@ function Session({provider}: {provider: PublicationProvider}) {
             <div><dt>Dataset state</dt><dd>{stateLabel(report.datasetState)}{report.datasetReason && <small>{report.datasetReason}</small>}</dd></div>
             <div><dt>Selection state</dt><dd>{stateLabel(report.state)}{report.reason && <small>{report.reason}</small>}</dd></div>
           </dl>
+          {report.capability && provider.select && supportsFilters(report.capability) && <section className="publication-filters" aria-label="Saved row filters">
+            <button type="button" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>Filter saved rows</button>
+            {!!Object.keys(selection.filters).length && <dl className="publication-applied" aria-label="Applied filters">
+              {Object.entries(selection.filters).map(([name, value]) => <div key={name}><dt>{name}</dt>
+                <dd>{typeof value === 'string' ? value : value.kind === 'id' ? 'ID ' + value.value : stateLabel(value.kind)}</dd></div>)}
+            </dl>}
+            {filtersOpen && <SavedReportFilters provider={provider} report={report} capability={report.capability}
+              applied={selection.filters} apply={filters => open({...selection, filters, rowStarts: [null]})}
+              fail={failure => {if (read && !read.signal.aborted && active.current === read) failed(failure);}}/>}
+          </section>}
           <SavedReportChart report={report} page={starts.length}/>
           <SavedReportTable report={report}/>
           <SavedReportEvidence report={report}/>
@@ -199,7 +224,9 @@ export function PublicationView({base}: {base: URL}) {
   const provider = useMemo<PublicationProvider>(() => {
     const api = new URL(href);
     return {people: signal => readPeople(api, signal), catalogue: (cursor, signal) => readCatalogue(api, cursor, signal),
-      report: (id, cursor, signal) => readReport(api, id, cursor, signal)};
+      report: (id, cursor, signal) => readReport(api, id, cursor, signal),
+      select: (id, filters, cursor, signal) => selectReport(api, id, filters, cursor, signal),
+      lookup: (id, signal) => lookupConcept(api, id, signal), search: (query, cursor, signal) => searchConcepts(api, query, cursor, signal)};
   }, [href]);
   return <main className="publication-view">
     <header><span className="wordmark">Achilles<span>Next</span></span></header>
