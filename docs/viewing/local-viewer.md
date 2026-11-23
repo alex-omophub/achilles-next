@@ -19,6 +19,15 @@ to read bounded pages. The population count comes from the saved
 The viewer reads the selected export locally and can run with the CDM disconnected.
 The session stays pinned to the publication you opened.
 
+Choose a domain or section to find a report across the whole catalogue. Clinical
+observations and observation periods have separate entries. Open a metric to see
+its version, population, grain and saved rows. The table shows the provider’s
+default row kind for that metric. For example, a measurement summary can have
+one row per concept, unit and operator. Page controls request up to 12 rows at a
+time. Counts, identifiers and decimal values keep their published precision.
+An empty-source zero, a suppressed dataset and an unavailable row retain their
+individual states and reasons.
+
 For an existing export directory, supply a trusted authorization callback. The
 example uses an approval record retained by the operator independently of the
 selected folder. Hosts that support revocation can also check their current
@@ -34,8 +43,30 @@ AchillesNext::viewResults("path/to/approved-export", authorize = canRead)
 
 A v2 read verifies each requested page against the pinned publication. The host
 is responsible for prior admission of the full release and authorization for its
-scope. The local browser receives only the results of bounded catalogue and
-population reads. [Publication and provider authority](../development/saved-transports.md)
+scope. The local browser receives only the results of bounded catalogue, population and selected report reads. [Publication and provider authority](../development/saved-transports.md)
+
+## Embed the report in a React host
+
+The source component `PublicationWorkspace` in
+[PublicationView.tsx](../../packages/tracer/src/PublicationView.tsx) renders the
+same report without the standalone page header. Supply a stable provider and a
+key identifying the authorized instance. Change the key when the host changes
+source, publication or authorization scope. Each mounted workspace owns its own
+navigation and pending requests.
+
+```tsx
+<PublicationWorkspace provider={provider} instanceKey={authorizedInstanceKey} />
+```
+
+The provider supplies `people(signal)`, `catalogue(cursor, signal)` and
+`report(metricId, cursor, signal)`. Each read returns the pinned context with
+the saved result. Forward the signal so a source switch can cancel outstanding
+work. For a host with a same-origin results API, the
+[browser adapter](../../packages/tracer/src/saved-publication.ts) reads those
+responses. The host is responsible for authenticating and authorizing each
+request. The [test host](../../packages/tracer/tests/browser/domain-host.html)
+shows two independent workspaces and a source switch. This is a source-level
+React integration.
 
 ## Open a tracer bundle
 
@@ -137,6 +168,22 @@ missing/tampered/incompatible bundles, symlink and route boundaries, allowed
 methods, Host/Origin checks and shutdown. Tests need permission to bind loopback
 sockets. Set `ACHILLES_NEXT_VIEWER_TEST_LIBRARY` to run the v2 tests with the
 included publication fixture. The v1 tests also need `TRACER_TEST_BUNDLES`.
+
+To check keyboard navigation, source switching and two embedded workspaces in
+Chromium, use the installed R test library from above and the test-only browser
+dependency. Run from the checkout root.
+
+```sh
+npm ci --prefix packages/tracer
+npm install --prefix .local/browser-test playwright@1.62.1
+.local/browser-test/node_modules/.bin/playwright install chromium
+ACHILLES_NEXT_VIEWER_TEST_LIBRARY="$PWD/.local/R-library" \
+NODE_PATH="$PWD/.local/browser-test/node_modules" ACHILLES_NEXT_BROWSER_TEST=1 \
+  python3 -m unittest discover -s tests -p test_domain_workspaces.py -v
+```
+
+To use an existing Chrome installation, set `ACHILLES_NEXT_TEST_CHROME` to its
+executable path and skip the Chromium download.
 
 ## Approved complete measurement bundles (v1.1)
 

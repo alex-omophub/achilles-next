@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Embedded publication workspace test</title></head>
+<body>
+  <button id="switch-source">Switch first source</button>
+  <section aria-label="First workspace" id="first"></section>
+  <section aria-label="Second workspace" id="second"></section>
+  <script type="module">
+    import {createElement} from 'react';
+    import {createRoot} from 'react-dom/client';
+    import {PublicationWorkspace} from '../../src/PublicationView.tsx';
+    import {readPeople, readCatalogue, readReport} from '../../src/saved-publication.ts';
+    function workspace(source) {
+      const base = new URL('/' + source + '/api/', location.origin);
+      const provider = {
+        people: signal => readPeople(base, signal),
+        catalogue: (cursor, signal) => readCatalogue(base, cursor, signal),
+        report: async (metric, cursor, signal) => {
+          const report = await readReport(base, metric, cursor, signal);
+          // Deliver a previously completed response after the host changes source.
+          if (source === 'first' && window.delayFirstReport) {
+            window.delayedReportSignal = signal;
+            await new Promise(resolve => { window.releaseFirstReport = resolve; });
+          }
+          return report;
+        }
+      };
+      return createElement(PublicationWorkspace, {provider, instanceKey: source});
+    }
+    const first = createRoot(document.getElementById('first'));
+    first.render(workspace('first'));
+    createRoot(document.getElementById('second')).render(workspace('second'));
+    document.getElementById('switch-source').onclick = () => first.render(workspace('second'));
+  </script>
+</body>
+</html>

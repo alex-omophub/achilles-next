@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {assertSamePublication, readCatalogue, readPeople} from '../src/saved-publication';
+import {assertSamePublication, readCatalogue, readPeople, readReport} from '../src/saved-publication';
 
 const base = new URL('http://127.0.0.1:12345/nested/view/api/');
 const context = {
@@ -55,5 +55,41 @@ describe('saved publication browser reads', () => {
   it('fails a response exceeding the byte budget even without a declared length', async () => {
     const huge: typeof fetch = async () => new Response(' '.repeat(1024 * 1024 + 1));
     await expect(readPeople(base, signal(), huge)).rejects.toThrow();
+  });
+});
+
+describe('saved report transport', () => {
+  const metric = 'core.visit.care_setting_count';
+  const dataset = {metric_id: metric, version: '1.0.0', grain: 'concept/setting_kind/setting_concept_tag/full scope', population: 'all_recorded_rows',
+    state: 'computed', reason_code: null};
+  const selection = {metric_id: metric, metric_version: '1.0.0', population: dataset.population, row_kind: 'counts'};
+  const report = {context, generation_requested: false, transformations: 'none', complete: true, cursor: null,
+    state: 'available', reason_code: null, dataset, selection};
+  const first = {row_key: 'a'.repeat(64), row_kind: 'counts', state: 'computed', reason_code: null,
+    dimensions: {concept_tag: {kind: 'id', value: '9007199254740993'},
+      setting_kind: 'place_of_service', setting_concept_tag: {kind: 'id', value: '234'}},
+    values: {record_count: '9007199254740993', person_count: '0'}};
+  it('requests only the selected saved metric and preserves typed tags and exact measures', async () => {
+    const page = await readReport(base, metric, null, signal(), async input => {
+      expect(String(input)).toBe(base.href + 'reports/core.visit.care_setting_count.json');
+      return Response.json({...report, rows: [first]});
+    });
+    expect(page.rows[0]).toEqual(first);
+    expect(page).toMatchObject({metric_id: metric, grain: dataset.grain, state: 'available', datasetState: 'computed'});
+  });
+  it('keeps a row-level reason even when the dataset was computed', async () => {
+    const omitted = {...first, dimensions: {...first.dimensions, setting_concept_tag: {kind: 'schema_absent'}},
+      state: 'unavailable', reason_code: 'capability.care_site_absent', values: null};
+    const page = await readReport(base, metric, null, signal(), reply({...report, rows: [omitted]}));
+    expect(page.rows[0]).toEqual(omitted);
+    await expect(readReport(base, metric, null, signal(), reply({...report, rows: [{...omitted, values: first.values}]})))
+      .rejects.toThrow();
+  });
+  it('rejects results for another metric, oversized row pages and numeric JSON measures', async () => {
+    for (const invalid of [
+      {...report, selection: {...selection, metric_id: 'core.person.count'}, rows: [first]},
+      {...report, rows: Array(13).fill(first)},
+      {...report, rows: [{...first, values: {person_count: 1}}]},
+    ]) await expect(readReport(base, metric, null, signal(), reply(invalid))).rejects.toThrow();
   });
 });

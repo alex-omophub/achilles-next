@@ -142,12 +142,20 @@ viewResults <- function(bundleDir, browse = TRUE, port = 0L, basePath = "/achill
     if (!.string(path) || !startsWith(path, basePath)) return(response(404L, "Not found"))
     key <- substring(path, nchar(basePath) + 1L)
     query <- req$QUERY_STRING %||% ""
-    if (publication && key %in% c("api/catalogue.json", "api/people.json")) {
+    reportMetric <- NULL
+    if (publication && startsWith(key, "api/reports/")) {
+      # Use the registered metric identifier grammar. Only the provider can
+      # resolve the identifier to a dataset in the approved publication.
+      if (!grepl("^api/reports/[a-z][a-z0-9_.]{1,127}[.]json\\z", key, perl=TRUE))
+        return(response(404L, "Not found"))
+      reportMetric <- substr(key, nchar("api/reports/") + 1L, nchar(key) - nchar(".json"))
+    }
+    if (publication && (!is.null(reportMetric) || key %in% c("api/catalogue.json", "api/people.json"))) {
       # httpuv includes the leading question mark in QUERY_STRING.
       if (startsWith(query, "?")) query <- substring(query, 2L)
       json <- "application/json; charset=utf-8"
       return(tryCatch({
-        page <- .viewer_publication_read(snapshot, key == "api/catalogue.json", query)
+        page <- .viewer_publication_read(snapshot, key, query, reportMetric)
         response(200L, .v2_bytes(page), json)
       }, achillesnext_read_error = function(e) {
         status <- switch(e$code, invalid_request=400L, invalid_cursor=400L, inaccessible=403L,
