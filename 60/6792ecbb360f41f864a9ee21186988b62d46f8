@@ -1,0 +1,82 @@
+tests/test_domain_workspaces.py
+  s_895f6ebe145fd3::t_57aa50cfe3ff8b 20,36,38
+R/local-viewer.R
+  s_3e206b4a2cf4c3::t_892249648405a4 146,149-150,152
+tests/tracer/saved-transport-integration.R
+  s_3e206b4a2cf4c3::t_892249648405a4 89-98,151-152
+docs/viewing/local-viewer.md
+  s_895f6ebe145fd3::t_cbe5a8e0fcd5b9 71-85
+R/local-viewer-publication.R
+  s_3e206b4a2cf4c3::t_892249648405a4 106-107
+R/saved-reader.R
+  s_3e206b4a2cf4c3::t_892249648405a4 140
+packages/tracer/tests/browser/domain-host.html
+  s_895f6ebe145fd3::t_57aa50cfe3ff8b 12,19-26
+packages/tracer/src/SavedEvidenceDownload.tsx
+  s_895f6ebe145fd3::t_8e5838ccff589e 2-16,19-52
+  s_895f6ebe145fd3::t_df8866a2851d84 1,17-18
+packages/tracer/src/PublicationView.tsx
+  s_895f6ebe145fd3::t_8e5838ccff589e 2,7,17,207-210,235
+R/saved-provider.R
+  s_3e206b4a2cf4c3::t_892249648405a4 66-67,182-204,207
+packages/tracer/tests/browser/domain-workspaces.mjs
+  s_895f6ebe145fd3::t_57aa50cfe3ff8b 6,10,117
+packages/tracer/src/publication.css
+  s_895f6ebe145fd3::t_8e5838ccff589e 79-81
+packages/tracer/tests/browser/evidence-export.mjs
+  s_3e206b4a2cf4c3::t_817f210ef52415 1-118
+tests/test_local_viewer.py
+  s_3e206b4a2cf4c3::t_892249648405a4 445-481
+man/openResultProvider.Rd
+  s_3e206b4a2cf4c3::t_892249648405a4 19,40-48
+  s_3e206b4a2cf4c3::t_88f59c7d107f6e 49
+packages/tracer/src/saved-publication.ts
+  s_895f6ebe145fd3::t_8e5838ccff589e 216,223,318-322,328-370,372
+  s_895f6ebe145fd3::t_b80d0c86233379 1,214-215,217,219-220,222,224,237,323-327,371
+tests/tracer/saved-provider.R
+  s_3e206b4a2cf4c3::t_892249648405a4 34-43
+inst/viewer/assets/CartesianChart-BntM7bU4.js
+  s_3e206b4a2cf4c3::t_8284f161787508 1
+inst/viewer/assets/ComposedChart-DfHANO_H.js
+  s_3e206b4a2cf4c3::t_0329530fb6ed57 1
+inst/viewer/assets/MeasurementChart-DylC-bZ4.js
+  s_3e206b4a2cf4c3::t_237fe8ef6e809a 1
+inst/viewer/assets/ObservationChart-BmsY07-L.js
+  s_3e206b4a2cf4c3::t_539b56e6fc8bed 1
+inst/viewer/assets/SavedChartGraphic-kWcjTCHU.js
+  s_3e206b4a2cf4c3::t_5a094e080f3537 1
+inst/viewer/assets/index-CaHsWhrt.css
+  s_3e206b4a2cf4c3::t_7cc92031902804 1
+inst/viewer/assets/index-fcEBBHw1.js
+  s_3e206b4a2cf4c3::t_94f8a405431f08 1-2,4,7,9-10,846,1682-1683
+inst/viewer/index.html
+  s_3e206b4a2cf4c3::t_0e0598598a2d7c 3-4
+inst/viewer/viewer-lock.json
+  s_3e206b4a2cf4c3::t_9a189c574e0e76 21,24,34,36,47-54
+packages/tracer/tests/page-evidence.test.ts
+  s_895f6ebe145fd3::t_547c8632e54ea7 1-70
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "606792ecbb360f41f864a9ee21186988b62d46f8",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
