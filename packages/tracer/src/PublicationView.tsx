@@ -2,6 +2,8 @@ import {useEffect, useMemo, useRef, useState} from 'react';
 import {assertSamePublication, PublicationReadError, readCatalogue, readPeople, readReport,
   type CatalogueMetric, type CataloguePage, type PopulationResult, type ReportPage} from './saved-publication';
 import {SavedReportTable, stateLabel} from './SavedReportTable';
+import {SavedReportChart} from './SavedReportChart';
+import {SavedReportEvidence} from './SavedReportEvidence';
 import './publication.css';
 
 export interface PublicationProvider {
@@ -172,7 +174,9 @@ function Session({provider}: {provider: PublicationProvider}) {
             <div><dt>Dataset state</dt><dd>{stateLabel(report.datasetState)}{report.datasetReason && <small>{report.datasetReason}</small>}</dd></div>
             <div><dt>Selection state</dt><dd>{stateLabel(report.state)}{report.reason && <small>{report.reason}</small>}</dd></div>
           </dl>
+          <SavedReportChart report={report} page={starts.length}/>
           <SavedReportTable report={report}/>
+          <SavedReportEvidence report={report}/>
         </>}
         {(metric || domain === 'all') && <nav aria-label={metric ? 'Saved row pages' : 'Catalogue pages'}>
           <button type="button" disabled={starts.length === 1} onClick={() => page(false)}>{metric ? 'Previous rows' : 'Previous page'}</button>

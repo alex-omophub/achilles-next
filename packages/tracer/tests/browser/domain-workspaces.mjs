@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {createServer} from 'vite';
+import {checkChartRecovery, checkChartsAndEvidence} from './chart-evidence.mjs';
 
 // Playwright is test-only and can be installed separately through NODE_PATH.
 const {chromium} = createRequire(import.meta.url)('playwright');
@@ -67,6 +68,7 @@ try {
   const previousSelection = main.getByRole('button', {name: 'core.person.gender_count', exact: true});
   await previousSelection.waitFor();
   assert(await previousSelection.evaluate(button => button === document.activeElement));
+  await checkChartsAndEvidence(page, main, selectMetric, requests);
   assert(requests.every(url => url.origin === new URL(firstUrl).origin));
   assert(requests.some(url => url.pathname.endsWith('/reports/core.person.gender_count.json') && url.searchParams.has('cursor')));
 
@@ -80,7 +82,11 @@ try {
   assert.equal(await page.getByRole('main').count(), 0);
   const selected = await selectMetric(second, 'core.specimen.capture_count');
   await selected.getByText('fixture.empty_source', {exact: true}).waitFor();
-  await first.getByRole('combobox').selectOption('condition');
+  await checkChartsAndEvidence(page, first, selectMetric, requests);
+  await first.getByRole('combobox', {name: 'Domain or section'}).selectOption('all');
+  await first.getByRole('heading', {name: 'Metric catalogue', exact: true}).waitFor();
+  assert.equal(await selected.locator('tbody tr').count(), 1);
+  await first.getByRole('combobox', {name: 'Domain or section'}).selectOption('condition');
   await page.evaluate(() => { window.delayFirstReport = true; });
   await first.getByRole('button', {name: 'core.condition.capture_count', exact: true}).click();
   await page.waitForFunction(() => typeof window.releaseFirstReport === 'function');
@@ -88,11 +94,11 @@ try {
   await first.getByText('fixture:second', {exact: true}).waitFor();
   assert(await page.evaluate(() => window.delayedReportSignal.aborted));
   await page.evaluate(() => window.releaseFirstReport());
-  await first.getByRole('combobox').selectOption('drug');
+  await first.getByRole('combobox', {name: 'Domain or section'}).selectOption('drug');
   await first.getByRole('button', {name: 'core.drug.capture_count', exact: true}).waitFor();
   assert.equal(await first.getByText('fixture:first', {exact: true}).count(), 0);
   assert.equal(await first.getByRole('heading', {name: 'core.condition.capture_count'}).count(), 0);
-  assert.equal(await second.getByRole('combobox').inputValue(), 'specimen');
+  assert.equal(await second.getByRole('combobox', {name: 'Domain or section'}).inputValue(), 'specimen');
   assert.equal(await selected.locator('tbody tr').count(), 1);
 
   const previous = await selectMetric(first, 'core.person.gender_count');
@@ -109,6 +115,7 @@ try {
   const stillAuthorized = await selectMetric(second, 'core.visit.care_setting_count');
   await stillAuthorized.getByText('capability.care_site_absent', {exact: true}).waitFor();
   assert.deepEqual(errors, []);
+  await checkChartRecovery(page, host, selectMetric);
 } finally {
   await browser?.close();
   await server.close();

@@ -28,6 +28,28 @@ time. Counts, identifiers and decimal values keep their published precision.
 An empty-source zero, a suppressed dataset and an unavailable row retain their
 individual states and reasons.
 
+### Read a chart alongside its exact table
+
+The chart uses the rows on the current report page. Choose another page to
+inspect a different set of saved rows. Three kinds of reports have a chart.
+
+| Report | What it displays |
+| --- | --- |
+| People by recorded birth year | Distinct people for each saved birth year, including a separate label for a missing year when present. |
+| Domain capture counts | Records or distinct people for one concept and one period kind. Select the concept and period to view saved intervals on this page. |
+| Measurement numeric summary | The saved minimum, P10, P25, median, P75, P90 and maximum for one concept, unit and operator. Each dot is a published statistic. |
+
+Use the chart tooltip or exact table to inspect a value. Missing, suppressed
+and unplottable values retain their states or exact strings in the table.
+The viewer omits positions that cannot round-trip to the published decimal
+text within the supported chart range. Changing a chart control works locally
+on the selected page.
+
+Open **Report evidence** for the saved definition checksum and the denominator
+values linked to individual rows. Measurement summaries identify the unit and
+operator and show the saved eligible count when the matching evidence is
+available. A page can contain several strata with different eligible counts.
+
 For an existing export directory, supply a trusted authorization callback. The
 example uses an approval record retained by the operator independently of the
 selected folder. Hosts that support revocation can also check their current
