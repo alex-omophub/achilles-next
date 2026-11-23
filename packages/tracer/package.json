@@ -10,8 +10,10 @@
   "scripts": {
     "dev": "node tools/build-validators.mjs && vite --host 127.0.0.1",
     "build": "node tools/build-validators.mjs && tsc --noEmit && vite build",
+    "build:embed": "vite build --config vite.embed.config.ts && tsc --declaration --emitDeclarationOnly --noEmit false --rootDir ../.. --outDir build/declarations",
     "test": "node tools/build-validators.mjs && vitest run",
-    "package-viewer": "npm run build && node tools/build-publication-validator.mjs && node tools/package-viewer.mjs",
+    "package-viewer": "npm run build && npm run build:embed && node tools/build-publication-validator.mjs && node tools/package-viewer.mjs && npm run check:embed-types",
+    "check:embed-types": "tsc --noEmit --strict --module NodeNext --target ES2022 --typeRoots ./build/no-host-types tests/embed-consumer.mts",
     "check": "npm run build && npm test"
   },
   "dependencies": {

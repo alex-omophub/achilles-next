@@ -1,0 +1,98 @@
+import {beforeEach, expect, it, vi} from 'vitest';
+import {mountPublicationWorkspace, type PublicationContext, type PublicationProvider} from '../src/mount-publication';
+
+interface Frame {
+  props: {provider: PublicationProvider; firstRender: {applied(): void; failed(error: unknown): void}};
+}
+const renderer = vi.hoisted(() => ({frames: [] as Frame[], unmount: vi.fn()}));
+vi.mock('react-dom/client', () => ({createRoot: () => ({
+  render: (frame: Frame) => renderer.frames.push(frame), unmount: renderer.unmount,
+})}));
+
+// This harness controls React's commit notification and provider completions.
+// Real DOM commit, shadow style and host-framework isolation are browser tests.
+class Element {
+  parent: Element | null = null;
+  shadowRoot: Element | null = null;
+  children: Element[] = [];
+  ownerDocument = document;
+  hasChildNodes() { return this.children.length > 0; }
+  appendChild(child: Element) { this.children.push(child); child.parent = this; }
+  attachShadow() { this.shadowRoot = new Element(); return this.shadowRoot; }
+  remove() { if (this.parent) this.parent.children = this.parent.children.filter(item => item !== this); this.parent = null; }
+}
+const document = {defaultView: {HTMLElement: Element}, createElement: () => new Element()};
+const context: PublicationContext = {
+  contract_version: '2.0.0', source_id: 'fixture:one', release_id: 'release', publication_id: 'publication',
+  access_scope_id: 'approved', profile_id: 'core-characterization-v2', profile_sha256: 'a'.repeat(64),
+  profile_revision: '2.0.0', authorization_epoch: 'epoch', instance_id: 'provider-instance',
+};
+const target = {kind: 'workspace', version: '2'} as const;
+const fixture = () => ({
+  provider: {people: vi.fn(), catalogue: vi.fn(), report: vi.fn()}, context: {...context}, target,
+});
+const container = () => new Element() as unknown as HTMLElement;
+const frame = () => renderer.frames.at(-1)!.props;
+beforeEach(() => { renderer.frames.length = 0; renderer.unmount.mockClear(); });
+
+it('preserves a pending mount on invalid update, then settles only after the verified commit', async () => {
+  const node = container(), options = fixture(), handle = mountPublicationWorkspace(node, options);
+  expect(() => mountPublicationWorkspace(node, options)).toThrow(expect.objectContaining({code: 'container_occupied'}));
+  await expect(handle.update({target, context: {...context, instance_id: ''}})).rejects.toMatchObject({code: 'invalid_context'});
+  let applied = false;
+  void handle.ready.then(() => { applied = true; });
+  options.provider.people.mockResolvedValue({context});
+  await frame().provider.people(new AbortController().signal);
+  expect(applied).toBe(false);
+  frame().firstRender.applied();
+  await expect(handle.ready).resolves.toEqual({status: 'applied', generation: 1});
+  const end = handle.destroy();
+  expect(handle.destroy()).toBe(end);
+  expect(node.hasChildNodes()).toBe(false);
+  await end;
+  await expect(handle.update({context, target})).rejects.toMatchObject({code: 'instance_destroyed'});
+});
+
+it('pins a copy independently of host mutation and rejects a mismatched provider without returning data', async () => {
+  const options = fixture(), handle = mountPublicationWorkspace(container(), options);
+  options.context.source_id = 'different';
+  options.provider.people.mockResolvedValue({context: options.context});
+  const failure = await frame().provider.people(new AbortController().signal).catch(error => error);
+  expect(failure).toMatchObject({code: 'context_mismatch'});
+  frame().firstRender.failed(failure);
+  await expect(handle.ready).rejects.toMatchObject({code: 'context_mismatch'});
+  await handle.destroy();
+});
+
+it('supersedes the outer update if a provider abort listener starts a newer generation', async () => {
+  const options = fixture(), handle = mountPublicationWorkspace(container(), options);
+  let newest: ReturnType<typeof handle.update> | undefined;
+  options.provider.people.mockImplementation(signal => {
+    signal.addEventListener('abort', () => { newest = handle.update({context, target}); }, {once: true});
+    return new Promise(() => {});
+  });
+  void frame().provider.people(new AbortController().signal);
+  const replaced = handle.update({context, target});
+  expect(await handle.ready).toEqual({status: 'superseded', generation: 1});
+  expect(await replaced).toEqual({status: 'superseded', generation: 2});
+  expect(renderer.frames).toHaveLength(2);
+  frame().firstRender.applied();
+  expect(await newest).toEqual({status: 'applied', generation: 3});
+  await handle.destroy();
+});
+
+it('closes the handle before a destroy abort listener can reopen it', async () => {
+  const node = container(), options = fixture(), handle = mountPublicationWorkspace(node, options);
+  let attempted: ReturnType<typeof handle.update> | undefined;
+  options.provider.catalogue.mockImplementation((_cursor, signal) => {
+    signal.addEventListener('abort', () => { attempted = handle.update({context, target}); }, {once: true});
+    return new Promise(() => {});
+  });
+  void frame().provider.catalogue(null, new AbortController().signal);
+  const teardown = handle.destroy();
+  await expect(attempted).rejects.toMatchObject({code: 'instance_destroyed'});
+  expect(await handle.ready).toEqual({status: 'destroyed', generation: 1});
+  await teardown;
+  expect(renderer.frames).toHaveLength(1);
+  expect(node.hasChildNodes()).toBe(false);
+});

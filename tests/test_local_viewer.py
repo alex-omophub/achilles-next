@@ -27,7 +27,7 @@ class InstalledViewerCase(unittest.TestCase):
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
     @contextlib.contextmanager
-    def serving(self, folder=None, *, trusted_context=None, receipt=None):
+    def serving(self, folder=None, *, trusted_context=None, receipt=None, admission=None):
         control = self.root / ('control-' + str(time.monotonic_ns()))
         script = self.root / 'serve.R'
         script.write_text('''args <- commandArgs(TRUE)
@@ -42,8 +42,11 @@ if (nzchar(args[3])) {
   trusted <- jsonlite::read_json(args[3])
   options$authorize <- function(context) {
     keys <- c("publication_id", "release_id", "source_id", "access_scope_id")
-    !file.exists(paste0(args[3], ".revoked")) && identical(context[keys], trusted[keys]) &&
+    allowed <- !file.exists(paste0(args[3], ".revoked")) && identical(context[keys], trusted[keys]) &&
       identical(context$root$sha256, trusted$root$sha256)
+    if (allowed && nzchar(args[5]) && !file.exists(args[5]))
+      jsonlite::write_json(context, args[5], auto_unbox=TRUE)
+    allowed
   }
 }
 if (nzchar(args[4])) options$bundleDir <- jsonlite::read_json(args[4])
@@ -62,7 +65,7 @@ stopifnot(dbAttempts == 0L)
         env = dict(os.environ, R_LIBS=str(LIBRARY), PATH=str(fakebin) + os.pathsep + os.defpath)
         with (self.root / 'server.log').open('w') as log:
             args = [self.rscript, str(script), str(folder or self.bundle), str(control),
-                    str(trusted_context or ''), str(receipt or '')]
+                    str(trusted_context or ''), str(receipt or ''), str(admission or '')]
             process = subprocess.Popen(args, env=env, stdout=log, stderr=subprocess.STDOUT)
             try:
                 deadline = time.monotonic() + 15
