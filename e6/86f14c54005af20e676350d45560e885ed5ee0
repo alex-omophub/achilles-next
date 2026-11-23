@@ -1,0 +1,21 @@
+docs/development/client-paths.md
+  s_895f6ebe145fd3::t_34fb6d09aa36b9 29
+packages/tracer/tests/saved-publication.test.ts
+  s_895f6ebe145fd3::t_34fb6d09aa36b9 31-33,36-43
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e686f14c54005af20e676350d45560e885ed5ee0",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
