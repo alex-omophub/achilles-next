@@ -32,6 +32,9 @@ export async function checkSavedFilters(page, region, selectMetric, requests) {
   await expectRows(dates, 8);
   await openFilters(region);
   const useId = id => region.getByRole('button', {name: 'Use ID ' + id, exact: true});
+  await search(region, ' \u00a0Paged concept ');
+  await region.getByText('0 matches on page 1', {exact: true}).waitFor();
+  assert.equal(requests.findLast(url => url.pathname.endsWith('/concepts/search.json')).searchParams.get('q'), '\u00a0Paged concept');
   await search(region, 'Paged concept');
   await useId('100').waitFor();
   await page.setViewportSize({width: 375, height: 820});
@@ -49,7 +52,12 @@ export async function checkSavedFilters(page, region, selectMetric, requests) {
   assert.equal(await region.getByLabel('Concept ID', {exact: true}).inputValue(), '123');
   await panel.getByRole('combobox', {name: /^Saved period/}).selectOption('calendar_month');
   await region.getByLabel('Period start', {exact: true}).fill('2020-02-01');
+  await region.getByLabel('Period end', {exact: true}).fill('2020-01-31');
+  await region.getByRole('button', {name: 'Apply filters'}).press('Enter');
+  const invalidPeriod = panel.getByRole('alert');
+  await invalidPeriod.waitFor();
   await region.getByLabel('Period end', {exact: true}).fill('2020-02-29');
+  await invalidPeriod.waitFor({state: 'detached'});
   await region.getByRole('button', {name: 'Apply filters'}).press('Enter');
   await expectRows(dates, 1);
   await page.setViewportSize({width: 1120, height: 820});

@@ -102,12 +102,12 @@ export function SavedReportFilters({provider, report, capability, applied, apply
             {capability.period_kinds.map(kind => <option key={kind} value={kind}>{periods[kind]}</option>)}
           </select></label>
           {bounds && <>
-            <label>Period start<input type="date" required value={start} onChange={e => setStart(e.target.value)}/></label>
-            <label>Period end<input type="date" required value={end} onChange={e => setEnd(e.target.value)}/></label>
+            <label>Period start<input type="date" required value={start} onChange={e => {setStart(e.target.value); setError('');}}/></label>
+            <label>Period end<input type="date" required value={end} onChange={e => {setEnd(e.target.value); setError('');}}/></label>
           </>}
         </>}
-        {capability.time === 'saved_month' && <label>Saved month<input type="month" value={month} onChange={e => setMonth(e.target.value)}/></label>}
-        {capability.time === 'saved_year' && <label>Saved year<input type="text" value={year} maxLength={513} onChange={e => setYear(e.target.value)}/></label>}
+        {capability.time === 'saved_month' && <label>Saved month<input type="month" value={month} onChange={e => {setMonth(e.target.value); setError('');}}/></label>}
+        {capability.time === 'saved_year' && <label>Saved year<input type="text" value={year} maxLength={513} onChange={e => {setYear(e.target.value); setError('');}}/></label>}
       </div>
       {chosen && <p role="status">Concept ID {chosen} selected. Apply filters to read its saved rows.</p>}
       {error && <p role="alert">{error}</p>}

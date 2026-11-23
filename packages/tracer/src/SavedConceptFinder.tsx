@@ -30,7 +30,7 @@ export function SavedConceptFinder({provider, context, choose, fail}: {provider:
   async function find(starts: (string | null)[], movingPage = false) {
     reset();
     movedPage.current = movingPage;
-    const text = query.trim();
+    const text = mode === 'id' ? query.trim() : query.replace(/^ +| +$/g, '');
     if (mode === 'id' ? !validConceptId(text) : !text || /[\u0000-\u001f\u007f-\u009f]/u.test(query) || new TextEncoder().encode(text).length > 256) {
       setMessage(mode === 'id' ? 'Enter an exact signed integer ID with up to 512 digits.' : 'Enter a name prefix of 1 to 256 UTF-8 bytes without control characters.');
       return;

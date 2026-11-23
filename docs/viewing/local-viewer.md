@@ -104,8 +104,11 @@ the saved result. Forward the signal so a source switch can cancel outstanding
 work. For a host with a same-origin results API, the
 [browser adapter](../../packages/tracer/src/saved-publication.ts) reads those
 responses. The host is responsible for authenticating and authorizing each
-request. Hosts can also implement the optional filtered selection, saved-name search and exact ID lookup operations. The [test host](../../packages/tracer/tests/browser/domain-host.html)
-shows two independent workspaces and a source switch. This is a source-level
+request. Implement `select(metricId, filters, cursor, signal)` to enable filtering.
+For concept discovery, supply `search(query, cursor, signal)` for name prefixes
+or `lookup(id, signal)` for exact IDs. The
+[test host](../../packages/tracer/tests/browser/domain-host.html) shows two
+independent workspaces and a source switch. This is a source-level
 React integration.
 
 ## Open a tracer bundle
