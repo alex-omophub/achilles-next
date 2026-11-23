@@ -1,0 +1,41 @@
+docs/viewing/local-viewer.md
+  s_3e206b4a2cf4c3::t_ceee6e35575edb 107-111
+inst/viewer/assets/CartesianChart-CE4jbz5w.js
+  s_3e206b4a2cf4c3::t_74320c6dcc53a5 1
+inst/viewer/assets/ComposedChart-CwVy1B5e.js
+  s_3e206b4a2cf4c3::t_51472ddc528c13 1
+inst/viewer/assets/MeasurementChart-qerqqSEv.js
+  s_3e206b4a2cf4c3::t_253780ec5ad7aa 1
+inst/viewer/assets/ObservationChart-BtKPG29i.js
+  s_3e206b4a2cf4c3::t_743de9f8430a78 1
+inst/viewer/assets/SavedChartGraphic-CgfBh8Q1.js
+  s_3e206b4a2cf4c3::t_2d05b5691d3013 1
+inst/viewer/assets/index-B2HCJaXu.js
+  s_3e206b4a2cf4c3::t_77d6195b70c380 1,10,1682
+inst/viewer/index.html
+  s_3e206b4a2cf4c3::t_ff3d3251b8c035 3
+inst/viewer/viewer-lock.json
+  s_3e206b4a2cf4c3::t_84a080ee58202d 23,26,46-51,53
+packages/tracer/src/SavedConceptFinder.tsx
+  s_3e206b4a2cf4c3::t_48e8f8bbadbe9e 33
+packages/tracer/src/SavedReportFilters.tsx
+  s_3e206b4a2cf4c3::t_092041df9298fe 105-106,109-110
+packages/tracer/tests/browser/saved-filters.mjs
+  s_3e206b4a2cf4c3::t_91670cbf28ebe0 35-37,55-58,60
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "5f0f3477229c604c30dd4fe97222bf66e59bec2f",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
