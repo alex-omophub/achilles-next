@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest';
-import {assertSamePublication, readCatalogue, readPeople, readReport} from '../src/saved-publication';
+import {assertSamePublication, readCatalogue, readPeople, readReport, selectReport, searchConcepts, lookupConcept} from '../src/saved-publication';
 
 const base = new URL('http://127.0.0.1:12345/nested/view/api/');
 const context = {
@@ -63,7 +63,7 @@ describe('saved report transport', () => {
   const metric = 'core.visit.care_setting_count';
   const dataset = {metric_id: metric, version: '1.0.0', grain: 'concept/setting_kind/setting_concept_tag/full scope', population: 'all_recorded_rows',
     state: 'computed', reason_code: null, definition_sha256: 'd'.repeat(64)};
-  const selection = {metric_id: metric, metric_version: '1.0.0', population: dataset.population, row_kind: 'counts'};
+  const selection = {metric_id: metric, metric_version: '1.0.0', population: dataset.population, row_kind: 'counts', filters: {}};
   const report = {context, generation_requested: false, transformations: 'none', complete: true, cursor: null,
     state: 'available', reason_code: null, dataset, selection, dependencies: []};
   const first = {row_key: 'a'.repeat(64), row_kind: 'counts', state: 'computed', reason_code: null,
@@ -110,6 +110,27 @@ describe('saved report transport', () => {
       {...report, rows: [{...first, values: {person_count: 1}}]},
     ]) await expect(readReport(base, metric, null, signal(), reply(invalid))).rejects.toThrow(invalidResponse);
   });
+  it('binds filter capabilities to the metric version, population and selected row kind', async () => {
+    const capability = {metric_id: metric, metric_version: dataset.version, population: dataset.population, row_kinds: ['counts'],
+      concept: 'exact_saved_tag', time: 'not_saved', unit: 'not_saved', operator: 'not_saved', period_kinds: [],
+      period_bounds: {full_scope: 'not_saved', calendar: 'not_saved'}};
+    const read = (value: unknown) => readReport(base, metric, null, signal(), reply({...report, rows: [first], capability: value}));
+    expect((await read(capability)).capability?.concept).toBe('exact_saved_tag');
+    for (const change of [{metric_id: 'core.person.count'}, {metric_version: '2'}, {population: 'other'}, {row_kinds: ['summary']}]) {
+      await expect(read({...capability, ...change})).rejects.toThrow(invalidResponse);
+    }
+  });
+  it('binds the response to exact saved filters and keeps a native unsupported-state reason', async () => {
+    const filters = {period_kind: 'calendar_month', period_start: '2020-01-01', period_end: '2020-01-31'};
+    const response = {...report, rows: [], state: 'additional_batch_job_required', reason_code: 'selection.dimensions_not_saved',
+      selection: {...selection, filters}};
+    const selected = await selectReport(base, metric, filters, null, signal(), async input => {
+      expect(JSON.parse(new URL(String(input)).searchParams.get('filters')!)).toEqual(filters);
+      return Response.json(response);
+    });
+    expect(selected).toMatchObject({state: 'additional_batch_job_required', reason: 'selection.dimensions_not_saved', rows: []});
+    await expect(selectReport(base, metric, filters, null, signal(), reply({...response, selection}))).rejects.toThrow(invalidResponse);
+  });
   it('follows the report continuation returned by the first page', async () => {
     const metricId = 'core.person.gender_count';
     // Issued by the synthetic gender-count provider and verified against its second page.
@@ -134,5 +155,37 @@ describe('saved report transport', () => {
     });
     expect(secondPage.cursor).toBeNull();
     expect(secondPage.rows[0].dimensions.gender_concept_id).toBe('111');
+  });
+});
+
+describe('saved terminology transport', () => {
+  const missing = {state: 'unavailable', reason_code: 'terminology.name_index_not_saved', context, generation_requested: false,
+    concepts: [], searched: false, complete: true, cursor: null};
+  it('preserves the search text and returns an explicit missing index', async () => {
+    const query = 'A+B & C';
+    const page = await searchConcepts(base, query, null, signal(), async input => {
+      const url = new URL(String(input));
+      expect(url.pathname).toBe('/nested/view/api/concepts/search.json');
+      expect([...url.searchParams]).toEqual([['q', query]]);
+      return Response.json({...missing, query});
+    });
+    expect(page).toMatchObject({state: 'unavailable', reason: 'terminology.name_index_not_saved', concepts: []});
+    await expect(searchConcepts(base, query, null, signal(), reply({...missing, query: 'another prefix'})))
+      .rejects.toThrow('The saved publication returned an invalid response.');
+  });
+  it('keeps exact identifiers and distinguishes a saved ID without a label from an absent ID', async () => {
+    const id = '9007199254740993';
+    const item = {concept_tag: {kind: 'id', value: id}, label: null, label_state: 'unavailable',
+      state: 'available', reason_code: null, label_reason_code: 'terminology.id_not_in_snapshot'};
+    const envelope = {state: 'available', reason_code: null, context, generation_requested: false, complete: true, cursor: null};
+    const lookup = (value: unknown) => lookupConcept(base, id, signal(), async input => {
+      expect(new URL(String(input)).searchParams.get('id')).toBe(id);
+      return Response.json({...envelope, concepts: [value]});
+    });
+    expect((await lookup(item)).concepts[0]).toMatchObject({id, state: 'available', label: null, reason: item.label_reason_code});
+    expect((await lookup({...item, state: 'not_saved', reason_code: 'concept.not_saved'})).concepts[0])
+      .toMatchObject({id, state: 'not_saved', label: null, reason: 'concept.not_saved'});
+    await expect(lookup({...item, concept_tag: {kind: 'id', value: '0'}}))
+      .rejects.toThrow('The saved publication returned an invalid response.');
   });
 });

@@ -44,6 +44,35 @@
   error=function(e) list(status=.object(state="invalid", message="The approved publication pointer or root could not be verified.")))
 }
 
+.viewer_query <- function(query, allowed) {
+  if (!nzchar(query)) return(list())
+  # URLSearchParams encodes one UTF-8 byte in at most three ASCII bytes.
+  # Bound the split and decoding, including room for the native cursor.
+  if (nchar(query, type="bytes") > 3L * 16384L + 8192L + 64L || endsWith(query, "&"))
+    .saved_error("invalid_request")
+  parts <- strsplit(query, "&", fixed=TRUE)[[1L]]
+  if (length(parts) > length(allowed)) .saved_error("invalid_request")
+  args <- list()
+  for (part in parts) {
+    separator <- regexpr("=", part, fixed=TRUE)[1L]
+    name <- substr(part, 1L, separator - 1L)
+    value <- substring(part, separator + 1L)
+    if (separator < 2L || !name %in% allowed || name %in% names(args) || !nzchar(value))
+      .saved_error("invalid_request")
+    if (name == "cursor") {
+      if (nchar(value, type="bytes") > 8192L || !grepl("^[A-Za-z0-9_.-]+\\z", value, perl=TRUE))
+        .saved_error("invalid_request")
+    } else {
+      if (grepl("[^A-Za-z0-9_.!~*'()+%-]|%(?![a-fA-F0-9]{2})|%00", value, perl=TRUE))
+        .saved_error("invalid_request")
+      value <- utils::URLdecode(chartr("+", " ", value))
+      if (!validUTF8(value) || grepl("[[:cntrl:]]", value)) .saved_error("invalid_request")
+    }
+    args[[name]] <- value
+  }
+  args
+}
+
 .viewer_publication_read <- function(snapshot, key, query, reportMetric) {
   if (is.null(snapshot$provider)) {
     code <- switch(snapshot$status$state, inaccessible="inaccessible", incompatible="incompatible", "integrity_failure")
@@ -53,15 +82,26 @@
     if (nzchar(query)) .saved_error("invalid_request")
     return(snapshot$provider$selectSavedRows("core.person.count", maxRows=1L, maxBytes=1048576L))
   }
-  cursor <- NULL
-  if (nzchar(query)) {
-    # Native cursors use unreserved URL characters, so encodeURIComponent
-    # leaves them intact. No other query keys or cursor encodings are accepted.
-    if (nchar(query, type="bytes") > 8199L || !grepl("^cursor=[A-Za-z0-9_.-]+\\z", query, perl=TRUE))
-      .saved_error("invalid_request")
-    cursor <- substring(query, 8L)
-  }
   if (key == "api/catalogue.json")
-    return(snapshot$provider$listMetrics(limit=12L, cursor=cursor, maxBytes=1048576L))
-  snapshot$provider$selectSavedRows(reportMetric, maxRows=12L, maxBytes=1048576L, cursor=cursor)
+    return(snapshot$provider$listMetrics(limit=12L, cursor=.viewer_query(query, "cursor")$cursor, maxBytes=1048576L))
+  if (key == "api/concepts/search.json") {
+    args <- .viewer_query(query, c("q", "cursor"))
+    return(snapshot$provider$searchConcepts(args$q, limit=12L, cursor=args$cursor, maxBytes=1048576L))
+  }
+  if (key == "api/concepts/lookup.json") {
+    args <- .viewer_query(query, "id")
+    return(snapshot$provider$lookupConcepts(args$id, limit=1L, maxBytes=1048576L))
+  }
+  args <- .viewer_query(query, c("filters", "cursor"))
+  filters <- .object()
+  if (!is.null(args$filters)) {
+    # Selector values are printable exact tags/strings. jsonlite truncates a
+    # string at an escaped NUL, which could otherwise select a different ID.
+    if (nchar(args$filters, type="bytes") > 16384L ||
+        grepl("\\\\(?:[bfnrt]|u00(?:[01][0-9a-f]|7f))", args$filters, perl=TRUE, ignore.case=TRUE))
+      .saved_error("invalid_request")
+    filters <- tryCatch(.nv_json(charToRaw(enc2utf8(args$filters))), error=function(e) .saved_error("invalid_request"))
+    if (!.nv_object(filters)) .saved_error("invalid_request")
+  }
+  snapshot$provider$selectSavedRows(reportMetric, filters=filters, maxRows=12L, maxBytes=1048576L, cursor=args$cursor)
 }

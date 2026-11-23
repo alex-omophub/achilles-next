@@ -237,12 +237,19 @@ class PublicationViewerTests(InstalledViewerCase):
     def setUp(self):
         super().setUp()
         self.trusted_context = self.root / 'approved-context.json'
+        self.make_publication(self.bundle, self.trusted_context)
+
+    def make_publication(self, folder, context, *, labelled=False):
         fixture = Path(__file__).parent / 'tracer' / 'saved-result-fixture.R'
         subprocess.run([self.rscript, '--vanilla', '-e',
                         'args <- commandArgs(TRUE); library(AchillesNext); source(args[1]); '
-                        'x <- makeSavedResultFixture(args[2], pageRows=32L, extraConceptIds=as.character(1:12)); '
+                        'ids <- as.character(0:12); labels <- if (args[4]=="yes") '
+                        'setNames(as.list(paste("Shared + µ",ids)),ids) else NULL; '
+                        'x <- makeSavedResultFixture(args[2], pageRows=32L, extraConceptIds=ids[-1], '
+                        'savedLabels=labels, saveCalendar=TRUE); '
                         'jsonlite::write_json(x$context, args[3], auto_unbox=TRUE)',
-                        str(fixture.resolve()), str(self.bundle), str(self.trusted_context)], check=True, env=dict(os.environ, R_LIBS=LIBRARY))
+                        str(fixture.resolve()), str(folder), str(context), 'yes' if labelled else 'no'],
+                       check=True, env=dict(os.environ, R_LIBS=LIBRARY))
 
     def test_installed_catalogue_and_people_are_bounded_and_pinned(self):
         with self.serving(trusted_context=self.trusted_context) as url:
@@ -347,6 +354,93 @@ class PublicationViewerTests(InstalledViewerCase):
             self.assertEqual((empty['state'], empty['values']['record_count']), ('empty_source', '0'))
             unavailable = report('core.visit.care_setting_count')['rows'][0]
             self.assertEqual((unavailable['state'], unavailable['values']), ('unavailable', None))
+
+    def test_saved_filters_preserve_exact_strata_calendar_and_unavailable_selections(self):
+        with self.serving(trusted_context=self.trusted_context) as url:
+            def report(metric, filters, cursor=None, cursor_first=False):
+                params = [('filters', json.dumps(filters))]
+                if cursor is not None:
+                    params.insert(0 if cursor_first else 1, ('cursor', cursor))
+                return self.get(url + 'api/reports/' + metric + '.json?' + urllib.parse.urlencode(params))
+
+            gender = 'core.person.gender_count'
+            _, _, body = report(gender, {})
+            cursor = json.loads(body)['cursor']
+            self.assertTrue(cursor)
+            for first in [True, False]:
+                code, _, body = report(gender, {}, cursor, first)
+                self.assertEqual(code, 200)
+                self.assertEqual(len(json.loads(body)['rows']), 2)
+            self.assertEqual(report(gender, {'gender_concept_id': '0'}, cursor)[0], 400)
+            code, _, body = report(gender, {'gender_concept_id': '9007199254740993'})
+            self.assertEqual((code, json.loads(body)['rows'][0]['values']['person_count']), (200, '4'))
+            period = {'period_kind': 'calendar_month', 'period_start': '2020-02-01', 'period_end': '2020-02-29'}
+            filters = dict(period, concept_tag={'kind': 'id', 'value': '123'})
+            code, _, body = report('core.condition.capture_count', filters)
+            monthly = json.loads(body)
+            self.assertEqual(code, 200)
+            self.assertEqual(monthly['selection']['filters'], filters)
+            self.assertEqual([r['values']['record_count'] for r in monthly['rows']], ['2'])
+            metric = 'core.measurement.numeric_summary'
+            code, _, body = report(metric, {'unit_concept_tag': {'kind': 'id', 'value': '777'},
+                                            'raw_operator_tag': {'kind': 'null'}})
+            self.assertEqual(code, 200)
+            summary = json.loads(body)
+            self.assertEqual(summary['rows'][0]['values']['n'], '0')
+            self.assertEqual(summary['dependencies'][0]['row']['values']['record_count'], '0')
+            for selector in [period, {'eligibility_reason': 'eligible'}]:
+                code, _, body = report(metric, selector)
+                page = json.loads(body)
+                self.assertEqual((code, page['state'], page['generation_requested']),
+                                 (200, 'additional_batch_job_required', False))
+            code, _, body = report(gender, {'gender_concept_id': '98765'})
+            self.assertEqual((code, json.loads(body)['state']), (200, 'not_saved'))
+            for bad in [[], None, {'gender_concept_id': 0}, {'gender_concept_id': '00'},
+                        {'gender_concept_id': '0\x00ignored'}, {'period_kind': 'calendar_month'}]:
+                self.assertEqual(report(gender, bad)[0], 400)
+            path = url + 'api/reports/' + gender + '.json?'
+            duplicate = urllib.parse.urlencode({'filters': '{"gender_concept_id":"1","gender_concept_id":"2"}'})
+            for bad in [duplicate, 'filters=%7B%7D&filters=%7B%7D', 'filters=%ZZ', 'filters=%FF',
+                        'filters=%00', 'filters=%7B%7D&', 'cursor=bad&extra=1', 'filters=1&cursor=']:
+                code, _, body = self.get(path + bad)
+                self.assertEqual((code, json.loads(body)), (400, {'error': 'invalid_request'}))
+
+    def test_lookup_and_prefix_search_use_only_authorized_saved_terminology(self):
+        def concepts(base, method, **params):
+            code, _, body = self.get(base + 'api/concepts/' + method + '.json?' + urllib.parse.urlencode(params))
+            self.assertLessEqual(len(body), 1024 * 1024)
+            return code, json.loads(body)
+
+        with self.serving(trusted_context=self.trusted_context) as url:
+            code, search = concepts(url, 'search', q='Shared')
+            self.assertEqual((code, search['state'], search['searched'], search['reason_code']),
+                             (200, 'unavailable', False, 'terminology.name_index_not_saved'))
+            code, lookup = concepts(url, 'lookup', id='9007199254740993')
+            self.assertEqual((code, lookup['concepts'][0]['state'], lookup['concepts'][0]['label']),
+                             (200, 'available', None))
+
+        folder = self.root / 'labelled'
+        context = self.root / 'labelled-context.json'
+        self.make_publication(folder, context, labelled=True)
+        with self.serving(folder, trusted_context=context) as url:
+            query = 'Shared + µ'
+            code, first = concepts(url, 'search', q=query)
+            self.assertEqual((code, first['state'], first['query'], first['searched']), (200, 'available', query, True))
+            self.assertEqual(len(first['concepts']), 12)
+            code, last = concepts(url, 'search', cursor=first['cursor'], q=query)
+            self.assertEqual((code, last['complete'], len(last['concepts'])), (200, True, 1))
+            names = {v['label'] for v in first['concepts'] + last['concepts']}
+            self.assertEqual(names, {query + ' ' + str(i) for i in range(13)})
+            self.assertEqual(concepts(url, 'search', q='other', cursor=first['cursor'])[0], 400)
+            self.assertEqual(concepts(url, 'lookup', id='1')[1]['concepts'][0]['label'], query + ' 1')
+            self.assertEqual(concepts(url, 'lookup', id='-100')[1]['concepts'][0]['state'], 'not_saved')
+            for path in ['search.json', 'search.json?q=a&q=b', 'search.json?q=%00', 'search.json?q=%FF',
+                         'lookup.json?id=1&id=2', 'lookup.json?id=01', 'lookup.json?id=1&cursor=x',
+                         'lookup.json?id=1.0', 'lookup.json?q=x']:
+                self.assertEqual(self.get(url + 'api/concepts/' + path)[0], 400)
+            Path(str(context) + '.revoked').touch()
+            self.assertEqual(concepts(url, 'lookup', id='1'), (403, {'error': 'inaccessible'}))
+            self.assertEqual(concepts(url, 'search', q=query), (403, {'error': 'inaccessible'}))
 
     def test_authorization_is_required_and_rechecked_for_cached_results(self):
         path = 'api/reports/core.person.gender_count.json'

@@ -23,8 +23,12 @@ class DomainWorkspaceTests(InstalledViewerCase):
                 subprocess.run([
                     self.rscript, '--vanilla', '-e',
                     'args <- commandArgs(TRUE); library(AchillesNext); source(args[1]); '
+                    'labels <- if (args[3] == "fixture:first") '
+                    'c(list("123"="Synthetic condition", "456"="Synthetic unit"), '
+                    'setNames(as.list(paste("Paged concept", 100:115)), as.character(100:115))) else NULL; '
                     'fixture <- makeSavedResultFixture(args[2], pageRows=32L, '
-                    'extraConceptIds=as.character(100:115), sourceId=args[3], saveCalendar=TRUE, saveBirthYears=TRUE); '
+                    'extraConceptIds=as.character(100:115), sourceId=args[3], savedLabels=labels, '
+                    'saveCalendar=TRUE, saveBirthYears=TRUE); '
                     'jsonlite::write_json(fixture$context, args[4], auto_unbox=TRUE)',
                     str(fixture), str(folder), 'fixture:' + source, str(approved),
                 ], check=True, env=dict(os.environ, R_LIBS=LIBRARY))

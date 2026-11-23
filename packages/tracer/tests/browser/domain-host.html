@@ -9,12 +9,22 @@
     import {createElement} from 'react';
     import {createRoot} from 'react-dom/client';
     import {PublicationWorkspace} from '../../src/PublicationView.tsx';
-    import {readPeople, readCatalogue, readReport} from '../../src/saved-publication.ts';
+    import {readPeople, readCatalogue, readReport, selectReport, lookupConcept, searchConcepts} from '../../src/saved-publication.ts';
     function workspace(source) {
       const base = new URL('/' + source + '/api/', location.origin);
       const provider = {
         people: signal => readPeople(base, signal),
         catalogue: (cursor, signal) => readCatalogue(base, cursor, signal),
+        select: (metric, filters, cursor, signal) => selectReport(base, metric, filters, cursor, signal),
+        lookup: (id, signal) => lookupConcept(base, id, signal),
+        search: async (query, cursor, signal) => {
+          const matches = await searchConcepts(base, query, cursor, signal);
+          if (source === 'first' && window.delayFirstSearch) {
+            window.delayedSearchSignal = signal;
+            await new Promise(resolve => { window.releaseFirstSearch = resolve; });
+          }
+          return matches;
+        },
         report: async (metric, cursor, signal) => {
           const report = await readReport(base, metric, cursor, signal);
           // Deliver a previously completed response after the host changes source.

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 import {createServer} from 'vite';
 import {checkChartRecovery, checkChartsAndEvidence} from './chart-evidence.mjs';
+import {checkLateConceptSearch, checkSavedFilters} from './saved-filters.mjs';
 
 // Playwright is test-only and can be installed separately through NODE_PATH.
 const {chromium} = createRequire(import.meta.url)('playwright');
@@ -69,6 +70,7 @@ try {
   await previousSelection.waitFor();
   assert(await previousSelection.evaluate(button => button === document.activeElement));
   await checkChartsAndEvidence(page, main, selectMetric, requests);
+  await checkSavedFilters(page, main, selectMetric, requests);
   assert(requests.every(url => url.origin === new URL(firstUrl).origin));
   assert(requests.some(url => url.pathname.endsWith('/reports/core.person.gender_count.json') && url.searchParams.has('cursor')));
 
@@ -114,6 +116,7 @@ try {
   assert.equal(await selected.locator('tbody tr').count(), 1);
   const stillAuthorized = await selectMetric(second, 'core.visit.care_setting_count');
   await stillAuthorized.getByText('capability.care_site_absent', {exact: true}).waitFor();
+  await checkLateConceptSearch(page, host, selectMetric);
   assert.deepEqual(errors, []);
   await checkChartRecovery(page, host, selectMetric);
 } finally {

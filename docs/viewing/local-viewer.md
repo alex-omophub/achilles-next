@@ -28,6 +28,24 @@ time. Counts, identifiers and decimal values keep their published precision.
 An empty-source zero, a suppressed dataset and an unavailable row retain their
 individual states and reasons.
 
+### Select a saved subset
+
+Open a report to see the filters supported for its default row kind. Apply a
+concept, date period, unit or operator to request the matching saved rows.
+A blank filter leaves that dimension unrestricted. An explicit concept ID of
+`0`, a NULL tag and an all-concepts total are distinct selections.
+
+For a concept-based report, search the publication’s saved names by prefix or
+look up an exact concept ID. Select a match to fill in its ID, then apply the
+filters. Name search requires an approved saved name index (contract 2.1).
+A saved ID can still be selected when its name is absent. All lookup and
+search requests use the publication’s own terminology.
+
+A requested selection can have saved rows, no saved rows, a suppressed result
+or a reason that additional batch work would be needed. The viewer displays
+the provider’s response and never starts a generation job. Clearing the filters
+reopens the default selection for the current metric.
+
 ### Read a chart alongside its exact table
 
 The chart uses the rows on the current report page. Choose another page to
@@ -86,7 +104,7 @@ the saved result. Forward the signal so a source switch can cancel outstanding
 work. For a host with a same-origin results API, the
 [browser adapter](../../packages/tracer/src/saved-publication.ts) reads those
 responses. The host is responsible for authenticating and authorizing each
-request. The [test host](../../packages/tracer/tests/browser/domain-host.html)
+request. Hosts can also implement the optional filtered selection, saved-name search and exact ID lookup operations. The [test host](../../packages/tracer/tests/browser/domain-host.html)
 shows two independent workspaces and a source switch. This is a source-level
 React integration.
 
