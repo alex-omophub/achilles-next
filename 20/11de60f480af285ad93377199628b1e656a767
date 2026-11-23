@@ -1,0 +1,84 @@
+docs/viewing/local-viewer.md
+  s_895f6ebe145fd3::t_2065e0fffc223a 48-69
+  s_3e206b4a2cf4c3::t_4611045c71da55 172-179,181-187
+  s_3e206b4a2cf4c3::t_47f3dae9e1c7ff 180
+  s_895f6ebe145fd3::t_5cc44895bda1b1 22-30,46
+  s_895f6ebe145fd3::t_21f76169c7c33c 47
+packages/tracer/src/SavedReportTable.tsx
+  s_895f6ebe145fd3::t_c8eabf98988998 1-42
+man/viewResults.Rd
+  s_895f6ebe145fd3::t_5cc44895bda1b1 18
+tests/tracer/saved-result-fixture.R
+  s_895f6ebe145fd3::t_435613a9329638 2,5
+tests/test_local_viewer.py
+  s_895f6ebe145fd3::t_ba58005d3c6d51 243,299-328,331-350,352,356,359,361-362
+  s_895f6ebe145fd3::t_fe253180080a33 329-330
+R/local-viewer.R
+  s_895f6ebe145fd3::t_386252a9a02b2a 145-153,158
+README.md
+  s_895f6ebe145fd3::t_5cc44895bda1b1 7
+packages/tracer/tests/saved-publication.test.ts
+  s_3e206b4a2cf4c3::t_f0675590b49d7a 63,69-70,81-82
+  s_3e206b4a2cf4c3::t_7450a5ace73f2f 2,60-62,64-68,71-80,83-94
+  s_895f6ebe145fd3::t_9d4c541f0bc899 95
+packages/tracer/src/PublicationView.tsx
+  s_895f6ebe145fd3::t_c8eabf98988998 1-4,7-10,12-50,52-74,76-123,125-137,139-140,142-148,150-181,185-190,192-193,195-198,203
+packages/tracer/src/saved-publication.ts
+  s_3e206b4a2cf4c3::t_2dbfc641450ce6 120-193
+packages/tracer/tests/browser/domain-workspaces.mjs
+  s_895f6ebe145fd3::t_971c267eb75575 1-92,107-111
+  s_895f6ebe145fd3::t_fe5fe91a6e2f24 93-106
+R/local-viewer-publication.R
+  s_895f6ebe145fd3::t_386252a9a02b2a 47,52,64-66
+docs/development/client-paths.md
+  s_895f6ebe145fd3::t_5cc44895bda1b1 29
+tests/test_domain_workspaces.py
+  s_895f6ebe145fd3::t_435613a9329638 1-37
+packages/tracer/tests/browser/domain-host.html
+  s_895f6ebe145fd3::t_435613a9329638 1-11,30-36
+  s_895f6ebe145fd3::t_559221784de319 12-29
+packages/tracer/tests/saved-report-table.test.tsx
+  s_895f6ebe145fd3::t_0783f9551be5c8 1-38
+packages/tracer/tools/package-viewer.mjs
+  s_895f6ebe145fd3::t_5cc44895bda1b1 61
+packages/tracer/src/publication.css
+  s_3e206b4a2cf4c3::t_9decee12a69cc4 1-4,7-10,12,16-45,49-51,53
+inst/viewer/assets/CartesianChart-DMosMn4a.js
+  s_3e206b4a2cf4c3::t_4a118e360f42f2 1
+inst/viewer/assets/MeasurementChart-D5TnhgUh.js
+  s_3e206b4a2cf4c3::t_9f98a9b02e7c48 1
+inst/viewer/assets/ObservationChart-COOKDYeZ.js
+  s_3e206b4a2cf4c3::t_596b9447360e03 1
+inst/viewer/assets/index-CFJH43t2.css
+  s_3e206b4a2cf4c3::t_214a0bc1d8e76e 1
+inst/viewer/assets/index-VkmOZh-2.js
+  s_3e206b4a2cf4c3::t_cbed753d7f6836 1-2,9-10,846,1682
+inst/viewer/index.html
+  s_3e206b4a2cf4c3::t_0c3397ec461e52 3-4
+inst/viewer/viewer-lock.json
+  s_3e206b4a2cf4c3::t_8466c01a8c8dd1 4,21-22,28-29,33,40-45
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "2011de60f480af285ad93377199628b1e656a767",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
