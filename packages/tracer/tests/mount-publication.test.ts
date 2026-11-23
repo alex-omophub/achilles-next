@@ -96,3 +96,19 @@ it('closes the handle before a destroy abort listener can reopen it', async () =
   expect(renderer.frames).toHaveLength(1);
   expect(node.hasChildNodes()).toBe(false);
 });
+
+it('pins the direct target on initial mount and preserves it after an invalid update', async () => {
+  const options = fixture();
+  const target = {kind: 'chart' as const, version: '2' as const, metric_id: 'core.person.birth_year_count', metric_version: '1.0.0'};
+  const handle = mountPublicationWorkspace(container(), {...options, target});
+  const expected = {...target};
+  target.metric_id = 'core.person.gender_count';
+  expect(frame()).toMatchObject({direct: {target: expected, context}});
+  for (const invalid of [{metric_id: '../people'}, {metric_version: ''}, {unexpected: true}]) {
+    await expect(handle.update({context, target: {...target, ...invalid}})).rejects.toMatchObject({code: 'invalid_configuration'});
+  }
+  expect(renderer.frames).toHaveLength(1);
+  frame().firstRender.applied();
+  expect(await handle.ready).toEqual({status: 'applied', generation: 1});
+  await handle.destroy();
+});

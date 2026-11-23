@@ -87,6 +87,7 @@ export interface ReportPage {
 }
 export declare function readReport(base: URL, metricId: string, cursor: string | null, signal: AbortSignal, fetchImpl?: typeof fetch): Promise<ReportPage>;
 export declare function selectReport(base: URL, metricId: string, filters: SavedFilters, cursor: string | null, signal: AbortSignal, fetchImpl?: typeof fetch): Promise<ReportPage>;
+export declare function validMetricId(value: unknown): value is string;
 export interface SavedConcept {
     id: string;
     label: string | null;

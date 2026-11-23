@@ -1,11 +1,17 @@
 import { type PublicationContext, type PublicationProvider } from './saved-publication.js';
 export { createPublicationHttpProvider } from './saved-publication.js';
 export type { PublicationContext, PublicationProvider } from './saved-publication.js';
+export interface DirectPublicationTarget {
+    readonly kind: 'report' | 'chart';
+    readonly version: '2';
+    readonly metric_id: string;
+    readonly metric_version: string;
+}
 export interface PublicationMountConfiguration {
     readonly target: {
         readonly kind: 'workspace';
         readonly version: '2';
-    };
+    } | DirectPublicationTarget;
     readonly context: PublicationContext;
 }
 export interface PublicationMountOptions extends PublicationMountConfiguration {

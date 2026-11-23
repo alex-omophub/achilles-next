@@ -8,11 +8,11 @@ class GraphicBoundary extends Component<{children: ReactNode}, {failed: boolean}
   static getDerivedStateFromError() { return {failed: true}; }
   render() { return this.state.failed ? <p>The chart could not be displayed. See the saved rows below.</p> : this.props.children; }
 }
-export function SavedReportChart({report, page}: {report: ReportPage; page: number}) {
+export function SavedReportChart({report, page, showFallback = false}: {report: ReportPage; page: number; showFallback?: boolean}) {
   const [groupId, setGroupId] = useState('');
   const [measure, setMeasure] = useState<'person_count' | 'record_count'>('record_count');
   const spec = chartSpec(report);
-  if (!spec) return null;
+  if (!spec) return showFallback ? <p>A chart is unavailable for this report. Open the exact saved rows below.</p> : null;
   const group = spec.groups.find(item => item.id === groupId) ?? spec.groups[0];
   const points = group ? chartPoints(spec.kind, group, measure) : [];
   const omitted = points.filter(item => item.position === null).length;

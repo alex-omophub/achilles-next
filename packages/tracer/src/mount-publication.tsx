@@ -1,13 +1,19 @@
 import {createRoot, type Root} from 'react-dom/client';
-import {PublicationWorkspace} from './PublicationView';
-import {PublicationReadError, assertSamePublication, type PublicationContext, type PublicationProvider} from './saved-publication.js';
+import {PublicationWorkspace, DirectPublicationView} from './PublicationView';
+import {PublicationReadError, assertSamePublication, validMetricId, type PublicationContext, type PublicationProvider} from './saved-publication.js';
 import styles from './publication.css?inline';
 
 export {createPublicationHttpProvider} from './saved-publication.js';
 export type {PublicationContext, PublicationProvider} from './saved-publication.js';
 
+export interface DirectPublicationTarget {
+  readonly kind: 'report' | 'chart';
+  readonly version: '2';
+  readonly metric_id: string;
+  readonly metric_version: string;
+}
 export interface PublicationMountConfiguration {
-  readonly target: {readonly kind: 'workspace'; readonly version: '2'};
+  readonly target: {readonly kind: 'workspace'; readonly version: '2'} | DirectPublicationTarget;
   readonly context: PublicationContext;
 }
 export interface PublicationMountOptions extends PublicationMountConfiguration {
@@ -44,16 +50,27 @@ function object(value: unknown): value is Record<string, unknown> {
 }
 const pins = ['contract_version','source_id','release_id','publication_id','access_scope_id','profile_id',
   'profile_sha256','profile_revision','authorization_epoch','instance_id'] as const;
-function pin(options: unknown, mounting: boolean): PublicationContext {
-  if (!object(options) || !object(options.target) || options.target.kind !== 'workspace' || options.target.version !== '2'
-      || Object.keys(options.target).length !== 2 || Object.keys(options).some(key =>
-        !['target', 'context', ...(mounting ? ['provider', 'styleNonce'] : [])].includes(key))) throw new MountFailure('invalid_configuration');
+function pinTarget(target: unknown): PublicationMountConfiguration['target'] {
+  if (!object(target) || !Object.hasOwn(target, 'kind') || !Object.hasOwn(target, 'version') || target.version !== '2') throw new MountFailure('invalid_configuration');
+  if (target.kind === 'workspace' && Object.keys(target).length === 2) return {kind: 'workspace', version: '2'};
+  if ((target.kind === 'report' || target.kind === 'chart') && Object.keys(target).length === 4
+    && Object.hasOwn(target, 'metric_id') && Object.hasOwn(target, 'metric_version')
+    && validMetricId(target.metric_id) && typeof target.metric_version === 'string'
+    && target.metric_version.length <= 64 && /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(target.metric_version)) {
+    return {kind: target.kind, version: '2', metric_id: target.metric_id, metric_version: target.metric_version};
+  }
+  throw new MountFailure('invalid_configuration');
+}
+function pin(options: unknown, mounting: boolean): PublicationMountConfiguration {
+  if (!object(options) || Object.keys(options).some(key =>
+    !['target', 'context', ...(mounting ? ['provider', 'styleNonce'] : [])].includes(key))) throw new MountFailure('invalid_configuration');
+  const target = pinTarget(options.target);
   const ctx = options.context;
   if (!object(ctx) || Object.keys(ctx).length !== pins.length || !pins.every(key =>
     Object.hasOwn(ctx, key) && typeof ctx[key] === 'string' && ctx[key].length > 0)
     || !['2.0.0', '2.1.0'].includes(String(ctx.contract_version)) || !/^[a-f0-9]{64}$/.test(String(ctx.profile_sha256)))
     throw new MountFailure('invalid_context');
-  return Object.freeze({...ctx}) as PublicationContext;
+  return {target, context: Object.freeze({...ctx}) as PublicationContext};
 }
 function scopedProvider(provider: PublicationProvider, context: PublicationContext, life: AbortSignal): PublicationProvider {
   async function call<T>(signal: AbortSignal, read: (combined: AbortSignal) => Promise<T>) {
@@ -127,7 +144,7 @@ export function mountPublicationWorkspace(container: HTMLElement, options: Publi
     previous.controller.abort();
     return cleanup;
   }
-  function start(context: PublicationContext): Promise<PublicationMountOutcome> {
+  function start({context, target}: PublicationMountConfiguration): Promise<PublicationMountOutcome> {
     const index = ++generation;
     void retire('superseded');
     // A provider's abort listener can synchronously update or destroy this handle.
@@ -143,11 +160,14 @@ export function mountPublicationWorkspace(container: HTMLElement, options: Publi
         reject(new MountFailure('render_failed'));
       }});
       active = {index, controller, element, root, settle: resolve};
-      root.render(<PublicationWorkspace provider={scopedProvider(provider, context, controller.signal)} instanceKey={id}
-        firstRender={{
-          applied() { if (active?.index === index) resolve({status: 'applied', generation: index}); },
-          failed(error) { if (active?.index === index) reject(error instanceof MountFailure ? error : new MountFailure('read_failed')); },
-        }}/>);
+      const reads = scopedProvider(provider, context, controller.signal);
+      const firstRender = {
+        applied() { if (active?.index === index) resolve({status: 'applied', generation: index}); },
+        failed(error: unknown) { if (active?.index === index) reject(error instanceof MountFailure ? error : new MountFailure('read_failed')); },
+      };
+      root.render(target.kind === 'workspace'
+        ? <PublicationWorkspace provider={reads} instanceKey={id} firstRender={firstRender}/>
+        : <DirectPublicationView provider={reads} direct={{target, context}} firstRender={firstRender}/>);
     });
   }
   container.appendChild(host);

@@ -10,7 +10,9 @@ const apis = Object.fromEntries(Object.keys(pins).map(key =>
   [key, createPublicationHttpProvider(new URL('sources/' + key + '/api/', document.baseURI))]));
 const target = {kind: 'workspace', version: '2'};
 const sessions = {};
+const nextTargets = {};
 window.fixture = {
+  nextMount(host, next) { nextTargets[host] = next; },
   ready: host => sessions[host].handle.ready,
   id: host => sessions[host].handle.id,
   occupyAgain(host) {
@@ -22,6 +24,10 @@ window.fixture = {
     const current = sessions[host];
     current.source = source;
     return current.handle.update({context: pins[pin], target});
+  },
+  direct(host, kind, metric_id, metric_version = '1.0.0', pin) {
+    const current = sessions[host];
+    return current.handle.update({context: pins[pin ?? current.source], target: {kind, version: '2', metric_id, metric_version}});
   },
   invalid: host => sessions[host].handle.update({context: pins.first, target: {kind: 'workspace', version: '999'}}),
   invalidContext: host => sessions[host].handle.update({context: {...pins.first, contract_version: '9.0.0'}, target}),
@@ -64,7 +70,7 @@ function attach(host, slot, source) {
     report: (metric, cursor, signal) => api().report(metric, cursor, signal),
   };
   current.provider = provider;
-  current.handle = mountPublicationWorkspace(slot, {provider, context: pins[source], target, styleNonce: 'fixture-style'});
+  current.handle = mountPublicationWorkspace(slot, {provider, context: pins[source], target: nextTargets[host] ?? target, styleNonce: 'fixture-style'});
   sessions[host] = current;
   return () => { void current.handle.destroy(); };
 }

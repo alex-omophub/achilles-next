@@ -71,6 +71,29 @@ This entry point targets approved v2 publications. The
 byte-provider interface. The [source React component](local-viewer.md#embed-the-report-in-a-react-host)
 is also available to applications that build the viewer sources themselves.
 
+## Open a report or chart directly
+
+Use the same mount handle to open a specific metric from a host route. Supply
+the metric ID and its definition version from the approved publication.
+
+```js
+await instance.update({
+  context: approvedContext,
+  target: {
+    kind: 'chart', version: '2',
+    metric_id: 'core.measurement.numeric_summary', metric_version: '1.0.0'
+  }
+});
+```
+
+Both `report` and `chart` targets open with a single bounded report-page read.
+The host can also supply either target on the initial mount. A report exposes the
+same table, filters, chart and evidence as its workspace selection. A chart
+keeps the exact saved rows in an expandable table. Metrics without a chart
+show a message and retain the table. Paging reads the next saved page on demand.
+A mismatched publication, access scope or metric version rejects the mount’s
+`ready` promise or the corresponding `update()` and clears the failed view.
+
 ## Host lifecycle and styling
 
 Keep the handle while the host component owns its DOM node. In React, create
