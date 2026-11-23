@@ -22,6 +22,15 @@ it('keeps exact strings, typed tags, structured metadata, null and omitted field
     ],
   };
   const html = renderToStaticMarkup(<SavedReportTable report={report}/>);
+  expect(html).not.toContain('Select concept');
+  const dimensions = {unit_concept_tag: {kind: 'id', value: exact}, gender_concept_id: '12',
+    source_concept_tag: {kind: 'id', value: '0'}, raw_operator_tag: {kind: 'null'},
+    concept_tag: {kind: 'all'}, year_of_birth: '1960', race_concept_id: '-3', concept_count: '100'};
+  const withActions = renderToStaticMarkup(<SavedReportTable onConcept={() => {}} report={{...report,
+    rows: [{...report.rows[0], dimensions}, {...report.rows[2], dimensions: {gender_concept_id: '456'}}]}}/>);
+  expect(withActions.match(/aria-label="Select concept /g)).toHaveLength(2);
+  expect(withActions).toContain('Select concept ' + exact + ' from unit_concept_tag');
+  expect(withActions).toContain('Select concept 12 from gender_concept_id');
   const rows = html.split('<tbody>')[1].split('</tbody>')[0].match(/<tr>.*?<\/tr>/gs)!;
   expect(rows).toHaveLength(3);
   expect(rows[0]).toContain('<span>' + exact + '</span>');

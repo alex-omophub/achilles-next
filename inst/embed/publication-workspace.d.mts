@@ -14,9 +14,27 @@ export interface PublicationMountConfiguration {
     } | DirectPublicationTarget;
     readonly context: PublicationContext;
 }
+export interface PublicationConceptEvent {
+    readonly event_version: '1.0.0';
+    readonly type: 'concept_selected' | 'navigation_requested';
+    readonly event_id: string;
+    readonly correlation_id: string;
+    readonly origin: 'user';
+    readonly instance_id: string;
+    readonly generation: number;
+    readonly context: PublicationContext;
+    readonly payload: {
+        readonly target: 'concept';
+        readonly concept_id: string;
+        readonly dimension: string;
+        readonly metric_id: string;
+        readonly metric_version: string;
+    };
+}
 export interface PublicationMountOptions extends PublicationMountConfiguration {
     readonly provider: PublicationProvider;
     readonly styleNonce?: string;
+    readonly onEvent?: (event: PublicationConceptEvent) => void;
 }
 export interface PublicationMountOutcome {
     readonly status: 'applied' | 'superseded' | 'destroyed';

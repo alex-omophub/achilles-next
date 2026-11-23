@@ -10,8 +10,10 @@ const apis = Object.fromEntries(Object.keys(pins).map(key =>
   [key, createPublicationHttpProvider(new URL('sources/' + key + '/api/', document.baseURI))]));
 const target = {kind: 'workspace', version: '2'};
 const sessions = {};
+const events = {react: [], vue: []};
 const nextTargets = {};
 window.fixture = {
+  events: host => events[host],
   nextMount(host, next) { nextTargets[host] = next; },
   ready: host => sessions[host].handle.ready,
   id: host => sessions[host].handle.id,
@@ -70,7 +72,8 @@ function attach(host, slot, source) {
     report: (metric, cursor, signal) => api().report(metric, cursor, signal),
   };
   current.provider = provider;
-  current.handle = mountPublicationWorkspace(slot, {provider, context: pins[source], target: nextTargets[host] ?? target, styleNonce: 'fixture-style'});
+  current.handle = mountPublicationWorkspace(slot, {provider, context: pins[source], target: nextTargets[host] ?? target, styleNonce: 'fixture-style',
+    onEvent: event => events[host].push(event)});
   sessions[host] = current;
   return () => { void current.handle.destroy(); };
 }

@@ -3,7 +3,7 @@ import {assertSamePublication, PublicationReadError, createPublicationHttpProvid
   type PublicationProvider, type CatalogueMetric, type CataloguePage, type PopulationResult, type ReportPage, type SavedFilters} from './saved-publication';
 import type {DirectPublicationTarget} from './mount-publication';
 import {SavedReportFilters, supportsFilters} from './SavedReportFilters';
-import {SavedReportTable, stateLabel} from './SavedReportTable';
+import {SavedReportTable, stateLabel, type ConceptAction} from './SavedReportTable';
 import {SavedReportChart} from './SavedReportChart';
 import {SavedEvidenceDownload} from './SavedEvidenceDownload';
 import {SavedReportEvidence} from './SavedReportEvidence';
@@ -68,9 +68,9 @@ function Summary({people}: {people: PopulationResult}) {
     </dl>
   </section>;
 }
-interface SessionProps {provider: PublicationProvider; firstRender?: FirstRender}
+interface SessionProps {provider: PublicationProvider; firstRender?: FirstRender; onConcept?: ConceptAction}
 interface DirectView {target: DirectPublicationTarget; context: PopulationResult['context']}
-function Session({provider, firstRender, direct}: SessionProps & {direct?: DirectView}) {
+function Session({provider, firstRender, onConcept, direct}: SessionProps & {direct?: DirectView}) {
   const [start] = useState<Selection>(() => direct ? {...initial,
     metric: {metric_id: direct.target.metric_id, version: direct.target.metric_version}} : initial);
   const [selection, setSelection] = useState(start);
@@ -154,6 +154,9 @@ function Session({provider, firstRender, direct}: SessionProps & {direct?: Direc
   const {catalogue, report} = result ?? {};
   const chartOnly = direct?.target.kind === 'chart';
   const read = active.current;
+  const conceptAction: ConceptAction | undefined = onConcept && ((type, payload, correlation) => {
+    if (read && active.current === read && !read.signal.aborted) onConcept(type, payload, correlation);
+  });
   const starts = metric ? rowStarts : catalogueStarts;
   const next = report?.cursor ?? catalogue?.cursor ?? null;
   function page(forward: boolean) {
@@ -208,8 +211,8 @@ function Session({provider, firstRender, direct}: SessionProps & {direct?: Direc
               fail={failure => {if (read && !read.signal.aborted && active.current === read) failed(failure);}}/>}
           </section>}
           <SavedReportChart report={report} page={starts.length} showFallback={chartOnly}/>
-          {chartOnly ? <details><summary>Exact saved rows</summary><SavedReportTable report={report}/></details>
-            : <SavedReportTable report={report}/>}
+          {chartOnly ? <details><summary>Exact saved rows</summary><SavedReportTable report={report} onConcept={conceptAction}/></details>
+            : <SavedReportTable report={report} onConcept={conceptAction}/>}
           <SavedReportEvidence report={report}/>
           {!chartOnly && provider.exportEvidence && report.evidence && read && <SavedEvidenceDownload
             readEvidence={(id, filters, cursor, signal) => provider.exportEvidence!(id, filters, cursor, signal)} report={report}
@@ -229,11 +232,11 @@ export function DirectPublicationView(props: SessionProps & {direct: DirectView}
   return <div className="publication-workspace"><Session {...props}/></div>;
 }
 
-export function PublicationWorkspace({provider, instanceKey, firstRender}: {provider: PublicationProvider; instanceKey: string; firstRender?: FirstRender}) {
+export function PublicationWorkspace({provider, instanceKey, firstRender, onConcept}: SessionProps & {instanceKey: string}) {
   // A replaced provider can carry different authority even if its display key is unchanged.
   const [binding, setBinding] = useState({provider, generation: 0});
   if (binding.provider !== provider) setBinding({provider, generation: binding.generation + 1});
-  return <div className="publication-workspace"><Session key={JSON.stringify([instanceKey, binding.generation])} provider={provider} firstRender={firstRender}/></div>;
+  return <div className="publication-workspace"><Session key={JSON.stringify([instanceKey, binding.generation])} provider={provider} firstRender={firstRender} onConcept={onConcept}/></div>;
 }
 
 export function PublicationView({base}: {base: URL}) {

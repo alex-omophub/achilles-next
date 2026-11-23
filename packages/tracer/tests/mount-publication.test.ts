@@ -1,8 +1,9 @@
 import {beforeEach, expect, it, vi} from 'vitest';
-import {mountPublicationWorkspace, type PublicationContext, type PublicationProvider} from '../src/mount-publication';
+import {mountPublicationWorkspace, type PublicationConceptEvent, type PublicationContext, type PublicationProvider} from '../src/mount-publication';
 
 interface Frame {
-  props: {provider: PublicationProvider; firstRender: {applied(): void; failed(error: unknown): void}};
+  props: {provider: PublicationProvider; onConcept?: (type: PublicationConceptEvent['type'],
+    payload: PublicationConceptEvent['payload'], correlation: string) => void; firstRender: {applied(): void; failed(error: unknown): void}};
 }
 const renderer = vi.hoisted(() => ({frames: [] as Frame[], unmount: vi.fn()}));
 vi.mock('react-dom/client', () => ({createRoot: () => ({
@@ -111,4 +112,25 @@ it('pins the direct target on initial mount and preserves it after an invalid up
   frame().firstRender.applied();
   expect(await handle.ready).toEqual({status: 'applied', generation: 1});
   await handle.destroy();
+});
+
+
+it('contains concept actions within the live generation and drops retired callbacks', async () => {
+  const events: PublicationConceptEvent[] = [];
+  const options = fixture();
+  const handle = mountPublicationWorkspace(container(), {...options, onEvent: event => events.push(event)});
+  const first = frame().onConcept!;
+  const payload = {target: 'concept' as const, metric_id: 'core.person.gender_count',
+    metric_version: '1.0.0', dimension: 'gender_concept_id', concept_id: '9007199254740993'};
+  const next = handle.update({context: {...context, authorization_epoch: 'new'}, target});
+  first('concept_selected', payload, 'retired');
+  expect(events).toHaveLength(0);
+  const current = frame().onConcept!;
+  current('concept_selected', payload, 'interaction');
+  expect(events[0]).toMatchObject({generation: 2, instance_id: handle.id, origin: 'user',
+    context: {authorization_epoch: 'new'}, payload, event_version: '1.0.0'});
+  await handle.destroy();
+  current('navigation_requested', payload, 'interaction');
+  expect(events).toHaveLength(1);
+  expect((await next).status).toBe('destroyed');
 });
