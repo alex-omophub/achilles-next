@@ -1,0 +1,21 @@
+packages/tracer/tests/saved-publication.test.ts
+  s_895f6ebe145fd3::t_fc8de3e6bd6dac 62,87,89,92-95,98-123
+packages/tracer/tests/browser/domain-workspaces.mjs
+  s_895f6ebe145fd3::t_c0ee14a24d8ace 66-69
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e1c2e8fdb56845d607181cb31af9d53bfead6e30",
+  "prompts": {},
+  "sessions": {
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
