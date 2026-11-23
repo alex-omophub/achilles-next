@@ -63,6 +63,10 @@ try {
   await main.getByRole('button', {name: 'Previous rows', exact: true}).click();
   await table.getByText('100', {exact: true}).waitFor();
   assert.deepEqual(await table.locator('tbody tr').allTextContents(), firstRows);
+  await main.getByRole('button', {name: 'Back to catalogue', exact: true}).press('Enter');
+  const previousSelection = main.getByRole('button', {name: 'core.person.gender_count', exact: true});
+  await previousSelection.waitFor();
+  assert(await previousSelection.evaluate(button => button === document.activeElement));
   assert(requests.every(url => url.origin === new URL(firstUrl).origin));
   assert(requests.some(url => url.pathname.endsWith('/reports/core.person.gender_count.json') && url.searchParams.has('cursor')));
 

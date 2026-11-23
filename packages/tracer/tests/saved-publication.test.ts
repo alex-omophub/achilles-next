@@ -59,6 +59,7 @@ describe('saved publication browser reads', () => {
 });
 
 describe('saved report transport', () => {
+  const invalidResponse = 'The saved publication returned an invalid response.';
   const metric = 'core.visit.care_setting_count';
   const dataset = {metric_id: metric, version: '1.0.0', grain: 'concept/setting_kind/setting_concept_tag/full scope', population: 'all_recorded_rows',
     state: 'computed', reason_code: null};
@@ -83,13 +84,42 @@ describe('saved report transport', () => {
     const page = await readReport(base, metric, null, signal(), reply({...report, rows: [omitted]}));
     expect(page.rows[0]).toEqual(omitted);
     await expect(readReport(base, metric, null, signal(), reply({...report, rows: [{...omitted, values: first.values}]})))
-      .rejects.toThrow();
+      .rejects.toThrow(invalidResponse);
   });
-  it('rejects results for another metric, oversized row pages and numeric JSON measures', async () => {
+  it('rejects inconsistent identities, oversized row pages and numeric JSON measures', async () => {
     for (const invalid of [
       {...report, selection: {...selection, metric_id: 'core.person.count'}, rows: [first]},
+      {...report, selection: {...selection, metric_version: '2.0.0'}, rows: [first]},
+      {...report, selection: {...selection, population: 'observed_rows'}, rows: [first]},
+      {...report, dataset: {...dataset, metric_id: 'core.person.count'}, rows: [first]},
+      {...report, rows: [{...first, row_kind: 'summary'}]},
       {...report, rows: Array(13).fill(first)},
       {...report, rows: [{...first, values: {person_count: 1}}]},
-    ]) await expect(readReport(base, metric, null, signal(), reply(invalid))).rejects.toThrow();
+    ]) await expect(readReport(base, metric, null, signal(), reply(invalid))).rejects.toThrow(invalidResponse);
+  });
+  it('follows the report continuation returned by the first page', async () => {
+    const metricId = 'core.person.gender_count';
+    // Issued by the synthetic gender-count provider and verified against its second page.
+    const nextCursor = [
+      'eyJjb250ZXh0X3NoYTI1NiI6IjM1ZDQ4ODYzZmYzNDE2YzU1ODIxZDk3NGMzMzJhMzc4YTNmMDY0ZmFlYTE3YTA4',
+      'MWEzOGQxNTkzMDc4ODMwYzkiLCJnZW5lcmF0aW9uIjowLCJsYXN0X2tleSI6ImNvcmUucGVyc29uLmdlbmRlcl9j',
+      'b3VudHxJMTAwMDAwMzoxMTB8RTpjb3VudHMiLCJzZWxlY3Rpb25fc2hhMjU2IjoiOGYwNWFmNmQ5MTUwZGM5Mzg2',
+      'NDQwMzdhZmYzOWY1MGNmZTFlNWRlZWZhYWJiYTE3MTgwZTA2YTc0OWExOGI3NSIsInZlcnNpb24iOjF9Cg.9f781',
+      '6992ab53056854507dfa49901bc130e8bfe173f20f84d62b90f24776626',
+    ].join('');
+    const genderDataset = {...dataset, metric_id: metricId, population: 'person_table', grain: 'person/gender_concept_id'};
+    const genderSelection = {...selection, metric_id: metricId, population: genderDataset.population};
+    const genderRow = {...first, dimensions: {gender_concept_id: '100'}, values: {person_count: '0'}};
+    const envelope = {...report, dataset: genderDataset, selection: genderSelection, rows: [genderRow]};
+    const firstPage = await readReport(base, metricId, null, signal(), reply({...envelope, complete: false, cursor: nextCursor}));
+    expect(firstPage.cursor).toBe(nextCursor);
+    const secondPage = await readReport(base, metricId, firstPage.cursor, signal(), async input => {
+      const url = new URL(String(input));
+      expect(url.pathname).toBe('/nested/view/api/reports/core.person.gender_count.json');
+      expect([...url.searchParams]).toEqual([['cursor', nextCursor]]);
+      return Response.json({...envelope, rows: [{...genderRow, row_key: 'b'.repeat(64), dimensions: {gender_concept_id: '111'}}]});
+    });
+    expect(secondPage.cursor).toBeNull();
+    expect(secondPage.rows[0].dimensions.gender_concept_id).toBe('111');
   });
 });
