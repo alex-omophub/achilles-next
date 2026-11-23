@@ -1,9 +1,10 @@
 import {useEffect, useMemo, useRef, useState} from 'react';
-import {assertSamePublication, PublicationReadError, readCatalogue, readPeople, readReport, selectReport, lookupConcept, searchConcepts,
+import {assertSamePublication, PublicationReadError, readCatalogue, readPeople, readReport, selectReport, readPageEvidence, lookupConcept, searchConcepts,
   type CatalogueMetric, type CataloguePage, type PopulationResult, type ReportPage, type SavedFilters, type ConceptPage} from './saved-publication';
 import {SavedReportFilters, supportsFilters} from './SavedReportFilters';
 import {SavedReportTable, stateLabel} from './SavedReportTable';
 import {SavedReportChart} from './SavedReportChart';
+import {SavedEvidenceDownload} from './SavedEvidenceDownload';
 import {SavedReportEvidence} from './SavedReportEvidence';
 import './publication.css';
 
@@ -13,6 +14,7 @@ export interface PublicationProvider {
   report(metricId: string, cursor: string | null, signal: AbortSignal): Promise<ReportPage>;
   select?(metricId: string, filters: SavedFilters, cursor: string | null, signal: AbortSignal): Promise<ReportPage>;
   search?(query: string, cursor: string | null, signal: AbortSignal): Promise<ConceptPage>;
+  exportEvidence?(metricId: string, filters: SavedFilters, cursor: string | null, signal: AbortSignal): Promise<unknown>;
   lookup?(id: string, signal: AbortSignal): Promise<ConceptPage>;
 }
 
@@ -202,6 +204,10 @@ function Session({provider}: {provider: PublicationProvider}) {
           <SavedReportChart report={report} page={starts.length}/>
           <SavedReportTable report={report}/>
           <SavedReportEvidence report={report}/>
+          {provider.exportEvidence && report.evidence && read && <SavedEvidenceDownload
+            readEvidence={(id, filters, cursor, signal) => provider.exportEvidence!(id, filters, cursor, signal)} report={report}
+            filters={selection.filters} cursor={rowStarts.at(-1) ?? null} page={rowStarts.length} view={read.signal}
+            fail={failure => {if (!read.signal.aborted && active.current === read) failed(failure);}}/>}
         </>}
         {(metric || domain === 'all') && <nav aria-label={metric ? 'Saved row pages' : 'Catalogue pages'}>
           <button type="button" disabled={starts.length === 1} onClick={() => page(false)}>{metric ? 'Previous rows' : 'Previous page'}</button>
@@ -226,6 +232,7 @@ export function PublicationView({base}: {base: URL}) {
     return {people: signal => readPeople(api, signal), catalogue: (cursor, signal) => readCatalogue(api, cursor, signal),
       report: (id, cursor, signal) => readReport(api, id, cursor, signal),
       select: (id, filters, cursor, signal) => selectReport(api, id, filters, cursor, signal),
+      exportEvidence: (id, filters, cursor, signal) => readPageEvidence(api, id, filters, cursor, signal),
       lookup: (id, signal) => lookupConcept(api, id, signal), search: (query, cursor, signal) => searchConcepts(api, query, cursor, signal)};
   }, [href]);
   return <main className="publication-view">

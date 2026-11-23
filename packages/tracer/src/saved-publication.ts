@@ -1,4 +1,4 @@
-import {canonical} from '../../contracts/src/index.mjs';
+import {canonical, sha256} from '../../contracts/src/index.mjs';
 
 // Only the fields used for display cross this boundary. The native provider
 // owns page verification, selection semantics and authorization.
@@ -211,12 +211,17 @@ function reportCapability(item: unknown, metricId: string, version: string, popu
 }
 export async function selectReport(base: URL, metricId: string, filters: SavedFilters, cursor: string | null,
     signal: AbortSignal, fetchImpl = fetch): Promise<ReportPage> {
+  const page = await request(reportUrl(base, 'reports', metricId, filters, cursor), signal, fetchImpl);
+  return parseReport(page, metricId, filters);
+}
+function reportUrl(base: URL, kind: 'reports' | 'evidence', metricId: string, filters: SavedFilters, cursor: string | null) {
   check(metricId.length <= 128 && /^(core|observed)\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/.test(metricId));
-  const url = new URL(`reports/${metricId}.json`, base);
-  const filterKey = canonical(filters);
-  if (Object.keys(filters).length) url.searchParams.set('filters', filterKey);
+  const url = new URL(`${kind}/${metricId}.json`, base);
+  if (Object.keys(filters).length) url.searchParams.set('filters', canonical(filters));
   if (cursor !== null) url.searchParams.set('cursor', cursor);
-  const page = await request(url, signal, fetchImpl);
+  return url;
+}
+function parseReport(page: Record<string, unknown>, metricId: string, filters: SavedFilters): ReportPage {
   const source = context(page);
   const dataset = page.dataset;
   const selection = page.selection;
@@ -229,7 +234,7 @@ export async function selectReport(base: URL, metricId: string, filters: SavedFi
     && digest(dataset.definition_sha256) && Array.isArray(page.dependencies)
     && Array.isArray(page.rows) && page.rows.length <= 12);
   // A page, including a continuation, must answer the exact requested selection.
-  check(record(selection.filters) && canonical(selection.filters) === filterKey);
+  check(record(selection.filters) && canonical(selection.filters) === canonical(filters));
   const capability = reportCapability(page.capability, metricId, dataset.version, dataset.population, selection.row_kind);
   const rowKind = selection.row_kind;
   const available = page.state === 'available';
@@ -309,4 +314,59 @@ export async function lookupConcept(base: URL, id: string, signal: AbortSignal, 
   const page = conceptPage(body, id);
   check(page.state === 'available' && page.concepts.length === 1 && page.cursor === null);
   return page;
+}
+
+export async function readPageEvidence(base: URL, metricId: string, filters: SavedFilters, cursor: string | null,
+    signal: AbortSignal, fetchImpl = fetch): Promise<unknown> {
+  return request(reportUrl(base, 'evidence', metricId, filters, cursor), signal, fetchImpl);
+}
+function boundedJson(value: unknown, downloading = false) {
+  const text = JSON.stringify(value, downloading ? (key, item) => {
+    check(key !== 'cursor' && key !== 'authorization_epoch' && key !== 'instance_id');
+    return item;
+  } : undefined);
+  check(typeof text === 'string' && text.length <= 1048576 && new TextEncoder().encode(text).length <= 1048576);
+  return text;
+}
+export async function pageEvidenceJson(envelope: unknown, displayed: ReportPage, filters: SavedFilters, number: number) {
+  // Snapshot host-provided JSON before asynchronous digest verification. The
+  // installed transport also limits bytes while streaming the HTTP response.
+  const data: unknown = JSON.parse(boundedJson(envelope));
+  check(record(data) && data.kind === 'selected_page_evidence' && data.format_version === '1.0.0'
+    && data.generation_requested === false && Number.isSafeInteger(number) && number > 0 && record(data.page));
+  const report = parseReport(data.page, displayed.metric_id, filters);
+  assertSamePublication(displayed.context, report.context);
+  check(report.evidence && canonical(report) === canonical(displayed));
+  const def = data.definition;
+  check(record(def) && def.id === report.metric_id && def.version === report.version && def.grain === report.grain
+    && def.population === report.population && typeof def.calculation === 'string' && typeof def.precision === 'string'
+    && await sha256(canonical(def) + '\n') === report.evidence.definitionSha256);
+  const prov = data.provenance;
+  check(record(prov) && digest(prov.root_sha256) && digest(prov.policy_sha256) && typeof prov.approval_id === 'string'
+    && typeof prov.generated_at === 'string' && typeof prov.scope_kind === 'string' && record(prov.source_schema)
+    && digest(prov.source_schema.sha256) && typeof prov.source_schema.declared_cdm_version === 'string'
+    && record(prov.source_consistency) && typeof prov.source_consistency.within_run === 'string'
+    && prov.source_consistency.reusable === false && reasonCode(prov.source_consistency.reason_code));
+  const limitations = data.limitations;
+  check(record(limitations) && limitations.selection === 'current_page_only'
+    && reportFields(limitations.precision) && reportFields(limitations.availability));
+  const dataset = data.page.dataset;
+  check(record(dataset));
+  const safeContext = Object.fromEntries(contextKeys.filter(key => key !== 'authorization_epoch' && key !== 'instance_id')
+    .map(key => [key, report.context[key]]));
+  const safeDataset = Object.fromEntries(['metric_id','version','population','grain','row_schema_id','definition_sha256',
+    'state','reason_code','required','conditional_support','rows','completeness'].filter(key => Object.hasOwn(dataset, key)).map(key => [key, dataset[key]]));
+  const publicEvidence = {
+    format_version: data.format_version, kind: data.kind, generation_requested: false,
+    page: {number, complete: report.cursor === null, context: safeContext, dataset: safeDataset,
+      selection: {metric_id: report.metric_id, metric_version: report.version, population: report.population, row_kind: report.rowKind, filters},
+      state: report.state, reason_code: report.reason, transformations: 'none', rows: report.rows, dependencies: report.evidence.dependencies},
+    definition: def,
+    provenance: {root_sha256: prov.root_sha256, scope_kind: prov.scope_kind, generated_at: prov.generated_at,
+      source_schema: {declared_cdm_version: prov.source_schema.declared_cdm_version, sha256: prov.source_schema.sha256},
+      source_consistency: {within_run: prov.source_consistency.within_run, reusable: false, reason_code: prov.source_consistency.reason_code},
+      approval_id: prov.approval_id, policy_sha256: prov.policy_sha256},
+    limitations: {selection: limitations.selection, precision: limitations.precision, availability: limitations.availability},
+  };
+  return boundedJson(publicEvidence, true);
 }

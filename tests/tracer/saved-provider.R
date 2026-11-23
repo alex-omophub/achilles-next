@@ -31,6 +31,16 @@ local({
   stopifnot(all(vapply(metrics,function(m)!is.null(m$capability)&&identical(m$rows,as.character(length(x$rows[[m$metric_id]]))),TRUE)))
   count<-p$selectSavedRows('core.person.count')
   stopifnot(count$state=='available',count$rows[[1]]$values$person_count=='10',!length(count$dependencies),!count$generation_requested,count$transformations=='none',count$budget$objects<12L)
+  evidence<-p$exportSavedPage('core.person.count')
+  samePage<-p$selectSavedRows('core.person.count',maxRows=12L)
+  stopifnot(identical(evidence$page,samePage),identical(evidence$provenance$root_sha256,x$context$root$sha256),
+    identical(f('.v2_hash')(f('.v2_bytes')(evidence$definition)),samePage$dataset$definition_sha256),
+    evidence$limitations$selection=='current_page_only',!evidence$generation_requested)
+  # Fitting the page alone does not allow evidence to be truncated.
+  smallLimit<-length(f('.v2_bytes')(samePage))+128L
+  stopifnot(p$selectSavedRows('core.person.count',maxRows=12L,maxBytes=smallLimit)$complete)
+  fail(function()p$exportSavedPage('core.person.count',maxBytes=smallLimit),'resource_limit')
+  fail(function()p$exportSavedPage('core.person.count',maxRows=13L),'invalid_request')
   # Registry-driven capability discovery also handles installed count extensions.
   extension<-f('.profile_assets')('reference-person-v1')
   for(mid in names(extension$metrics))stopifnot(f('.saved_selection')(mid,assets=extension)$state=='selection_shape_supported')

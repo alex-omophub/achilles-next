@@ -68,6 +68,21 @@ values linked to individual rows. Measurement summaries identify the unit and
 operator and show the saved eligible count when the matching evidence is
 available. A page can contain several strata with different eligible counts.
 
+### Download the evidence for a page
+
+Select **Download page evidence (JSON)** on an open report to save the current
+page. The file identifies the source, publication, access scope, metric
+definition and applied filters. It includes the exact saved rows, their
+denominator links, provenance and limitations. For example, a filtered
+measurement page retains its unit and operator alongside each saved statistic.
+Use the page number and selection when citing a result.
+
+The viewer requests the selected page again under the host’s current access
+policy before it creates the download. Changing the selection or source during
+that request cancels the download. Each export covers up to 12 rows from a
+single page and fits within 1 MiB. Embedded hosts can enable the same download
+by implementing `exportEvidence(metricId, filters, cursor, signal)`.
+
 For an existing export directory, supply a trusted authorization callback. The
 example uses an approval record retained by the operator independently of the
 selected folder. Hosts that support revocation can also check their current

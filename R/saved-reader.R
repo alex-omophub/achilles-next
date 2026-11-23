@@ -137,7 +137,7 @@
   session <- function(work,cancel=function()FALSE,responseLimit=NULL) run(cancel,function(get,budget) {
     root <- NULL;generation <- state$generation
     readRoot <- function(){if(is.null(root)) root <<- get(context$root)$document;root}
-    access <- list(root=readRoot,check=function()check(cancel,generation),
+    access <- list(root=readRoot,budget=budget,check=function()check(cancel,generation),
       measure=function(value){check(cancel,generation);value$budget<-budget();size<-length(.v2_bytes(value));check(cancel,generation);size},
       walk=function(branch,lower=NULL,upper=NULL,after=NULL,visit)scanBody(get,branch,lower,upper,root=readRoot(),afterKey=after,visit=visit),
       decode=function(token,selection)if(is.null(token))NULL else decode(token,selection),
