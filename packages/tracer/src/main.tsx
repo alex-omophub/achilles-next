@@ -1,7 +1,10 @@
 import {createRoot} from 'react-dom/client';
 import {ViewerApp} from './ViewerApp';
+import {PublicationView} from './PublicationView';
 import './style.css';
 
-const served = document.querySelector('meta[name="achilles-next-mode"]')?.getAttribute('content') === 'served-bundle';
-const servedBase = served ? new URL('api/', new URL('.', window.location.href)) : undefined;
-createRoot(document.getElementById('root')!).render(<ViewerApp servedBase={servedBase}/>);
+const mode = document.querySelector('meta[name="achilles-next-mode"]')?.getAttribute('content');
+const api = new URL('api/', new URL('.', window.location.href));
+createRoot(document.getElementById('root')!).render(mode === 'served-publication'
+  ? <PublicationView base={api}/>
+  : <ViewerApp servedBase={mode === 'served-bundle' ? api : undefined}/>);

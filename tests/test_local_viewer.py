@@ -10,33 +10,48 @@ import tempfile
 import time
 import unittest
 import urllib.error
+import urllib.parse
 import urllib.request
 
 LIBRARY = os.environ.get('ACHILLES_NEXT_VIEWER_TEST_LIBRARY')
 BUNDLES = os.environ.get('TRACER_TEST_BUNDLES')
 
 
-@unittest.skipUnless(LIBRARY and BUNDLES, 'Set ACHILLES_NEXT_VIEWER_TEST_LIBRARY and TRACER_TEST_BUNDLES for installed-viewer checks')
-class LocalViewerTests(unittest.TestCase):
+class InstalledViewerCase(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix='achilles-next-viewer-test-')
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.bundle = self.root / 'bundle'
-        shutil.copytree(Path(BUNDLES) / 'a-5.5', self.bundle)
         self.rscript = subprocess.check_output(['Rscript', '-e', 'cat(file.path(R.home("bin"),"Rscript"))'], text=True).strip()
         self.opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))
 
     @contextlib.contextmanager
-    def serving(self, folder=None):
+    def serving(self, folder=None, *, trusted_context=None, receipt=None):
         control = self.root / ('control-' + str(time.monotonic_ns()))
         script = self.root / 'serve.R'
         script.write_text('''args <- commandArgs(TRUE)
 library(AchillesNext)
-v <- viewResults(args[1], browse=FALSE, block=FALSE, basePath="/nested/results-view/")
+dbAttempts <- 0L
+assignInNamespace("connect", function(...) {
+  dbAttempts <<- dbAttempts + 1L
+  stop("Database access is disabled for installed file viewing")
+}, ns="DatabaseConnector")
+options <- list(bundleDir=args[1], browse=FALSE, block=FALSE, basePath="/nested/results-view/")
+if (nzchar(args[3])) {
+  trusted <- jsonlite::read_json(args[3])
+  options$authorize <- function(context) {
+    keys <- c("publication_id", "release_id", "source_id", "access_scope_id")
+    !file.exists(paste0(args[3], ".revoked")) && identical(context[keys], trusted[keys]) &&
+      identical(context$root$sha256, trusted$root$sha256)
+  }
+}
+if (nzchar(args[4])) options$bundleDir <- jsonlite::read_json(args[4])
+v <- do.call(viewResults, options)
 writeLines(jsonlite::toJSON(list(url=v$url, shiny_loaded="shiny" %in% loadedNamespaces()),auto_unbox=TRUE),args[2])
 while (!file.exists(paste0(args[2],".stop"))) httpuv::service(100)
 v$stop(); v$stop()
+stopifnot(dbAttempts == 0L)
 ''')
         fakebin = self.root / 'no-node'; fakebin.mkdir(exist_ok=True)
         sentinel = self.root / 'unexpected-node-call'
@@ -46,8 +61,9 @@ v$stop(); v$stop()
             executable.chmod(0o700)
         env = dict(os.environ, R_LIBS=str(LIBRARY), PATH=str(fakebin) + os.pathsep + os.defpath)
         with (self.root / 'server.log').open('w') as log:
-            process = subprocess.Popen([self.rscript, str(script), str(folder or self.bundle), str(control)],
-                                       env=env, stdout=log, stderr=subprocess.STDOUT)
+            args = [self.rscript, str(script), str(folder or self.bundle), str(control),
+                    str(trusted_context or ''), str(receipt or '')]
+            process = subprocess.Popen(args, env=env, stdout=log, stderr=subprocess.STDOUT)
             try:
                 deadline = time.monotonic() + 15
                 while not control.exists():
@@ -80,6 +96,13 @@ v$stop(); v$stop()
         code, _, body = self.get(url + 'api/status.json')
         self.assertEqual(code, 200)
         return json.loads(body)['state']
+
+
+@unittest.skipUnless(LIBRARY and BUNDLES, 'Set ACHILLES_NEXT_VIEWER_TEST_LIBRARY and TRACER_TEST_BUNDLES for installed-viewer checks')
+class LocalViewerTests(InstalledViewerCase):
+    def setUp(self):
+        super().setUp()
+        shutil.copytree(Path(BUNDLES) / 'a-5.5', self.bundle)
 
     def test_installed_viewer_nonroot_assets_and_no_node(self):
         with self.serving() as url:
@@ -207,6 +230,126 @@ v$stop(); v$stop()
         with self.serving() as url:
             self.assertEqual(self.status(url), 'invalid')
             self.assertEqual(self.get(url + 'api/results/person.count.json')[0], 404)
+
+
+@unittest.skipUnless(LIBRARY, 'Set ACHILLES_NEXT_VIEWER_TEST_LIBRARY for installed publication viewer checks')
+class PublicationViewerTests(InstalledViewerCase):
+    def setUp(self):
+        super().setUp()
+        self.trusted_context = self.root / 'approved-context.json'
+        fixture = Path(__file__).parent / 'tracer' / 'saved-result-fixture.R'
+        subprocess.run([self.rscript, '--vanilla', '-e',
+                        'args <- commandArgs(TRUE); library(AchillesNext); source(args[1]); '
+                        'x <- makeSavedResultFixture(args[2], pageRows=32L); '
+                        'jsonlite::write_json(x$context, args[3], auto_unbox=TRUE)',
+                        str(fixture.resolve()), str(self.bundle), str(self.trusted_context)], check=True, env=dict(os.environ, R_LIBS=LIBRARY))
+
+    def test_installed_catalogue_and_people_are_bounded_and_pinned(self):
+        with self.serving(trusted_context=self.trusted_context) as url:
+            self.assertIn(b'content="served-publication"', self.get(url)[2])
+            code, _, body = self.get(url + 'api/people.json')
+            self.assertEqual(code, 200)
+            people = json.loads(body)
+            self.assertFalse(people['generation_requested'])
+            self.assertEqual(people['rows'][0]['values']['person_count'], '10')
+            self.assertEqual(people['context']['source_id'], 'fixture:semantic')
+            head_code, headers, head_body = self.get(url + 'api/people.json', method='HEAD')
+            self.assertEqual(head_code, 200)
+            self.assertEqual(head_body, b'')
+            # Provider budget counters may change once the page is cached.
+            self.assertGreater(int(headers['Content-Length']), 0)
+            metrics = []
+            path = 'api/catalogue.json'
+            first_cursor = None
+            while True:
+                code, _, body = self.get(url + path)
+                self.assertEqual(code, 200)
+                self.assertLessEqual(len(body), 1024 * 1024)
+                page = json.loads(body)
+                self.assertEqual(page['context'], people['context'])
+                self.assertFalse(page['generation_requested'])
+                self.assertGreater(len(page['metrics']), 0)
+                self.assertLessEqual(len(page['metrics']), 12)
+                metrics.extend(page['metrics'])
+                self.assertLessEqual(len(metrics), 142)
+                if page['complete']:
+                    self.assertIsNone(page['cursor'])
+                    break
+                self.assertTrue(page['cursor'])
+                if first_cursor is None:
+                    first_cursor = page['cursor']
+                path = 'api/catalogue.json?' + urllib.parse.urlencode({'cursor': page['cursor']})
+            ids = [entry['metric_id'] for entry in metrics]
+            self.assertEqual(len(ids), 142)
+            self.assertEqual(ids, sorted(set(ids)))
+            drug = next(entry for entry in metrics if entry['metric_id'] == 'core.drug.capture_count')
+            self.assertEqual(drug['state'], 'suppressed')
+            self.assertIsNotNone(first_cursor)
+            for path in ['publication.json', 'api/publication.json', 'api/results/person.count.json']:
+                self.assertEqual(self.get(url + path)[0], 404)
+            self.assertEqual(self.get(url + 'api/catalogue.json', headers={'Origin': 'https://different.example'})[0], 403)
+            self.assertEqual(self.get(url + 'api/people.json', method='POST')[0], 405)
+            for query in ['?limit=1000000', '?cursor=invalid', '?cursor=x&cursor=y']:
+                self.assertGreaterEqual(self.get(url + 'api/catalogue.json' + query)[0], 400)
+        # Even opening the same artifact again creates a separate viewing instance.
+        with self.serving(trusted_context=self.trusted_context) as reopened:
+            path = 'api/catalogue.json?' + urllib.parse.urlencode({'cursor': first_cursor})
+            self.assertGreaterEqual(self.get(reopened + path)[0], 400)
+
+    def test_authorization_is_required_and_rechecked_for_cached_results(self):
+        with self.serving() as url:
+            self.assertEqual(self.status(url), 'inaccessible')
+            self.assertGreaterEqual(self.get(url + 'api/people.json')[0], 400)
+        with self.serving(trusted_context=self.trusted_context) as url:
+            self.assertEqual(self.get(url + 'api/people.json')[0], 200)
+            Path(str(self.trusted_context) + '.revoked').touch()
+            self.assertGreaterEqual(self.get(url + 'api/people.json')[0], 400)
+            self.assertGreaterEqual(self.get(url + 'api/catalogue.json')[0], 400)
+
+    def test_receipt_opens_only_its_pinned_publication(self):
+        trusted = json.loads(self.trusted_context.read_bytes())
+        receipt = self.root / 'receipt.json'
+        pin = {'export_dir': str(self.bundle), 'publication_id': trusted['publication_id'],
+               'root': trusted['root'], 'revision': '1'}
+        receipt.write_text(json.dumps(pin))
+        with self.serving(receipt=receipt) as url:
+            self.assertEqual(self.status(url), 'ready')
+            code, _, body = self.get(url + 'api/people.json')
+            self.assertEqual(code, 200)
+            self.assertEqual(json.loads(body)['context']['publication_id'], pin['publication_id'])
+        with self.serving(receipt=receipt, trusted_context=self.trusted_context) as url:
+            Path(str(self.trusted_context) + '.revoked').touch()
+            self.assertGreaterEqual(self.get(url + 'api/people.json', method='HEAD')[0], 400)
+        for different_pin in (dict(pin, root=dict(pin['root'], sha256='e' * 64)),
+                              dict(pin, publication_id='00000000-0000-4000-8000-000000000099')):
+            receipt.write_text(json.dumps(different_pin))
+            with self.serving(receipt=receipt) as url:
+                self.assertNotEqual(self.status(url), 'ready')
+                self.assertGreaterEqual(self.get(url + 'api/people.json')[0], 400)
+
+    @unittest.skipUnless(BUNDLES, 'Set TRACER_TEST_BUNDLES for dual-format downgrade check')
+    def test_missing_receipt_pointer_never_opens_colocated_v1_payload(self):
+        trusted = json.loads(self.trusted_context.read_bytes())
+        receipt = self.root / 'receipt.json'
+        receipt.write_text(json.dumps({'export_dir': str(self.bundle), 'publication_id': trusted['publication_id'],
+                                       'root': trusted['root'], 'revision': '1'}))
+        (self.bundle / 'publication.json').unlink()
+        shutil.copytree(Path(BUNDLES) / 'a-5.5', self.bundle, dirs_exist_ok=True)
+        with self.serving(receipt=receipt) as url:
+            self.assertNotEqual(self.status(url), 'ready')
+            self.assertGreaterEqual(self.get(url + 'api/people.json')[0], 400)
+            self.assertGreaterEqual(self.get(url + 'api/results/person.count.json')[0], 400)
+
+    def test_corrupt_unrequested_data_is_checked_on_read(self):
+        leaf = next(p for p in (self.bundle / 'objects').glob('*.json')
+                    if json.loads(p.read_bytes()).get('metric_id') == 'core.person.count')
+        leaf.write_bytes(b'{}')
+        with self.serving(trusted_context=self.trusted_context) as url:
+            self.assertEqual(self.get(url + 'api/catalogue.json')[0], 200)
+            code, _, body = self.get(url + 'api/people.json')
+            self.assertGreaterEqual(code, 400)
+            self.assertNotIn(b'person_count', body)
+            self.assertNotIn(str(self.bundle).encode(), body)
 
 
 if __name__ == '__main__':

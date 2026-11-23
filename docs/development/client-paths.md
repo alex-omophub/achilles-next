@@ -26,7 +26,7 @@ not establish a laptop hardware minimum or qualify large-source performance.
 | `openDatabaseResultProvider`, `readResultObject` | Same approved bytes and semantic operations | SELECT through approved PostgreSQL serving views, with grant checks. No CDM join or generation on a read. Driver/network latency is additional to local artifact cost. |
 | `readPopulationObservationBaseline`, `readDomainBaseline`, `readMeasurementBaseline`, `listDomainConcepts` | Restricted saved-candidate validation/readback and bounded spool/paging | Read result-store tables, not a replacement for approved UI provider access. |
 | `generateCountTracer`, `generateObservationTracer`, `generateMeasurementReport`, measurement run/recovery APIs | Earlier fixture/measurement tracer pipeline | Deliberately marked synthetic-schema/database restrictions. They are development paths, not the general external-source entry point. Keep their guards. |
-| `viewResults` | Loopback HTTP server and development React viewer of contracts 1.0/1.1 | Source-free viewing, but currently the earlier count/observation/measurement bundle formats. It does not render the 142-output 2.x saved-provider model. |
+| `viewResults` | Loopback HTTP server and installed React viewer for v1 tracers and approved v2 core exports | V1 snapshots its bounded tracer bundle. V2 pages the approved catalogue and reads the saved person count through a pinned artifact provider. Opening a v2 directory requires a trusted `authorize` callback. The v2 reader uses R and a JVM. Both viewers work with the CDM disconnected. |
 
 ## Buffer boundaries to verify
 
