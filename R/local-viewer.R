@@ -143,12 +143,13 @@ viewResults <- function(bundleDir, browse = TRUE, port = 0L, basePath = "/achill
     key <- substring(path, nchar(basePath) + 1L)
     query <- req$QUERY_STRING %||% ""
     reportMetric <- NULL
-    if (publication && startsWith(key, "api/reports/")) {
+    if (publication && (startsWith(key, "api/reports/") || startsWith(key, "api/evidence/"))) {
       # Use the registered metric identifier grammar. Only the provider can
       # resolve the identifier to a dataset in the approved publication.
-      if (!grepl("^api/reports/[a-z][a-z0-9_.]{1,127}[.]json\\z", key, perl=TRUE))
+      metric <- regmatches(key, regexec("^api/(?:reports|evidence)/([a-z][a-z0-9_.]{1,127})[.]json\\z", key, perl=TRUE))[[1L]]
+      if (!length(metric))
         return(response(404L, "Not found"))
-      reportMetric <- substr(key, nchar("api/reports/") + 1L, nchar(key) - nchar(".json"))
+      reportMetric <- metric[[2L]]
     }
     if (publication && (!is.null(reportMetric) || key %in% c("api/catalogue.json", "api/people.json",
         "api/concepts/search.json", "api/concepts/lookup.json"))) {

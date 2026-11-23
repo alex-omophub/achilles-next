@@ -3,10 +3,11 @@ import {createRequire} from 'node:module';
 import {createServer} from 'vite';
 import {checkChartRecovery, checkChartsAndEvidence} from './chart-evidence.mjs';
 import {checkLateConceptSearch, checkSavedFilters} from './saved-filters.mjs';
+import {checkEvidenceDownloads} from './evidence-export.mjs';
 
 // Playwright is test-only and can be installed separately through NODE_PATH.
 const {chromium} = createRequire(import.meta.url)('playwright');
-const [firstUrl, secondUrl] = process.argv.slice(2);
+const [firstUrl, secondUrl, firstApproval, secondApproval] = process.argv.slice(2);
 const proxy = {};
 for (const [name, url] of [['first', firstUrl], ['second', secondUrl]]) {
   const viewer = new URL(url);
@@ -117,6 +118,7 @@ try {
   const stillAuthorized = await selectMetric(second, 'core.visit.care_setting_count');
   await stillAuthorized.getByText('capability.care_site_absent', {exact: true}).waitFor();
   await checkLateConceptSearch(page, host, selectMetric);
+  await checkEvidenceDownloads(page, host, firstUrl, [firstApproval, secondApproval], selectMetric);
   assert.deepEqual(errors, []);
   await checkChartRecovery(page, host, selectMetric);
 } finally {

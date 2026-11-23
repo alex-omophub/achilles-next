@@ -442,6 +442,43 @@ class PublicationViewerTests(InstalledViewerCase):
             self.assertEqual(concepts(url, 'lookup', id='1'), (403, {'error': 'inaccessible'}))
             self.assertEqual(concepts(url, 'search', q=query), (403, {'error': 'inaccessible'}))
 
+    def test_evidence_export_reauthorizes_the_exact_page_and_definition(self):
+        with self.serving(trusted_context=self.trusted_context) as url:
+            def read(kind, metric, **params):
+                path = f'api/{kind}/{metric}.json'
+                if params:
+                    path += '?' + urllib.parse.urlencode(params)
+                code, _, body = self.get(url + path)
+                self.assertLessEqual(len(body), 1024 * 1024)
+                return code, json.loads(body)
+
+            metric = 'core.person.gender_count'
+            _, first = read('reports', metric)
+            cursor = first['cursor']
+            self.assertTrue(cursor)
+            _, report = read('reports', metric, cursor=cursor)
+            code, evidence = read('evidence', metric, cursor=cursor)
+            self.assertEqual((code, evidence['kind'], evidence['format_version'], evidence['generation_requested']),
+                             (200, 'selected_page_evidence', '1.0.0', False))
+            self.assertEqual(evidence['page'], report)
+            self.assertTrue(evidence['page']['dependencies'])
+            self.assertEqual(evidence['definition']['id'], metric)
+            self.assertEqual(evidence['definition']['version'], report['dataset']['version'])
+            self.assertEqual(evidence['limitations']['selection'], 'current_page_only')
+            self.assertIn('quantiles', evidence['limitations']['precision'])
+            self.assertEqual(evidence['provenance']['root_sha256'], json.loads(self.trusted_context.read_bytes())['root']['sha256'])
+            self.assertNotIn(str(self.bundle), json.dumps(evidence))
+            filters = json.dumps({'gender_concept_id': '0'})
+            _, selected = read('evidence', metric, filters=filters)
+            self.assertEqual(selected['page']['selection']['filters'], json.loads(filters))
+            self.assertEqual([r['values']['person_count'] for r in selected['page']['rows']], ['6'])
+            self.assertEqual(read('evidence', metric, filters=filters, cursor=cursor)[0], 400)
+            _, hidden = read('evidence', 'core.drug.capture_count')
+            self.assertEqual((hidden['page']['state'], hidden['page']['rows'], hidden['page']['dependencies']),
+                             ('suppressed', [], []))
+            Path(str(self.trusted_context) + '.revoked').touch()
+            self.assertEqual(read('evidence', metric, filters=filters), (403, {'error': 'inaccessible'}))
+
     def test_authorization_is_required_and_rechecked_for_cached_results(self):
         path = 'api/reports/core.person.gender_count.json'
         with self.serving() as url:

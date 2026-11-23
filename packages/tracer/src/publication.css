@@ -76,3 +76,6 @@
 .publication-finder ul { list-style: none; padding: 0; }
 .publication-finder li { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 12px; border-block-start: 1px solid var(--rule); padding-block: 8px; overflow-wrap: anywhere; }
 .publication-finder li small { display: block; }
+
+.publication-download { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-block: 16px; }
+.publication-download span { color: var(--muted); font-size: 14px; }

@@ -86,6 +86,16 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
       list(metricId='core.condition.capture_count',rowKind='summary'))) {
     semanticSame(do.call(fileProvider$selectSavedRows,request),do.call(dbProvider$selectSavedRows,request))
   }
+  for(mid in c('core.person.gender_count','core.measurement.numeric_summary','core.drug.capture_count')) {
+    leftEvidence<-fileProvider$exportSavedPage(mid)
+    rightEvidence<-dbProvider$exportSavedPage(mid)
+    semanticSame(leftEvidence$page,rightEvidence$page)
+    stopifnot(identical(leftEvidence$provenance,rightEvidence$provenance),
+      identical(leftEvidence$definition,rightEvidence$definition),
+      identical(leftEvidence$limitations,rightEvidence$limitations),
+      identical(rightEvidence$provenance$root_sha256,descriptor$sha256),
+      length(f('.v2_bytes')(rightEvidence))<=1048576L)
+  }
   left<-NULL;right<-NULL;summaryKeys<-character()
   repeat {
     a<-fileProvider$selectSavedRows('core.measurement.numeric_summary',maxRows=1L,cursor=left)
@@ -138,7 +148,8 @@ testSavedTransportIntegration <- function(directory,descriptor,details,serving,r
   stopifnot(inherits(denied,'achillesnext_read_error'),denied$code=='unavailable',database$inspect()$cache_bytes==0L)
   denied<-tryCatch({dbProvider$listMetrics();NULL},error=identity)
   stopifnot(inherits(denied,'achillesnext_read_error'),denied$code=='unavailable',dbProvider$inspect()$cache_bytes==0L)
-  for(work in list(function()dbProvider$lookupConcepts(knownId),function()dbProvider$searchConcepts('x'))) {
+  for(work in list(function()dbProvider$lookupConcepts(knownId),function()dbProvider$searchConcepts('x'),
+                   function()dbProvider$exportSavedPage('core.person.gender_count'))) {
     denied<-tryCatch({work();NULL},error=identity)
     stopifnot(inherits(denied,'achillesnext_read_error'),denied$code=='unavailable',dbProvider$inspect()$cache_bytes==0L)
   }

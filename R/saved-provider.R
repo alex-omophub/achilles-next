@@ -63,8 +63,8 @@
       .saved_fit_page(entries,done$complete,build,api$measure,maxBytes)
     },cancel,responseLimit=maxBytes)
   }
-  select <- function(metricId,filters=list(),rowKind=NULL,population=NULL,maxRows=100L,maxBytes=1048576L,cursor=NULL,cancel=function()FALSE) {
-    reader$session(function(api) {
+  selection <- function(metricId,filters,rowKind,population,maxRows,maxBytes,cursor) {
+    function(api) {
       if(!bounded(maxRows,1000L)||!bounded(maxBytes,8388608L)) .saved_error("invalid_request")
       if(is.list(filters)&&!length(filters)&&is.null(names(filters)))filters<-.object()
       capability <- input(function().saved_capability(metricId,assets))
@@ -179,9 +179,32 @@
       })
       if(!length(rows))return(response("not_saved","selection.no_saved_rows"))
       .saved_fit_page(rows,done$complete,build,api$measure,maxBytes)
+    }
+  }
+  select <- function(metricId,filters=list(),rowKind=NULL,population=NULL,maxRows=100L,maxBytes=1048576L,cursor=NULL,cancel=function()FALSE) {
+    reader$session(selection(metricId,filters,rowKind,population,maxRows,maxBytes,cursor),cancel,responseLimit=maxBytes)
+  }
+  exportPage <- function(metricId,filters=list(),cursor=NULL,maxRows=12L,maxBytes=1048576L,cancel=function()FALSE) {
+    reader$session(function(api) {
+      if(!bounded(maxRows,12L)||!bounded(maxBytes,1048576L)) .saved_error("invalid_request")
+      # Re-read the same selection in one authorized session. The export
+      # envelope must fit whole; reducing the selected rows would change it.
+      page <- selection(metricId,filters,NULL,NULL,maxRows,maxBytes,cursor)(api)
+      root <- api$root()
+      page$budget <- api$budget()
+      definition <- assets$metrics[[metricId]]
+      .nv_need(identical(root$profile_sha256,assets$hash) &&
+        identical(page$dataset$definition_sha256,.v2_hash(.v2_bytes(definition))))
+      provenance <- .object(root_sha256=transport$context$root$sha256,scope_kind=root$scope_kind,
+        generated_at=root$generated_at,source_schema=root$source_schema,source_consistency=root$source_consistency,
+        approval_id=root$disclosure$approval_id,policy_sha256=root$disclosure$policy_sha256)
+      contracts <- assets$profile$contracts
+      .object(format_version="1.0.0",kind="selected_page_evidence",generation_requested=FALSE,page=page,
+        definition=definition,provenance=provenance,limitations=.object(selection="current_page_only",
+          precision=contracts[["exact-values"]],availability=contracts[["availability-and-completeness"]]))
     },cancel,responseLimit=maxBytes)
   }
-  c(list(listMetrics=metrics,selectSavedRows=select),
+  c(list(listMetrics=metrics,selectSavedRows=select,exportSavedPage=exportPage),
     .saved_concept_methods(reader,identity,bounded,input),list(close=reader$close,inspect=reader$inspect))
 }
 #' Open semantic access to an admitted artifact

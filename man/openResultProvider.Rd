@@ -16,7 +16,7 @@ openDatabaseResultProvider(connectionDetails, servingSchema, context,
 \item{readBudget}{Optional named overrides for cacheBytes, maxObjects, maxBytes and maxRows of the internal reader. Defaults are 4 MiB raw cache, 64 distinct objects, 8 MiB distinct verified bytes and 8,192 distinct verified leaf rows per operation. Database caching is disabled.}
 }
 \description{Provides metric discovery and exact equality selection of typed precomputed rows through the same native interface for artifact and database modes. Does not query CDM tables, aggregate results again, or schedule jobs.}
-\value{A provider list with listMetrics, selectSavedRows, lookupConcepts, searchConcepts, inspect and idempotent close methods. Data responses are serializable lists with pinned context, explicit state/reason, opaque cursor, complete flag and bounded read counters.}
+\value{A provider list with listMetrics, selectSavedRows, exportSavedPage, lookupConcepts, searchConcepts, inspect and idempotent close methods. Data responses are serializable lists with pinned context, explicit state/reason, opaque cursor, complete flag and bounded read counters.}
 \details{
 The experimental native R interface uses installed integrity-checked definitions.
 Physical filenames, page descriptors, index keys and SQL are absent from method requests.
@@ -36,6 +36,16 @@ including dependencies, context, cursor and counters. Row and metric pages stop
 at the byte boundary with a continuation cursor. A single unit with its required
 response envelope/evidence/continuation that cannot fit raises resource_limit. All catalogue, selected-row and dependency
 reads share the operation's bounded read budget. No count, mean or percentile is recomputed.
+
+\code{exportSavedPage(metricId, filters = list(), cursor = NULL, maxRows = 12L,
+maxBytes = 1048576L, cancel = function() FALSE)} rechecks authority and reads the
+same default row kind, exact filters and cursor as \code{selectSavedRows} with
+the same limits. The result includes that complete page, its linked dependencies,
+the installed definition verified against its published hash, the approved root
+and scope identifiers, source consistency and the registered precision and
+availability contracts where present. The maximum is 12 primary rows and 1 MiB
+for the entire envelope. If the envelope exceeds the limit the method raises
+\code{resource_limit}. Continuations belong to the issuing provider instance.
 
 State available preserves individual row states and exact string values. Missing selections
 are not_saved, independently of saved zero or empty_source/empty_population rows.

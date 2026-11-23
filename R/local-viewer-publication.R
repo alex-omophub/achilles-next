@@ -103,5 +103,6 @@
     filters <- tryCatch(.nv_json(charToRaw(enc2utf8(args$filters))), error=function(e) .saved_error("invalid_request"))
     if (!.nv_object(filters)) .saved_error("invalid_request")
   }
-  snapshot$provider$selectSavedRows(reportMetric, filters=filters, maxRows=12L, maxBytes=1048576L, cursor=args$cursor)
+  read <- if (startsWith(key, "api/evidence/")) snapshot$provider$exportSavedPage else snapshot$provider$selectSavedRows
+  read(reportMetric, filters=filters, maxRows=12L, maxBytes=1048576L, cursor=args$cursor)
 }

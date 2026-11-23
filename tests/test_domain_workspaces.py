@@ -17,6 +17,7 @@ class DomainWorkspaceTests(InstalledViewerCase):
         tracer = tests.parent / 'packages' / 'tracer'
         with contextlib.ExitStack() as servers:
             urls = []
+            approvals = []
             for source in ('first', 'second'):
                 folder = self.root / source
                 approved = self.root / (source + '.json')
@@ -32,8 +33,9 @@ class DomainWorkspaceTests(InstalledViewerCase):
                     'jsonlite::write_json(fixture$context, args[4], auto_unbox=TRUE)',
                     str(fixture), str(folder), 'fixture:' + source, str(approved),
                 ], check=True, env=dict(os.environ, R_LIBS=LIBRARY))
+                approvals.append(str(approved))
                 urls.append(servers.enter_context(self.serving(folder, trusted_context=approved)))
-            subprocess.run(['node', 'tests/browser/domain-workspaces.mjs', *urls],
+            subprocess.run(['node', 'tests/browser/domain-workspaces.mjs', *urls, *approvals],
                            cwd=tracer, check=True, timeout=120)
 
 
