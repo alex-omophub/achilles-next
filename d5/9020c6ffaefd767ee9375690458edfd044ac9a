@@ -45,6 +45,7 @@ inst/viewer/assets/ComposedChart-Dly5EmZD.js
   s_3e206b4a2cf4c3::t_9c5bf344c902ec 1
 inst/viewer/assets/MeasurementChart-BhQydq6h.js
   s_3e206b4a2cf4c3::t_3e4a01371e7ecf 1,3-5
+  s_895f6ebe145fd3::t_f16b07d9015abc 2
 inst/viewer/assets/ObservationChart-DYvgzeCg.js
   s_3e206b4a2cf4c3::t_b3c34a00b86c96 1
 inst/viewer/assets/SavedChartGraphic-gmb733Pm.js
@@ -53,6 +54,7 @@ inst/viewer/assets/index-C2UpvVc_.css
   s_3e206b4a2cf4c3::t_8f6a84b7d0be02 1
 inst/viewer/assets/index-IamwfMFE.js
   s_3e206b4a2cf4c3::t_a1af6acc229401 1,9-10,846,1682
+  s_895f6ebe145fd3::t_f16b07d9015abc 2-8,11-845,847-1681
 inst/viewer/index.html
   s_3e206b4a2cf4c3::t_d70eac0a28cf34 3-4
 inst/viewer/viewer-lock.json
