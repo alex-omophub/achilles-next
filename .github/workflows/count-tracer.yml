@@ -152,7 +152,8 @@ jobs:
           npm ci --prefix packages/tracer --ignore-scripts --no-audit --no-fund
           npm run package-viewer --prefix packages/tracer
           python3 tools/check_viewer_assets.py
-          git diff --exit-code -- inst/viewer inst/validation
+          git diff --exit-code -- inst/viewer inst/validation inst/embed
+          test -z "$(git ls-files --others --exclude-standard -- inst/viewer inst/validation inst/embed)"
       - name: Install contracts dependencies before generator validation
         if: matrix.suite == 'compatibility'
         run: npm ci --prefix packages/contracts --ignore-scripts --no-audit --no-fund

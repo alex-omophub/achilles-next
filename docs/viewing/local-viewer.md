@@ -102,6 +102,9 @@ scope. The local browser receives only the results of bounded catalogue, populat
 
 ## Embed the report in a React host
 
+For a prebuilt ES module that mounts into a host-owned DOM element, see the
+[embedded workspace guide](embedded-workspace.md).
+
 The source component `PublicationWorkspace` in
 [PublicationView.tsx](../../packages/tracer/src/PublicationView.tsx) renders the
 same report without the standalone page header. Supply a stable provider and a

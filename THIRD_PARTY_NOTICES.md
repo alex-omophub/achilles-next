@@ -6,7 +6,8 @@ The count tracer uses OHDSI DatabaseConnector, jsonlite, digest, rJava and httpu
 R interfaces. The installed local viewer includes built React/React DOM, Recharts, react-is and
 Ajv validation helpers; their dependency license texts are distributed in
 [inst/viewer/DEPENDENCY-LICENSES.txt](inst/viewer/DEPENDENCY-LICENSES.txt) and in the
-installed package's `viewer` directory. Full Ajv schema compilation, Vite,
+installed package's `viewer` directory. When redistributing the host-mountable
+ES module, include its [dependency notices](inst/embed/DEPENDENCY-LICENSES.txt). Full Ajv schema compilation, Vite,
 TypeScript and Vitest run only during contributor builds/tests. R dependencies
 and the PostgreSQL JDBC binary are not vendored here. Dependencies retain their
 own licenses; npm lockfiles and the synthetic runtime tuple pin selected versions.

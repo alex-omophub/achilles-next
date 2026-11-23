@@ -1,6 +1,6 @@
-import {useEffect, useMemo, useRef, useState} from 'react';
-import {assertSamePublication, PublicationReadError, readCatalogue, readPeople, readReport, selectReport, readPageEvidence, lookupConcept, searchConcepts,
-  type CatalogueMetric, type CataloguePage, type PopulationResult, type ReportPage, type SavedFilters, type ConceptPage} from './saved-publication';
+import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
+import {assertSamePublication, PublicationReadError, createPublicationHttpProvider,
+  type PublicationProvider, type CatalogueMetric, type CataloguePage, type PopulationResult, type ReportPage, type SavedFilters} from './saved-publication';
 import {SavedReportFilters, supportsFilters} from './SavedReportFilters';
 import {SavedReportTable, stateLabel} from './SavedReportTable';
 import {SavedReportChart} from './SavedReportChart';
@@ -8,15 +8,8 @@ import {SavedEvidenceDownload} from './SavedEvidenceDownload';
 import {SavedReportEvidence} from './SavedReportEvidence';
 import './publication.css';
 
-export interface PublicationProvider {
-  people(signal: AbortSignal): Promise<PopulationResult>;
-  catalogue(cursor: string | null, signal: AbortSignal): Promise<CataloguePage>;
-  report(metricId: string, cursor: string | null, signal: AbortSignal): Promise<ReportPage>;
-  select?(metricId: string, filters: SavedFilters, cursor: string | null, signal: AbortSignal): Promise<ReportPage>;
-  search?(query: string, cursor: string | null, signal: AbortSignal): Promise<ConceptPage>;
-  exportEvidence?(metricId: string, filters: SavedFilters, cursor: string | null, signal: AbortSignal): Promise<unknown>;
-  lookup?(id: string, signal: AbortSignal): Promise<ConceptPage>;
-}
+export type {PublicationProvider} from './saved-publication';
+interface FirstRender {applied(): void; failed(error: unknown): void}
 
 const domains: Record<string, string> = {
   person: 'Person', observation_period: 'Observation period', visit: 'Visit', condition: 'Condition',
@@ -74,7 +67,7 @@ function Summary({people}: {people: PopulationResult}) {
     </dl>
   </section>;
 }
-function Session({provider}: {provider: PublicationProvider}) {
+function Session({provider, firstRender}: {provider: PublicationProvider; firstRender?: FirstRender}) {
   const [selection, setSelection] = useState<Selection>(initial);
   const [people, setPeople] = useState<PopulationResult | null>(null);
   const [result, setResult] = useState<{catalogue?: CataloguePage; report?: ReportPage} | null>(null);
@@ -93,6 +86,7 @@ function Session({provider}: {provider: PublicationProvider}) {
     setSelection(next);
   }
   function failed(failure: unknown) {
+    firstRender?.failed(failure);
     active.current?.abort();
     pinned.current = null;
     setPeople(null);
@@ -143,6 +137,9 @@ function Session({provider}: {provider: PublicationProvider}) {
     if (!result || selection === initial) return;
     (selectedButton.current ?? heading.current)?.focus();
   }, [result, selection]);
+  useLayoutEffect(() => {
+    if (selection === initial && people && result && !error) firstRender?.applied();
+  }, [selection, people, result, error, firstRender]);
   if (error) return <div className="publication-error" role="alert"><h2>Publication unavailable</h2><p>{error}</p></div>;
   if (!people) return <p role="status">Opening saved publication…</p>;
   const {metric, domain, catalogueStarts, rowStarts} = selection;
@@ -218,23 +215,16 @@ function Session({provider}: {provider: PublicationProvider}) {
   </>;
 }
 
-export function PublicationWorkspace({provider, instanceKey}: {provider: PublicationProvider; instanceKey: string}) {
+export function PublicationWorkspace({provider, instanceKey, firstRender}: {provider: PublicationProvider; instanceKey: string; firstRender?: FirstRender}) {
   // A replaced provider can carry different authority even if its display key is unchanged.
   const [binding, setBinding] = useState({provider, generation: 0});
   if (binding.provider !== provider) setBinding({provider, generation: binding.generation + 1});
-  return <div className="publication-workspace"><Session key={JSON.stringify([instanceKey, binding.generation])} provider={provider}/></div>;
+  return <div className="publication-workspace"><Session key={JSON.stringify([instanceKey, binding.generation])} provider={provider} firstRender={firstRender}/></div>;
 }
 
 export function PublicationView({base}: {base: URL}) {
   const href = base.href;
-  const provider = useMemo<PublicationProvider>(() => {
-    const api = new URL(href);
-    return {people: signal => readPeople(api, signal), catalogue: (cursor, signal) => readCatalogue(api, cursor, signal),
-      report: (id, cursor, signal) => readReport(api, id, cursor, signal),
-      select: (id, filters, cursor, signal) => selectReport(api, id, filters, cursor, signal),
-      exportEvidence: (id, filters, cursor, signal) => readPageEvidence(api, id, filters, cursor, signal),
-      lookup: (id, signal) => lookupConcept(api, id, signal), search: (query, cursor, signal) => searchConcepts(api, query, cursor, signal)};
-  }, [href]);
+  const provider = useMemo(() => createPublicationHttpProvider(new URL(href)), [href]);
   return <main className="publication-view">
     <header><span className="wordmark">Achilles<span>Next</span></span></header>
     <h1>Characterization results</h1>

@@ -4,7 +4,8 @@ import {canonical, sha256} from '../../contracts/src/index.mjs';
 // owns page verification, selection semantics and authorization.
 const contextKeys = ['contract_version', 'source_id', 'release_id', 'publication_id', 'access_scope_id',
   'profile_id', 'profile_sha256', 'profile_revision', 'authorization_epoch', 'instance_id'] as const;
-type Context = Record<typeof contextKeys[number], string>;
+export type PublicationContext = Readonly<Record<typeof contextKeys[number], string>>;
+type Context = PublicationContext;
 export interface CatalogueMetric {
   metric_id: string;
   version: string;
@@ -369,4 +370,26 @@ export async function pageEvidenceJson(envelope: unknown, displayed: ReportPage,
     limitations: {selection: limitations.selection, precision: limitations.precision, availability: limitations.availability},
   };
   return boundedJson(publicEvidence, true);
+}
+
+export interface PublicationProvider {
+  people(signal: AbortSignal): Promise<PopulationResult>;
+  catalogue(cursor: string | null, signal: AbortSignal): Promise<CataloguePage>;
+  report(metricId: string, cursor: string | null, signal: AbortSignal): Promise<ReportPage>;
+  select?(metricId: string, filters: SavedFilters, cursor: string | null, signal: AbortSignal): Promise<ReportPage>;
+  search?(query: string, cursor: string | null, signal: AbortSignal): Promise<ConceptPage>;
+  exportEvidence?(metricId: string, filters: SavedFilters, cursor: string | null, signal: AbortSignal): Promise<unknown>;
+  lookup?(id: string, signal: AbortSignal): Promise<ConceptPage>;
+}
+
+export function createPublicationHttpProvider(base: URL): PublicationProvider {
+  const api = new URL(base.href);
+  if (!api.pathname.endsWith('/')) api.pathname += '/';
+  return {people: signal => readPeople(api, signal),
+    catalogue: (cursor, signal) => readCatalogue(api, cursor, signal),
+    report: (id, cursor, signal) => readReport(api, id, cursor, signal),
+    select: (id, filters, cursor, signal) => selectReport(api, id, filters, cursor, signal),
+    search: (query, cursor, signal) => searchConcepts(api, query, cursor, signal),
+    lookup: (id, signal) => lookupConcept(api, id, signal),
+    exportEvidence: (id, filters, cursor, signal) => readPageEvidence(api, id, filters, cursor, signal)};
 }
