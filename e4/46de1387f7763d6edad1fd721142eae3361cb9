@@ -1,0 +1,55 @@
+packages/tracer/src/SavedReportChart.tsx
+  s_895f6ebe145fd3::t_c2d062c4134e17 38
+inst/viewer/viewer-lock.json
+  s_895f6ebe145fd3::t_04ad616c8040ba 23,32,44-48,50-51
+inst/viewer/assets/ObservationChart-q2rFfRzO.js
+  s_895f6ebe145fd3::t_04ad616c8040ba 1
+inst/viewer/assets/CartesianChart-DFblcbi1.js
+  s_895f6ebe145fd3::t_04ad616c8040ba 1-55
+packages/tracer/src/saved-chart.ts
+  s_895f6ebe145fd3::t_c2d062c4134e17 59-61,63,67
+packages/tracer/tests/browser/chart-evidence.mjs
+  s_895f6ebe145fd3::t_c2d062c4134e17 93-111,113-121
+  s_895f6ebe145fd3::t_347934605a49a9 112
+inst/viewer/assets/SavedChartGraphic-C6VM8OSv.js
+  s_895f6ebe145fd3::t_04ad616c8040ba 1
+inst/viewer/assets/MeasurementChart-Cd3Mj3us.js
+  s_895f6ebe145fd3::t_04ad616c8040ba 1-5
+inst/viewer/index.html
+  s_895f6ebe145fd3::t_04ad616c8040ba 3
+packages/tracer/tests/saved-chart.test.ts
+  s_895f6ebe145fd3::t_c2d062c4134e17 80-91
+inst/viewer/assets/ComposedChart-BMEwAaYU.js
+  s_895f6ebe145fd3::t_04ad616c8040ba 1
+inst/viewer/assets/index-Cuv3r5Um.js
+  s_895f6ebe145fd3::t_04ad616c8040ba 1-1682
+packages/tracer/tests/browser/domain-workspaces.mjs
+  s_895f6ebe145fd3::t_2bc83939c29e14 4,118
+  s_3e206b4a2cf4c3::t_1428b84fdfb432 85-88
+packages/tracer/tests/saved-report-evidence.test.tsx
+  s_3e206b4a2cf4c3::t_1428b84fdfb432 8-11,14,17-23,31,35-38
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e446de1387f7763d6edad1fd721142eae3361cb9",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
