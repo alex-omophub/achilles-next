@@ -151,6 +151,29 @@ try {
     await slot.getByText('Page 1', {exact: true}).waitFor();
     await slot.getByText('Exact saved rows', {exact: true}).click();
     assert.equal(await slot.getByRole('table').innerText(), firstRows);
+    const id = '9007199254740993';
+    const conceptButton = slot.getByRole('button', {name: 'Select concept ' + id + ' from gender_concept_id'});
+    if (!await conceptButton.count()) {
+      await slot.getByRole('button', {name: 'Next rows'}).click();
+      await slot.getByText('Page 2', {exact: true}).waitFor();
+      await slot.getByText('Exact saved rows', {exact: true}).click();
+    }
+    const peer = host === 'react' ? 'vue' : 'react';
+    const peerBefore = await page.evaluate(n => fixture.events(n).length, peer);
+    await conceptButton.press('Enter');
+    await slot.getByRole('button', {name: 'Open concept ' + id + ' in host'}).click();
+    const [selected, navigation] = await page.evaluate(n => fixture.events(n), host);
+    assert.deepEqual([selected.type,navigation.type], ['concept_selected','navigation_requested']);
+    assert.deepEqual(selected.payload, {target:'concept',concept_id:id,dimension:'gender_concept_id',
+      metric_id:'core.person.gender_count',metric_version:'1.0.0'});
+    assert.deepEqual(navigation.payload,selected.payload);
+    assert.equal(navigation.correlation_id,selected.correlation_id);
+    assert.notEqual(navigation.event_id,selected.event_id);
+    assert.deepEqual(selected.context,pins[source]);
+    assert.equal(selected.instance_id,await page.evaluate(n=>fixture.id(n),host));
+    assert.equal(navigation.generation,selected.generation);
+    assert.equal(await page.evaluate(n=>fixture.events(n).length,peer),peerBefore);
+    assert.equal(page.url(),href);
     for (const [version, pin, code] of [['3.0.0', source, 'read_failed'],
       ['1.0.0', source === 'first' ? 'second' : 'first', 'context_mismatch']]) {
       assert.equal(await page.evaluate(async args => {

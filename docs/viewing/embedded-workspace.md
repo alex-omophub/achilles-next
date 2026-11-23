@@ -94,6 +94,22 @@ show a message and retain the table. Paging reads the next saved page on demand.
 A mismatched publication, access scope or metric version rejects the mount’s
 `ready` promise or the corresponding `update()` and clears the failed view.
 
+## Handle concept selection and navigation
+
+Pass an optional `onEvent(event)` callback when mounting to enable concept
+actions in saved row tables. Selecting a positive concept ID emits
+`concept_selected`. Choosing **Open concept in host** emits
+`navigation_requested`. The host decides whether and where to navigate.
+Zero, null, aggregate tags, and non-concept dimensions remain plain values.
+
+Each v2 publication event carries `event_version: '1.0.0'`, a unique
+`event_id`, `origin: 'user'`, the mount’s `instance_id`, its current
+`generation`, and the pinned publication `context`. The two actions share
+a `correlation_id`. The payload identifies the metric, definition version,
+dimension and exact decimal-string `concept_id`, with `target: 'concept'`.
+Keep the ID as a string when constructing a route. Bind the callback to the
+mount’s host and verify the current context before acting asynchronously.
+
 ## Host lifecycle and styling
 
 Keep the handle while the host component owns its DOM node. In React, create

@@ -16,9 +16,24 @@ export interface PublicationMountConfiguration {
   readonly target: {readonly kind: 'workspace'; readonly version: '2'} | DirectPublicationTarget;
   readonly context: PublicationContext;
 }
+export interface PublicationConceptEvent {
+  readonly event_version: '1.0.0';
+  readonly type: 'concept_selected' | 'navigation_requested';
+  readonly event_id: string;
+  readonly correlation_id: string;
+  readonly origin: 'user';
+  readonly instance_id: string;
+  readonly generation: number;
+  readonly context: PublicationContext;
+  readonly payload: {
+    readonly target: 'concept'; readonly concept_id: string; readonly dimension: string;
+    readonly metric_id: string; readonly metric_version: string;
+  };
+}
 export interface PublicationMountOptions extends PublicationMountConfiguration {
   readonly provider: PublicationProvider;
   readonly styleNonce?: string;
+  readonly onEvent?: (event: PublicationConceptEvent) => void;
 }
 export interface PublicationMountOutcome {
   readonly status: 'applied' | 'superseded' | 'destroyed';
@@ -63,7 +78,7 @@ function pinTarget(target: unknown): PublicationMountConfiguration['target'] {
 }
 function pin(options: unknown, mounting: boolean): PublicationMountConfiguration {
   if (!object(options) || Object.keys(options).some(key =>
-    !['target', 'context', ...(mounting ? ['provider', 'styleNonce'] : [])].includes(key))) throw new MountFailure('invalid_configuration');
+    !['target', 'context', ...(mounting ? ['provider', 'styleNonce', 'onEvent'] : [])].includes(key))) throw new MountFailure('invalid_configuration');
   const target = pinTarget(options.target);
   const ctx = options.context;
   if (!object(ctx) || Object.keys(ctx).length !== pins.length || !pins.every(key =>
@@ -117,9 +132,10 @@ export function mountPublicationWorkspace(container: HTMLElement, options: Publi
     || typeof globalThis.AbortSignal.prototype.throwIfAborted !== 'function' || typeof container.attachShadow !== 'function')
     throw new MountFailure('unsupported_environment');
   if (occupied.has(container) || container.hasChildNodes() || container.shadowRoot) throw new MountFailure('container_occupied');
-  const initial = pin(options, true), provider = options.provider;
+  const initial = pin(options, true), provider = options.provider, onEvent = options.onEvent;
   if (!object(provider) || !['people','catalogue','report'].every(key => typeof provider[key] === 'function')
     || !['lookup','search','select','exportEvidence'].every(key => provider[key] === undefined || typeof provider[key] === 'function')
+    || (onEvent !== undefined && typeof onEvent !== 'function')
     || (options.styleNonce !== undefined && (typeof options.styleNonce !== 'string' || !options.styleNonce)))
     throw new MountFailure('invalid_configuration');
   const doc = container.ownerDocument;
@@ -165,9 +181,14 @@ export function mountPublicationWorkspace(container: HTMLElement, options: Publi
         applied() { if (active?.index === index) resolve({status: 'applied', generation: index}); },
         failed(error: unknown) { if (active?.index === index) reject(error instanceof MountFailure ? error : new MountFailure('read_failed')); },
       };
+      const onConcept = onEvent && ((type: PublicationConceptEvent['type'], payload: PublicationConceptEvent['payload'], correlationId: string) => {
+        if (active?.index !== index || controller.signal.aborted) return;
+        onEvent({event_version: '1.0.0', type, event_id: crypto.randomUUID(), correlation_id: correlationId,
+          origin: 'user', instance_id: id, generation: index, context, payload: {...payload}});
+      });
       root.render(target.kind === 'workspace'
-        ? <PublicationWorkspace provider={reads} instanceKey={id} firstRender={firstRender}/>
-        : <DirectPublicationView provider={reads} direct={{target, context}} firstRender={firstRender}/>);
+        ? <PublicationWorkspace provider={reads} instanceKey={id} onConcept={onConcept} firstRender={firstRender}/>
+        : <DirectPublicationView provider={reads} direct={{target, context}} onConcept={onConcept} firstRender={firstRender}/>);
     });
   }
   container.appendChild(host);
