@@ -215,8 +215,11 @@ export async function selectReport(base: URL, metricId: string, filters: SavedFi
   const page = await request(reportUrl(base, 'reports', metricId, filters, cursor), signal, fetchImpl);
   return parseReport(page, metricId, filters);
 }
+export function validMetricId(value: unknown): value is string {
+  return typeof value === 'string' && value.length <= 128 && /^(core|observed)\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/.test(value);
+}
 function reportUrl(base: URL, kind: 'reports' | 'evidence', metricId: string, filters: SavedFilters, cursor: string | null) {
-  check(metricId.length <= 128 && /^(core|observed)\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/.test(metricId));
+  check(validMetricId(metricId));
   const url = new URL(`${kind}/${metricId}.json`, base);
   if (Object.keys(filters).length) url.searchParams.set('filters', canonical(filters));
   if (cursor !== null) url.searchParams.set('cursor', cursor);

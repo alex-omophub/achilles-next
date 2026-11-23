@@ -121,6 +121,56 @@ try {
     await slot.getByRole('heading', {name: 'Metric catalogue'}).waitFor();
     assert.equal(await slot.getByRole('figure').count(), 0);
   }
+  for (const [host, slot, source] of [['react', react, 'first'], ['vue', vue, 'second']]) {
+    const metric = 'core.measurement.numeric_summary';
+    for (const kind of ['report', 'chart']) {
+      const before = assets.length;
+      const outcome = await page.evaluate(args => fixture.direct(...args), [host, kind, metric]);
+      assert.equal(outcome.status, 'applied');
+      await slot.getByRole('region', {name: 'Saved ' + kind + ' view'}).waitFor();
+      await slot.getByRole('figure', {name: /Measurement distribution/}).locator('.recharts-line-curve').waitFor();
+      if (kind === 'chart') await slot.getByText('Exact saved rows', {exact: true}).click();
+      await slot.getByRole('table', {name: 'Saved rows for ' + metric}).getByText('2.5', {exact: true}).first().waitFor();
+      assert.equal(await slot.getByRole('combobox', {name: 'Domain or section'}).count(), 0);
+      assert.deepEqual(assets.slice(before).map(url => url.pathname).filter(path => path.includes('/api/')),
+        ['/host/demo/sources/' + source + '/api/reports/' + metric + '.json']);
+    }
+    await page.evaluate(name => fixture.direct(name, 'chart', 'core.person.gender_count'), host);
+    await slot.getByText('A chart is unavailable', {exact: false}).waitFor();
+    await slot.getByText('Exact saved rows', {exact: true}).click();
+    await slot.getByRole('table').waitFor();
+    const firstRows = await slot.getByRole('table').innerText();
+    await slot.getByRole('button', {name: 'Next rows'}).click();
+    await slot.getByText('Page 2', {exact: true}).waitFor();
+    await slot.getByText('Exact saved rows', {exact: true}).click();
+    await slot.getByRole('table').waitFor();
+    const secondRows = await slot.getByRole('table').innerText();
+    assert.notEqual(firstRows, secondRows);
+    assert((firstRows + secondRows).includes('9007199254740993'));
+    await slot.getByRole('button', {name: 'Previous rows'}).click();
+    await slot.getByText('Page 1', {exact: true}).waitFor();
+    await slot.getByText('Exact saved rows', {exact: true}).click();
+    assert.equal(await slot.getByRole('table').innerText(), firstRows);
+    for (const [version, pin, code] of [['3.0.0', source, 'read_failed'],
+      ['1.0.0', source === 'first' ? 'second' : 'first', 'context_mismatch']]) {
+      assert.equal(await page.evaluate(async args => {
+        try { await fixture.direct(...args); } catch (error) { return error.code; }
+      }, [host, 'report', metric, version, pin]), code);
+      await slot.getByRole('alert').waitFor();
+      assert.equal(await slot.getByRole('table').count(), 0);
+    }
+  }
+  const toggle = page.getByRole('button', {name: 'Toggle Vue workspace'});
+  await toggle.click();
+  await vue.waitFor({state: 'detached'});
+  const directStart = assets.length;
+  const metric = 'core.condition.capture_count';
+  await page.evaluate(id => fixture.nextMount('vue', {kind: 'report', version: '2', metric_id: id, metric_version: '1.0.0'}), metric);
+  await toggle.click();
+  await vue.getByRole('table', {name: 'Saved rows for ' + metric}).waitFor();
+  assert.deepEqual(await page.evaluate(() => fixture.ready('vue')), {status: 'applied', generation: 1});
+  assert.deepEqual(assets.slice(directStart).map(url => url.pathname).filter(path => path.includes('/api/')),
+    ['/host/demo/sources/second/api/reports/' + metric + '.json']);
   assert.equal(page.url(), href);
   assert.deepEqual(await hostState(), {headStyles: 1, summaries: 1, sentinel: 'none', header: 'Host navigation'});
   assert(assets.some(url => url.pathname.endsWith('/extensions/achilles/publication-workspace.mjs')));

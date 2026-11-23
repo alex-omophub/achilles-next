@@ -1,6 +1,7 @@
 import {useEffect, useLayoutEffect, useMemo, useRef, useState} from 'react';
 import {assertSamePublication, PublicationReadError, createPublicationHttpProvider,
   type PublicationProvider, type CatalogueMetric, type CataloguePage, type PopulationResult, type ReportPage, type SavedFilters} from './saved-publication';
+import type {DirectPublicationTarget} from './mount-publication';
 import {SavedReportFilters, supportsFilters} from './SavedReportFilters';
 import {SavedReportTable, stateLabel} from './SavedReportTable';
 import {SavedReportChart} from './SavedReportChart';
@@ -22,7 +23,7 @@ type Starts = (string | null)[];
 interface Selection {
   domain: string;
   catalogueStarts: Starts;
-  metric: CatalogueMetric | null;
+  metric: Pick<CatalogueMetric, 'metric_id' | 'version'> | null;
   rowStarts: Starts;
   filters: SavedFilters;
 }
@@ -67,8 +68,12 @@ function Summary({people}: {people: PopulationResult}) {
     </dl>
   </section>;
 }
-function Session({provider, firstRender}: {provider: PublicationProvider; firstRender?: FirstRender}) {
-  const [selection, setSelection] = useState<Selection>(initial);
+interface SessionProps {provider: PublicationProvider; firstRender?: FirstRender}
+interface DirectView {target: DirectPublicationTarget; context: PopulationResult['context']}
+function Session({provider, firstRender, direct}: SessionProps & {direct?: DirectView}) {
+  const [start] = useState<Selection>(() => direct ? {...initial,
+    metric: {metric_id: direct.target.metric_id, version: direct.target.metric_version}} : initial);
+  const [selection, setSelection] = useState(start);
   const [people, setPeople] = useState<PopulationResult | null>(null);
   const [result, setResult] = useState<{catalogue?: CataloguePage; report?: ReportPage} | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -101,7 +106,7 @@ function Session({provider, firstRender}: {provider: PublicationProvider; firstR
       let population = pinned.current;
       let catalogue: CataloguePage | undefined;
       let report: ReportPage | undefined;
-      if (!population) {
+      if (!population && !direct) {
         [population, catalogue] = await Promise.all([provider.people(signal), provider.catalogue(null, signal)]);
       } else if (selection.metric) {
         const metric = selection.metric;
@@ -115,14 +120,17 @@ function Session({provider, firstRender}: {provider: PublicationProvider; firstR
       } else if (selection.domain === 'all') {
         catalogue = await provider.catalogue(selection.catalogueStarts.at(-1) ?? null, signal);
       } else {
+        if (!population) throw invalid();
         catalogue = await domainCatalogue(provider, population.context, selection.domain, signal);
       }
       if (signal.aborted) return;
+      const context = direct?.context ?? population?.context;
+      if (!context) throw invalid();
       if (catalogue) {
-        assertSamePublication(population.context, catalogue.context);
+        assertSamePublication(context, catalogue.context);
         if (catalogue.cursor !== null && selection.catalogueStarts.includes(catalogue.cursor)) throw invalid();
       }
-      if (report) assertSamePublication(population.context, report.context);
+      if (report) assertSamePublication(context, report.context);
       pinned.current = population;
       setPeople(population);
       setResult({catalogue, report});
@@ -132,18 +140,19 @@ function Session({provider, firstRender}: {provider: PublicationProvider; firstR
       failed(failure);
     });
     return () => controller.abort();
-  }, [provider, selection]);
+  }, [provider, selection, direct]);
   useEffect(() => {
-    if (!result || selection === initial) return;
+    if (!result || selection === start) return;
     (selectedButton.current ?? heading.current)?.focus();
-  }, [result, selection]);
+  }, [result, selection, start]);
   useLayoutEffect(() => {
-    if (selection === initial && people && result && !error) firstRender?.applied();
-  }, [selection, people, result, error, firstRender]);
+    if (selection === start && result && !error) firstRender?.applied();
+  }, [selection, start, result, error, firstRender]);
   if (error) return <div className="publication-error" role="alert"><h2>Publication unavailable</h2><p>{error}</p></div>;
-  if (!people) return <p role="status">Opening saved publication…</p>;
+  if (!people && !direct) return <p role="status">Opening saved publication…</p>;
   const {metric, domain, catalogueStarts, rowStarts} = selection;
   const {catalogue, report} = result ?? {};
+  const chartOnly = direct?.target.kind === 'chart';
   const read = active.current;
   const starts = metric ? rowStarts : catalogueStarts;
   const next = report?.cursor ?? catalogue?.cursor ?? null;
@@ -152,9 +161,9 @@ function Session({provider, firstRender}: {provider: PublicationProvider; firstR
     open(metric ? {...selection, rowStarts: history} : {...selection, catalogueStarts: history});
   }
   return <>
-    <Summary people={people}/>
-    <section className="publication-catalogue" aria-label="Metric catalogue">
-      <div className="publication-heading">
+    {people && <Summary people={people}/>}
+    <section className="publication-catalogue" aria-label={direct ? 'Saved ' + direct.target.kind + ' view' : 'Metric catalogue'}>
+      {!direct && <div className="publication-heading">
         <label>Domain or section
           <select value={domain} onChange={event => open({...initial, domain: event.target.value})}>
             <option value="all">All domains and sections</option>
@@ -162,7 +171,7 @@ function Session({provider, firstRender}: {provider: PublicationProvider; firstR
           </select>
         </label>
         {metric && <button type="button" className="publication-back" onClick={() => open({...selection, metric: null, rowStarts: [null], filters: {}}, metric.metric_id)}>Back to catalogue</button>}
-      </div>
+      </div>}
       {!result ? <p role="status">{metric ? 'Loading saved rows…' : 'Loading catalogue…'}</p> : <>
         {catalogue && <>
           <div className="publication-heading"><h2 ref={heading} tabIndex={-1}>{domain === 'all' ? 'Metric catalogue' : domains[domain] + ' metrics'}</h2>
@@ -188,7 +197,7 @@ function Session({provider, firstRender}: {provider: PublicationProvider; firstR
             <div><dt>Dataset state</dt><dd>{stateLabel(report.datasetState)}{report.datasetReason && <small>{report.datasetReason}</small>}</dd></div>
             <div><dt>Selection state</dt><dd>{stateLabel(report.state)}{report.reason && <small>{report.reason}</small>}</dd></div>
           </dl>
-          {report.capability && provider.select && supportsFilters(report.capability) && <section className="publication-filters" aria-label="Saved row filters">
+          {!chartOnly && report.capability && provider.select && supportsFilters(report.capability) && <section className="publication-filters" aria-label="Saved row filters">
             <button type="button" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)}>Filter saved rows</button>
             {!!Object.keys(selection.filters).length && <dl className="publication-applied" aria-label="Applied filters">
               {Object.entries(selection.filters).map(([name, value]) => <div key={name}><dt>{name}</dt>
@@ -198,10 +207,11 @@ function Session({provider, firstRender}: {provider: PublicationProvider; firstR
               applied={selection.filters} apply={filters => open({...selection, filters, rowStarts: [null]})}
               fail={failure => {if (read && !read.signal.aborted && active.current === read) failed(failure);}}/>}
           </section>}
-          <SavedReportChart report={report} page={starts.length}/>
-          <SavedReportTable report={report}/>
+          <SavedReportChart report={report} page={starts.length} showFallback={chartOnly}/>
+          {chartOnly ? <details><summary>Exact saved rows</summary><SavedReportTable report={report}/></details>
+            : <SavedReportTable report={report}/>}
           <SavedReportEvidence report={report}/>
-          {provider.exportEvidence && report.evidence && read && <SavedEvidenceDownload
+          {!chartOnly && provider.exportEvidence && report.evidence && read && <SavedEvidenceDownload
             readEvidence={(id, filters, cursor, signal) => provider.exportEvidence!(id, filters, cursor, signal)} report={report}
             filters={selection.filters} cursor={rowStarts.at(-1) ?? null} page={rowStarts.length} view={read.signal}
             fail={failure => {if (!read.signal.aborted && active.current === read) failed(failure);}}/>}
@@ -213,6 +223,10 @@ function Session({provider, firstRender}: {provider: PublicationProvider; firstR
       </>}
     </section>
   </>;
+}
+
+export function DirectPublicationView(props: SessionProps & {direct: DirectView}) {
+  return <div className="publication-workspace"><Session {...props}/></div>;
 }
 
 export function PublicationWorkspace({provider, instanceKey, firstRender}: {provider: PublicationProvider; instanceKey: string; firstRender?: FirstRender}) {
