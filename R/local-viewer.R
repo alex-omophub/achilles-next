@@ -68,7 +68,7 @@
   }, AchillesViewerError = function(e) list(status = .object(state = e$state, message = e$message), files = list()),
   error = function(e) list(status = .object(state = "invalid", message = "The selected bundle could not be read. Check its structure and permissions."), files = list()))
 }
-.viewer_assets <- function() {
+.viewer_assets <- function(mode) {
   root <- normalizePath(system.file("viewer", package = "AchillesNext", mustWork = TRUE), mustWork = TRUE)
   lock <- jsonlite::fromJSON(file.path(root, "viewer-lock.json"), simplifyVector = FALSE)
   if (!identical(lock$generated_by, "achilles-next-package-viewer") || !is.list(lock$files) ||
@@ -82,21 +82,40 @@
   names(assets) <- names(lock$files)
   html <- rawToChar(assets[["index.html"]])
   if (!grepl("<head>", html, fixed = TRUE)) stop("Packaged viewer HTML is invalid", call. = FALSE)
-  assets[["index.html"]] <- charToRaw(sub("<head>", '<head><meta name="achilles-next-mode" content="served-bundle">', html, fixed = TRUE))
+  assets[["index.html"]] <- charToRaw(sub("<head>", paste0('<head><meta name="achilles-next-mode" content="', mode, '">'), html, fixed = TRUE))
   assets
 }
 
 #' View generated results using the installed browser assets
 #' @export
-viewResults <- function(bundleDir, browse = TRUE, port = 0L, basePath = "/achilles-next/", block = !interactive()) {
+viewResults <- function(bundleDir, browse = TRUE, port = 0L, basePath = "/achilles-next/", block = !interactive(), authorize = NULL) {
+  receipt <- if (is.list(bundleDir)) .viewer_receipt(bundleDir) else NULL
+  if (!is.null(receipt)) bundleDir <- receipt$export_dir
+  if (!is.null(authorize) && !is.function(authorize)) stop("authorize must be a function", call. = FALSE)
   if (!.string(bundleDir) || !is.logical(browse) || length(browse) != 1L || is.na(browse) ||
       !is.logical(block) || length(block) != 1L || is.na(block)) stop("Supply a result folder and scalar browse/block flags", call. = FALSE)
   if (!is.numeric(port) || length(port) != 1L || !is.finite(port) || port != floor(port) ||
       !(port == 0 || (port >= 1024 && port <= 65535))) stop("Use port 0 or an unprivileged integer port", call. = FALSE)
   if (!.string(basePath) || !(basePath == "/" || grepl("^/([A-Za-z0-9_-]+/)+$", basePath)))
     stop("basePath must start and end with / and contain simple path segments", call. = FALSE)
-  assets <- .viewer_assets()
-  snapshot <- .viewer_snapshot(bundleDir)
+  pointer <- file.path(bundleDir, "publication.json")
+  link <- Sys.readlink(pointer)
+  publication <- !is.null(receipt) || !is.null(authorize) || file.exists(pointer) || (!is.na(link) && nzchar(link))
+  assets <- .viewer_assets(if (publication) "served-publication" else "served-bundle")
+  snapshot <- if (publication) .viewer_publication(bundleDir, receipt, authorize) else .viewer_snapshot(bundleDir)
+  provider <- snapshot$provider
+  server <- NULL
+  active <- TRUE
+  stopViewer <- function() {
+    if (active) {
+      active <<- FALSE
+      if (!is.null(provider)) provider$close()
+      if (!is.null(server)) httpuv::stopServer(server)
+    }
+    invisible(NULL)
+  }
+  handedOff <- FALSE
+  on.exit(if (!handedOff) stopViewer())
   if (port == 0) port <- httpuv::randomPort(host = "127.0.0.1")
   origin <- paste0("http://127.0.0.1:", port)
   url <- paste0(origin, basePath)
@@ -107,34 +126,49 @@ viewResults <- function(bundleDir, browse = TRUE, port = 0L, basePath = "/achill
     "Referrer-Policy" = "no-referrer", "Content-Security-Policy" = paste(
       "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self';",
       "img-src 'self' data:; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; form-action 'none'"))
-  response <- function(status, body, type = "text/plain; charset=utf-8")
-    list(status = as.integer(status), headers = c(headers, list("Content-Type" = type)), body = body)
   call <- function(req) {
+    response <- function(status, body, type = "text/plain; charset=utf-8") {
+      if (is.character(body)) body <- charToRaw(enc2utf8(body))
+      list(status = as.integer(status),
+        headers = c(headers, list("Content-Type" = type, "Content-Length" = as.character(length(body)))),
+        body = if (identical(req$REQUEST_METHOD, "HEAD")) raw() else body)
+    }
     host <- req$HTTP_HOST %||% ""
     requestOrigin <- req$HTTP_ORIGIN %||% ""
     if (!identical(host, paste0("127.0.0.1:", port)) || !(requestOrigin %in% c("", origin)))
       return(response(403L, "Local origin required"))
     if (!req$REQUEST_METHOD %in% c("GET", "HEAD")) return(response(405L, "Only GET and HEAD are supported"))
     path <- req$PATH_INFO
-    if (!.string(path) || !startsWith(path, basePath) || nzchar(req$QUERY_STRING %||% "")) return(response(404L, "Not found"))
+    if (!.string(path) || !startsWith(path, basePath)) return(response(404L, "Not found"))
     key <- substring(path, nchar(basePath) + 1L)
+    query <- req$QUERY_STRING %||% ""
+    if (publication && key %in% c("api/catalogue.json", "api/people.json")) {
+      # httpuv includes the leading question mark in QUERY_STRING.
+      if (startsWith(query, "?")) query <- substring(query, 2L)
+      json <- "application/json; charset=utf-8"
+      return(tryCatch({
+        page <- .viewer_publication_read(snapshot, key == "api/catalogue.json", query)
+        response(200L, .v2_bytes(page), json)
+      }, achillesnext_read_error = function(e) {
+        status <- switch(e$code, invalid_request=400L, invalid_cursor=400L, inaccessible=403L,
+          unavailable=503L, 422L)
+        response(status, .v2_bytes(.object(error=e$code)), json)
+      }, error = function(e) response(422L, .v2_bytes(.object(error="integrity_failure")), json)))
+    }
+    if (nzchar(query)) return(response(404L, "Not found"))
     if (key == "") key <- "index.html"
     if (!key %in% names(routes)) return(response(404L, "Not found"))
     type <- if (key == "index.html") "text/html; charset=utf-8" else if (endsWith(key, ".js")) "text/javascript; charset=utf-8" else
       if (endsWith(key, ".css")) "text/css; charset=utf-8" else if (endsWith(key, ".json")) "application/json; charset=utf-8" else "text/plain; charset=utf-8"
-    result <- response(200L, if (req$REQUEST_METHOD == "HEAD") raw() else routes[[key]], type)
-    result$headers[["Content-Length"]] <- as.character(length(routes[[key]]))
-    result
+    response(200L, routes[[key]], type)
   }
   server <- httpuv::startServer("127.0.0.1", as.integer(port), list(call = call))
-  active <- TRUE
-  stop <- function() {if (active) {httpuv::stopServer(server); active <<- FALSE}; invisible(NULL)}
-  viewer <- list(url = url, stop = stop, status = snapshot$status$state)
+  viewer <- list(url = url, stop = stopViewer, status = snapshot$status$state)
   if (browse) tryCatch(utils::browseURL(url), error = function(e) warning("Open the viewer URL in your browser: ", url, call. = FALSE))
   message("AchillesNext viewer: ", url)
   if (block) {
-    on.exit(stop(), add = TRUE)
     while (active) httpuv::service(100)
   }
+  handedOff <- !block
   invisible(viewer)
 }

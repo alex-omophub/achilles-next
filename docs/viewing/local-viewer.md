@@ -1,12 +1,43 @@
 # Open generated results locally
 
-The installed R package contains a prebuilt React viewer for partial synthetic
-count, observation and measurement bundles. Opening a bundle requires R, the installed package and a
-modern browser. It does not invoke Node, npm or Shiny, contact an external account,
-or build frontend assets. Installing R dependencies may require network access;
-this is not yet a verified offline distribution.
+The installed React viewer opens an approved core characterization export or a
+supported count, observation or measurement tracer bundle. It uses the prebuilt
+assets in the R package and a browser on the same computer.
 
-## Generation → View
+## Open an approved core publication
+
+Pass the result returned by `publishResultRelease()` directly to the viewer.
+
+```r
+# publication is the value returned when you approved and exported this release.
+AchillesNext::viewResults(publication)
+```
+
+The catalogue shows the reports saved in that publication. Use Next and Previous
+to read bounded pages. The population count comes from the saved
+`core.person.count` result. A suppressed or unavailable count retains its state.
+The viewer reads the selected export locally and can run with the CDM disconnected.
+The session stays pinned to the publication you opened.
+
+For an existing export directory, supply a trusted authorization callback. The
+example uses an approval record retained by the operator independently of the
+selected folder. Hosts that support revocation can also check their current
+access policy in the callback.
+
+```r
+canRead <- function(context) {
+  identical(context$publication_id, approval$publication_id) &&
+    identical(context$root$sha256, approval$root$sha256)
+}
+AchillesNext::viewResults("path/to/approved-export", authorize = canRead)
+```
+
+A v2 read verifies each requested page against the pinned publication. The host
+is responsible for prior admission of the full release and authorization for its
+scope. The local browser receives only the results of bounded catalogue and
+population reads. [Publication and provider authority](../development/saved-transports.md)
+
+## Open a tracer bundle
 
 Generate a bundle using the [count-tracer guide](../development/count-tracer.md),
 then open it in R:
@@ -54,14 +85,14 @@ prefixes must start and end with `/` and use simple path segments.
 
 ## Data access and failure states
 
-The R server binds only to `127.0.0.1`. It snapshots the manifest and declared
+The R server binds only to `127.0.0.1`. For v1 tracer bundles it snapshots the manifest and declared
 aggregate/terminology files into memory after path, size, identity and hash
 checks. Unrelated files, symbolic links, path traversal, foreign Host/Origin
 headers and write methods are refused. The browser uses the frozen schemas and
 the same partial-tracer semantic verifier as local folder selection. No analytical value is
 shown until those checks pass. Limits are 10 MiB per file and 64 MiB per bundle.
 
-The viewer distinguishes missing files, invalid results, incompatible versions
+The v1 viewer distinguishes missing files, invalid results, incompatible versions
 and an unavailable local server, with recovery instructions. Failure never
 becomes a zero count. Fix or regenerate the selected files and reopen the R
 helper to load a new snapshot; changing files on disk does not alter a running
@@ -104,9 +135,10 @@ These tests start temporary R-only servers on a nested URL prefix with Node/npm
 unavailable. They exercise served assets, exact counts, immutable snapshots,
 missing/tampered/incompatible bundles, symlink and route boundaries, allowed
 methods, Host/Origin checks and shutdown. Tests need permission to bind loopback
-sockets. Without both environment variables they explicitly skip.
+sockets. Set `ACHILLES_NEXT_VIEWER_TEST_LIBRARY` to run the v2 tests with the
+included publication fixture. The v1 tests also need `TRACER_TEST_BUNDLES`.
 
-## Approved complete bundles
+## Approved complete measurement bundles (v1.1)
 
 The same installed viewer opens contract 1.1 restricted or distributable complete
 measurement releases. Generate and approve them using the
