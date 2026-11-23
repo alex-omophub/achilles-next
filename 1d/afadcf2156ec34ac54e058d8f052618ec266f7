@@ -1,0 +1,97 @@
+packages/tracer/package.json
+  s_3e206b4a2cf4c3::t_cb2b1f22c2a119 13,15-16
+docs/viewing/embedded-workspace.md
+  s_895f6ebe145fd3::t_cc86e21136cf33 52,58
+  s_3e206b4a2cf4c3::t_0238c4f86a15a5 73-106
+  s_895f6ebe145fd3::t_2d6ad85e79beff 51,53-57,59
+  s_3e206b4a2cf4c3::t_4efe7b2bbd4745 1-17,21-50,60-72
+  s_3e206b4a2cf4c3::t_f840af489ec33f 18-20
+.github/workflows/count-tracer.yml
+  s_3e206b4a2cf4c3::t_cb2b1f22c2a119 155-156
+tests/test_installed_embed.py
+  s_3e206b4a2cf4c3::t_2631658547646f 1-40
+packages/tracer/tests/embed-consumer.mts
+  s_3e206b4a2cf4c3::t_cb2b1f22c2a119 1-11
+docs/viewing/local-viewer.md
+  s_3e206b4a2cf4c3::t_4efe7b2bbd4745 105-107
+packages/tracer/tools/package-viewer.mjs
+  s_3e206b4a2cf4c3::t_cb2b1f22c2a119 30,34,41-79
+packages/tracer/vite.embed.config.ts
+  s_3e206b4a2cf4c3::t_cb2b1f22c2a119 1-16
+tools/check_viewer_assets.py
+  s_3e206b4a2cf4c3::t_cb2b1f22c2a119 10-13,15-17,19-30
+packages/tracer/tests/browser/installed-embed/host.jsx
+  s_3e206b4a2cf4c3::t_3b2efa75df7c78 1-12,14-15,21-26,28-48,50-65,68-93
+  s_3e206b4a2cf4c3::t_c7501326c999ed 13,27
+  s_3e206b4a2cf4c3::t_c2edfe909381d7 16-20,49,66-67
+packages/tracer/tests/browser/installed-embed/run.mjs
+  s_3e206b4a2cf4c3::t_c2edfe909381d7 57-58,118
+  s_3e206b4a2cf4c3::t_c7501326c999ed 2,65-71,80-84,95-98,110
+  s_3e206b4a2cf4c3::t_3b2efa75df7c78 1,3-56,59-64,72-79,85-94,99-109,111-117,119-132
+THIRD_PARTY_NOTICES.md
+  s_895f6ebe145fd3::t_cc86e21136cf33 9-10
+tests/test_local_viewer.py
+  s_3e206b4a2cf4c3::t_2631658547646f 30,45,47-49,68
+inst/embed/DEPENDENCY-LICENSES.txt
+  s_895f6ebe145fd3::t_85f4e5427d20ea 1-1306
+inst/embed/assets/SavedChartGraphic-CEYBrSsj.mjs
+  s_895f6ebe145fd3::t_07924ff34c742a 1-16591
+inst/embed/assets/jsx-runtime-DRFAKyeO.mjs
+  s_895f6ebe145fd3::t_f92425dcb9132c 1-470
+inst/embed/embed-lock.json
+  s_895f6ebe145fd3::t_b6caf702cdbabc 1-55
+inst/embed/publication-workspace.d.mts
+  s_895f6ebe145fd3::t_a5f742eb58f800 1-25
+inst/embed/publication-workspace.mjs
+  s_895f6ebe145fd3::t_f50d5593bbc9ea 1-10115
+inst/embed/saved-publication.d.ts
+  s_895f6ebe145fd3::t_c0caf486610990 1-118
+inst/viewer/assets/CartesianChart-CY30Sqw5.js
+  s_895f6ebe145fd3::t_6f8b1598d8af56 1
+inst/viewer/assets/ComposedChart-PEIfSCDg.js
+  s_895f6ebe145fd3::t_7edff779c9a917 1
+inst/viewer/assets/MeasurementChart-BZQY56lu.js
+  s_895f6ebe145fd3::t_8ea692d011b27f 1
+inst/viewer/assets/ObservationChart-CrgdlrVQ.js
+  s_895f6ebe145fd3::t_b6e43cf8c9c143 1
+inst/viewer/assets/SavedChartGraphic-e1uYdqaz.js
+  s_895f6ebe145fd3::t_fa1af869065b79 1
+inst/viewer/assets/index-Bz3Y2bqH.js
+  s_895f6ebe145fd3::t_0e4cc7a5e81004 1-2,4,7,9-10,846,1682-1683
+inst/viewer/index.html
+  s_895f6ebe145fd3::t_8953a2b24b7c1c 3
+inst/viewer/viewer-lock.json
+  s_895f6ebe145fd3::t_df87df43cfed4b 15,21,33,37,41,44-45,49-54,56
+packages/tracer/src/PublicationView.tsx
+  s_3e206b4a2cf4c3::t_48804a963650bf 1-3,11-12,70,89,140-142,218,222,227
+packages/tracer/src/mount-publication.tsx
+  s_3e206b4a2cf4c3::t_c28935fc3c8758 1-173
+packages/tracer/src/saved-publication.ts
+  s_3e206b4a2cf4c3::t_09ce997d147689 7-8,374-395
+packages/tracer/tests/mount-publication.test.ts
+  s_3e206b4a2cf4c3::t_7beabe5be9b9a6 1-98
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "1dafadcf2156ec34ac54e058d8f052618ec266f7",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
