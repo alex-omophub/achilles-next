@@ -1,5 +1,5 @@
 # Independent small reduced-scope result fixture; no CDM or store connection.
-makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConceptIds=character(),saveConcepts=TRUE,savedLabels=NULL,saveCalendar=FALSE,sourceId='fixture:semantic') {
+makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConceptIds=character(),saveConcepts=TRUE,savedLabels=NULL,saveCalendar=FALSE,sourceId='fixture:semantic',saveBirthYears=FALSE) {
   f<-function(n)get(n,asNamespace('AchillesNext'));o<-f('.object');a<-f('.v2_assets')();wire<-f('.v2_bytes');hash<-f('.v2_hash')
   stopifnot(dir.create(directory,mode='0700'));dir.create(file.path(directory,'objects'))
   context<-o(contract_version='2.0.0',publication_id='00000000-0000-4000-8000-000000000031',release_id='00000000-0000-4000-8000-000000000032',source_id=sourceId,profile_id='core-characterization-v2',profile_revision='2.0.0',profile_sha256=a$hash,access_scope_id='fixture-semantic')
@@ -11,6 +11,8 @@ makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConcept
   }
   ref<-function(mid,r,field,source=field)o(measure=source,metric_id=mid,row_key=r$row_key,field=field,value=r$values[[field]])
   person<-row('core.person.count',o(),o(person_count='10'))
+  if(saveBirthYears)for(pair in list(c('1950','6'),c('1980','4')))
+    row('core.person.birth_year_count',o(year_of_birth=pair[[1]]),o(person_count=pair[[2]]),refs=list(ref('core.person.count',person,'person_count')))
   for(pair in list(c('0','6'),c('9007199254740993','4')))row('core.person.gender_count',o(gender_concept_id=pair[[1]]),o(person_count=pair[[2]]),refs=list(ref('core.person.count',person,'person_count')))
   for(id in extraConceptIds)row('core.person.gender_count',o(gender_concept_id=id),o(person_count='0'),refs=list(ref('core.person.count',person,'person_count')))
   capture<-row('core.condition.capture_count',o(concept_tag=o(kind='id',value='123'),period_kind='full_scope',period_start='null',period_end='null'),o(record_count='4',person_count='3'),refs=list(ref('core.person.count',person,'person_count')))

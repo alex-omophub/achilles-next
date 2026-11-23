@@ -62,14 +62,14 @@ describe('saved report transport', () => {
   const invalidResponse = 'The saved publication returned an invalid response.';
   const metric = 'core.visit.care_setting_count';
   const dataset = {metric_id: metric, version: '1.0.0', grain: 'concept/setting_kind/setting_concept_tag/full scope', population: 'all_recorded_rows',
-    state: 'computed', reason_code: null};
+    state: 'computed', reason_code: null, definition_sha256: 'd'.repeat(64)};
   const selection = {metric_id: metric, metric_version: '1.0.0', population: dataset.population, row_kind: 'counts'};
   const report = {context, generation_requested: false, transformations: 'none', complete: true, cursor: null,
-    state: 'available', reason_code: null, dataset, selection};
+    state: 'available', reason_code: null, dataset, selection, dependencies: []};
   const first = {row_key: 'a'.repeat(64), row_kind: 'counts', state: 'computed', reason_code: null,
     dimensions: {concept_tag: {kind: 'id', value: '9007199254740993'},
       setting_kind: 'place_of_service', setting_concept_tag: {kind: 'id', value: '234'}},
-    values: {record_count: '9007199254740993', person_count: '0'}};
+    values: {record_count: '9007199254740993', person_count: '0'}, denominator_refs: []};
   it('requests only the selected saved metric and preserves typed tags and exact measures', async () => {
     const page = await readReport(base, metric, null, signal(), async input => {
       expect(String(input)).toBe(base.href + 'reports/core.visit.care_setting_count.json');
@@ -85,6 +85,19 @@ describe('saved report transport', () => {
     expect(page.rows[0]).toEqual(omitted);
     await expect(readReport(base, metric, null, signal(), reply({...report, rows: [{...omitted, values: first.values}]})))
       .rejects.toThrow(invalidResponse);
+  });
+  it('keeps exact verified denominator evidence and rejects absent or inconsistent targets', async () => {
+    const ref = {measure: 'person_count', metric_id: 'core.person.count', row_key: 'b'.repeat(64),
+      field: 'person_count', value: '9007199254740993'};
+    const target = {metric_id: ref.metric_id, metric_version: '1.0.0', row: {...first, row_key: ref.row_key,
+      dimensions: {}, values: {person_count: ref.value}}};
+    const body = {...report, rows: [{...first, denominator_refs: [ref]}], dependencies: [target]};
+    const result = await readReport(base, metric, null, signal(), reply(body));
+    expect(result.rows[0].denominator_refs).toEqual([ref]);
+    expect(result.evidence).toEqual({definitionSha256: dataset.definition_sha256, dependencies: [target]});
+    for (const invalid of [[], [target, target], [{...target, row: {...target.row, values: {person_count: '0'}}}]]) {
+      await expect(readReport(base, metric, null, signal(), reply({...body, dependencies: invalid}))).rejects.toThrow(invalidResponse);
+    }
   });
   it('rejects inconsistent identities, oversized row pages and numeric JSON measures', async () => {
     for (const invalid of [

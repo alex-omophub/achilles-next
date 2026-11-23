@@ -122,6 +122,13 @@ export async function readPeople(base: URL, signal: AbortSignal, fetchImpl = fet
 // metadata objects. Keep that representation all the way to the report table.
 export type ReportValue = string | boolean | null | readonly ReportValue[] | ReportFields;
 export interface ReportFields { readonly [key: string]: ReportValue }
+export interface DenominatorReference {
+  measure: string;
+  metric_id: string;
+  row_key: string;
+  field: string;
+  value: string;
+}
 export interface ReportRow {
   row_key: string;
   row_kind: string;
@@ -129,7 +136,9 @@ export interface ReportRow {
   reason_code: string | null;
   dimensions: ReportFields;
   values: ReportFields | null;
+  denominator_refs?: DenominatorReference[];
 }
+interface ReportDependency {metric_id: string; metric_version: string; row: ReportRow}
 export interface ReportPage {
   context: Context;
   metric_id: string;
@@ -142,6 +151,7 @@ export interface ReportPage {
   datasetReason: string | null;
   rowKind: string;
   rows: ReportRow[];
+  evidence?: {definitionSha256: string; dependencies: ReportDependency[]};
   cursor: string | null;
 }
 function reportValue(value: unknown): value is ReportValue {
@@ -154,6 +164,23 @@ function reportFields(value: unknown): value is ReportFields {
 }
 function reasonCode(value: unknown): value is string | null {
   return value === null || (typeof value === 'string' && value.length > 0);
+}
+function digest(value: unknown): value is string {
+  return typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
+}
+function readRow(row: unknown): ReportRow {
+  check(record(row) && digest(row.row_key) && typeof row.row_kind === 'string' && typeof row.state === 'string'
+    && reasonCode(row.reason_code) && reportFields(row.dimensions) && Array.isArray(row.denominator_refs));
+  const values = row.values;
+  if (['computed', 'empty_source', 'empty_population'].includes(row.state)) check(reportFields(values));
+  else check(values === null && row.denominator_refs.length === 0 && ['suppressed', 'unsupported', 'unavailable'].includes(row.state));
+  const refs = row.denominator_refs.map((ref: unknown): DenominatorReference => {
+    check(record(ref) && typeof ref.measure === 'string' && typeof ref.metric_id === 'string' && digest(ref.row_key)
+      && typeof ref.field === 'string' && integer(ref.value));
+    return {measure: ref.measure, metric_id: ref.metric_id, row_key: ref.row_key, field: ref.field, value: ref.value};
+  });
+  return {row_key: row.row_key, row_kind: row.row_kind, state: row.state, reason_code: row.reason_code,
+    dimensions: row.dimensions, values: values as ReportFields | null, denominator_refs: refs};
 }
 export async function readReport(base: URL, metricId: string, cursor: string | null, signal: AbortSignal,
     fetchImpl = fetch): Promise<ReportPage> {
@@ -170,24 +197,33 @@ export async function readReport(base: URL, metricId: string, cursor: string | n
     && typeof dataset.population === 'string' && dataset.population === selection.population
     && typeof dataset.grain === 'string' && typeof dataset.state === 'string' && reasonCode(dataset.reason_code)
     && typeof selection.row_kind === 'string' && typeof page.state === 'string' && reasonCode(page.reason_code)
+    && digest(dataset.definition_sha256) && Array.isArray(page.dependencies)
     && Array.isArray(page.rows) && page.rows.length <= 12);
   const rowKind = selection.row_kind;
   const available = page.state === 'available';
   check(available ? page.rows.length > 0 && dataset.state !== 'suppressed' && dataset.state !== 'unsupported'
-    : page.rows.length === 0 && page.complete === true);
+    : page.rows.length === 0 && page.dependencies.length === 0 && page.complete === true);
   check((page.complete === true && page.cursor === null) || (page.complete === false && typeof page.cursor === 'string'
     && page.cursor.length > 0));
-  const rows = page.rows.map((row: unknown): ReportRow => {
-    check(record(row) && typeof row.row_key === 'string' && row.row_kind === rowKind && typeof row.state === 'string'
-      && reasonCode(row.reason_code) && reportFields(row.dimensions));
-    const visible = ['computed', 'empty_source', 'empty_population'].includes(row.state);
-    const values = row.values;
-    if (visible) check(reportFields(values));
-    else check(values === null && ['suppressed', 'unsupported', 'unavailable'].includes(row.state));
-    return {row_key: row.row_key, row_kind: rowKind, state: row.state, reason_code: row.reason_code,
-      dimensions: row.dimensions, values: values as ReportFields | null};
+  const rows = page.rows.map(readRow);
+  check(rows.every(row => row.row_kind === rowKind));
+  const dependencies = page.dependencies.map((dep: unknown): ReportDependency => {
+    check(record(dep) && typeof dep.metric_id === 'string' && typeof dep.metric_version === 'string');
+    return {metric_id: dep.metric_id, metric_version: dep.metric_version, row: readRow(dep.row)};
   });
+  const linkedRows = new Map<string, ReportRow>();
+  for (const item of [...rows.map(row => ({metric_id: metricId, row})), ...dependencies]) {
+    const key = item.metric_id + '|' + item.row.row_key;
+    check(!linkedRows.has(key));
+    linkedRows.set(key, item.row);
+  }
+  for (const row of linkedRows.values()) {
+    for (const ref of row.denominator_refs ?? []) {
+      const values = linkedRows.get(ref.metric_id + '|' + ref.row_key)?.values;
+      check(values && Object.hasOwn(values, ref.field) && values[ref.field] === ref.value);
+    }
+  }
   return {context: source, metric_id: metricId, version: dataset.version, grain: dataset.grain, population: dataset.population,
     state: page.state, reason: page.reason_code, datasetState: dataset.state, datasetReason: dataset.reason_code,
-    rowKind, rows, cursor: page.cursor as string | null};
+    rowKind, rows, evidence: {definitionSha256: dataset.definition_sha256, dependencies}, cursor: page.cursor as string | null};
 }
