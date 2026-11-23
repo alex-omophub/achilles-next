@@ -28,11 +28,19 @@ describe('saved publication browser reads', () => {
       dataset: {...people.dataset, state: 'suppressed', reason_code: 'policy.redacted'}}));
     expect(hidden).toMatchObject({state: 'suppressed', count: null});
     const zero = await readPeople(base, signal(), reply({...people,
-      dataset: {...people.dataset, state: 'empty_source'}, rows: [{...row('0'), state: 'empty_source'}]}));
-    expect(zero).toMatchObject({state: 'empty_source', count: '0'});
+      dataset: {...people.dataset, state: 'empty_source', reason_code: 'fixture.empty_source'},
+      rows: [{...row('0'), state: 'empty_source', reason_code: 'fixture.empty_source'}]}));
+    expect(zero).toMatchObject({state: 'empty_source', count: '0', reason: 'fixture.empty_source'});
   });
   it('delivers the opaque cursor unchanged under the selected viewer prefix', async () => {
-    const cursor = 'abc+d/ef==';
+    // Issued and accepted by listMetrics on the synthetic saved-result fixture.
+    const cursor = [
+      'eyJjb250ZXh0X3NoYTI1NiI6IjQwZTVmYmUyOWZjYTczYzUxYTcxNWRhZDY5ZWQyMmQ3M2UyODUyNmRhZmQ0MWJk',
+      'ZDI2OTU2YzRjYzdkYTVlOWYiLCJnZW5lcmF0aW9uIjowLCJsYXN0X2tleSI6ImNvcmUuZGVhdGguZmlyc3RfYWdl',
+      'X3N1bW1hcnkiLCJzZWxlY3Rpb25fc2hhMjU2IjoiOTMwZGZhZGZlOTkxMjAwMzg5YjgwY2M2MTE2ZWI2ZjU1YzM5',
+      'ZDk1ZmE3ZjQyMDI1ODFlYmExMWFjNjg0NGMwNSIsInZlcnNpb24iOjF9Cg.88f582cb55385fd1da760f78c8b45',
+      '6ee8b67bdcbb9d88f894cc2ca0acd4e3c76',
+    ].join('');
     const page = await readCatalogue(base, cursor, signal(), async input => {
       const url = new URL(String(input));
       expect(url.pathname).toBe('/nested/view/api/catalogue.json');
