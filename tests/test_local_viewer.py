@@ -240,7 +240,7 @@ class PublicationViewerTests(InstalledViewerCase):
         fixture = Path(__file__).parent / 'tracer' / 'saved-result-fixture.R'
         subprocess.run([self.rscript, '--vanilla', '-e',
                         'args <- commandArgs(TRUE); library(AchillesNext); source(args[1]); '
-                        'x <- makeSavedResultFixture(args[2], pageRows=32L); '
+                        'x <- makeSavedResultFixture(args[2], pageRows=32L, extraConceptIds=as.character(1:12)); '
                         'jsonlite::write_json(x$context, args[3], auto_unbox=TRUE)',
                         str(fixture.resolve()), str(self.bundle), str(self.trusted_context)], check=True, env=dict(os.environ, R_LIBS=LIBRARY))
 
@@ -296,13 +296,70 @@ class PublicationViewerTests(InstalledViewerCase):
             path = 'api/catalogue.json?' + urllib.parse.urlencode({'cursor': first_cursor})
             self.assertGreaterEqual(self.get(reopened + path)[0], 400)
 
+    def test_saved_report_pages_preserve_values_and_verify_dependencies(self):
+        with self.serving(trusted_context=self.trusted_context) as url:
+            def report(metric, query=''):
+                code, _, body = self.get(url + 'api/reports/' + metric + '.json' + query)
+                self.assertEqual(code, 200)
+                self.assertLessEqual(len(body), 1024 * 1024)
+                result = json.loads(body)
+                self.assertEqual(result['dataset']['metric_id'], metric)
+                self.assertFalse(result['generation_requested'])
+                return result
+
+            gender = 'core.person.gender_count'
+            first = report(gender)
+            self.assertFalse(first['complete'])
+            self.assertTrue(first['cursor'])
+            query = '?' + urllib.parse.urlencode({'cursor': first['cursor']})
+            second = report(gender, query)
+            self.assertTrue(second['complete'])
+            self.assertIsNone(second['cursor'])
+            self.assertEqual([len(first['rows']), len(second['rows'])], [12, 2])
+            self.assertEqual(first['context'], second['context'])
+            counts = {}
+            for page in [first, second]:
+                denominator, = page['dependencies']
+                self.assertEqual(denominator['metric_id'], 'core.person.count')
+                for row in page['rows']:
+                    self.assertEqual(row['state'], 'computed')
+                    self.assertEqual(row['denominator_refs'][0]['row_key'], denominator['row']['row_key'])
+                    counts[row['dimensions']['gender_concept_id']] = row['values']['person_count']
+            expected = {str(i): '0' for i in range(1, 13)}
+            expected.update({'0': '6', '9007199254740993': '4'})
+            self.assertEqual(counts, expected)
+            for suffix in ['core.person.count.json' + query, 'core.unknown.metric.json',
+                           'core.person.count.json?maxRows=1', 'core.person.count.json?cursor=x&cursor=y']:
+                code, _, body = self.get(url + 'api/reports/' + suffix)
+                self.assertEqual(code, 400)
+                self.assertEqual(set(json.loads(body)), {'error'})
+            self.assertEqual(self.get(url + 'api/reports/extra/directory.json')[0], 404)
+
+            summary = report('core.measurement.numeric_summary')
+            self.assertTrue(all(row['row_kind'] == 'summary' for row in summary['rows']))
+            medians = {row['dimensions']['unit_concept_tag']['value']: row['values']['p50']
+                       for row in summary['rows']}
+            self.assertEqual(medians, {'456': '2.5', '777': None, '9007199254740993': '2.5'})
+            suppressed = report('core.drug.capture_count')
+            self.assertEqual((suppressed['state'], suppressed['rows'], suppressed['dependencies']),
+                             ('suppressed', [], []))
+            empty = report('core.specimen.capture_count')['rows'][0]
+            self.assertEqual((empty['state'], empty['values']['record_count']), ('empty_source', '0'))
+            unavailable = report('core.visit.care_setting_count')['rows'][0]
+            self.assertEqual((unavailable['state'], unavailable['values']), ('unavailable', None))
+
     def test_authorization_is_required_and_rechecked_for_cached_results(self):
+        path = 'api/reports/core.person.gender_count.json'
         with self.serving() as url:
             self.assertEqual(self.status(url), 'inaccessible')
             self.assertGreaterEqual(self.get(url + 'api/people.json')[0], 400)
+            self.assertEqual(self.get(url + path)[0], 403)
         with self.serving(trusted_context=self.trusted_context) as url:
             self.assertEqual(self.get(url + 'api/people.json')[0], 200)
+            self.assertEqual(self.get(url + path)[0], 200)
             Path(str(self.trusted_context) + '.revoked').touch()
+            code, _, body = self.get(url + path)
+            self.assertEqual((code, json.loads(body)), (403, {'error': 'inaccessible'}))
             self.assertGreaterEqual(self.get(url + 'api/people.json')[0], 400)
             self.assertGreaterEqual(self.get(url + 'api/catalogue.json')[0], 400)
 

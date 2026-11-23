@@ -58,5 +58,5 @@ for (const path of inputs.sort()) source_sha256[relative(root, path)] = hash(awa
 const files = {};
 for (const path of await walk(out)) files[relative(out, path)] = hash(await readFile(path));
 await writeFile(join(out, 'viewer-lock.json'), JSON.stringify({format_version: 1,
-  generated_by: 'achilles-next-package-viewer', scope: 'v1-tracers-and-v2-core-catalogue', source_sha256, files}, null, 2) + '\n');
+  generated_by: 'achilles-next-package-viewer', scope: 'v1-tracers-and-v2-core-reports', source_sha256, files}, null, 2) + '\n');
 console.log(`Packaged ${Object.keys(files).length} prebuilt viewer files with source and asset hashes.`);

@@ -1,8 +1,8 @@
 # Independent small reduced-scope result fixture; no CDM or store connection.
-makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConceptIds=character(),saveConcepts=TRUE,savedLabels=NULL,saveCalendar=FALSE) {
+makeSavedResultFixture <- function(directory,pageRows=2L,fault=NULL,extraConceptIds=character(),saveConcepts=TRUE,savedLabels=NULL,saveCalendar=FALSE,sourceId='fixture:semantic') {
   f<-function(n)get(n,asNamespace('AchillesNext'));o<-f('.object');a<-f('.v2_assets')();wire<-f('.v2_bytes');hash<-f('.v2_hash')
   stopifnot(dir.create(directory,mode='0700'));dir.create(file.path(directory,'objects'))
-  context<-o(contract_version='2.0.0',publication_id='00000000-0000-4000-8000-000000000031',release_id='00000000-0000-4000-8000-000000000032',source_id='fixture:semantic',profile_id='core-characterization-v2',profile_revision='2.0.0',profile_sha256=a$hash,access_scope_id='fixture-semantic')
+  context<-o(contract_version='2.0.0',publication_id='00000000-0000-4000-8000-000000000031',release_id='00000000-0000-4000-8000-000000000032',source_id=sourceId,profile_id='core-characterization-v2',profile_revision='2.0.0',profile_sha256=a$hash,access_scope_id='fixture-semantic')
   if(!is.null(savedLabels))context$contract_version<-'2.1.0'
   rows<-list()
   row<-function(mid,dims,values,kind='counts',state='computed',reason=NULL,refs=list()) {

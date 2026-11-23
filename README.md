@@ -4,7 +4,7 @@ The [synthetic PostgreSQL-to-React count tracer](docs/development/count-tracer.m
 provides an R entry point, a validated partial aggregate bundle and an exact-count
 React view. The [observation tracer](docs/development/observation-tracer.md) adds observed people, monthly people and unique person-days with a Recharts view. The [measurement reference report](docs/development/measurement-reference.md) adds counts, representations, raw units/operators and exact distributions with local terminology. An [optional weighted strategy](docs/development/weighted-quantiles.md) computes the same exact quantiles using cumulative frequencies; the reference remains the default. These are development slices, not a complete alpha report.
 
-After approving a core characterization export with `publishResultRelease()`, pass its returned value to `AchillesNext::viewResults(publication)` to browse the saved report catalogue and exact population count. Open an existing supported tracer bundle with
+After approving a core characterization export with `publishResultRelease()`, pass its returned value to `AchillesNext::viewResults(publication)` to browse reports by domain, inspect their precomputed rows and see the exact population count. Open an existing supported tracer bundle with
 `AchillesNext::viewResults("path/to/bundle")`. The installed [local viewer](docs/viewing/local-viewer.md)
 opens automatically with prebuilt React assets; viewing needs no Node, npm or Shiny.
 

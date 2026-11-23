@@ -117,3 +117,77 @@ export async function readPeople(base: URL, signal: AbortSignal, fetchImpl = fet
   check(typeof state === 'string' && (reason === null || typeof reason === 'string'));
   return {context: source, state, reason, count};
 }
+
+// Saved numerical values and identifiers arrive as strings, including inside
+// metadata objects. Keep that representation all the way to the report table.
+export type ReportValue = string | boolean | null | readonly ReportValue[] | ReportFields;
+export interface ReportFields { readonly [key: string]: ReportValue }
+export interface ReportRow {
+  row_key: string;
+  row_kind: string;
+  state: string;
+  reason_code: string | null;
+  dimensions: ReportFields;
+  values: ReportFields | null;
+}
+export interface ReportPage {
+  context: Context;
+  metric_id: string;
+  version: string;
+  grain: string;
+  population: string;
+  state: string;
+  reason: string | null;
+  datasetState: string;
+  datasetReason: string | null;
+  rowKind: string;
+  rows: ReportRow[];
+  cursor: string | null;
+}
+function reportValue(value: unknown): value is ReportValue {
+  if (value === null || typeof value === 'string' || typeof value === 'boolean') return true;
+  if (Array.isArray(value)) return value.every(reportValue);
+  return record(value) && Object.values(value).every(reportValue);
+}
+function reportFields(value: unknown): value is ReportFields {
+  return record(value) && Object.values(value).every(reportValue);
+}
+function reasonCode(value: unknown): value is string | null {
+  return value === null || (typeof value === 'string' && value.length > 0);
+}
+export async function readReport(base: URL, metricId: string, cursor: string | null, signal: AbortSignal,
+    fetchImpl = fetch): Promise<ReportPage> {
+  check(metricId.length <= 128 && /^(core|observed)\.[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/.test(metricId));
+  const url = new URL(`reports/${metricId}.json`, base);
+  if (cursor !== null) url.searchParams.set('cursor', cursor);
+  const page = await request(url, signal, fetchImpl);
+  const source = context(page);
+  const dataset = page.dataset;
+  const selection = page.selection;
+  check(page.transformations === 'none' && record(dataset) && record(selection)
+    && dataset.metric_id === metricId && selection.metric_id === metricId
+    && typeof dataset.version === 'string' && dataset.version === selection.metric_version
+    && typeof dataset.population === 'string' && dataset.population === selection.population
+    && typeof dataset.grain === 'string' && typeof dataset.state === 'string' && reasonCode(dataset.reason_code)
+    && typeof selection.row_kind === 'string' && typeof page.state === 'string' && reasonCode(page.reason_code)
+    && Array.isArray(page.rows) && page.rows.length <= 12);
+  const rowKind = selection.row_kind;
+  const available = page.state === 'available';
+  check(available ? page.rows.length > 0 && dataset.state !== 'suppressed' && dataset.state !== 'unsupported'
+    : page.rows.length === 0 && page.complete === true);
+  check((page.complete === true && page.cursor === null) || (page.complete === false && typeof page.cursor === 'string'
+    && page.cursor.length > 0));
+  const rows = page.rows.map((row: unknown): ReportRow => {
+    check(record(row) && typeof row.row_key === 'string' && row.row_kind === rowKind && typeof row.state === 'string'
+      && reasonCode(row.reason_code) && reportFields(row.dimensions));
+    const visible = ['computed', 'empty_source', 'empty_population'].includes(row.state);
+    const values = row.values;
+    if (visible) check(reportFields(values));
+    else check(values === null && ['suppressed', 'unsupported', 'unavailable'].includes(row.state));
+    return {row_key: row.row_key, row_kind: rowKind, state: row.state, reason_code: row.reason_code,
+      dimensions: row.dimensions, values: values as ReportFields | null};
+  });
+  return {context: source, metric_id: metricId, version: dataset.version, grain: dataset.grain, population: dataset.population,
+    state: page.state, reason: page.reason_code, datasetState: dataset.state, datasetReason: dataset.reason_code,
+    rowKind, rows, cursor: page.cursor as string | null};
+}

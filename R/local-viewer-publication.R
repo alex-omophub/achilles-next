@@ -44,12 +44,12 @@
   error=function(e) list(status=.object(state="invalid", message="The approved publication pointer or root could not be verified.")))
 }
 
-.viewer_publication_read <- function(snapshot, catalogue, query) {
+.viewer_publication_read <- function(snapshot, key, query, reportMetric) {
   if (is.null(snapshot$provider)) {
     code <- switch(snapshot$status$state, inaccessible="inaccessible", incompatible="incompatible", "integrity_failure")
     .saved_error(code)
   }
-  if (!catalogue) {
+  if (key == "api/people.json") {
     if (nzchar(query)) .saved_error("invalid_request")
     return(snapshot$provider$selectSavedRows("core.person.count", maxRows=1L, maxBytes=1048576L))
   }
@@ -61,5 +61,7 @@
       .saved_error("invalid_request")
     cursor <- substring(query, 8L)
   }
-  snapshot$provider$listMetrics(limit=12L, cursor=cursor, maxBytes=1048576L)
+  if (key == "api/catalogue.json")
+    return(snapshot$provider$listMetrics(limit=12L, cursor=cursor, maxBytes=1048576L))
+  snapshot$provider$selectSavedRows(reportMetric, maxRows=12L, maxBytes=1048576L, cursor=cursor)
 }

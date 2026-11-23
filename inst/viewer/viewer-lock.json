@@ -1,7 +1,7 @@
 {
   "format_version": 1,
   "generated_by": "achilles-next-package-viewer",
-  "scope": "v1-tracers-and-v2-core-catalogue",
+  "scope": "v1-tracers-and-v2-core-reports",
   "source_sha256": {
     "inst/analysis/alpha-measurement-v1.json": "2e106f260cbcfcaccab23c55846384886dc5c0b2d7178b48e62c7f82cbe18951",
     "inst/contracts/v1.1/contract.schema.json": "b67e1178cb8d1266c1e50ad2c02194addb5778a2b4e1ecd8591910880888dca4",
@@ -18,29 +18,30 @@
     "packages/tracer/src/MeasurementView.tsx": "ae5ba2e557f43e73700f27cb95da0207f75fc402e373fcc7a4813112583d63dd",
     "packages/tracer/src/ObservationChart.tsx": "aea8c1ab08cba3095b107a65b1ad0a51d43576b85d10dd728d869eb5b6bdbac6",
     "packages/tracer/src/ObservationView.tsx": "e9ddf88dfef4c333104e923d6be475a753862fe63c045820a5ff61553aa92669",
-    "packages/tracer/src/PublicationView.tsx": "abbc5aa9a8d5321464955865b44c060ea265fbd6c085eb795a342cff3099fd78",
+    "packages/tracer/src/PublicationView.tsx": "6e03e84ae69f23d0f4069b6c75c4d038ce40083d888ac02b8a0e800db85614da",
+    "packages/tracer/src/SavedReportTable.tsx": "054537bda85b4e7bee4efe1c0051cd231aaa32a8eb776cc3ff485da55044c9c5",
     "packages/tracer/src/ViewerApp.tsx": "add4567b515c3b22b436b08ec2a784e173de10f744a99e7f60665565c174fb65",
     "packages/tracer/src/file-provider.ts": "22a41f6dd36ed3d6cfc226518fddb7a1949d0ef882336f84cf2a6fe467ed00c9",
     "packages/tracer/src/main.tsx": "a04c355274ff94a5c7b796210dd6c7f1717baa7ef480f6eec7fdefdfe4bff44c",
     "packages/tracer/src/measurement.ts": "fe79f281926c5f689cb62f0e6a68d1542a68d5e649a4333768d1353a4f1c64f7",
     "packages/tracer/src/observation.ts": "5f3f1d43e60d2c4c3a9e45812f71839d183df92cb10cf5ee9697b2ff45de253c",
-    "packages/tracer/src/publication.css": "12da9f59415f87a66a845d4ad018e0cc0846a5b50cb7d11968b0d98339a23171",
-    "packages/tracer/src/saved-publication.ts": "3b45960828ef1e8ea20faefe2c3665d0c6402e60be663018fd498495bbe9a264",
+    "packages/tracer/src/publication.css": "583d91ad28afadbf829e68f51d362499519ca2efe435f13bf673ae82a1a082d6",
+    "packages/tracer/src/saved-publication.ts": "bd104e341ec7bb10dac9eb4fc063c36b6a912176a3338c52ab0ad18f4d823e8a",
     "packages/tracer/src/style.css": "369b46cc4838da49097ce3a3a3c66a904b4ef7af7d829d36e976baba853dcacb",
     "packages/tracer/tools/build-publication-validator.mjs": "e655aa58c6e81f230ca27700e8042c33410e4a77ce40073c5dfa8eda77dbc134",
     "packages/tracer/tools/build-validators.mjs": "b1218601e04bd097d1504ce25ec6f204bea7b6238a7f303c958ea54d902dff4a",
-    "packages/tracer/tools/package-viewer.mjs": "566c98cf8c4f916e0d4441b9d1532e7a89a6fa0b80c624652a6da4be6650f99e",
+    "packages/tracer/tools/package-viewer.mjs": "c286dd23b1112c89d570545cf2aa0d28b6228b2fcacb168444b255aec5c6d3a9",
     "packages/tracer/tools/publication-validator.mjs": "d09eeeaea3f1f7cdfa9fca43f61051ae9a5170ab90e051f2516da7cfacb6fdae",
     "packages/tracer/tsconfig.json": "8084cae7276cd0b5463c7b18f2af9a03ce89259de881836dba9619cf04a0d659",
     "packages/tracer/vite.config.ts": "60a3ff32e13b97452920dd6eefa23827617d2fb65365cbdda8a635b6d561ffa2"
   },
   "files": {
     "DEPENDENCY-LICENSES.txt": "2ac67813440ac367ffaf290b7608f08febb86d740fab58d325abea30d5ed3416",
-    "assets/CartesianChart-BlbZojkd.js": "282f391101dfcfb048d6c28dc8a0d7d83283fe732ed2ce491a03c886e60b3145",
-    "assets/MeasurementChart-BKA9s1Ql.js": "21c30d40a08c2a993fa1a2f3f3712b9fe88ae59129ddb686220fb78a68aa301d",
-    "assets/ObservationChart-CDSt4j2B.js": "762401808a2bda8dd9d30c85e1f4eb327309fd63b846b72e942c38947f93a1ea",
-    "assets/index-BUnk9Ms_.css": "3c5caef3633882b4a87d9e17f4f3b8ba2fc631d8359541ac3fe8cd40ec4b6714",
-    "assets/index-szKbxf8r.js": "8b886dad207208ba6b05b159e08b3e3a5983aef22e989a618193ab7f594b337c",
-    "index.html": "c76b58716272ac27a7b2119853258963e910c44699bae006b72336980553dc4f"
+    "assets/CartesianChart-DMosMn4a.js": "dfbc5d5b6761c01e57e7e3b767ec6b135da078f57755a77e1e97d0f26ff281c9",
+    "assets/MeasurementChart-D5TnhgUh.js": "60075dc47ccb3c5d55a98f210cd4bc93413a4d443626fb999e0b5de0b519c746",
+    "assets/ObservationChart-COOKDYeZ.js": "8f6508964fcb56d121d674074290d944f27022087198ba0dbbf9fa2ecc521c73",
+    "assets/index-CFJH43t2.css": "7272e7eb1946ad826062de4e3028ea7be5b0b453b32d52196458315129f6f1ad",
+    "assets/index-VkmOZh-2.js": "46ed614a317d163fef41023239011aea77620e140ba39bbf5885eeb09e60b304",
+    "index.html": "703c098ca32839143beac531ce885a952d73ff0224b86d2429cf1a46582fe70c"
   }
 }
