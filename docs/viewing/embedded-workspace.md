@@ -71,6 +71,19 @@ This entry point targets approved v2 publications. The
 byte-provider interface. The [source React component](local-viewer.md#embed-the-report-in-a-react-host)
 is also available to applications that build the viewer sources themselves.
 
+## Choose a viewer for the saved result
+
+| Saved result | Installed R viewer | Installed JavaScript mount |
+| --- | --- | --- |
+| v1.0 tracer bundle | Open the bundle directory with `viewResults()`. | Use the standalone viewer for this format. |
+| v1.1 complete measurement bundle | Open the approved restricted or distributable release directory with `viewResults()`. | Use the standalone viewer for this format. |
+| v2.0 or v2.1 publication | Supply the approved publication and its authorization callback. | Mount a workspace, report or chart with the admitted publication context. React and Vue hosts use the same entry point. |
+
+The JavaScript mount validates the context before reading. Passing a legacy
+bundle identity returns `invalid_context`. The host can keep displaying its
+current authorized publication after an invalid update.
+[Installed R viewer examples](local-viewer.md)
+
 ## Open a report or chart directly
 
 Use the same mount handle to open a specific metric from a host route. Supply
@@ -124,6 +137,33 @@ superseded content while it verifies the replacement context. If a host
 tears down the instance during a read, the pending operation resolves with
 status `destroyed`. Further update calls reject. Calling `destroy()` again is
 safe. Host code keeps control of navigation and cleanup of its own provider.
+
+## Set colors and numeric locale
+
+Pass `theme` and `locale` on the initial mount or with a complete update.
+
+```js
+await instance.update({
+  context: approvedContext,
+  target,
+  theme: { ink: '#182b36', surface: '#fff', accent: '#145b70', focus: '#974700' },
+  locale: 'pt-PT'
+});
+```
+
+The six optional color tokens are `ink`, `muted`, `rule`, `surface`,
+`accent` and `focus`. Each accepts an opaque three- or six-digit hex color.
+Overrides apply inside the current instance’s shadow root using its style nonce.
+Omitting a token on update restores its built-in color, including the browser’s
+dark-mode defaults.
+
+The locale controls grouping and digits in the population summary and numeric
+chart-axis labels. Interface text is English. Table cells, concept IDs, chart
+tooltips and downloadable evidence retain the exact published strings.
+Omitting `locale` restores English number formatting. Supply a language tag
+supported by the browser’s `Intl.NumberFormat`. Invalid colors, unknown
+tokens and unsupported locales return `invalid_configuration` before the
+current view changes.
 
 ## Verify the installed artifact
 

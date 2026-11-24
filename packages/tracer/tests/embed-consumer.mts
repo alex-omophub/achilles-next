@@ -10,7 +10,7 @@ const workspace = mountPublicationWorkspace(container, {provider, context, targe
   if (event.type === 'navigation_requested') new URL('/concept/' + id, window.location.origin);
 }});
 await workspace.ready;
-await workspace.update({context, target});
+await workspace.update({context, target, theme: {accent: '#156075'}, locale: 'pt-PT'});
 await workspace.update({context, target: {kind: 'report', version: '2', metric_id: 'core.person.count', metric_version: '1.0.0'}});
 await workspace.update({context, target: {kind: 'chart', version: '2', metric_id: 'core.measurement.numeric_summary', metric_version: '1.0.0'}});
 workspace.destroy();

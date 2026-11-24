@@ -16510,7 +16510,8 @@ var HF = RF({
 	categoricalChartProps: e,
 	ref: t
 })), KF = a();
-function qF({ points: e, quantiles: t, measure: n }) {
+function qF({ points: e, quantiles: t, measure: n, locale: r }) {
+	let i = (0, u.useMemo)(() => r ? new Intl.NumberFormat(r, { maximumSignificantDigits: 17 }) : void 0, [r]);
 	return /* @__PURE__ */ (0, KF.jsx)(gc, {
 		width: "100%",
 		height: 220,
@@ -16541,6 +16542,7 @@ function qF({ points: e, quantiles: t, measure: n }) {
 					minTickGap: 10
 				}),
 				/* @__PURE__ */ (0, KF.jsx)(eP, {
+					tickFormatter: i?.format,
 					allowDecimals: t,
 					width: "auto",
 					tick: {

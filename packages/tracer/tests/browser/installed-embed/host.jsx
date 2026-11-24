@@ -31,6 +31,10 @@ window.fixture = {
     const current = sessions[host];
     return current.handle.update({context: pins[pin ?? current.source], target: {kind, version: '2', metric_id, metric_version}});
   },
+  present(host, target, options) {
+    const current = sessions[host];
+    return current.handle.update({context: pins[current.source], target, ...options});
+  },
   invalid: host => sessions[host].handle.update({context: pins.first, target: {kind: 'workspace', version: '999'}}),
   invalidContext: host => sessions[host].handle.update({context: {...pins.first, contract_version: '9.0.0'}, target}),
   hold(host, source) {
@@ -68,6 +72,7 @@ function attach(host, slot, source) {
       }
       return result;
     },
+    exportEvidence: (...args) => api().exportEvidence(...args),
     catalogue: (cursor, signal) => api().catalogue(cursor, signal),
     report: (metric, cursor, signal) => api().report(metric, cursor, signal),
   };
