@@ -27,6 +27,8 @@ Fix valid findings and explain rejected findings in their threads; resolve addre
 
 ## Validation and documentation
 
+Start with the [architecture map](docs/development/architecture.md) and [contributor conformance command](docs/development/conformance.md#run-the-contributor-checks) when adding or changing an analysis.
+
 When changing workflow commands, keep the exact integration inventory in [the CI runtime tests](tests/test_ci_runtime.py) synchronized and run `python3 -m unittest discover -s tests -p test_ci_runtime.py`.
 
 Test observable numerical and interface behavior against independent fixtures where relevant. Preserve populations, denominators, units, precision, provenance and distinct unavailable/suppressed states. Document intentional semantic corrections and applicable compatibility limits.

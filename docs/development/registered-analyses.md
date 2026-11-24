@@ -7,23 +7,14 @@ It does not add outputs to the frozen 142-result core profile or make that
 profile complete. The initial extension seam supports exact PERSON count
 partitions; other row kinds and populations are rejected.
 
-The contribution consists of four independently reviewed parts:
+## Follow one result from definition to readback
 
-- `inst/analysis/reference-person-v1.json`: mathematical questions and populations.
-- `inst/analysis/reference-person-rows-v1.json` and
-  `reference-person-definitions-v1.json`: row shapes and typed denominator rules.
-- `inst/sql/postgresql/reference-person-*.sql`: installed source validity and
-  aggregate queries. Only aggregate JSON leaves the source query.
-- `tests/fixtures/reference-person-v1.json`: independently authored expected
-  counts, including NULL, zero, negative and greater-than-2^53 identifiers.
+1. **State the question.** In the [profile](../../inst/analysis/reference-person-v1.json), `example.person.gender_count` counts members of the PERSON population by raw `gender_concept_id`. Null and zero have distinct meanings. Its denominator is the singleton `example.person.count` from the same source.
+2. **Describe the wire row and denominator.** The [row contract](../../inst/analysis/reference-person-rows-v1.json) gives the count row one dimension and one exact `person_count` value. The [typed analysis definition](../../inst/analysis/reference-person-definitions-v1.json) resolves the `all_people` rule to the singleton. These definitions drive identity, validation and disclosure dependencies.
+3. **Produce aggregates on PostgreSQL.** The [source check](../../inst/sql/postgresql/reference-person-check-v1.sql) verifies membership. The [producer](../../inst/sql/postgresql/reference-person-v1.sql) groups in SQL and returns aggregate JSON. Keep counts and identifiers as exact strings at the transport boundary. The [registry](../../inst/analysis/registered-profiles-v1.json) names the assets, singleton and additive partition; the [lock](../../inst/analysis/registered-profile-lock.json) records their SHA-256 digests.
+4. **Specify the answer independently.** The [six-person fixture](../../tests/fixtures/reference-person-v1.json) gives two people with a null gender, two with zero, one with `-1` and one with `9007199254740993`. The partition sums to six. The live test compares the generated and served rows with these expectations, verifies the link to the total, and exercises rejection when a partition is corrupted.
 
-`registered-profiles-v1.json` registers the files, revision, singleton and additive
-partition constraints. `registered-profile-lock.json` binds their exact bytes.
-Adding an analysis within the supported shape changes its definition, SQL,
-fixture and registration; it requires no metric-specific branches in the generic
-planner, publisher or reader. Installed files are trusted package code reviewed
-before installation. Runtime calls cannot supply definitions, SQL, paths or remote
-schemas. Unknown profiles, revisions and hashes fail explicitly.
+For a new supported PERSON-count profile, give its versioned profile, row and denominator definitions, SQL and independent fixture their own identities. Register the paths and constraints in the installed registry. Update the profile digest referenced by the row and denominator definitions, then the lock entries for the final asset bytes. Reinstall the package before running the contributor checks. The generic planner, publisher and reader load the registered definitions. Additional populations or row kinds require their own implementation and validation.
 
 ## Generate, then view saved aggregates
 
@@ -103,18 +94,7 @@ and report mappings remain separate work.
 
 ## Verify from a checkout
 
-After installing the package:
-
-Provision the marked fixtures first using the
-[fixture setup instructions](count-tracer.md#developer-setup). Run from the checkout
-root; `mktemp` below creates a writable parent and the output directory itself is new.
-
-```sh
-Rscript --vanilla tests/tracer/registered-profile-offline.R
-python3 tools/test_result_serving.py --test-script registered-profile \
-  --state .local/postgresql --config tools/tracer_fixture_config.R \
-  --output-dir "$(mktemp -d)/reference-proof"
-```
+Run `python3 tools/check_conformance.py` for the offline extension checks. Use its `postgresql` mode to exercise the independent expected rows and source-denied readback on marked fixtures. The [conformance guide](conformance.md#run-the-contributor-checks) gives the installation and exact commands.
 
 The integration harness refuses an unmarked database. It uses disposable schemas
 and a temporary serving-only role, compares independently specified numbers,
