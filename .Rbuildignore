@@ -11,4 +11,9 @@
 ^tests/fixtures$
 ^tests/test_.*\.py$
 ^tests/tracer$
-^errorReportSql\.txt$
+(^|/)\.(env|Renviron)(\.[^/]*)?$
+(^|/)([^/]*\.)?pgpass(\.[^/]*)?$
+\.(pem|key|p12|pfx)$
+(^|/)(hs_err_pid[0-9]+\.log|errorReportSql\.txt)$
+(^|/)postgresql(-[^/]+)?\.jar$
+^(config|jdbc|scratch|\.?private|data/private)(/|$)
