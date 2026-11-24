@@ -1,5 +1,7 @@
 # AchillesNext
 
+[Build and install the R source package](inst/guides/installation.md).
+
 The [synthetic PostgreSQL-to-React count tracer](docs/development/count-tracer.md)
 provides an R entry point, a validated partial aggregate bundle and an exact-count
 React view. The [observation tracer](docs/development/observation-tracer.md) adds observed people, monthly people and unique person-days with a Recharts view. The [measurement reference report](docs/development/measurement-reference.md) adds counts, representations, raw units/operators and exact distributions with local terminology. An [optional weighted strategy](docs/development/weighted-quantiles.md) computes the same exact quantiles using cumulative frequencies; the reference remains the default. These are development slices, not a complete alpha report.
