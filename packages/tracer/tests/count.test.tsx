@@ -3,7 +3,7 @@ import {resolve} from 'node:path';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {describe, it, expect} from 'vitest';
 import {canonical, sha256} from '../../contracts/src/index.mjs';
-import {openCountBundle, selectedBundleFiles, type BundleFile} from '../src/file-provider';
+import {openCountBundle, openServedCountBundle, selectedBundleFiles, type BundleFile} from '../src/file-provider';
 import {CountView} from '../src/CountView';
 
 const root = resolve(import.meta.dirname, '../../..');
@@ -99,6 +99,22 @@ describe('count tracer file/provider/view boundary', () => {
     await expect(result.provider.getManifest({...result.context, source_id: 'other'}, {signal: signal(), requestId: 'wrong'})).rejects.toThrow('CONTEXT');
     const aborted = new AbortController(); aborted.abort();
     await expect(result.provider.getManifest(result.context, {signal: aborted.signal, requestId: 'abort'})).rejects.toThrow();
+  });
+  it('rejects ambiguous imported manifests before reading saved partitions locally or over HTTP', async () => {
+    const {manifest, files} = await sample();
+    const ambiguous = canonical(manifest).replace('{', '{"contract_version":"1.1.0",');
+    files.set('manifest.json', file(new TextEncoder().encode(ambiguous)));
+    await expect(openCountBundle(files, signal())).rejects.toThrow('Duplicate JSON keys');
+
+    const paths: string[] = [];
+    const serve = async (input: string | URL | Request) => {
+      const path = new URL(String(input)).pathname;
+      paths.push(path);
+      return new Response(path.endsWith('/status.json') ? '{"state":"ready"}' : ambiguous);
+    };
+    await expect(openServedCountBundle(new URL('http://localhost/api/'), signal(), serve))
+      .rejects.toMatchObject({state: 'invalid', message: 'Duplicate JSON keys'});
+    expect(paths).toEqual(['/api/status.json', '/api/manifest.json']);
   });
   it('rejects ambiguous folder paths', () => {
     expect(() => selectedBundleFiles([{name: 'manifest.json', webkitRelativePath: 'bundle/../manifest.json', ...file(new Uint8Array())}])).toThrow();

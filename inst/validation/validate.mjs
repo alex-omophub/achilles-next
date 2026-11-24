@@ -33805,11 +33805,21 @@ var ke = {
 function K(e, t) {
 	if (!e) throw Error(t);
 }
-var Ae = /* @__PURE__ */ new Set([
+function Ae(e) {
+	let t = new TextDecoder("utf-8", { fatal: !0 }).decode(e), n = JSON.parse(t), r = [];
+	for (let e of t.matchAll(/[{}]|"([^"\\]*(?:\\.[^"\\]*)*)"(\s*:)?/g)) if (e[0] === "{") r.push(/* @__PURE__ */ new Set());
+	else if (e[0] === "}") r.pop();
+	else if (e[2]) {
+		let t = e[1].includes("\\") ? JSON.parse("\"" + e[1] + "\"") : e[1], n = r.at(-1);
+		K(!n.has(t), "Duplicate JSON keys"), n.add(t);
+	}
+	return n;
+}
+var je = /* @__PURE__ */ new Set([
 	"computed",
 	"empty_source",
 	"empty_population"
-]), je = [
+]), Me = [
 	"sum",
 	"min",
 	"max",
@@ -33821,34 +33831,34 @@ var Ae = /* @__PURE__ */ new Set([
 	"p75",
 	"p90"
 ];
-function Me(e, t) {
+function q(e, t) {
 	K(e === "computed" ? t === null : typeof t == "string" && t.length > 0, "State/reason mismatch");
 }
-function q(e, t, n = 1n) {
+function Ne(e, t, n = 1n) {
 	let r = (e) => {
 		let [t, n = ""] = e.split(".");
 		return [BigInt(t + n), n.length];
 	}, [i, a] = r(e), [o, s] = r(t), c = Math.max(a, s), l = i * n * 10n ** BigInt(c - a), u = o * 10n ** BigInt(c - s);
 	return l < u ? -1 : +(l > u);
 }
-function Ne(e) {
-	if (Me(e.state, e.reason), K(Ae.has(e.state) ? Array.isArray(e.rows) : e.rows === null, "State/rows mismatch: unavailable values must not leak"), e.rows === null) return;
+function Pe(e) {
+	if (q(e.state, e.reason), K(je.has(e.state) ? Array.isArray(e.rows) : e.rows === null, "State/rows mismatch: unavailable values must not leak"), e.rows === null) return;
 	e.state !== "computed" && K(e.rows.every((t) => t.state === e.state || t.state === "suppressed"), "Output/row empty state mismatch");
 	let t = /* @__PURE__ */ new Set();
 	for (let n of e.rows) {
 		let r = G(n.dimensions);
-		if (K(!t.has(r), "Duplicate result stratum"), t.add(r), Me(n.state, n.reason), n.state === "suppressed") {
+		if (K(!t.has(r), "Duplicate result stratum"), t.add(r), q(n.state, n.reason), n.state === "suppressed") {
 			K(n.values === null && n.denominator === null, "Suppressed row leaked values");
 			continue;
 		}
 		K(n.values !== null, "Computed/empty row has no typed values");
 		let i = n.values;
 		if (n.state !== "computed" && K(i.count === "0" || i.n === "0", "Empty row must carry zero count/n"), e.metric_id === "measurement.numeric_summary") {
-			if (K(["null", "zero"].includes(n.dimensions.raw_operator_tag), "Nonzero operator cannot enter numeric summary"), i.n === "0") K(n.state !== "computed" && je.every((e) => i[e] === null), "Zero-n summary has non-null statistics or wrong state");
+			if (K(["null", "zero"].includes(n.dimensions.raw_operator_tag), "Nonzero operator cannot enter numeric summary"), i.n === "0") K(n.state !== "computed" && Me.every((e) => i[e] === null), "Zero-n summary has non-null statistics or wrong state");
 			else {
-				K(n.state === "computed" && je.every((e) => i[e] !== null), "Nonempty summary lacks statistics"), K(i.mean_numerator === i.sum && i.mean_denominator === i.n, "Mean must retain exact sum/n");
+				K(n.state === "computed" && Me.every((e) => i[e] !== null), "Nonempty summary lacks statistics"), K(i.mean_numerator === i.sum && i.mean_denominator === i.n, "Mean must retain exact sum/n");
 				let e = BigInt(i.n);
-				K(q(i.min, i.sum, e) <= 0 && q(i.max, i.sum, e) >= 0, "Numeric sum outside exact n × min/max bounds");
+				K(Ne(i.min, i.sum, e) <= 0 && Ne(i.max, i.sum, e) >= 0, "Numeric sum outside exact n × min/max bounds");
 				let t = [
 					"min",
 					"p10",
@@ -33858,13 +33868,13 @@ function Ne(e) {
 					"p90",
 					"max"
 				];
-				K(t.slice(1).every((e, n) => q(i[t[n]], i[e]) <= 0), "Numeric order statistics out of order");
+				K(t.slice(1).every((e, n) => Ne(i[t[n]], i[e]) <= 0), "Numeric order statistics out of order");
 			}
 		}
-		e.metric_id === "execution.timing" && K(i.availability === "measured" ? i.duration_ms !== null && i.reason === null : i.duration_ms === null && i.reason !== null, "Unavailable timing must not become zero"), e.metric_id === "source.capabilities" && K(i.availability === "available" ? i.table_present === !0 && i.column_present === !0 && i.readable === !0 && i.reason === null : i.reason !== null, "Capability availability/reason is inconsistent"), e.metric_id === "source.capabilities" && i.availability === "absent" && K(i.table_present === !1 || i.column_present === !1, "Absent capability must identify a missing table or column"), e.metric_id === "execution.output_status" && Me(i.state, i.reason);
+		e.metric_id === "execution.timing" && K(i.availability === "measured" ? i.duration_ms !== null && i.reason === null : i.duration_ms === null && i.reason !== null, "Unavailable timing must not become zero"), e.metric_id === "source.capabilities" && K(i.availability === "available" ? i.table_present === !0 && i.column_present === !0 && i.readable === !0 && i.reason === null : i.reason !== null, "Capability availability/reason is inconsistent"), e.metric_id === "source.capabilities" && i.availability === "absent" && K(i.table_present === !1 || i.column_present === !1, "Absent capability must identify a missing table or column"), e.metric_id === "execution.output_status" && q(i.state, i.reason);
 	}
 }
-function Pe(e) {
+function Fe(e) {
 	let { start: t, end: n } = e.window, r = [], [i, a] = t.split("-").map(Number), [o, s] = n.split("-").map(Number), c = (o - i) * 12 + s - a + 1;
 	K(t <= n && c >= 1 && c <= 120, "Invalid bounded window"), r.push({
 		period_kind: "window",
@@ -33881,8 +33891,8 @@ function Pe(e) {
 	}
 	return r;
 }
-function Fe(e, t, n, { profile: r, validateDocument: i }) {
-	if (i("bundle", e), i("terminology", n), K(e.source.source_id === e.request.source_id, "Request/source mismatch"), K(e.source.schema_fingerprint.state !== "known" || /^[0-9a-f]{64}$/.test(e.source.schema_fingerprint.id), "Schema identity must be a fingerprint"), K(e.source.snapshot.state !== "unknown" || !e.reproducibility.consistent_snapshot && e.reproducibility.limitation !== null, "Unknown snapshot needs reproducibility limitation"), K(e.reproducibility.consistent_snapshot || e.reproducibility.limitation !== null, "Inconsistent execution needs reproducibility limitation"), K(e.reproducibility.execution_start <= e.reproducibility.execution_end, "Invalid execution window"), K(t.size === e.outputs.length && [...t.keys()].every((e) => r.required_outputs.includes(e)), "Unexpected result documents"), K(n.source_id === e.source.source_id && G(n.vocabulary_release) === G(e.source.vocabulary_release), "Terminology scope/vocabulary mismatch"), K(e.eligible_for_current_pointer === (e.publication === "complete"), "Partial run cannot replace current complete pointer"), e.publication === "complete" && K(e.disclosure.applied && e.disclosure.approval_id !== null && e.outputs.every((e) => Ae.has(e.state) || e.state === "suppressed"), "Complete bundle has incomplete outputs or unapplied disclosure policy"), K(e.disclosure.scope === e.request.output_scope && e.disclosure.policy_id === e.request.disclosure_policy_id, "Disclosure scope/policy mismatch"), K(new Set(e.outputs.map((e) => e.metric_id)).size === r.required_outputs.length && r.required_outputs.every((t) => e.outputs.some((e) => e.metric_id === t)), "Missing/duplicate requested outputs"), K(n.contract_version === e.contract_version, "Mixed contract versions"), e.request.output_scope === "distributable") {
+function Ie(e, t, n, { profile: r, validateDocument: i }) {
+	if (i("bundle", e), i("terminology", n), K(e.source.source_id === e.request.source_id, "Request/source mismatch"), K(e.source.schema_fingerprint.state !== "known" || /^[0-9a-f]{64}$/.test(e.source.schema_fingerprint.id), "Schema identity must be a fingerprint"), K(e.source.snapshot.state !== "unknown" || !e.reproducibility.consistent_snapshot && e.reproducibility.limitation !== null, "Unknown snapshot needs reproducibility limitation"), K(e.reproducibility.consistent_snapshot || e.reproducibility.limitation !== null, "Inconsistent execution needs reproducibility limitation"), K(e.reproducibility.execution_start <= e.reproducibility.execution_end, "Invalid execution window"), K(t.size === e.outputs.length && [...t.keys()].every((e) => r.required_outputs.includes(e)), "Unexpected result documents"), K(n.source_id === e.source.source_id && G(n.vocabulary_release) === G(e.source.vocabulary_release), "Terminology scope/vocabulary mismatch"), K(e.eligible_for_current_pointer === (e.publication === "complete"), "Partial run cannot replace current complete pointer"), e.publication === "complete" && K(e.disclosure.applied && e.disclosure.approval_id !== null && e.outputs.every((e) => je.has(e.state) || e.state === "suppressed"), "Complete bundle has incomplete outputs or unapplied disclosure policy"), K(e.disclosure.scope === e.request.output_scope && e.disclosure.policy_id === e.request.disclosure_policy_id, "Disclosure scope/policy mismatch"), K(new Set(e.outputs.map((e) => e.metric_id)).size === r.required_outputs.length && r.required_outputs.every((t) => e.outputs.some((e) => e.metric_id === t)), "Missing/duplicate requested outputs"), K(n.contract_version === e.contract_version, "Mixed contract versions"), e.request.output_scope === "distributable") {
 		K(e.contract_version === "1.1.0" && e.disclosure.applied && e.disclosure.approval_id !== null && e.disclosure.policy_id === "synthetic-aggregates-v1", "Unapproved distributable scope");
 		let t = /* @__PURE__ */ new Set([
 			"source.passport",
@@ -33898,7 +33908,7 @@ function Fe(e, t, n, { profile: r, validateDocument: i }) {
 	}
 	let s = (e, t) => o.get(e)?.get(G(t)), c = s("source.passport", {})?.values;
 	c && K(c.source_id === e.source.source_id && c.source_snapshot_id === e.source.snapshot.id && c.data_release_id === e.source.data_release.id && c.vocabulary_release_id === e.source.vocabulary_release.id && c.declared_cdm_version === e.source.declared_cdm_version && G(c.observed_schema_evidence) === G(e.source.schema_fingerprint) && c.run_id === e.run_id, "Passport/manifest identity mismatch");
-	let l = Pe(e.request), u = (e) => [
+	let l = Fe(e.request), u = (e) => [
 		e.period_kind,
 		e.period_start,
 		e.period_end
@@ -34029,7 +34039,7 @@ function Fe(e, t, n, { profile: r, validateDocument: i }) {
 	};
 }
 // ../contracts/src/directory.mjs
-var Ie = (e) => o("sha256").update(e).digest("hex"), Le = (e) => JSON.parse(new TextDecoder("utf-8", { fatal: !0 }).decode(e));
+var Le = (e) => o("sha256").update(e).digest("hex");
 async function Re(e, n, r = t) {
 	let a = new Set(n);
 	K(a.size === n.length, "Duplicate artifact paths");
@@ -34051,21 +34061,21 @@ async function ze(t, o, s) {
 		l += s.size, K(s.isFile() && s.size <= 10485760 && l <= 67108864, "Invalid/oversize bundle");
 		let u = await n(o);
 		return K(u.length === s.size, "Artifact changed while reading"), u;
-	}, d = await u("manifest.json"), f = Le(d);
+	}, d = await u("manifest.json"), f = Ae(d);
 	o("bundle", f);
 	let p = /* @__PURE__ */ new Map();
 	for (let e of f.outputs) {
 		let t = await u(e.path);
-		K(Ie(t) === e.sha256 && String(t.length) === e.bytes, "Partition integrity mismatch"), p.set(e.metric_id, Le(t));
+		K(Le(t) === e.sha256 && String(t.length) === e.bytes, "Partition integrity mismatch"), p.set(e.metric_id, Ae(t));
 	}
 	let m = await u(f.terminology.path);
-	return K(Ie(m) === f.terminology.sha256 && String(m.length) === f.terminology.bytes, "Terminology integrity mismatch"), await Re(c, [
+	return K(Le(m) === f.terminology.sha256 && String(m.length) === f.terminology.bytes, "Terminology integrity mismatch"), await Re(c, [
 		"manifest.json",
 		f.terminology.path,
 		...f.outputs.map((e) => e.path)
 	]), {
-		...s(f, p, Le(m)),
-		manifest_sha256: Ie(d)
+		...s(f, p, Ae(m)),
+		manifest_sha256: Le(d)
 	};
 }
 // tools/publication-validator.mjs
@@ -34075,7 +34085,7 @@ var J = {
 	terminology: Ee
 }, Be = (e) => o("sha256").update(e).digest("hex");
 function Ve(e, t) {
-	if (K(J[e](t), `Invalid ${e} typed fields`), e === "result" && Ne(t), e === "bundle" && (K(t.request_sha256 === Be(G(t.request)), "Request hash mismatch"), K(t.profile.sha256 === "2e106f260cbcfcaccab23c55846384886dc5c0b2d7178b48e62c7f82cbe18951", "Profile hash mismatch"), K(t.eligible_for_current_pointer === (t.publication === "complete"), "Invalid publication eligibility"), t.publication === "complete" && K(t.disclosure.applied && t.disclosure.approval_id !== null && t.outputs.every((e) => [
+	if (K(J[e](t), `Invalid ${e} typed fields`), e === "result" && Pe(t), e === "bundle" && (K(t.request_sha256 === Be(G(t.request)), "Request hash mismatch"), K(t.profile.sha256 === "2e106f260cbcfcaccab23c55846384886dc5c0b2d7178b48e62c7f82cbe18951", "Profile hash mismatch"), K(t.eligible_for_current_pointer === (t.publication === "complete"), "Invalid publication eligibility"), t.publication === "complete" && K(t.disclosure.applied && t.disclosure.approval_id !== null && t.outputs.every((e) => [
 		"computed",
 		"empty_source",
 		"empty_population",
@@ -34086,7 +34096,7 @@ function Ve(e, t) {
 	}
 }
 try {
-	K(process.argv.length === 3, "Supply one bundle directory"), await ze(process.argv[2], Ve, (e, t, n) => Fe(e, t, n, {
+	K(process.argv.length === 3, "Supply one bundle directory"), await ze(process.argv[2], Ve, (e, t, n) => Ie(e, t, n, {
 		profile: ke,
 		validateDocument: Ve
 	})), process.stdout.write("Validated bundle\n");

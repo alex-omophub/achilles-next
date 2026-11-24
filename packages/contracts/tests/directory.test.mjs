@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
+import {cp,mkdtemp,mkdir,writeFile,rm} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {resolve} from 'node:path';
 import {createHash} from 'node:crypto';
@@ -8,6 +8,7 @@ import {spawnSync} from 'node:child_process';
 import {validateBundleDirectory,ROOT} from '../src/validator.mjs';
 import {validateInventory} from '../src/directory.mjs';
 import {canonical} from '../src/index.mjs';
+import {decodeArtifactJson} from '../src/semantics.mjs';
 const source = await validateBundleDirectory(resolve(ROOT,'tests/fixtures/contracts/complete'));
 const hash = b=>createHash('sha256').update(b).digest('hex');
 for(const artifact of ['manifest','result','terminology']) test(`reject malformed UTF-8 in ${artifact}, even with matching checksums`,async()=>{
@@ -52,4 +53,24 @@ test('inventory stops and closes the iterator on the first undeclared entry',asy
   }});
   await assert.rejects(()=>validateInventory('/bundle',['manifest.json'],open),/Unexpected bundle entry/);
   assert.equal(read,1);assert.equal(closed,true);
+});
+
+test('import rejects conflicting contract versions under equivalent JSON member names', async () => {
+  const root = await mkdtemp(resolve(tmpdir(), 'achilles-import-'));
+  try {
+    await cp(resolve(ROOT, 'tests/fixtures/contracts/complete'), root, {recursive: true});
+    // The last version is valid in isolation; a plain JSON.parse hides the conflict.
+    const manifest = canonical(source.manifest).replace('{', String.raw`{"contract\u005fversion":"1.1.0",`);
+    await writeFile(resolve(root, 'manifest.json'), manifest);
+    await assert.rejects(validateBundleDirectory(root), /Duplicate JSON keys/);
+    const installed = spawnSync(process.execPath, [resolve(ROOT, 'inst/validation/validate.mjs'), root]);
+    assert.equal(installed.status, 1);
+  } finally { await rm(root, {recursive: true, force: true}); }
+});
+
+test('artifact member names have object-local scope and quoted values remain data', () => {
+  const values = [{name: 'a } "name": text'}, {name: '{é}:', nested: {name: '☃'}}];
+  assert.deepEqual(decodeArtifactJson(Buffer.from(JSON.stringify(values))), values);
+  const repeated = String.raw`[{"rows":[{"é":1,"\u00e9":2}]}]`;
+  assert.throws(() => decodeArtifactJson(Buffer.from(repeated)), /Duplicate JSON keys/);
 });

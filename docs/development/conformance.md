@@ -61,6 +61,8 @@ keep the implementation fixed while a suite runs.
 
 ## Compatibility and safety matrix
 
+The [PostgreSQL and saved-result support matrix](support-matrix.md) lists observed per-version capabilities, publication checks and the viewer configurations exercised with generated results.
+
 | Suite | What it checks |
 |---|---|
 | `tests/tracer/postgresql.R` / `observation.R` | Existing count/observation tracers, physical schema variants, invalid prerequisites and independent expected values |

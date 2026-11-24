@@ -170,12 +170,24 @@ def check_source_audit_oracle():
                 'nonempty_unobserved', 'empty', 'separate_identity_counts'])
 
 
+def publication_snapshot(snapshots, proof):
+    """The source can be shared across CDM versions and operator runs."""
+    release = proof['release_id']
+    assert isinstance(release, str) and release, 'Missing publication release'
+    matches = [s for s in snapshots if s['source_id'] == proof['snapshot_source_id']
+               and s.get('release_id', s.get('candidate', {}).get('release_id')) == release]
+    assert len(matches) == 1, 'Expected one snapshot for the published source and release'
+    assert matches[0]['validated'] is True, 'Publication snapshot was not validated'
+    return matches[0]
+
+
 def verify_publication(out, report, *, require_refresh=True):
     """Compare exported rows with independently checked generated rows, not report flags alone."""
     proof = report['publication']
-    snapshot = next(s for s in report['snapshots'] if s['source_id'] == proof['snapshot_source_id'])
     if require_refresh:
         assert all(s.get('refresh_executed') is True for s in report['snapshots']), 'Expected executed refresh snapshots'
+    snapshot = publication_snapshot(report['snapshots'], proof)
+    assert set(proof['publications']) == {'full', 'projected'}, 'Expected full and projected publications'
     for flag in ['source_and_aggregate_denied', 'exact_serving_bytes', 'context_mismatch_rejected',
                  'scope_revocation_isolated', 'offline_copy_retained']:
         assert proof[flag] is True, flag
@@ -206,6 +218,7 @@ def verify_publication(out, report, *, require_refresh=True):
             for key, value in expected_context.items():
                 assert doc[key] == value, key
             if doc['kind'] == 'root':
+                assert doc['source_schema'] == dict(declared_cdm_version=snapshot['version'], sha256=snapshot['schema_sha256'])
                 assert doc['scope_kind'] == publication['scope_kind']
                 assert doc['expected_metric_count'] == '142'
                 for key in ['catalogue', 'data', 'concepts', 'terminology']:
@@ -262,7 +275,7 @@ def verify_publication(out, report, *, require_refresh=True):
             assert 'core.condition.observation_qualification_count' not in data
         total_objects += len(seen)
     assert proof['approved_objects_read'] == str(total_objects)
-    return dict(status='passed', exports=2, exact_objects=total_objects, full_metrics=142,
+    return dict(status='passed', declared_cdm_version=snapshot['version'], exports=2, exact_objects=total_objects, full_metrics=142,
                 projected_metrics=2, denominator_closure=True, source_denied_serving=True)
 
 
@@ -358,21 +371,31 @@ def verify(snapshot, case):
             assert v['duration_ms'] is None and v['reason_code']=='execution.not_started_at_metadata_capture'
 
 
+def fixture_matrix(case, full_matrix, publication_version):
+    if publication_version:
+        return [(case, publication_version)]
+    versions = ['5.3', '5.4', '5.5'] if full_matrix else ['5.3']
+    empty = dict(case, id='empty_source', person=[], events=[], observation_period=[])
+    return [(case, version) for version in versions] + [(empty, '5.5'), (observation_tail_fixture(case), '5.5')]
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--config',type=Path,required=True);p.add_argument('--output-dir',type=Path,required=True)
-    p.add_argument('--full-matrix',action='store_true')
+    scope = p.add_mutually_exclusive_group()
+    scope.add_argument('--full-matrix', action='store_true')
+    scope.add_argument('--publication-version', choices=['5.3', '5.4', '5.5'],
+                       help='Qualify only the populated fixture at this version through approved publication.')
     p.add_argument('--with-publication',action='store_true')
     p.add_argument('--state',type=Path);p.add_argument('--admin-host',default='/tmp')
     p.add_argument('--admin-user');p.add_argument('--port',type=int,default=5432);a = p.parse_args()
+    if a.publication_version and not a.with_publication:p.error('--publication-version requires --with-publication')
     if a.with_publication and not a.state:p.error('--with-publication requires --state')
     out = measurement.base.create_evidence_dir(a.output_dir)
     getcontext().prec = 256
     audit_oracle = check_source_audit_oracle()
-    case = measurement.fixture();empty = dict(case,id='empty_source',person=[],events=[],observation_period=[])
-    extended=observation_tail_fixture(case)
-    cases = {case['id']:case,empty['id']:empty,extended['id']:extended}
-    matrix = [(case,v) for v in (['5.3','5.4','5.5'] if a.full_matrix else ['5.3'])]+[(empty,'5.5'),(extended,'5.5')]
+    matrix = fixture_matrix(measurement.fixture(), a.full_matrix, a.publication_version)
+    cases = {case['id']: case for case, _ in matrix}
     (out/'input.json').write_text(json.dumps([dict(case=c['id'],version=v,**physical(c,v)) for c,v in matrix]))
     subprocess.run(['Rscript','--vanilla','tests/tracer/characterization-render-offline.R',str(out/'input.json')],cwd=ROOT,check=True)
     subprocess.run(['Rscript','--vanilla','tests/tracer/characterization-execute-offline.R',str(out/'input.json')],cwd=ROOT,check=True)
@@ -383,7 +406,8 @@ def main():
     else:cmd=['Rscript','--vanilla','tests/tracer/core-characterization.R',str(a.config.resolve()),str(out)]
     subprocess.run(cmd,cwd=ROOT,check=True)
     report = json.loads((out/'report.json').read_text())
-    assert len(report['snapshots'])==len(matrix)
+    actual = sorted((s['case'], s['version']) for s in report['snapshots'])
+    assert actual == sorted((case['id'], version) for case, version in matrix), 'Fixture/version matrix mismatch'
     for snap in report['snapshots']:
         verify(snap,cases[snap['case']])
         verify_source_audits(snap, physical(cases[snap['case']], snap['version']))

@@ -1,4 +1,4 @@
-import {validateResult, validateBundleDocuments} from '../../contracts/src/semantics.mjs';
+import {decodeArtifactJson, validateResult, validateBundleDocuments} from '../../contracts/src/semantics.mjs';
 import {measurementGenerators, measurementIds, type VerifiedMeasurement} from './measurement';
 import {observationIds, verifyObservation, type VerifiedObservation} from './observation';
 import {bundle, result, terminology} from './generated-validation.mjs';
@@ -13,7 +13,7 @@ function requireValid(test: unknown, message: string): asserts test {
   if (!test) throw new Error(message);
 }
 function decode(name: string, bytes: Uint8Array): any {
-  const doc = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(bytes));
+  const doc = decodeArtifactJson(bytes);
   requireValid(validators[name](doc), `Invalid ${name}: incompatible typed fields.`);
   return doc;
 }
@@ -70,7 +70,7 @@ export async function openServedCountBundle(base: URL, signal: AbortSignal,
       throw new BundleOpenError(state, typeof status.message === 'string' ? status.message : 'Reopen a supported count-tracer, observation-tracer or measurement reference/weighted bundle.');
     }
     const manifestBytes = await read('manifest.json');
-    const manifest = JSON.parse(new TextDecoder('utf-8', {fatal: true}).decode(manifestBytes));
+    const manifest = decodeArtifactJson(manifestBytes);
     if (!['1.0.0', '1.1.0'].includes(manifest.contract_version) || manifest.profile?.id !== 'alpha-measurement-v1' ||
       !['AchillesNext-count-tracer', 'AchillesNext-observation-tracer', ...measurementGenerators].includes(manifest.generator?.name) || !['partial', 'complete'].includes(manifest.publication)) {
       throw new BundleOpenError('incompatible', 'This viewer supports count, observation or measurement reference/weighted bundles using contracts 1.0 and 1.1.');

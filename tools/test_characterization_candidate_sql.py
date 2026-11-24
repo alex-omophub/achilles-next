@@ -172,8 +172,7 @@ def main():
         else:
             summary = verify(report, cases)
         publication = report['compiled_publication']
-        selected = next(s for s in report['snapshots'] if s['candidate']['release_id'] == publication['release_id'])
-        assert selected['source_id'] == publication['snapshot_source_id']
+        selected = core.publication_snapshot(report['snapshots'], publication)
         assert selected['source_receipt']['kind'] == 'characterization_execution_receipt'
         assert selected['source_receipt']['program_sha256'] == publication['program_sha256']
         assert selected['candidate']['source_receipt'] == selected['source_receipt']
