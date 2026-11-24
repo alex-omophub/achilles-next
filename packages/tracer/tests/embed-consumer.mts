@@ -1,5 +1,5 @@
 // Compile the installed ESM's public types as a host with no React imports.
-import {createPublicationHttpProvider, mountPublicationWorkspace} from '../../../inst/embed/publication-workspace.mjs';
+import {PublicationAccessError, createPublicationHttpProvider, mountPublicationWorkspace} from '../../../inst/embed/publication-workspace.mjs';
 
 declare const container: HTMLElement;
 declare const context: Parameters<typeof mountPublicationWorkspace>[1]['context'];
@@ -9,7 +9,10 @@ const workspace = mountPublicationWorkspace(container, {provider, context, targe
   const id: string = event.payload.concept_id;
   if (event.type === 'navigation_requested') new URL('/concept/' + id, window.location.origin);
 }});
-await workspace.ready;
+try { await workspace.ready; }
+catch (error) {
+  if (!(error instanceof PublicationAccessError && error.code === 'authentication_required')) throw error;
+}
 await workspace.update({context, target, theme: {accent: '#156075'}, locale: 'pt-PT'});
 await workspace.update({context, target: {kind: 'report', version: '2', metric_id: 'core.person.count', metric_version: '1.0.0'}});
 await workspace.update({context, target: {kind: 'chart', version: '2', metric_id: 'core.measurement.numeric_summary', metric_version: '1.0.0'}});

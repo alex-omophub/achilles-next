@@ -20,6 +20,10 @@ export interface PopulationResult {
 }
 export declare class PublicationReadError extends Error {
 }
+export declare class PublicationAccessError extends PublicationReadError {
+    readonly code: 'authentication_required' | 'access_denied';
+    constructor(code: 'authentication_required' | 'access_denied');
+}
 export declare function assertSamePublication(a: Context, b: Context): void;
 export declare function readCatalogue(base: URL, cursor: string | null, signal: AbortSignal, fetchImpl?: typeof fetch): Promise<CataloguePage>;
 export declare function readPeople(base: URL, signal: AbortSignal, fetchImpl?: typeof fetch): Promise<PopulationResult>;

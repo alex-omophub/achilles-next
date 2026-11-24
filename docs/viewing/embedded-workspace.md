@@ -84,6 +84,20 @@ bundle identity returns `invalid_context`. The host can keep displaying its
 current authorized publication after an invalid update.
 [Installed R viewer examples](local-viewer.md)
 
+## Handle expired sessions and denied access
+
+The HTTP provider reports `authentication_required` for HTTP 401 and
+`access_denied` for HTTP 403. A custom provider can throw the exported
+`PublicationAccessError` with either code. Failed initial reads reject
+`ready` or `update()`; failures during later interaction clear the current
+data and show an alert. Other transport failures use `read_failed` in the mount.
+
+After the host renews access, bind its provider to the approved result route
+and call `update()` with the new complete context, including its authorization
+epoch and provider instance ID. A logout or permission change must trigger
+an update or destroy even when the source and publication IDs stay the same.
+Keep credentials in the host transport.
+
 ## Open a report or chart directly
 
 Use the same mount handle to open a specific metric from a host route. Supply

@@ -1,5 +1,5 @@
 import {beforeEach, expect, it, vi} from 'vitest';
-import {mountPublicationWorkspace, type PublicationConceptEvent, type PublicationContext, type PublicationProvider} from '../src/mount-publication';
+import {mountPublicationWorkspace, PublicationAccessError, type PublicationConceptEvent, type PublicationContext, type PublicationProvider} from '../src/mount-publication';
 
 interface Frame {
   props: {provider: PublicationProvider; onConcept?: (type: PublicationConceptEvent['type'],
@@ -151,5 +151,20 @@ it('validates presentation before changing a generation or touching the host', a
   expect(renderer.frames).toHaveLength(1);
   frame().firstRender.applied();
   expect(await handle.ready).toEqual({status: 'applied', generation: 1});
+  await handle.destroy();
+});
+
+
+it('preserves typed access outcomes and discards arbitrary provider error details', async () => {
+  const options = fixture(), handle = mountPublicationWorkspace(container(), options);
+  async function read(error: Error) {
+    options.provider.report.mockRejectedValueOnce(error);
+    return frame().provider.report('core.person.count', null, new AbortController().signal).catch(failure => failure);
+  }
+  const denied = new PublicationAccessError('access_denied');
+  denied.message = 'private host response';
+  expect(await read(denied)).toMatchObject({code: 'access_denied', message: 'Access to this publication was denied.'});
+  expect(await read(Object.assign(new Error('private host response'), {code: 'access_denied'})))
+    .toMatchObject({code: 'read_failed', message: 'The selected publication could not be read.'});
   await handle.destroy();
 });

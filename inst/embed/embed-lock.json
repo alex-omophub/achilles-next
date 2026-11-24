@@ -30,11 +30,11 @@
     "packages/tracer/src/file-provider.ts": "22a41f6dd36ed3d6cfc226518fddb7a1949d0ef882336f84cf2a6fe467ed00c9",
     "packages/tracer/src/main.tsx": "a04c355274ff94a5c7b796210dd6c7f1717baa7ef480f6eec7fdefdfe4bff44c",
     "packages/tracer/src/measurement.ts": "fe79f281926c5f689cb62f0e6a68d1542a68d5e649a4333768d1353a4f1c64f7",
-    "packages/tracer/src/mount-publication.tsx": "bb16fb3348abc98dd9fd4c788dc2d68cc0e3868f229907100d842ff881fd6c29",
+    "packages/tracer/src/mount-publication.tsx": "e98b942014561b32767f0179f37db5254b77310db19c4da17dba8f9e0ee5e715",
     "packages/tracer/src/observation.ts": "5f3f1d43e60d2c4c3a9e45812f71839d183df92cb10cf5ee9697b2ff45de253c",
     "packages/tracer/src/publication.css": "4eac86fdf78e61aff4e4cf2c6d862a8e1fcb2d5ef9c7f792b9d992a69fcd3a41",
     "packages/tracer/src/saved-chart.ts": "52d46c58743eee823efc9bb06d2a5cb911dc268fa53b327710f45231d10f51e6",
-    "packages/tracer/src/saved-publication.ts": "70b90488efb8981df4e27b8eb3301a5a6f4c98b0f36c5968f350e1993ad87412",
+    "packages/tracer/src/saved-publication.ts": "0962a61449cbe9ea588ec973f435aa588cba15855221b8bda908a0a72cc07077",
     "packages/tracer/src/style.css": "369b46cc4838da49097ce3a3a3c66a904b4ef7af7d829d36e976baba853dcacb",
     "packages/tracer/tools/build-publication-validator.mjs": "e655aa58c6e81f230ca27700e8042c33410e4a77ce40073c5dfa8eda77dbc134",
     "packages/tracer/tools/build-validators.mjs": "b1218601e04bd097d1504ce25ec6f204bea7b6238a7f303c958ea54d902dff4a",
@@ -48,8 +48,8 @@
     "DEPENDENCY-LICENSES.txt": "2ac67813440ac367ffaf290b7608f08febb86d740fab58d325abea30d5ed3416",
     "assets/SavedChartGraphic-BdI-SWTQ.mjs": "58d428ea6b4729d1c40397dc969f661ff4a69efaa4eced3e8c4b59d8e2e21d9b",
     "assets/jsx-runtime-DRFAKyeO.mjs": "d59e8b05c72e37b7537618bcfeda5f5bd7051acfae98967942c4009c28c2a140",
-    "publication-workspace.d.mts": "f0afd6d2de7f1bfce3338f3c2f9d69a4e7f1a742eb3bbcef4cc5c6b5210b0904",
-    "publication-workspace.mjs": "ac552824162d99508e75ec11c9dabf9b3052daaa30384fd565b90b9d1cb0f4de",
-    "saved-publication.d.ts": "ced80c7b954db8899235223cdd3fed662858bfe6faa7917ddee26dc6e565a7f5"
+    "publication-workspace.d.mts": "4df7ecacb11c8a0ec80c198bcee58d2456edda0cf1b64e338e1f849fbbf021d2",
+    "publication-workspace.mjs": "324e1a89431d471a4858a960412fde480d17eaa773f0f81946035f113be8311b",
+    "saved-publication.d.ts": "5e3009d321ac424fb292878fe90d3a59d96aa41f755f49a410d0fab1f621de4c"
   }
 }

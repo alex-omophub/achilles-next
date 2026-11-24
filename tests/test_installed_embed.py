@@ -33,6 +33,11 @@ class InstalledEmbedTests(InstalledViewerCase):
                 ], check=True, env=env)
                 urls.append(servers.enter_context(self.serving(folder, trusted_context=trusted,
                                                               admission=self.root / (key + '-context.json'))))
+            # Another login for the same publication uses its own admission and revocation flag.
+            renewed = self.root / 'renewed-approval.json'
+            renewed.write_bytes((self.root / 'first-approval.json').read_bytes())
+            urls.append(servers.enter_context(self.serving(self.root / 'first', trusted_context=renewed,
+                                                           admission=self.root / 'renewed-context.json')))
             subprocess.run(['node', 'tests/browser/installed-embed/run.mjs', str(self.root), embed, *urls],
                            cwd=tests.parent / 'packages' / 'tracer', check=True, timeout=120)
 
