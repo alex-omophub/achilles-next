@@ -8,7 +8,7 @@ class GraphicBoundary extends Component<{children: ReactNode}, {failed: boolean}
   static getDerivedStateFromError() { return {failed: true}; }
   render() { return this.state.failed ? <p>The chart could not be displayed. See the saved rows below.</p> : this.props.children; }
 }
-export function SavedReportChart({report, page, showFallback = false}: {report: ReportPage; page: number; showFallback?: boolean}) {
+export function SavedReportChart({report, page, locale, showFallback = false}: {locale?: string; report: ReportPage; page: number; showFallback?: boolean}) {
   const [groupId, setGroupId] = useState('');
   const [measure, setMeasure] = useState<'person_count' | 'record_count'>('record_count');
   const spec = chartSpec(report);
@@ -36,7 +36,7 @@ export function SavedReportChart({report, page, showFallback = false}: {report: 
       <figure aria-label={spec.title + ' · ' + valueLabel}>
         <figcaption>{valueLabel}</figcaption>
         <GraphicBoundary key={JSON.stringify([report.context.instance_id, report.metric_id, page, group?.id, measure])}><Suspense fallback={<p role="status">Loading chart…</p>}>
-          <Graphic points={points} quantiles={quantiles} measure={valueLabel}/>
+          <Graphic locale={locale} points={points} quantiles={quantiles} measure={valueLabel}/>
         </Suspense></GraphicBoundary>
       </figure>
       {omitted > 0 && <p>{omitted} {omitted === 1 ? 'point has' : 'points have'} a missing or unplottable value. See the saved rows below.</p>}

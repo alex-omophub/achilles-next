@@ -12,7 +12,11 @@ export interface DirectPublicationTarget {
   readonly metric_id: string;
   readonly metric_version: string;
 }
+const colorTokens = ['ink', 'muted', 'rule', 'surface', 'accent', 'focus'] as const;
+export type PublicationTheme = Readonly<Partial<Record<typeof colorTokens[number], string>>>;
 export interface PublicationMountConfiguration {
+  readonly theme?: PublicationTheme;
+  readonly locale?: string;
   readonly target: {readonly kind: 'workspace'; readonly version: '2'} | DirectPublicationTarget;
   readonly context: PublicationContext;
 }
@@ -76,16 +80,39 @@ function pinTarget(target: unknown): PublicationMountConfiguration['target'] {
   }
   throw new MountFailure('invalid_configuration');
 }
-function pin(options: unknown, mounting: boolean): PublicationMountConfiguration {
+function themeRule(theme: unknown): string {
+  if (theme === undefined) return '';
+  if (!object(theme) || Object.prototype.toString.call(theme) !== '[object Object]') throw new MountFailure('invalid_configuration');
+  const declarations: string[] = [];
+  for (const [token, value] of Object.entries(theme)) {
+    if (!colorTokens.some(key => key === token) || typeof value !== 'string' || !/^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value))
+      throw new MountFailure('invalid_configuration');
+    declarations.push(`--${token}:${value}`);
+    if (token === 'surface') declarations.push('background-color:var(--surface)');
+  }
+  return declarations.length ? '.publication-workspace{' + declarations.join(';') + '}' : '';
+}
+
+function numberLocale(value: unknown): string {
+  if (value === undefined) return 'en';
+  if (typeof value !== 'string' || !value) throw new MountFailure('invalid_configuration');
+  try {
+    const [locale] = Intl.NumberFormat.supportedLocalesOf(value, {localeMatcher: 'lookup'});
+    if (locale) return locale;
+  } catch { /* Malformed locale tags also fail configuration validation. */ }
+  throw new MountFailure('invalid_configuration');
+}
+
+function pin(options: unknown, mounting: boolean) {
   if (!object(options) || Object.keys(options).some(key =>
-    !['target', 'context', ...(mounting ? ['provider', 'styleNonce', 'onEvent'] : [])].includes(key))) throw new MountFailure('invalid_configuration');
+    !['target', 'context', 'theme', 'locale', ...(mounting ? ['provider', 'styleNonce', 'onEvent'] : [])].includes(key))) throw new MountFailure('invalid_configuration');
   const target = pinTarget(options.target);
   const ctx = options.context;
   if (!object(ctx) || Object.keys(ctx).length !== pins.length || !pins.every(key =>
     Object.hasOwn(ctx, key) && typeof ctx[key] === 'string' && ctx[key].length > 0)
     || !['2.0.0', '2.1.0'].includes(String(ctx.contract_version)) || !/^[a-f0-9]{64}$/.test(String(ctx.profile_sha256)))
     throw new MountFailure('invalid_context');
-  return {target, context: Object.freeze({...ctx}) as PublicationContext};
+  return {target, context: Object.freeze({...ctx}) as PublicationContext, css: themeRule(options.theme), locale: numberLocale(options.locale)};
 }
 function scopedProvider(provider: PublicationProvider, context: PublicationContext, life: AbortSignal): PublicationProvider {
   async function call<T>(signal: AbortSignal, read: (combined: AbortSignal) => Promise<T>) {
@@ -143,7 +170,6 @@ export function mountPublicationWorkspace(container: HTMLElement, options: Publi
   const shadow = host.attachShadow({mode: 'open'});
   const style = doc.createElement('style');
   if (options.styleNonce) style.nonce = options.styleNonce;
-  style.textContent = styles;
   shadow.appendChild(style);
   const id = crypto.randomUUID();
   let generation = 0;
@@ -160,13 +186,16 @@ export function mountPublicationWorkspace(container: HTMLElement, options: Publi
     previous.controller.abort();
     return cleanup;
   }
-  function start({context, target}: PublicationMountConfiguration): Promise<PublicationMountOutcome> {
+  function start({context, target, css, locale}: ReturnType<typeof pin>): Promise<PublicationMountOutcome> {
     const index = ++generation;
     void retire('superseded');
     // A provider's abort listener can synchronously update or destroy this handle.
     if (destroyed || index !== generation) return Promise.resolve({status: destroyed ? 'destroyed' : 'superseded', generation: index});
     const controller = new AbortController();
     const element = doc.createElement('div');
+    element.lang = 'en';
+    const stylesheet = styles + css;
+    if (style.textContent !== stylesheet) style.textContent = stylesheet;
     shadow.appendChild(element);
     return new Promise<PublicationMountOutcome>((resolve, reject) => {
       const root = createRoot(element, {onUncaughtError() {
@@ -187,8 +216,8 @@ export function mountPublicationWorkspace(container: HTMLElement, options: Publi
           origin: 'user', instance_id: id, generation: index, context, payload: {...payload}});
       });
       root.render(target.kind === 'workspace'
-        ? <PublicationWorkspace provider={reads} instanceKey={id} onConcept={onConcept} firstRender={firstRender}/>
-        : <DirectPublicationView provider={reads} direct={{target, context}} onConcept={onConcept} firstRender={firstRender}/>);
+        ? <PublicationWorkspace provider={reads} locale={locale} instanceKey={id} onConcept={onConcept} firstRender={firstRender}/>
+        : <DirectPublicationView provider={reads} locale={locale} direct={{target, context}} onConcept={onConcept} firstRender={firstRender}/>);
     });
   }
   container.appendChild(host);

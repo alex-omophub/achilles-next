@@ -134,3 +134,22 @@ it('contains concept actions within the live generation and drops retired callba
   expect(events).toHaveLength(1);
   expect((await next).status).toBe('destroyed');
 });
+
+it('validates presentation before changing a generation or touching the host', async () => {
+  const options = fixture(), node = container();
+  for (const presentation of [{theme: {other: '#abc'}}, {theme: {ink: 'red'}}, {theme: null},
+    {theme: []}, {locale: 'en US'}, {locale: 'zz-ZZ'}, {locale: 7}]) {
+    expect(() => mountPublicationWorkspace(node, {...options, ...presentation} as typeof options))
+      .toThrow(expect.objectContaining({code: 'invalid_configuration'}));
+    expect(node.hasChildNodes()).toBe(false);
+  }
+  const theme = {accent: '#abc'};
+  const handle = mountPublicationWorkspace(node, {...options, theme, locale: 'PT-pt'});
+  theme.accent = '#def';
+  expect(frame()).toMatchObject({locale: 'pt-PT'});
+  await expect(handle.update({context, target, theme: {focus: 'invalid'}})).rejects.toMatchObject({code: 'invalid_configuration'});
+  expect(renderer.frames).toHaveLength(1);
+  frame().firstRender.applied();
+  expect(await handle.ready).toEqual({status: 'applied', generation: 1});
+  await handle.destroy();
+});

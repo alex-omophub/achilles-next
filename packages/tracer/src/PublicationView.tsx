@@ -52,12 +52,13 @@ async function domainCatalogue(provider: PublicationProvider, context: Populatio
   } while (cursor !== null);
   return {context, metrics, cursor: null};
 }
-function Summary({people}: {people: PopulationResult}) {
+function Summary({people, locale}: {people: PopulationResult; locale?: string}) {
   const {context} = people;
+  const count = people.count !== null && locale ? new Intl.NumberFormat(locale).format(BigInt(people.count)) : people.count;
   return <section className="publication-summary" aria-label="Publication summary">
     <div className="publication-count">
       <h2>People in source</h2>
-      <p className={people.count === null ? 'population-state' : 'population-number'}>{people.count ?? stateLabel(people.state)}</p>
+      <p className={people.count === null ? 'population-state' : 'population-number'}>{count ?? stateLabel(people.state)}</p>
       {people.count !== null && <p className="population-caption">Distinct person IDs{people.state !== 'computed' && ` · ${stateLabel(people.state)}`}</p>}
       {people.reason && <p className="population-caption">{people.reason}</p>}
     </div>
@@ -68,9 +69,9 @@ function Summary({people}: {people: PopulationResult}) {
     </dl>
   </section>;
 }
-interface SessionProps {provider: PublicationProvider; firstRender?: FirstRender; onConcept?: ConceptAction}
+interface SessionProps {locale?: string; provider: PublicationProvider; firstRender?: FirstRender; onConcept?: ConceptAction}
 interface DirectView {target: DirectPublicationTarget; context: PopulationResult['context']}
-function Session({provider, firstRender, onConcept, direct}: SessionProps & {direct?: DirectView}) {
+function Session({provider, firstRender, onConcept, locale, direct}: SessionProps & {direct?: DirectView}) {
   const [start] = useState<Selection>(() => direct ? {...initial,
     metric: {metric_id: direct.target.metric_id, version: direct.target.metric_version}} : initial);
   const [selection, setSelection] = useState(start);
@@ -164,7 +165,7 @@ function Session({provider, firstRender, onConcept, direct}: SessionProps & {dir
     open(metric ? {...selection, rowStarts: history} : {...selection, catalogueStarts: history});
   }
   return <>
-    {people && <Summary people={people}/>}
+    {people && <Summary people={people} locale={locale}/>}
     <section className="publication-catalogue" aria-label={direct ? 'Saved ' + direct.target.kind + ' view' : 'Metric catalogue'}>
       {!direct && <div className="publication-heading">
         <label>Domain or section
@@ -210,7 +211,7 @@ function Session({provider, firstRender, onConcept, direct}: SessionProps & {dir
               applied={selection.filters} apply={filters => open({...selection, filters, rowStarts: [null]})}
               fail={failure => {if (read && !read.signal.aborted && active.current === read) failed(failure);}}/>}
           </section>}
-          <SavedReportChart report={report} page={starts.length} showFallback={chartOnly}/>
+          <SavedReportChart locale={locale} report={report} page={starts.length} showFallback={chartOnly}/>
           {chartOnly ? <details><summary>Exact saved rows</summary><SavedReportTable report={report} onConcept={conceptAction}/></details>
             : <SavedReportTable report={report} onConcept={conceptAction}/>}
           <SavedReportEvidence report={report}/>
@@ -232,11 +233,11 @@ export function DirectPublicationView(props: SessionProps & {direct: DirectView}
   return <div className="publication-workspace"><Session {...props}/></div>;
 }
 
-export function PublicationWorkspace({provider, instanceKey, firstRender, onConcept}: SessionProps & {instanceKey: string}) {
+export function PublicationWorkspace({provider, instanceKey, firstRender, onConcept, locale}: SessionProps & {instanceKey: string}) {
   // A replaced provider can carry different authority even if its display key is unchanged.
   const [binding, setBinding] = useState({provider, generation: 0});
   if (binding.provider !== provider) setBinding({provider, generation: binding.generation + 1});
-  return <div className="publication-workspace"><Session key={JSON.stringify([instanceKey, binding.generation])} provider={provider} firstRender={firstRender} onConcept={onConcept}/></div>;
+  return <div className="publication-workspace"><Session key={JSON.stringify([instanceKey, binding.generation])} provider={provider} locale={locale} firstRender={firstRender} onConcept={onConcept}/></div>;
 }
 
 export function PublicationView({base}: {base: URL}) {

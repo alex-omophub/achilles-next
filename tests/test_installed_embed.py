@@ -26,7 +26,8 @@ class InstalledEmbedTests(InstalledViewerCase):
                 subprocess.run([
                     self.rscript, '--vanilla', '-e',
                     'args <- commandArgs(TRUE); library(AchillesNext); source(args[1]); '
-                    'x <- makeSavedResultFixture(args[2], pageRows=32L, sourceId=args[3], extraConceptIds=as.character(301:318)); '
+                    'x <- makeSavedResultFixture(args[2], pageRows=32L, sourceId=args[3], extraConceptIds=as.character(301:318), '
+                    'savedLabels=if (args[3] == "fixture:second") list("123"="Synthetic condition") else NULL); '
                     'jsonlite::write_json(x$context, args[4], auto_unbox=TRUE)',
                     str(tests / 'tracer' / 'saved-result-fixture.R'), str(folder), 'fixture:' + key, str(trusted),
                 ], check=True, env=env)

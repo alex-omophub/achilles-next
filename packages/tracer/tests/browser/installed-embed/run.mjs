@@ -1,3 +1,4 @@
+import {checkPresentation} from './presentation.mjs';
 import assert from 'node:assert/strict';
 import {cp, copyFile, readFile, writeFile} from 'node:fs/promises';
 import {createRequire} from 'node:module';
@@ -31,10 +32,12 @@ for (const [index, key] of ['first', 'second'].entries()) {
   const prefix = '/host/demo/sources/' + key + '/';
   proxy[prefix] = {target: url.origin, changeOrigin: true, rewrite: path => url.pathname + path.slice(prefix.length)};
 }
+assert.deepEqual([pins.first.contract_version, pins.second.contract_version], ['2.0.0', '2.1.0']);
 assert.notEqual(pins.first.instance_id, pins.second.instance_id);
 await writeFile(join(hostDir, 'admissions.json'), JSON.stringify(pins));
 await writeFile(join(hostDir, 'index.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8">
-<title>Installed workspace host</title><style>.publication-summary { display: none !important; }</style></head>
+<meta http-equiv="Content-Security-Policy" content="style-src-elem 'nonce-fixture-style'">
+<title>Installed workspace host</title><style nonce="fixture-style">.publication-summary { display: none !important; }</style></head>
 <body><header>Host navigation</header><section class="publication-summary" id="host-sentinel">Host sentinel</section>
 <div id="react-host"></div><div id="vue-host"></div><script type="module" src="./host.mjs"></script></body></html>`);
 const server = await preview({...vite, build: {outDir: site}, preview: {host: '127.0.0.1', port: 0, proxy}});
@@ -196,6 +199,20 @@ try {
     ['/host/demo/sources/second/api/reports/' + metric + '.json']);
   assert.equal(page.url(), href);
   assert.deepEqual(await hostState(), {headStyles: 1, summaries: 1, sentinel: 'none', header: 'Host navigation'});
+  const legacy = JSON.parse(await readFile(new URL('../../../../../tests/fixtures/contracts/context.json', import.meta.url), 'utf8'));
+  await checkPresentation(page, react, vue);
+  for (const [host, slot, source] of [['vue', vue, 'first'], ['react', react, 'second']]) {
+    await page.evaluate(([host, source]) => fixture.update(host, source), [host, source]);
+    await slot.getByText(pins[source].source_id, {exact: true}).waitFor();
+    const before = assets.length;
+    assert.equal(await page.evaluate(async ([host, context]) => {
+      try { await fixture.present(host, {kind: 'workspace', version: '2'}, {context}); }
+      catch (error) { return error.code; }
+    }, [host, legacy]), 'invalid_context');
+    assert.equal(assets.slice(before).filter(url => url.pathname.includes('/api/')).length, 0);
+    await slot.getByText(pins[source].source_id, {exact: true}).waitFor();
+  }
+  assert.equal(page.url(), href);
   assert(assets.some(url => url.pathname.endsWith('/extensions/achilles/publication-workspace.mjs')));
   assert(assets.every(url => url.origin === new URL(href).origin && url.pathname.startsWith('/host/demo/')));
   assert.deepEqual(errors, []);

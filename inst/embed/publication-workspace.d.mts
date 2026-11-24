@@ -7,7 +7,11 @@ export interface DirectPublicationTarget {
     readonly metric_id: string;
     readonly metric_version: string;
 }
+declare const colorTokens: readonly ["ink", "muted", "rule", "surface", "accent", "focus"];
+export type PublicationTheme = Readonly<Partial<Record<typeof colorTokens[number], string>>>;
 export interface PublicationMountConfiguration {
+    readonly theme?: PublicationTheme;
+    readonly locale?: string;
     readonly target: {
         readonly kind: 'workspace';
         readonly version: '2';
