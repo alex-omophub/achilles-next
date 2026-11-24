@@ -1,0 +1,25 @@
+.Rbuildignore
+  s_3e206b4a2cf4c3::t_60151c5359df1f 14-19
+README.md
+  s_3e206b4a2cf4c3::t_3e55a373886686 3-4
+inst/guides/installation.md
+  s_3e206b4a2cf4c3::t_68261b3ad51de5 1-45
+tests/test_source_package.py
+  s_3e206b4a2cf4c3::t_9016bc9df37726 1-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "da5480d312bc7927335257a8f1f439c83900618a",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
