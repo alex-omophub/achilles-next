@@ -1,0 +1,43 @@
+packages/tracer/src/PublicationView.tsx
+  s_3e206b4a2cf4c3::t_66f1431d28ed9c 55,57,61,72,74,168,214,236,240
+packages/tracer/src/SavedChartGraphic.tsx
+  s_3e206b4a2cf4c3::t_91f7b7e53fd228 1,5-6,11
+packages/tracer/src/SavedReportChart.tsx
+  s_3e206b4a2cf4c3::t_f97e6588e87993 11,39
+packages/tracer/src/mount-publication.tsx
+  s_3e206b4a2cf4c3::t_bca83ff15e611b 15-16,18-19,83-106,108,115,189,196-198,219-220
+packages/tracer/tests/browser/installed-embed/host.jsx
+  s_3e206b4a2cf4c3::t_1b39f85df4eef9 34-37,75
+packages/tracer/tests/embed-consumer.mts
+  s_3e206b4a2cf4c3::t_dc931c5869e563 13
+packages/tracer/tests/mount-publication.test.ts
+  s_3e206b4a2cf4c3::t_c683604b4ff659 137-155
+tests/test_installed_embed.py
+  s_3e206b4a2cf4c3::t_cbf2ef0f36d56c 29-30
+packages/tracer/tests/browser/installed-embed/presentation.mjs
+  s_5e8e106420665f::t_d6b51a57938393 1-64
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a71033a1c3c0fb1f07dac3eb6395f21b24b9dfdf",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_5e8e106420665f": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a20ceb-c5b5-7cc3-aa5f-d8071e28ec6c",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
