@@ -1,9 +1,12 @@
 // Compile the installed ESM's public types as a host with no React imports.
-import {PublicationAccessError, createPublicationHttpProvider, mountPublicationWorkspace} from '../../../inst/embed/publication-workspace.mjs';
+import {PublicationAccessError, createPublicationHttpProvider, mountPublicationWorkspace, readPublicationAdmission, type PublicationHttpAuthorization} from '../../../inst/embed/publication-workspace.mjs';
 
 declare const container: HTMLElement;
 declare const context: Parameters<typeof mountPublicationWorkspace>[1]['context'];
-const provider = createPublicationHttpProvider(new URL('/results/api/', window.location.origin));
+declare const getToken: PublicationHttpAuthorization['getToken'];
+const gateway = new URL('/results/', window.location.origin);
+const provider = createPublicationHttpProvider(new URL('api/', gateway), {getToken});
+await readPublicationAdmission(gateway, {getToken}, new AbortController().signal);
 const target = {kind: 'workspace', version: '2'} as const;
 const workspace = mountPublicationWorkspace(container, {provider, context, target, styleNonce: 'example', onEvent(event) {
   const id: string = event.payload.concept_id;

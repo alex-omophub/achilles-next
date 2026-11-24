@@ -155,7 +155,7 @@ The optional [compiled-candidate bridge](docs/development/compiled-candidate.md)
 private files and imports a complete building candidate through a separate store
 connection. Sealing, validation, institutional approval and promotion are explicit.
 
-The [ATLAS3 integration boundary](docs/integration/atlas3.md) records a native v3.0.0 fixture proof, its lifecycle constraints and the experimental authenticated HTTP result transport. A production viewer/host adapter is still under development.
+The installed package includes an ATLAS3 v3.0.0 data-source sidebar parcel for saved v2 publications. The [ATLAS3 installation guide](docs/integration/atlas3.md) covers deployment, host source mapping and the required authenticated result gateway.
 
 ## Relationship to OHDSI
 
