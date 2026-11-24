@@ -30,11 +30,11 @@
     "packages/tracer/src/file-provider.ts": "22a41f6dd36ed3d6cfc226518fddb7a1949d0ef882336f84cf2a6fe467ed00c9",
     "packages/tracer/src/main.tsx": "a04c355274ff94a5c7b796210dd6c7f1717baa7ef480f6eec7fdefdfe4bff44c",
     "packages/tracer/src/measurement.ts": "fe79f281926c5f689cb62f0e6a68d1542a68d5e649a4333768d1353a4f1c64f7",
-    "packages/tracer/src/mount-publication.tsx": "bb16fb3348abc98dd9fd4c788dc2d68cc0e3868f229907100d842ff881fd6c29",
+    "packages/tracer/src/mount-publication.tsx": "e98b942014561b32767f0179f37db5254b77310db19c4da17dba8f9e0ee5e715",
     "packages/tracer/src/observation.ts": "5f3f1d43e60d2c4c3a9e45812f71839d183df92cb10cf5ee9697b2ff45de253c",
     "packages/tracer/src/publication.css": "4eac86fdf78e61aff4e4cf2c6d862a8e1fcb2d5ef9c7f792b9d992a69fcd3a41",
     "packages/tracer/src/saved-chart.ts": "52d46c58743eee823efc9bb06d2a5cb911dc268fa53b327710f45231d10f51e6",
-    "packages/tracer/src/saved-publication.ts": "70b90488efb8981df4e27b8eb3301a5a6f4c98b0f36c5968f350e1993ad87412",
+    "packages/tracer/src/saved-publication.ts": "0962a61449cbe9ea588ec973f435aa588cba15855221b8bda908a0a72cc07077",
     "packages/tracer/src/style.css": "369b46cc4838da49097ce3a3a3c66a904b4ef7af7d829d36e976baba853dcacb",
     "packages/tracer/tools/build-publication-validator.mjs": "e655aa58c6e81f230ca27700e8042c33410e4a77ce40073c5dfa8eda77dbc134",
     "packages/tracer/tools/build-validators.mjs": "b1218601e04bd097d1504ce25ec6f204bea7b6238a7f303c958ea54d902dff4a",
@@ -46,13 +46,13 @@
   },
   "files": {
     "DEPENDENCY-LICENSES.txt": "2ac67813440ac367ffaf290b7608f08febb86d740fab58d325abea30d5ed3416",
-    "assets/CartesianChart-DX73nt1Z.js": "9bc729556297901958314ecb4d1703f8deec41200259ce952c8ac8987e79bcfa",
-    "assets/ComposedChart-DYUiYzam.js": "7ac418c8f20d5ae35517b7259c378fd42fd6c6d3b3a7160df400b194c6ed27d3",
-    "assets/MeasurementChart-DpZbKOsO.js": "e7714f0d03414faa3b1da1fbd99e58b8e4ba2adfd5504cfbc19d6862e448f15c",
-    "assets/ObservationChart-CE4zeW4q.js": "a8ebcb64beabaf98687579c9bcfaa3a0997a54d1d4d786b0b10e64d275656b4f",
-    "assets/SavedChartGraphic-QmReFuL2.js": "80325ee1616c1b301ec029abd520e62c3b80527922d80599a67ba7b2f2114f51",
+    "assets/CartesianChart-Bl_5d2NW.js": "0e0984529655f441d57544fd189858adc14a24451d4d959c872066626c3431bc",
+    "assets/ComposedChart-4hW5C4yJ.js": "6b05813d7a8448fe5ae930e71d5617f9dc0ba831a8cdc94070e552570612b317",
+    "assets/MeasurementChart-BPdGDqY5.js": "03f1305b0eaea6e6f97d1d3b87f662c5eefdfadec0832c8d5da8957df3242a27",
+    "assets/ObservationChart-F0iO7s-9.js": "f0d73dae54d66ff637d1760a89976b1e5350e032e8bee07290fddb7947c9d591",
+    "assets/SavedChartGraphic-D917HMYA.js": "be465d352c0d5a808b81639bb4eedfe495a3ddd9527311ce21f64a725624e90f",
     "assets/index-CaHsWhrt.css": "37acdb640c2c16a5acb8637eac2dff34808f73bcc6d638d381f5718cc90c3a2f",
-    "assets/index-D6UuHrXb.js": "46371f4804928020ae6c63b4e081781a7b05cad04ef1db577485f39acf085342",
-    "index.html": "69e7733c42e7f74a199f31de7dde9518ab826e4db757a9154ac4423c4f42de7f"
+    "assets/index-KmMEopuy.js": "9b540a5b065b7e61cfbe27c68a631e9a1e8637c191b04412a22a89b75e501cee",
+    "index.html": "bcafda58ab43153f8973b319b24e6c81efd1f9a8a0597d87f05329f8141e994e"
   }
 }

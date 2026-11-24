@@ -12,8 +12,10 @@ const target = {kind: 'workspace', version: '2'};
 const sessions = {};
 const events = {react: [], vue: []};
 const nextTargets = {};
+const nextSources = {};
 window.fixture = {
   events: host => events[host],
+  nextSource(host, source) { nextSources[host] = source; },
   nextMount(host, next) { nextTargets[host] = next; },
   ready: host => sessions[host].handle.ready,
   id: host => sessions[host].handle.id,
@@ -39,8 +41,12 @@ window.fixture = {
   invalidContext: host => sessions[host].handle.update({context: {...pins.first, contract_version: '9.0.0'}, target}),
   hold(host, source) {
     const current = sessions[host];
-    current.holdNext = true;
+    current.holdNext = 'people';
     current.pending = this.update(host, source);
+  },
+  holdOptional(host, method) {
+    sessions[host].holdNext = method;
+    sessions[host].pending = undefined;
   },
   held: host => !!sessions[host].release,
   aborted: host => sessions[host].heldSignal.aborted,
@@ -61,18 +67,22 @@ function attach(host, slot, source) {
   const current = {source, slot};
   // The host may replace its authenticated route while keeping the provider identity stable.
   const api = () => apis[current.source];
+  async function deliver(method, args) {
+    const result = await api()[method](...args);
+    if (current.holdNext === method) {
+      current.holdNext = null;
+      current.heldSignal = args.at(-1);
+      // Return a completed read after cancellation to exercise the generation check.
+      await new Promise(resolve => { current.release = resolve; });
+    }
+    return result;
+  }
   const provider = {
-    people: async signal => {
-      const result = await api().people(signal);
-      if (current.holdNext) {
-        current.holdNext = false;
-        current.heldSignal = signal;
-        // Deliberately deliver an already-authorized response after update/destroy.
-        await new Promise(resolve => { current.release = resolve; });
-      }
-      return result;
-    },
-    exportEvidence: (...args) => api().exportEvidence(...args),
+    people: signal => deliver('people', [signal]),
+    exportEvidence: (...args) => deliver('exportEvidence', args),
+    search: (...args) => deliver('search', args),
+    lookup: (...args) => deliver('lookup', args),
+    select: (...args) => api().select(...args),
     catalogue: (cursor, signal) => api().catalogue(cursor, signal),
     report: (metric, cursor, signal) => api().report(metric, cursor, signal),
   };
@@ -85,7 +95,7 @@ function attach(host, slot, source) {
 
 function ReactSlot() {
   const slot = useRef(null);
-  useLayoutEffect(() => attach('react', slot.current, 'first'), []);
+  useLayoutEffect(() => attach('react', slot.current, nextSources.react ?? 'first'), []);
   return <div aria-label="React slot" role="region" ref={slot}/>;
 }
 function ReactHost() {

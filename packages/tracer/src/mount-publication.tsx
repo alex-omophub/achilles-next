@@ -1,9 +1,9 @@
 import {createRoot, type Root} from 'react-dom/client';
 import {PublicationWorkspace, DirectPublicationView} from './PublicationView';
-import {PublicationReadError, assertSamePublication, validMetricId, type PublicationContext, type PublicationProvider} from './saved-publication.js';
+import {PublicationAccessError, PublicationReadError, assertSamePublication, validMetricId, type PublicationContext, type PublicationProvider} from './saved-publication.js';
 import styles from './publication.css?inline';
 
-export {createPublicationHttpProvider} from './saved-publication.js';
+export {createPublicationHttpProvider, PublicationAccessError} from './saved-publication.js';
 export type {PublicationContext, PublicationProvider} from './saved-publication.js';
 
 export interface DirectPublicationTarget {
@@ -120,7 +120,14 @@ function scopedProvider(provider: PublicationProvider, context: PublicationConte
     combined.throwIfAborted();
     let result: T;
     try { result = await read(combined); }
-    catch { throw new MountFailure('read_failed'); }
+    catch (error) {
+      combined.throwIfAborted();
+      if (error instanceof PublicationAccessError) {
+        const code = error.code;
+        if (code === 'authentication_required' || code === 'access_denied') throw new PublicationAccessError(code);
+      }
+      throw new MountFailure('read_failed');
+    }
     combined.throwIfAborted();
     return result;
   }
@@ -208,7 +215,7 @@ export function mountPublicationWorkspace(container: HTMLElement, options: Publi
       const reads = scopedProvider(provider, context, controller.signal);
       const firstRender = {
         applied() { if (active?.index === index) resolve({status: 'applied', generation: index}); },
-        failed(error: unknown) { if (active?.index === index) reject(error instanceof MountFailure ? error : new MountFailure('read_failed')); },
+        failed(error: unknown) { if (active?.index === index) reject(error instanceof MountFailure || error instanceof PublicationAccessError ? error : new MountFailure('read_failed')); },
       };
       const onConcept = onEvent && ((type: PublicationConceptEvent['type'], payload: PublicationConceptEvent['payload'], correlationId: string) => {
         if (active?.index !== index || controller.signal.aborted) return;

@@ -1,3 +1,5 @@
+import {checkRetirement, observeResources} from './lifecycle.mjs';
+import {checkAccessChanges} from './access.mjs';
 import {checkPresentation} from './presentation.mjs';
 import assert from 'node:assert/strict';
 import {cp, copyFile, readFile, writeFile} from 'node:fs/promises';
@@ -20,7 +22,7 @@ const vuePackage = require.resolve('vue/package.json');
 assert.equal(require(vuePackage).version, '3.5.39');
 await copyFile(join(dirname(vuePackage), 'dist', 'vue.runtime.esm-browser.prod.js'), join(hostDir, 'vue.mjs'));
 const pins = {}, proxy = {};
-for (const [index, key] of ['first', 'second'].entries()) {
+for (const [index, key] of ['first', 'second', 'renewed'].entries()) {
   const url = new URL(urls[index]);
   assert.equal(url.hostname, '127.0.0.1');
   const authorized = JSON.parse(await readFile(join(scratch, key + '-context.json'), 'utf8'));
@@ -28,7 +30,7 @@ for (const [index, key] of ['first', 'second'].entries()) {
     profile_revision, authorization_epoch, instance_id} = authorized;
   pins[key] = {contract_version, source_id, release_id, publication_id, access_scope_id,
     profile_id, profile_sha256, profile_revision, authorization_epoch, instance_id};
-  assert.equal(source_id, 'fixture:' + key);
+  assert.equal(source_id, 'fixture:' + (key === 'renewed' ? 'first' : key));
   const prefix = '/host/demo/sources/' + key + '/';
   proxy[prefix] = {target: url.origin, changeOrigin: true, rewrite: path => url.pathname + path.slice(prefix.length)};
 }
@@ -50,6 +52,7 @@ try {
   page.on('request', r => assets.push(new URL(r.url())));
   page.setDefaultTimeout(10000);
   const href = 'http://127.0.0.1:' + server.httpServer.address().port + '/host/demo/index.html#/host-owned-route';
+  await page.addInitScript(observeResources);
   await page.goto(href);
   const react = page.getByRole('region', {name: 'React slot', exact: true});
   const vue = page.getByRole('region', {name: 'Vue slot', exact: true});
@@ -212,6 +215,9 @@ try {
     assert.equal(assets.slice(before).filter(url => url.pathname.includes('/api/')).length, 0);
     await slot.getByText(pins[source].source_id, {exact: true}).waitFor();
   }
+  assert.equal(page.url(), href);
+  await checkAccessChanges(page, react, vue, pins, scratch);
+  await checkRetirement(page, react, vue);
   assert.equal(page.url(), href);
   assert(assets.some(url => url.pathname.endsWith('/extensions/achilles/publication-workspace.mjs')));
   assert(assets.every(url => url.origin === new URL(href).origin && url.pathname.startsWith('/host/demo/')));

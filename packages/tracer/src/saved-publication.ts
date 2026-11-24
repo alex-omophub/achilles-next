@@ -27,6 +27,13 @@ function record(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 export class PublicationReadError extends Error {}
+export class PublicationAccessError extends PublicationReadError {
+  constructor(readonly code: 'authentication_required' | 'access_denied') {
+    super(code === 'authentication_required'
+      ? 'Authentication is required to read this publication.'
+      : 'Access to this publication was denied.');
+  }
+}
 function check(condition: unknown): asserts condition {
   if (!condition) throw new PublicationReadError('The saved publication returned an invalid response.');
 }
@@ -46,7 +53,8 @@ export function assertSamePublication(a: Context, b: Context) {
 async function request(url: URL, signal: AbortSignal, fetchImpl: typeof fetch) {
   const response = await fetchImpl(url, {signal, cache: 'no-store', redirect: 'error', mode: 'same-origin'});
   if (!response.ok) {
-    if (response.status === 403) throw new PublicationReadError('Access to this publication was denied. Reopen it from an authorized R session.');
+    if (response.status === 401) throw new PublicationAccessError('authentication_required');
+    if (response.status === 403) throw new PublicationAccessError('access_denied');
     if (response.status === 422) throw new PublicationReadError('The saved publication could not be verified. Reopen an approved export.');
     throw new PublicationReadError('The local results server could not complete the read. Reopen the viewer from R.');
   }

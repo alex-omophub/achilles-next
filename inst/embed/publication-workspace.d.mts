@@ -1,5 +1,5 @@
 import { type PublicationContext, type PublicationProvider } from './saved-publication.js';
-export { createPublicationHttpProvider } from './saved-publication.js';
+export { createPublicationHttpProvider, PublicationAccessError } from './saved-publication.js';
 export type { PublicationContext, PublicationProvider } from './saved-publication.js';
 export interface DirectPublicationTarget {
     readonly kind: 'report' | 'chart';
