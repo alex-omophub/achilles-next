@@ -2,6 +2,24 @@
 // No filesystem, network or Node imports. Callers supply their schema validator.
 import {canonical} from './index.mjs';
 export function ensure(test, message) { if (!test) throw new Error(message); }
+// JSON.parse validates the grammar but discards earlier object members with
+// the same name. Check the original member names before admitting its result.
+export function decodeArtifactJson(bytes) {
+  const text = new TextDecoder('utf-8', {fatal: true}).decode(bytes);
+  const document = JSON.parse(text);
+  const objects = [];
+  for (const token of text.matchAll(/[{}]|"([^"\\]*(?:\\.[^"\\]*)*)"(\s*:)?/g)) {
+    if (token[0] === '{') objects.push(new Set());
+    else if (token[0] === '}') objects.pop();
+    else if (token[2]) {
+      const name = token[1].includes('\\') ? JSON.parse('"' + token[1] + '"') : token[1];
+      const members = objects.at(-1);
+      ensure(!members.has(name), 'Duplicate JSON keys');
+      members.add(name);
+    }
+  }
+  return document;
+}
 const AVAILABLE = new Set(['computed','empty_source','empty_population']);
 const ALL_STATS = ['sum','min','max','mean_numerator','mean_denominator','p10','p25','p50','p75','p90'];
 function reason(state, value) {

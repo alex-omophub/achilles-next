@@ -90,7 +90,7 @@ main<-function() {
     if(index==1L)f('.store_transaction')(env$fixtureConnection(),results,function(tx)f('.store_validate')(tx,generated$release_id))
     snap$validated<-TRUE;snap$generated_metric_count<-generated$generated_metric_count
     if(publicationMode)snap$refresh_executed<-TRUE
-    snapshots[[length(snapshots)+1L]]<-c(list(case=case$case,version=case$version,source_id=sourceId),snap)
+    snapshots[[length(snapshots)+1L]]<-c(list(case=case$case,version=case$version,source_id=sourceId,release_id=generated$release_id),snap)
     saved[[length(saved)+1L]]<-list(schema=schema,release=generated$release_id)
     stopifnot(q(paste0('SELECT count(*)::text AS n FROM "',results,'".achillesnext_current_publication'))$N==if(publicationMode && index>1L)'2' else '0',
       q("SELECT count(*)::text AS n FROM pg_class WHERE relpersistence='t' AND relname~'^achillesnext_[0-9a-f]{32}_'")$N==baselineTemp)

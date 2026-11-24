@@ -2,9 +2,8 @@
 import {readFile, lstat, realpath, opendir} from 'node:fs/promises';
 import {resolve, sep} from 'node:path';
 import {createHash} from 'node:crypto';
-import {ensure} from './semantics.mjs';
+import {decodeArtifactJson, ensure} from './semantics.mjs';
 const digest = bytes => createHash('sha256').update(bytes).digest('hex');
-const decode = bytes => JSON.parse(new TextDecoder('utf-8', {fatal:true}).decode(bytes));
 // Stream entries with a fixed-size buffer, retaining only the declared paths.
 export async function validateInventory(root, expected, openDirectory = opendir) {
   const remaining = new Set(expected);
@@ -37,16 +36,16 @@ export async function validateDirectory(directory, validateDocument, validateDoc
     return bytes;
   };
   const manifestBytes = await read('manifest.json');
-  const manifest = decode(manifestBytes); validateDocument('bundle',manifest);
+  const manifest = decodeArtifactJson(manifestBytes); validateDocument('bundle',manifest);
   const documents = new Map();
   for (const p of manifest.outputs) {
     const bytes = await read(p.path);
     ensure(digest(bytes) === p.sha256 && String(bytes.length) === p.bytes, 'Partition integrity mismatch');
-    documents.set(p.metric_id,decode(bytes));
+    documents.set(p.metric_id,decodeArtifactJson(bytes));
   }
   const bytes = await read(manifest.terminology.path);
   ensure(digest(bytes) === manifest.terminology.sha256 && String(bytes.length) === manifest.terminology.bytes, 'Terminology integrity mismatch');
   // Extra files must never hitchhike into a distributable release or a copy.
   await validateInventory(root,['manifest.json',manifest.terminology.path,...manifest.outputs.map(p=>p.path)]);
-  return {...validateDocuments(manifest,documents,decode(bytes)), manifest_sha256:digest(manifestBytes)};
+  return {...validateDocuments(manifest,documents,decodeArtifactJson(bytes)), manifest_sha256:digest(manifestBytes)};
 }
