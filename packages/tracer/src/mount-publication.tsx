@@ -1,10 +1,10 @@
 import {createRoot, type Root} from 'react-dom/client';
 import {PublicationWorkspace, DirectPublicationView} from './PublicationView';
-import {PublicationAccessError, PublicationReadError, assertSamePublication, validMetricId, type PublicationContext, type PublicationProvider} from './saved-publication.js';
+import {PublicationAccessError, PublicationReadError, assertSamePublication, validMetricId, validPublicationContext, type PublicationContext, type PublicationProvider} from './saved-publication.js';
 import styles from './publication.css?inline';
 
-export {createPublicationHttpProvider, PublicationAccessError} from './saved-publication.js';
-export type {PublicationContext, PublicationProvider} from './saved-publication.js';
+export {createPublicationHttpProvider, PublicationAccessError, readPublicationAdmission} from './saved-publication.js';
+export type {PublicationContext, PublicationHttpAuthorization, PublicationProvider} from './saved-publication.js';
 
 export interface DirectPublicationTarget {
   readonly kind: 'report' | 'chart';
@@ -67,8 +67,6 @@ class MountFailure extends PublicationReadError {
 function object(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
-const pins = ['contract_version','source_id','release_id','publication_id','access_scope_id','profile_id',
-  'profile_sha256','profile_revision','authorization_epoch','instance_id'] as const;
 function pinTarget(target: unknown): PublicationMountConfiguration['target'] {
   if (!object(target) || !Object.hasOwn(target, 'kind') || !Object.hasOwn(target, 'version') || target.version !== '2') throw new MountFailure('invalid_configuration');
   if (target.kind === 'workspace' && Object.keys(target).length === 2) return {kind: 'workspace', version: '2'};
@@ -108,11 +106,8 @@ function pin(options: unknown, mounting: boolean) {
     !['target', 'context', 'theme', 'locale', ...(mounting ? ['provider', 'styleNonce', 'onEvent'] : [])].includes(key))) throw new MountFailure('invalid_configuration');
   const target = pinTarget(options.target);
   const ctx = options.context;
-  if (!object(ctx) || Object.keys(ctx).length !== pins.length || !pins.every(key =>
-    Object.hasOwn(ctx, key) && typeof ctx[key] === 'string' && ctx[key].length > 0)
-    || !['2.0.0', '2.1.0'].includes(String(ctx.contract_version)) || !/^[a-f0-9]{64}$/.test(String(ctx.profile_sha256)))
-    throw new MountFailure('invalid_context');
-  return {target, context: Object.freeze({...ctx}) as PublicationContext, css: themeRule(options.theme), locale: numberLocale(options.locale)};
+  if (!validPublicationContext(ctx)) throw new MountFailure('invalid_context');
+  return {target, context: Object.freeze({...ctx}), css: themeRule(options.theme), locale: numberLocale(options.locale)};
 }
 function scopedProvider(provider: PublicationProvider, context: PublicationContext, life: AbortSignal): PublicationProvider {
   async function call<T>(signal: AbortSignal, read: (combined: AbortSignal) => Promise<T>) {

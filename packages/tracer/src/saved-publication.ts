@@ -40,6 +40,11 @@ function check(condition: unknown): asserts condition {
 function integer(value: unknown): value is string {
   return typeof value === 'string' && /^(0|[1-9][0-9]*)$/.test(value);
 }
+export function validPublicationContext(value: unknown): value is PublicationContext {
+  return record(value) && Object.keys(value).length === contextKeys.length && contextKeys.every(key =>
+    Object.hasOwn(value, key) && typeof value[key] === 'string' && value[key].length > 0)
+    && (value.contract_version === '2.0.0' || value.contract_version === '2.1.0') && digest(value.profile_sha256);
+}
 function context(envelope: Record<string, unknown>): Context {
   const item = envelope.context;
   check(envelope.generation_requested === false && record(item));
@@ -81,7 +86,9 @@ async function request(url: URL, signal: AbortSignal, fetchImpl: typeof fetch) {
     reader.releaseLock();
   }
   signal.throwIfAborted();
-  const body: unknown = JSON.parse(text);
+  let body: unknown;
+  try { body = JSON.parse(text); }
+  catch { throw new PublicationReadError('The saved publication returned an invalid response.'); }
   check(record(body));
   return body;
 }
@@ -393,14 +400,69 @@ export interface PublicationProvider {
   lookup?(id: string, signal: AbortSignal): Promise<ConceptPage>;
 }
 
-export function createPublicationHttpProvider(base: URL): PublicationProvider {
+export interface PublicationHttpAuthorization {
+  readonly getToken: (signal: AbortSignal) => string | null | undefined | Promise<string | null | undefined>;
+}
+
+function directory(base: URL) {
   const api = new URL(base.href);
   if (!api.pathname.endsWith('/')) api.pathname += '/';
-  return {people: signal => readPeople(api, signal),
-    catalogue: (cursor, signal) => readCatalogue(api, cursor, signal),
-    report: (id, cursor, signal) => readReport(api, id, cursor, signal),
-    select: (id, filters, cursor, signal) => selectReport(api, id, filters, cursor, signal),
-    search: (query, cursor, signal) => searchConcepts(api, query, cursor, signal),
-    lookup: (id, signal) => lookupConcept(api, id, signal),
-    exportEvidence: (id, filters, cursor, signal) => readPageEvidence(api, id, filters, cursor, signal)};
+  return api;
+}
+
+function bearerTransport(api: URL, options: PublicationHttpAuthorization): typeof fetch {
+  // URL has already normalized dot segments. Reject encoded path separators
+  // and double encoding that a proxy could reinterpret after this check.
+  if (typeof options?.getToken !== 'function' || !['https:', 'http:'].includes(api.protocol)
+    || api.origin !== globalThis.location?.origin || api.href !== api.origin + api.pathname
+    || api.pathname.includes('//') || /%(?:25|2f|5c|3f|23|0[0-9a-f]|1[0-9a-f]|7f)/i.test(api.pathname))
+    throw new PublicationReadError('Supply a same-origin publication gateway directory and token callback.');
+  const getToken = options.getToken;
+  return async (input, init) => {
+    const signal = init?.signal;
+    check(input instanceof URL && input.origin === api.origin && input.pathname.startsWith(api.pathname) && signal);
+    signal.throwIfAborted();
+    let abort!: () => void;
+    const aborted = new Promise<never>((_, reject) => {
+      abort = () => reject(signal.reason);
+      signal.addEventListener('abort', abort, {once: true});
+    });
+    let token;
+    try {
+      const currentToken = Promise.resolve().then(() => {
+        signal.throwIfAborted();
+        return getToken(signal);
+      });
+      token = await Promise.race([aborted, currentToken]);
+    } catch {
+      signal.throwIfAborted();
+      throw new PublicationAccessError('authentication_required');
+    } finally {
+      signal.removeEventListener('abort', abort);
+    }
+    signal.throwIfAborted();
+    if (typeof token !== 'string' || !/^[A-Za-z0-9._~+/-]+=*$/.test(token))
+      throw new PublicationAccessError('authentication_required');
+    return fetch(input, {...init, credentials: 'omit', headers: {Authorization: 'Bearer ' + token}});
+  };
+}
+
+export async function readPublicationAdmission(base: URL, options: PublicationHttpAuthorization,
+    signal: AbortSignal): Promise<PublicationContext> {
+  const api = directory(base);
+  const body = await request(new URL('admission', api), signal, bearerTransport(api, options));
+  check(Object.keys(body).length === 1 && validPublicationContext(body.context));
+  return Object.freeze(body.context);
+}
+
+export function createPublicationHttpProvider(base: URL, options?: PublicationHttpAuthorization): PublicationProvider {
+  const api = directory(base);
+  const read = options === undefined ? fetch : bearerTransport(api, options);
+  return {people: signal => readPeople(api, signal, read),
+    catalogue: (cursor, signal) => readCatalogue(api, cursor, signal, read),
+    report: (id, cursor, signal) => readReport(api, id, cursor, signal, read),
+    select: (id, filters, cursor, signal) => selectReport(api, id, filters, cursor, signal, read),
+    search: (query, cursor, signal) => searchConcepts(api, query, cursor, signal, read),
+    lookup: (id, signal) => lookupConcept(api, id, signal, read),
+    exportEvidence: (id, filters, cursor, signal) => readPageEvidence(api, id, filters, cursor, signal, read)};
 }

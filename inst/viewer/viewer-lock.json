@@ -12,7 +12,7 @@
     "packages/contracts/src/semantics.mjs": "8d112c3d3b9e9c041e3da2b43e8f82cef85b73634184db07d2b3a712a44e14e1",
     "packages/tracer/index.html": "cacda3723715f95abb8a24b5aa61e87d32235e72c59930011be5aebe274b64f8",
     "packages/tracer/package-lock.json": "c1c15494b6781d12b4af76352756c612384f3bf2b9c8b6b31da721f6c8f656e0",
-    "packages/tracer/package.json": "b11ade517c14cd31e8ea66323778a108164eefca39b6590f1f84b75459dfee97",
+    "packages/tracer/package.json": "e9517654f660d3e738ffc7534c9c9793e668dc10a4133efad27e067d8d850abd",
     "packages/tracer/src/CountView.tsx": "60a5e437b2b4376620d78713d786daab2271e292be8292241eaf13d98eaaa432",
     "packages/tracer/src/MeasurementChart.tsx": "69cdc4759f35128968263eb3ac17d01a4d4aaff607f85b9fcf2609b633f9373c",
     "packages/tracer/src/MeasurementView.tsx": "ae5ba2e557f43e73700f27cb95da0207f75fc402e373fcc7a4813112583d63dd",
@@ -30,11 +30,11 @@
     "packages/tracer/src/file-provider.ts": "22a41f6dd36ed3d6cfc226518fddb7a1949d0ef882336f84cf2a6fe467ed00c9",
     "packages/tracer/src/main.tsx": "a04c355274ff94a5c7b796210dd6c7f1717baa7ef480f6eec7fdefdfe4bff44c",
     "packages/tracer/src/measurement.ts": "fe79f281926c5f689cb62f0e6a68d1542a68d5e649a4333768d1353a4f1c64f7",
-    "packages/tracer/src/mount-publication.tsx": "e98b942014561b32767f0179f37db5254b77310db19c4da17dba8f9e0ee5e715",
+    "packages/tracer/src/mount-publication.tsx": "94e58e979cadbeda71177bd32b6ac86a444d7050be0cbdc9d9c30518fea781ff",
     "packages/tracer/src/observation.ts": "5f3f1d43e60d2c4c3a9e45812f71839d183df92cb10cf5ee9697b2ff45de253c",
     "packages/tracer/src/publication.css": "4eac86fdf78e61aff4e4cf2c6d862a8e1fcb2d5ef9c7f792b9d992a69fcd3a41",
     "packages/tracer/src/saved-chart.ts": "52d46c58743eee823efc9bb06d2a5cb911dc268fa53b327710f45231d10f51e6",
-    "packages/tracer/src/saved-publication.ts": "0962a61449cbe9ea588ec973f435aa588cba15855221b8bda908a0a72cc07077",
+    "packages/tracer/src/saved-publication.ts": "109be0bea79b02d193ab041a84ca0b400141c82d6e51cc63aff9473c0b5355b7",
     "packages/tracer/src/style.css": "369b46cc4838da49097ce3a3a3c66a904b4ef7af7d829d36e976baba853dcacb",
     "packages/tracer/tools/build-publication-validator.mjs": "e655aa58c6e81f230ca27700e8042c33410e4a77ce40073c5dfa8eda77dbc134",
     "packages/tracer/tools/build-validators.mjs": "b1218601e04bd097d1504ce25ec6f204bea7b6238a7f303c958ea54d902dff4a",
@@ -46,13 +46,13 @@
   },
   "files": {
     "DEPENDENCY-LICENSES.txt": "2ac67813440ac367ffaf290b7608f08febb86d740fab58d325abea30d5ed3416",
-    "assets/CartesianChart-Bl_5d2NW.js": "0e0984529655f441d57544fd189858adc14a24451d4d959c872066626c3431bc",
-    "assets/ComposedChart-4hW5C4yJ.js": "6b05813d7a8448fe5ae930e71d5617f9dc0ba831a8cdc94070e552570612b317",
-    "assets/MeasurementChart-BPdGDqY5.js": "03f1305b0eaea6e6f97d1d3b87f662c5eefdfadec0832c8d5da8957df3242a27",
-    "assets/ObservationChart-F0iO7s-9.js": "f0d73dae54d66ff637d1760a89976b1e5350e032e8bee07290fddb7947c9d591",
-    "assets/SavedChartGraphic-D917HMYA.js": "be465d352c0d5a808b81639bb4eedfe495a3ddd9527311ce21f64a725624e90f",
+    "assets/CartesianChart-Cq2Z97vC.js": "639b1a0b6753e405bcd529cb14d9e340cc5a44c456d4b9eed1c3b1552196901b",
+    "assets/ComposedChart-Baa_S4SS.js": "db9b8484ab836de50a04df552739d6fa36df1cd4a0534f34dd1c275db1aa3e12",
+    "assets/MeasurementChart-CIU5fa4U.js": "47fe00482362fde767f4e04c99628687d0ebd2370d7680494ade09150ad8024e",
+    "assets/ObservationChart-Bf3s6-bj.js": "47e3d022dcdf6967dafa731a9a11127dcf0d8b8596c64d0dd4c6c20ca974027c",
+    "assets/SavedChartGraphic-CxEgEiNh.js": "161e4a854cdad4178a8684b595dc616058ad25f5bed8a82808f78560aa6f4116",
+    "assets/index-BGcWbcqR.js": "31908df62787c33b8389ccf24249903d2bebdb3d88547810432ac847941acd4e",
     "assets/index-CaHsWhrt.css": "37acdb640c2c16a5acb8637eac2dff34808f73bcc6d638d381f5718cc90c3a2f",
-    "assets/index-KmMEopuy.js": "9b540a5b065b7e61cfbe27c68a631e9a1e8637c191b04412a22a89b75e501cee",
-    "index.html": "bcafda58ab43153f8973b319b24e6c81efd1f9a8a0597d87f05329f8141e994e"
+    "index.html": "55985a2953e0f8f35e6558096821050b0b510c2a062e3a796d6d4062ecdab0f7"
   }
 }

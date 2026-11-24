@@ -48,6 +48,16 @@ await instance.update({ context: nextApprovedContext, target });
 await instance.destroy();
 ```
 
+For a bearer-authenticated gateway, import `readPublicationAdmission` from the same module and pass a current-token callback to both helpers. The base URL names the source gateway directory. Each read obtains a fresh token and honors the supplied abort signal.
+
+```js
+const authorization = {getToken: signal => host.getToken(signal)};
+const context = await readPublicationAdmission(base, authorization, signal);
+const provider = createPublicationHttpProvider(new URL('api/', base), authorization);
+```
+
+The admission endpoint returns `{"context": ...}`. The bearer transport restricts requests to the configured same-origin directory, omits cookies and rejects redirects. The [ATLAS3 installation guide](../integration/atlas3.md) includes the gateway routes and host lifecycle.
+
 Use the ten string fields from the trusted admission when constructing the context.
 
 | Identity | Fields |

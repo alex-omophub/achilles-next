@@ -1,5 +1,5 @@
-import {describe, expect, it} from 'vitest';
-import {assertSamePublication, readCatalogue, readPeople, readReport, selectReport, searchConcepts, lookupConcept} from '../src/saved-publication';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+import {createPublicationHttpProvider, readPublicationAdmission, assertSamePublication, readCatalogue, readPeople, readReport, selectReport, searchConcepts, lookupConcept} from '../src/saved-publication';
 
 const base = new URL('http://127.0.0.1:12345/nested/view/api/');
 const context = {
@@ -187,5 +187,79 @@ describe('saved terminology transport', () => {
       .toMatchObject({id, state: 'not_saved', label: null, reason: 'concept.not_saved'});
     await expect(lookup({...item, concept_tag: {kind: 'id', value: '0'}}))
       .rejects.toThrow('The saved publication returned an invalid response.');
+  });
+});
+
+describe('host-authorized publication transport', () => {
+  afterEach(() => vi.unstubAllGlobals());
+  it('requires fresh bearer authorization for admission, every endpoint and continuation', async () => {
+    vi.stubGlobal('location', {origin: base.origin});
+    const getToken = vi.fn(() => 'test-' + getToken.mock.calls.length);
+    const requests: string[] = [];
+    vi.stubGlobal('fetch', async (url: URL, init: RequestInit) => {
+      requests.push(url.pathname.slice(base.pathname.length));
+      expect(new Headers(init.headers).get('Authorization')).toBe('Bearer test-' + requests.length);
+      expect(init).toMatchObject({mode: 'same-origin', redirect: 'error', credentials: 'omit', cache: 'no-store'});
+      expect(String(url)).not.toContain('test-');
+      return url.pathname.endsWith('/admission') ? Response.json({context}) : new Response(null, {status: 403});
+    });
+    const access = {getToken};
+    const provider = createPublicationHttpProvider(base, access);
+    const admitted = await readPublicationAdmission(base, access, signal());
+    expect(admitted).toEqual(context);
+    expect(Object.isFrozen(admitted)).toBe(true);
+    const metric = 'core.person.count';
+    for (const read of [
+      () => provider.people(signal()), () => provider.catalogue('next', signal()),
+      () => provider.report(metric, null, signal()), () => provider.select!(metric, {}, 'next', signal()),
+      () => provider.search!('find', 'next', signal()), () => provider.lookup!('1', signal()),
+      () => provider.exportEvidence!(metric, {}, null, signal()),
+    ]) await expect(read()).rejects.toMatchObject({code: 'access_denied'});
+    expect(requests).toEqual(['admission', 'people.json', 'catalogue.json', 'reports/core.person.count.json',
+      'reports/core.person.count.json', 'concepts/search.json', 'concepts/lookup.json', 'evidence/core.person.count.json']);
+  });
+  it('fails closed on unstable gateway paths and missing or invalid tokens', async () => {
+    vi.stubGlobal('location', {origin: base.origin});
+    const send = vi.fn(); vi.stubGlobal('fetch', send);
+    const getToken = vi.fn(async () => 'test');
+    for (const url of [new URL('https://elsewhere.example/'), new URL('http://user@' + base.host),
+      new URL('api?secret=1', base), new URL('api#fragment', base), new URL('a%252fb', base),
+      new URL('a%2fb', base), new URL('a%5cb', base)])
+      expect(() => createPublicationHttpProvider(url, {getToken})).toThrow(/same-origin/);
+    expect(getToken).not.toHaveBeenCalled();
+    for (const token of [null, '', 'two tokens', 'secret\nvalue']) {
+      const read = createPublicationHttpProvider(base, {getToken: () => token});
+      await expect(read.people(signal())).rejects.toMatchObject({code: 'authentication_required'});
+    }
+    await expect(readPublicationAdmission(base, {getToken: () => { throw new Error('secret diagnostic'); }}, signal()))
+      .rejects.toMatchObject({code: 'authentication_required', message: 'Authentication is required to read this publication.'});
+    expect(send).not.toHaveBeenCalled();
+  });
+  it('cancels a pending token read before any transport request', async () => {
+    vi.stubGlobal('location', {origin: base.origin});
+    const send = vi.fn(); vi.stubGlobal('fetch', send);
+    let settle!: (value: string) => void;
+    const getToken = vi.fn((_signal: AbortSignal) => new Promise<string>(resolve => { settle = resolve; }));
+    const stop = new AbortController();
+    const provider = createPublicationHttpProvider(base, {getToken});
+    const pending = provider.people(stop.signal);
+    await Promise.resolve();
+    expect(getToken).toHaveBeenCalledWith(stop.signal);
+    stop.abort();
+    await expect(pending).rejects.toMatchObject({name: 'AbortError'});
+    settle('stale');
+    await expect(provider.people(stop.signal)).rejects.toMatchObject({name: 'AbortError'});
+    expect(getToken).toHaveBeenCalledTimes(1); expect(send).not.toHaveBeenCalled();
+  });
+  it('requires exactly the supported immutable pins and bounded JSON for admission', async () => {
+    vi.stubGlobal('location', {origin: base.origin});
+    const getToken = () => 'token';
+    for (const body of [JSON.stringify({context: {...context, profile_sha256: 'invalid'}}),
+      JSON.stringify({context: {...context, contract_version: '3'}}), JSON.stringify({context: {...context, extra: 'x'}}),
+      JSON.stringify({context, extra: 'x'}), 'private gateway response', ' '.repeat(1048577)]) {
+      vi.stubGlobal('fetch', () => Promise.resolve(new Response(body)));
+      await expect(readPublicationAdmission(base, {getToken}, signal()))
+        .rejects.toThrow('The saved publication returned an invalid response.');
+    }
   });
 });

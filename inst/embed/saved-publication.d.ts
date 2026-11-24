@@ -24,6 +24,7 @@ export declare class PublicationAccessError extends PublicationReadError {
     readonly code: 'authentication_required' | 'access_denied';
     constructor(code: 'authentication_required' | 'access_denied');
 }
+export declare function validPublicationContext(value: unknown): value is PublicationContext;
 export declare function assertSamePublication(a: Context, b: Context): void;
 export declare function readCatalogue(base: URL, cursor: string | null, signal: AbortSignal, fetchImpl?: typeof fetch): Promise<CataloguePage>;
 export declare function readPeople(base: URL, signal: AbortSignal, fetchImpl?: typeof fetch): Promise<PopulationResult>;
@@ -119,5 +120,9 @@ export interface PublicationProvider {
     exportEvidence?(metricId: string, filters: SavedFilters, cursor: string | null, signal: AbortSignal): Promise<unknown>;
     lookup?(id: string, signal: AbortSignal): Promise<ConceptPage>;
 }
-export declare function createPublicationHttpProvider(base: URL): PublicationProvider;
+export interface PublicationHttpAuthorization {
+    readonly getToken: (signal: AbortSignal) => string | null | undefined | Promise<string | null | undefined>;
+}
+export declare function readPublicationAdmission(base: URL, options: PublicationHttpAuthorization, signal: AbortSignal): Promise<PublicationContext>;
+export declare function createPublicationHttpProvider(base: URL, options?: PublicationHttpAuthorization): PublicationProvider;
 export {};

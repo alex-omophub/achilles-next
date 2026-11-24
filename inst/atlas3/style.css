@@ -1,0 +1,7 @@
+.achillesnext-atlas3 {
+  min-width: 0;
+}
+
+.achillesnext-atlas3[hidden] {
+  display: none;
+}
