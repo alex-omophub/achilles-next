@@ -1,0 +1,39 @@
+.github/workflows/count-tracer.yml
+  s_895f6ebe145fd3::t_94632f6c76f920 162-164,185
+CONTRIBUTING.md
+  s_3e206b4a2cf4c3::t_006097b95f156b 30-31
+docs/development/architecture.md
+  s_3e206b4a2cf4c3::t_2301f480f2dcbe 1-13
+docs/development/conformance.md
+  s_3e206b4a2cf4c3::t_1fce4d91625a66 3,7-30
+docs/development/registered-analyses.md
+  s_3e206b4a2cf4c3::t_5884e41f25d71e 10-17,97
+tests/test_ci_runtime.py
+  s_3e206b4a2cf4c3::t_7ddef824f37f0d 2-3,7,12,15,28-53,60,62-63,67-69,83-85,147
+tools/check_conformance.py
+  s_3e206b4a2cf4c3::t_143c593795fec7 1-59
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "bbe5c75539e5e5a6520195b5cc5352aea76339a7",
+  "prompts": {},
+  "sessions": {
+    "s_3e206b4a2cf4c3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "unknown"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    },
+    "s_895f6ebe145fd3": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a17405-fefb-7c93-8467-098c4ffa5e42",
+        "model": "gpt-6.2-astra"
+      },
+      "human_author": "Alex Chen <alex@omophub.com>"
+    }
+  }
+}
