@@ -1,9 +1,32 @@
 # Contributor conformance checks
 
-Run from the repository root with the installed package and marked synthetic
-PostgreSQL fixtures. The [CI guide](ci.md) records pinned dependencies and caches;
+Run from the repository root. The live suites use marked synthetic PostgreSQL fixtures. The [CI guide](ci.md) records pinned dependencies and caches;
 the [fixture guide](count-tracer.md#developer-setup) describes local provisioning.
 These suites must not target clinical databases or reset an institution's CDM.
+
+## Run the contributor checks
+
+Install the checkout and the locked JavaScript contract dependencies once. The R library must already contain or be able to load the package dependencies described in the [fixture guide](count-tracer.md#developer-setup).
+
+```sh
+mkdir -p .local/R-library
+export R_LIBS="$PWD/.local/R-library"
+R CMD INSTALL --library="$R_LIBS" .
+npm ci --prefix packages/contracts --ignore-scripts --no-audit --no-fund
+python3 tools/check_conformance.py
+```
+
+The default command checks that the installed implementation matches this checkout, verifies typed definitions and the registered PERSON extension, and compares one generated v2 corpus in R and JavaScript. It also checks exact-value persistence using that corpus. It needs no database connection. A failed suite stops the command and returns a nonzero status.
+
+To exercise the extension from generation through authorized saved readback, provision the marked synthetic database, configure the JDBC driver, and run the same entry point in PostgreSQL mode. Use a fresh output child. The defaults use the local PostgreSQL socket on port 5432. Use `--admin-host`, `--admin-user` and `--port` for other local fixture configurations.
+
+```sh
+python3 tools/check_conformance.py postgresql \
+  --state .local/postgresql --config tools/tracer_fixture_config.R \
+  --output-dir "$(mktemp -d)/reference-proof"
+```
+
+The command runs the offline checks, then uses the existing fixture driver to generate, approve, export and read the two-metric reference profile. The expected counts come from a separately authored fixture. The live check denies source access to the serving role and removes the temporary database resources on completion. See the [architecture map](architecture.md) and [worked contribution](registered-analyses.md).
 
 ## Match the implementation
 

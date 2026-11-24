@@ -1,0 +1,13 @@
+# How an analysis reaches the viewer
+
+AchillesNext separates running SQL on a CDM from reading an approved publication. A new report starts with a population, a grain, exact values and any denominator relationships. Its SQL runs during generation. A person opening the viewer reads saved aggregates.
+
+| Stage | Package entry points | Boundary |
+|---|---|---|
+| Define and plan | `planCharacterizationBatch()` for the core profile; `planAnalysisProfile()` for the registered example | Installed, versioned assets declare the metric inventory, row shapes and denominator rules. Check the profile and asset identities before generation. [Typed definitions](analysis-definitions.md) |
+| Generate | `renderCharacterizationSql()` and `executeCharacterizationSql()` for the rendered PostgreSQL route; `generateAnalysisProfile()` for the registered profile | Rendering can run offline. PostgreSQL reads source tables, checks prerequisites and computes aggregates. The client transfers bounded result batches. [SQL rendering](offline-renderer.md) · [Source and store boundaries](source-store-boundaries.md) |
+| Store and validate | `initializeResultStore()`, `sealResultRelease()`, `validateResultRelease()` | The result store records datasets, states and exact typed rows under a release. Sealing closes writes. Validation checks identity, row semantics and cross-report relationships. [Persistence](persistence.md) |
+| Approve and publish | `publishResultRelease()`, `validateResultArtifact()` | An institutional policy selects the permitted scope. An approved root pins the published catalogue and pages. Consumer reads remain tied to the approved source, audience and publication. [Validation boundaries](validator-boundary.md) |
+| Read and present | `readResultObject()`, `openArtifactResultProvider()`, `openDatabaseResultProvider()`, `viewResults()` and the installed JS mount | Native readers verify saved results. The core workspace renders bounded pages, preserves unavailable states and delegates host navigation. The registered reference example demonstrates native readback. [Saved transports](saved-transports.md) · [Embedded workspace](../viewing/embedded-workspace.md) |
+
+To trace an implementation, start with the [registered PERSON contribution](registered-analyses.md). Its declared count by gender links to the total population. The example follows both outputs from definition through query, storage, disclosure and readback. The [contributor command](conformance.md#run-the-contributor-checks) checks the installed package against the checkout and can run the complete example on a marked PostgreSQL fixture.

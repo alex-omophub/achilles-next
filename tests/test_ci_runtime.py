@@ -1,13 +1,18 @@
 """Check CI cost controls without installing dependencies or starting Docker."""
+from contextlib import redirect_stdout
+from io import StringIO
 import json
 import os
 import re
+import runpy
 from collections import Counter
 import shlex
 from pathlib import Path
 import subprocess
+import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT=Path(__file__).resolve().parents[1]
 
@@ -20,18 +25,48 @@ class CiRuntimeTests(unittest.TestCase):
         section=workflow.split('  integration:\n',1)[1].split('\n  # Keep the existing required check name;',1)[0]
         return re.split(r'(?m)^      - ',section)[1:]
 
+    def conformance_checks(self, args):
+        # Exercise the real CLI and capture its child processes without starting
+        # R, PostgreSQL or Node. Keep the expected suite inventory independent.
+        script = ROOT / 'tools/check_conformance.py'
+        with patch.object(sys, 'argv', [str(script), *shlex.split(args)]), \
+                patch('subprocess.run') as run, redirect_stdout(StringIO()):
+            runpy.run_path(str(script), run_name='__main__')
+        commands = [list(map(os.fspath, call.args[0])) for call in run.call_args_list]
+        files = []
+        for command in commands:
+            if command[0] == 'Rscript':
+                self.assertEqual(command[1], '--vanilla')
+                files.append(command[2:])
+            else:
+                self.assertIn(command[0], [sys.executable, 'node'])
+                files.append(command[1:])
+        producer = next(command for command in files if command[0] == 'tests/tracer/result-wire.R')
+        consumers = [command for command in files if command[0] in (
+            'packages/contracts/tools/validate-v2-corpus.mjs', 'tests/tracer/persistence-offline.R')]
+        self.assertEqual(len(producer), 2)
+        self.assertEqual(len(consumers), 2)
+        for consumer in consumers:
+            self.assertLess(files.index(producer), files.index(consumer), 'Generate the corpus before validating it')
+            self.assertEqual(consumer[1:], producer[1:], 'Both validators must get the corpus just written')
+        return [(command[0], shlex.join(command[1:])) for command in files]
+
     def check_suite_topology(self,workflow):
         self.assertIn('suite: [compatibility, domain, measurement]',workflow)
         self.assertIn('fail-fast: true',workflow)
         self.assertNotIn('continue-on-error:',workflow)
         assignments=[]
         for step in self.integration_steps(workflow):
-            commands=re.findall(r'(?m)^\s*(?:run: )?(?:PGPASSFILE="[^"\n]*" |ACHILLES_NEXT_TEST_NUMERIC_STRATEGY=weighted )?(?:Rscript(?: --vanilla)?|python3) ((?:tests/tracer|tools)/[^\s]+)([^\n]*)',step)
+            commands=re.findall(r'(?m)^\s*(?:run: )?(?:PGPASSFILE="[^"\n]*" |ACHILLES_NEXT_TEST_NUMERIC_STRATEGY=weighted )?(?:Rscript(?: --vanilla)?|python3|node) ((?:tests/tracer|tools|packages/contracts/tools)/[^\s]+)([^\n]*)',step)
             for path,args in commands:
-                if not (path.startswith('tests/tracer/') or path.startswith('tools/test_') or path.startswith('tools/benchmark/')):continue
+                if not (path.startswith('tests/tracer/') or path.startswith('tools/test_') or path.startswith('tools/benchmark/') or
+                        path in ('tools/check_conformance.py', 'packages/contracts/tools/validate-v2-corpus.mjs')):continue
                 owner=re.search(r"(?m)^        if: matrix[.]suite == '(compatibility|domain|measurement)'$",step)
                 self.assertIsNotNone(owner,'A test would run in every suite: '+path)
                 assignments.append((path,args.strip(),owner[1]))
+                if path == 'tools/check_conformance.py':
+                    self.assertEqual(shlex.split(args)[0], 'postgresql')
+                    assignments.extend((child, options, owner[1]) for child, options in self.conformance_checks(args))
         return assignments
 
     def test_all_integration_checks_have_one_suite_owner(self):
@@ -45,7 +80,9 @@ class CiRuntimeTests(unittest.TestCase):
               'persistence-offline.R','batch-plan.R','refresh-execution-offline.R','saved-selection.R','saved-transport.R','saved-provider.R','saved-concepts.R','saved-labels.R',
               'canonical-json.R','validation-spool.R','inventory-inputs.R','saved-walkthrough.R']
         expected=Counter(('tests/tracer/'+name,'compatibility') for name in core)
-        expected.update({('tools/test_result_serving.py','compatibility'):3,
+        expected.update({('tools/check_conformance.py','compatibility'):1,
+                         ('packages/contracts/tools/validate-v2-corpus.mjs','compatibility'):1,
+                         ('tools/test_result_serving.py','compatibility'):3,
                          ('tools/benchmark/weighted_quantiles.py','compatibility'):1,
                          ('tools/benchmark/batch_primitives.py','compatibility'):1,
                          ('tools/benchmark/inventory.py','compatibility'):1,
@@ -107,7 +144,7 @@ class CiRuntimeTests(unittest.TestCase):
     def test_serving_workflow_invocations_pass_admin_credentials(self):
         workflow=(ROOT/'.github/workflows/count-tracer.yml').read_text()
         commands=[shlex.split(line.strip()) for line in workflow.splitlines()
-                  if any(tool in line for tool in ['python3 tools/test_result_serving.py','python3 tools/test_characterization_refresh.py','python3 tools/test_refresh_operations.py','python3 tools/test_core_characterization.py'])]
+                  if any(tool in line for tool in ['python3 tools/check_conformance.py postgresql','python3 tools/test_result_serving.py','python3 tools/test_characterization_refresh.py','python3 tools/test_refresh_operations.py','python3 tools/test_core_characterization.py'])]
         self.assertGreaterEqual(len(commands),2)
         for args in commands:
             self.assertIn('PGPASSFILE=$GITHUB_WORKSPACE/.local/admin.pgpass',args[:args.index('python3')])
